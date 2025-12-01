@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./App.css";
 
 type TrainerSingle = {
@@ -41,6 +47,8 @@ type AppState = {
   spieler: Spieler[];
   tarife: Tarif[];
   trainings: Training[];
+  // neue Info: wer in welchem Monat als bezahlt markiert wurde
+  abrechnungPaid: Record<string, string[]>; // key = "YYYY-MM", value = array spielerIds
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
@@ -64,7 +72,9 @@ function pad2(n: number) {
 
 function todayISO() {
   const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -76,18 +86,24 @@ function startOfWeekISO(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
   const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function addDaysISO(dateISO: string, days: number) {
   const d = new Date(dateISO + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function formatShort(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
-  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][((d.getDay() + 6) % 7)];
+  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][
+    (d.getDay() + 6) % 7
+  ];
   return `${w} ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
 }
 
@@ -96,12 +112,60 @@ function euro(n: number) {
   return `${n.toFixed(2).replace(".", ",")} €`;
 }
 
-function normalizeState(parsed: Partial<AppState> | null | undefined): AppState {
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function statusLabel(s: TrainingStatus) {
+  return s === "geplant"
+    ? "offen"
+    : s === "durchgefuehrt"
+    ? "durchgeführt"
+    : "abgesagt";
+}
+
+function statusBadge(s: TrainingStatus) {
+  const isDone = s === "durchgefuehrt";
+  const isCancel = s === "abgesagt";
+  const bg = isDone
+    ? "rgba(34, 197, 94, 0.22)"
+    : isCancel
+    ? "rgba(239, 68, 68, 0.14)"
+    : "rgba(59, 130, 246, 0.18)";
+  const border = isDone
+    ? "rgba(34, 197, 94, 0.45)"
+    : isCancel
+    ? "rgba(239, 68, 68, 0.34)"
+    : "rgba(59, 130, 246, 0.30)";
+
+  return (
+    <span
+      style={{
+        flex: "0 0 auto",
+        fontSize: 12,
+        lineHeight: "14px",
+        padding: "6px 10px",
+        borderRadius: 999,
+        background: bg,
+        border: `1px solid ${border}`,
+        whiteSpace: "nowrap",
+      }}
+      title={statusLabel(s)}
+    >
+      {statusLabel(s)}
+    </span>
+  );
+}
+
+function normalizeState(
+  parsed: Partial<AppState> | null | undefined
+): AppState {
   return {
     trainer: parsed?.trainer ?? { name: "Trainer", email: "" },
     spieler: parsed?.spieler ?? [],
     tarife: parsed?.tarife ?? [],
     trainings: parsed?.trainings ?? [],
+    abrechnungPaid: parsed?.abrechnungPaid ?? {},
   };
 }
 
@@ -131,7 +195,8 @@ function writeState(state: AppState) {
 }
 
 export default function App() {
-  const initialRef = useRef<{ state: AppState; usedKey: string | null } | null>(null);
+  const initialRef =
+    useRef<{ state: AppState; usedKey: string | null } | null>(null);
   if (initialRef.current === null) {
     initialRef.current = readStateWithMeta();
   }
@@ -142,12 +207,21 @@ export default function App() {
   const [trainer, setTrainer] = useState<TrainerSingle>(initial.state.trainer);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
-  const [trainings, setTrainings] = useState<Training[]>(initial.state.trainings);
+  const [trainings, setTrainings] = useState<Training[]>(
+    initial.state.trainings
+  );
+  const [abrechnungPaid, setAbrechnungPaid] = useState<
+    Record<string, string[]>
+  >(initial.state.abrechnungPaid);
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
-  const [trainerName, setTrainerName] = useState(initial.state.trainer.name);
-  const [trainerEmail, setTrainerEmail] = useState(initial.state.trainer.email ?? "");
+  const [trainerName, setTrainerName] = useState(
+    initial.state.trainer.name
+  );
+  const [trainerEmail, setTrainerEmail] = useState(
+    initial.state.trainer.email ?? ""
+  );
 
   const [spielerName, setSpielerName] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
@@ -156,7 +230,9 @@ export default function App() {
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
-  const [tarifAbrechnung, setTarifAbrechnung] = useState<"proTraining" | "proSpieler">("proTraining");
+  const [tarifAbrechnung, setTarifAbrechnung] = useState<
+    "proTraining" | "proSpieler"
+  >("proTraining");
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
 
   const [tDatum, setTDatum] = useState(todayISO());
@@ -170,10 +246,15 @@ export default function App() {
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
 
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-  const [repeatUntil, setRepeatUntil] = useState(() => addDaysISO(todayISO(), 56));
-  const [applySerieScope, setApplySerieScope] = useState<"nurDieses" | "abHeute">("nurDieses");
+  const [repeatUntil, setRepeatUntil] = useState(() =>
+    addDaysISO(todayISO(), 56)
+  );
+  const [applySerieScope, setApplySerieScope] = useState<
+    "nurDieses" | "abHeute"
+  >("nurDieses");
 
-  const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(null);
+  const [selectedTrainingId, setSelectedTrainingId] =
+    useState<string | null>(null);
 
   const [abrechnungMonat, setAbrechnungMonat] = useState(() => {
     const d = new Date();
@@ -191,7 +272,9 @@ export default function App() {
     if (usedKey && usedKey !== STORAGE_KEY) {
       writeState(initial.state);
       for (const k of LEGACY_KEYS) {
-        if (k !== STORAGE_KEY && localStorage.getItem(k)) localStorage.removeItem(k);
+        if (k !== STORAGE_KEY && localStorage.getItem(k)) {
+          localStorage.removeItem(k);
+        }
       }
     }
     hasMountedRef.current = true;
@@ -199,8 +282,8 @@ export default function App() {
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainer, spieler, tarife, trainings });
-  }, [trainer, spieler, tarife, trainings]);
+    writeState({ trainer, spieler, tarife, trainings, abrechnungPaid });
+  }, [trainer, spieler, tarife, trainings, abrechnungPaid]);
 
   useEffect(() => {
     return () => {
@@ -209,29 +292,50 @@ export default function App() {
     };
   }, []);
 
-  const spielerById = useMemo(() => new Map(spieler.map((s) => [s.id, s])), [spieler]);
-  const tarifById = useMemo(() => new Map(tarife.map((t) => [t.id, t])), [tarife]);
+  const spielerById = useMemo(
+    () => new Map(spieler.map((s) => [s.id, s] as const)),
+    [spieler]
+  );
+  const tarifById = useMemo(
+    () => new Map(tarife.map((t) => [t.id, t] as const)),
+    [tarife]
+  );
 
-  const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
-  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)), [weekStart]);
+  const weekStart = useMemo(
+    () => startOfWeekISO(weekAnchor),
+    [weekAnchor]
+  );
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)),
+    [weekStart]
+  );
 
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
-    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+    return Array.from(
+      { length: endHour - startHour + 1 },
+      (_, i) => startHour + i
+    );
   }, []);
 
   const trainingsInWeek = useMemo(() => {
     const end = addDaysISO(weekStart, 7);
     return trainings
       .filter((t) => t.datum >= weekStart && t.datum < end)
-      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
+      .sort((a, b) =>
+        (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+      );
   }, [trainings, weekStart]);
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
-    return spieler.filter((s) => s.name.toLowerCase().includes(q) || (s.kontaktEmail ?? "").toLowerCase().includes(q));
+    return spieler.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.kontaktEmail ?? "").toLowerCase().includes(q)
+    );
   }, [spieler, spielerSuche]);
 
   function addSpieler() {
@@ -260,7 +364,9 @@ export default function App() {
     const neu: Tarif = {
       id: uid(),
       name,
-      preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
+      preisProStunde: Number.isFinite(tarifPreisProStunde)
+        ? tarifPreisProStunde
+        : 0,
       abrechnung: tarifAbrechnung,
       beschreibung: tarifBeschreibung.trim() || undefined,
     };
@@ -274,7 +380,9 @@ export default function App() {
   }
 
   function toggleSpielerPick(id: string) {
-    setTSpielerIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setTSpielerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   function durationMin(von: string, bis: string) {
@@ -283,24 +391,32 @@ export default function App() {
     return Math.max(0, b - a);
   }
 
-  function trainingPreisGesamt(t: Training) {
-    const tarif = tarifById.get(t.tarifId);
-    if (!tarif) return 0;
-    const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    const basis = tarif.preisProStunde * (mins / 60);
-    if (tarif.abrechnung === "proSpieler") return basis * t.spielerIds.length;
-    return basis;
-  }
+  const trainingPreisGesamt = useCallback(
+    (t: Training) => {
+      const tarif = tarifById.get(t.tarifId);
+      if (!tarif) return 0;
+      const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+      const basis = tarif.preisProStunde * (mins / 60);
+      if (tarif.abrechnung === "proSpieler") {
+        return basis * t.spielerIds.length;
+      }
+      return basis;
+    },
+    [tarifById]
+  );
 
-  function priceFürSpieler(t: Training) {
-    const tarif = tarifById.get(t.tarifId);
-    if (!tarif) return 0;
-    const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    const basis = tarif.preisProStunde * (mins / 60);
-    if (tarif.abrechnung === "proSpieler") return basis;
-    const n = Math.max(1, t.spielerIds.length);
-    return basis / n;
-  }
+  const priceFürSpieler = useCallback(
+    (t: Training) => {
+      const tarif = tarifById.get(t.tarifId);
+      if (!tarif) return 0;
+      const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+      const basis = tarif.preisProStunde * (mins / 60);
+      if (tarif.abrechnung === "proSpieler") return basis;
+      const n = Math.max(1, t.spielerIds.length);
+      return basis / n;
+    },
+    [tarifById]
+  );
 
   function fillTrainingFromSelected(t: Training) {
     setTDatum(t.datum);
@@ -342,7 +458,9 @@ export default function App() {
       setDoneFlashId((prev) => (prev === trainingId ? null : prev));
     }, 650);
 
-    const el = document.querySelector(`[data-training-id="${trainingId}"]`) as HTMLElement | null;
+    const el = document.querySelector(
+      `[data-training-id="${trainingId}"]`
+    ) as HTMLElement | null;
     if (el) {
       el.animate(
         [
@@ -385,11 +503,14 @@ export default function App() {
   }
 
   function saveTraining() {
-    if (!tDatum || !tVon || !tBis || !tTarifId || tSpielerIds.length === 0) return;
+    if (!tDatum || !tVon || !tBis || !tTarifId || tSpielerIds.length === 0)
+      return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
 
-    const existing = selectedTrainingId ? trainings.find((x) => x.id === selectedTrainingId) : undefined;
+    const existing = selectedTrainingId
+      ? trainings.find((x) => x.id === selectedTrainingId)
+      : undefined;
 
     if (selectedTrainingId && existing) {
       const payload: Training = {
@@ -421,7 +542,9 @@ export default function App() {
           })
         );
       } else {
-        setTrainings((prev) => prev.map((x) => (x.id === selectedTrainingId ? payload : x)));
+        setTrainings((prev) =>
+          prev.map((x) => (x.id === selectedTrainingId ? payload : x))
+        );
       }
 
       resetTrainingForm();
@@ -489,93 +612,151 @@ export default function App() {
       notiz: tNotiz || undefined,
     };
     return trainingPreisGesamt(fake);
-  }, [tDatum, tVon, tBis, tTarifId, tSpielerIds, tStatus, tNotiz, tarifById]);
+  }, [
+    tDatum,
+    tVon,
+    tBis,
+    tTarifId,
+    tSpielerIds,
+    tStatus,
+    tNotiz,
+    trainingPreisGesamt,
+  ]);
 
   const nextTrainings = useMemo(() => {
     const t0 = todayISO();
     return trainings
       .slice()
-      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon))
+      .sort((a, b) =>
+        (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+      )
       .filter((t) => t.datum >= t0)
       .slice(0, 20);
   }, [trainings]);
 
-  const trainingsInMonth = useMemo(() => {
-    return trainings
-      .filter((t) => t.datum.startsWith(abrechnungMonat))
-      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
-  }, [trainings, abrechnungMonat]);
+  const trainingsInMonth = useMemo(
+    () =>
+      trainings
+        .filter((t) => t.datum.startsWith(abrechnungMonat))
+        .sort((a, b) =>
+          (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+        ),
+    [trainings, abrechnungMonat]
+  );
 
-  const completedTrainingsInMonth = useMemo(() => {
-    return trainingsInMonth.filter((t) => t.status === "durchgefuehrt");
-  }, [trainingsInMonth]);
+  const completedTrainingsInMonth = useMemo(
+    () => trainingsInMonth.filter((t) => t.status === "durchgefuehrt"),
+    [trainingsInMonth]
+  );
 
   const abrechnung = useMemo(() => {
-    const total = completedTrainingsInMonth.reduce((sum, t) => sum + trainingPreisGesamt(t), 0);
+    const perSpieler = new Map<
+      string,
+      {
+        name: string;
+        sum: number;
+        counts: Map<number, number>;
+      }
+    >();
 
-    const proSpieler = new Map<string, number>();
     completedTrainingsInMonth.forEach((t) => {
-      const share = priceFürSpieler(t);
-      t.spielerIds.forEach((pid) => proSpieler.set(pid, (proSpieler.get(pid) ?? 0) + share));
+      const shareRaw = priceFürSpieler(t);
+      const share = round2(shareRaw);
+
+      t.spielerIds.forEach((pid) => {
+        const name = spielerById.get(pid)?.name ?? "Unbekannt";
+        let entry = perSpieler.get(pid);
+        if (!entry) {
+          entry = { name, sum: 0, counts: new Map<number, number>() };
+          perSpieler.set(pid, entry);
+        }
+        entry.sum = round2(entry.sum + share);
+        entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
+      });
     });
 
-    const spielerRows = Array.from(proSpieler.entries())
-      .map(([id, sum]) => ({ id, name: spielerById.get(id)?.name ?? "Unbekannt", sum }))
+    const spielerRows = Array.from(perSpieler.entries())
+      .map(([id, v]) => {
+        const breakdown = Array.from(v.counts.entries())
+          .map(([amount, count]) => ({
+            amount,
+            count,
+            subtotal: round2(amount * count),
+          }))
+          .sort((a, b) => b.amount - a.amount);
+
+        return {
+          id,
+          name: v.name,
+          sum: round2(v.sum),
+          breakdown,
+        };
+      })
       .sort((a, b) => b.sum - a.sum);
 
+    const total = round2(
+      spielerRows.reduce((sum, r) => sum + r.sum, 0)
+    );
+
     return { total, spielerRows };
-  }, [completedTrainingsInMonth, spielerById]);
+  }, [completedTrainingsInMonth, spielerById, priceFürSpieler]);
 
-  function exportCSV() {
-    const header = ["Datum", "Von", "Bis", "Trainer", "Spieler", "Tarif", "Status", "PreisGesamt"].join(",");
-    const lines = completedTrainingsInMonth.map((t) => {
-      const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "").join(" | ");
-      const ta = tarifById.get(t.tarifId)?.name ?? "";
-      const price = trainingPreisGesamt(t).toFixed(2);
-      const safe = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
-      return [
-        safe(t.datum),
-        safe(t.uhrzeitVon),
-        safe(t.uhrzeitBis),
-        safe(trainer.name),
-        safe(sp),
-        safe(ta),
-        safe(t.status),
-        safe(price),
-      ].join(",");
+  // bezahlt / offen pro Monat und Spieler toggeln
+  function toggleSpielerPaid(month: string, spielerId: string) {
+    setAbrechnungPaid((prev) => {
+      const current = new Set(prev[month] ?? []);
+      if (current.has(spielerId)) current.delete(spielerId);
+      else current.add(spielerId);
+      return {
+        ...prev,
+        [month]: Array.from(current),
+      };
     });
-
-    const csv = [header, ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `abrechnung_${abrechnungMonat}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
+
+  const paidForMonth = abrechnungPaid[abrechnungMonat] ?? [];
 
   return (
     <div className="container">
       <div className="header">
         <div className="hTitle">
           <h1>Tennistrainer Planung</h1>
-          <p>Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, lokale Speicherung.</p>
+          <p>
+            Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, lokale
+            Speicherung.
+          </p>
         </div>
         <div className="tabs">
-          <button className={`tabBtn ${tab === "kalender" ? "tabBtnActive" : ""}`} onClick={() => setTab("kalender")}>
+          <button
+            className={`tabBtn ${
+              tab === "kalender" ? "tabBtnActive" : ""
+            }`}
+            onClick={() => setTab("kalender")}
+          >
             Kalender
           </button>
-          <button className={`tabBtn ${tab === "training" ? "tabBtnActive" : ""}`} onClick={() => setTab("training")}>
+          <button
+            className={`tabBtn ${
+              tab === "training" ? "tabBtnActive" : ""
+            }`}
+            onClick={() => setTab("training")}
+          >
             Training
           </button>
           <button
-            className={`tabBtn ${tab === "verwaltung" ? "tabBtnActive" : ""}`}
+            className={`tabBtn ${
+              tab === "verwaltung" ? "tabBtnActive" : ""
+            }`}
             onClick={() => setTab("verwaltung")}
           >
             Verwaltung
           </button>
-          <button className={`tabBtn ${tab === "abrechnung" ? "tabBtnActive" : ""}`} onClick={() => setTab("abrechnung")}>
+          <button
+            className={`tabBtn ${
+              tab === "abrechnung" ? "tabBtnActive" : ""
+            }`}
+            onClick={() => setTab("abrechnung")}
+          >
             Abrechnung
           </button>
         </div>
@@ -588,10 +769,16 @@ export default function App() {
               <span className="pill">
                 Woche ab: <strong>{formatShort(weekStart)}</strong>
               </span>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart,  -7))}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
+              >
                 Woche zurück
               </button>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart,  7))}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
+              >
                 Woche vor
               </button>
               <button
@@ -607,7 +794,11 @@ export default function App() {
             <div className="row">
               <div className="field" style={{ minWidth: 220 }}>
                 <label>Woche springen</label>
-                <input type="date" value={weekAnchor} onChange={(e) => setWeekAnchor(e.target.value)} />
+                <input
+                  type="date"
+                  value={weekAnchor}
+                  onChange={(e) => setWeekAnchor(e.target.value)}
+                />
               </div>
               <span className="pill">
                 Trainer: <strong>{trainer.name}</strong>
@@ -637,7 +828,9 @@ export default function App() {
               </div>
 
               {weekDays.map((day) => {
-                const dayEvents = trainingsInWeek.filter((t) => t.datum === day);
+                const dayEvents = trainingsInWeek.filter(
+                  (t) => t.datum === day
+                );
                 const startMin = 7 * 60;
 
                 return (
@@ -647,11 +840,27 @@ export default function App() {
                     ))}
 
                     {dayEvents.map((t) => {
-                      const top = Math.max(0, (toMinutes(t.uhrzeitVon) - startMin) / 60) * 40;
-                      const height = Math.max(18, ((toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon)) / 60) * 40);
+                      const top =
+                        Math.max(
+                          0,
+                          (toMinutes(t.uhrzeitVon) - startMin) / 60
+                        ) * 40;
+                      const height = Math.max(
+                        22,
+                        ((toMinutes(t.uhrzeitBis) -
+                          toMinutes(t.uhrzeitVon)) /
+                          60) *
+                          40
+                      );
 
-                      const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-                      const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
+                      const ta =
+                        tarifById.get(t.tarifId)?.name ?? "Tarif";
+                      const sp = t.spielerIds
+                        .map(
+                          (id) =>
+                            spielerById.get(id)?.name ?? "Spieler"
+                        )
+                        .join(", ");
 
                       const isDone = t.status === "durchgefuehrt";
                       const isCancel = t.status === "abgesagt";
@@ -669,8 +878,7 @@ export default function App() {
                         ? "rgba(239, 68, 68, 0.34)"
                         : "rgba(59, 130, 246, 0.30)";
 
-                      const statusLabel =
-                        t.status === "geplant" ? "geplant" : t.status === "durchgefuehrt" ? "durchgeführt" : "abgesagt";
+                      const showSecondLine = height >= 40;
 
                       return (
                         <div
@@ -683,10 +891,19 @@ export default function App() {
                             backgroundColor: bg,
                             border: `1px solid ${border}`,
                             opacity: isCancel ? 0.85 : 1,
-                            transform: isPulse ? "scale(1.06)" : undefined,
-                            filter: isPulse ? "brightness(1.15)" : undefined,
+                            transform: isPulse
+                              ? "scale(1.06)"
+                              : undefined,
+                            filter: isPulse
+                              ? "brightness(1.15)"
+                              : undefined,
                             transition:
                               "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                            overflow: "hidden",
+                            padding: 8,
                           }}
                           onClick={() => handleCalendarEventClick(t)}
                           onDoubleClick={(e) => {
@@ -694,13 +911,51 @@ export default function App() {
                             e.stopPropagation();
                             handleCalendarEventDoubleClick(t);
                           }}
-                          title="Klick: Bearbeiten, Doppelklick: Abschließen"
+                          title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
+                            t.status
+                          )}`}
                         >
-                          <strong>
-                            {t.uhrzeitVon} bis {t.uhrzeitBis}, {ta}
-                          </strong>
-                          <span>Spieler: {sp}</span>
-                          <span>Status: {statusLabel}</span>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 8,
+                              minWidth: 0,
+                            }}
+                          >
+                            <strong
+                              style={{
+                                display: "block",
+                                flex: "1 1 auto",
+                                minWidth: 0,
+                                overflow: "hidden",
+                                whiteSpace: "nowrap",
+                                textOverflow: "ellipsis",
+                                fontSize: 14,
+                                lineHeight: "16px",
+                              }}
+                              title={sp}
+                            >
+                              {sp}
+                            </strong>
+                            {statusBadge(t.status)}
+                          </div>
+
+                          {showSecondLine ? (
+                            <div
+                              style={{
+                                display: "block",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                fontSize: 12,
+                                lineHeight: "16px",
+                              }}
+                              title={`${t.uhrzeitVon} bis ${t.uhrzeitBis}, ${ta}`}
+                            >
+                              {t.uhrzeitVon} bis {t.uhrzeitBis}, {ta}
+                            </div>
+                          ) : null}
                         </div>
                       );
                     })}
@@ -711,47 +966,80 @@ export default function App() {
           </div>
 
           <div style={{ height: 12 }} />
-          <div className="muted">Hinweis: Doppelklick auf geplant setzt sofort auf durchgeführt und gibt visuelles Feedback.</div>
+          <div className="muted">
+            Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen, Status
+            und Farbe ändern sich sofort.
+          </div>
         </div>
       )}
 
       {tab === "training" && (
         <div className="grid2">
           <div className="card">
-            <h2>{selectedTrainingId ? "Training bearbeiten" : "Training anlegen"}</h2>
+            <h2>
+              {selectedTrainingId
+                ? "Training bearbeiten"
+                : "Training anlegen"}
+            </h2>
 
             <div className="row">
               <div className="field">
                 <label>Datum</label>
-                <input type="date" value={tDatum} onChange={(e) => setTDatum(e.target.value)} />
+                <input
+                  type="date"
+                  value={tDatum}
+                  onChange={(e) => setTDatum(e.target.value)}
+                />
               </div>
               <div className="field">
                 <label>Von</label>
-                <input type="time" value={tVon} onChange={(e) => setTVon(e.target.value)} />
+                <input
+                  type="time"
+                  value={tVon}
+                  onChange={(e) => setTVon(e.target.value)}
+                />
               </div>
               <div className="field">
                 <label>Bis</label>
-                <input type="time" value={tBis} onChange={(e) => setTBis(e.target.value)} />
+                <input
+                  type="time"
+                  value={tBis}
+                  onChange={(e) => setTBis(e.target.value)}
+                />
               </div>
             </div>
 
             <div className="row">
               <div className="field">
                 <label>Tarif</label>
-                <select value={tTarifId} onChange={(e) => setTTarifId(e.target.value)}>
+                <select
+                  value={tTarifId}
+                  onChange={(e) => setTTarifId(e.target.value)}
+                >
                   <option value="">Tarif wählen</option>
                   {tarife.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name}, {t.preisProStunde} € pro Stunde, {t.abrechnung === "proSpieler" ? "pro Spieler" : "pro Training"}
+                      {t.name}, {t.preisProStunde} € pro Stunde,{" "}
+                      {t.abrechnung === "proSpieler"
+                        ? "pro Spieler"
+                        : "pro Training"}
                     </option>
                   ))}
                 </select>
-                <div className="muted">Wenn noch kein Tarif vorhanden ist: Verwaltung, Tarife anlegen.</div>
+                <div className="muted">
+                  Wenn noch kein Tarif vorhanden ist: Verwaltung, Tarife
+                  anlegen.
+                </div>
               </div>
 
               <div className="field">
                 <label>Status</label>
-                <select value={tStatus} onChange={(e) => setTStatus(e.target.value as TrainingStatus)}>
+                <select
+                  value={tStatus}
+                  onChange={(e) =>
+                    setTStatus(e.target.value as TrainingStatus)
+                  }
+                >
                   <option value="geplant">Geplant</option>
                   <option value="durchgefuehrt">Durchgeführt</option>
                   <option value="abgesagt">Abgesagt</option>
@@ -762,7 +1050,11 @@ export default function App() {
             <div className="row">
               <div className="field" style={{ minWidth: 260 }}>
                 <label>Notiz</label>
-                <input value={tNotiz} onChange={(e) => setTNotiz(e.target.value)} placeholder="optional" />
+                <input
+                  value={tNotiz}
+                  onChange={(e) => setTNotiz(e.target.value)}
+                  placeholder="optional"
+                />
               </div>
             </div>
 
@@ -772,19 +1064,34 @@ export default function App() {
               <div className="card cardInset">
                 <h2>Wiederholung</h2>
                 <div className="row">
-                  <label className="pill" style={{ cursor: "pointer" }}>
+                  <label
+                    className="pill"
+                    style={{ cursor: "pointer" }}
+                  >
                     <input
                       type="checkbox"
                       checked={repeatWeekly}
-                      onChange={(e) => setRepeatWeekly(e.target.checked)}
+                      onChange={(e) =>
+                        setRepeatWeekly(e.target.checked)
+                      }
                       style={{ marginRight: 8 }}
                     />
                     Wöchentlich wiederholen
                   </label>
 
-                  <div className="field" style={{ minWidth: 220 }}>
+                  <div
+                    className="field"
+                    style={{ minWidth: 220 }}
+                  >
                     <label>Bis Datum</label>
-                    <input type="date" value={repeatUntil} onChange={(e) => setRepeatUntil(e.target.value)} disabled={!repeatWeekly} />
+                    <input
+                      type="date"
+                      value={repeatUntil}
+                      onChange={(e) =>
+                        setRepeatUntil(e.target.value)
+                      }
+                      disabled={!repeatWeekly}
+                    />
                   </div>
 
                   <span className="pill">
@@ -792,13 +1099,18 @@ export default function App() {
                   </span>
                 </div>
 
-                <div className="muted">Wenn aktiv: Es werden alle Termine wöchentlich bis zum Bis Datum angelegt.</div>
+                <div className="muted">
+                  Wenn aktiv: Es werden alle Termine wöchentlich bis zum
+                  Bis Datum angelegt.
+                </div>
               </div>
             )}
 
             {selectedTrainingId &&
               (() => {
-                const ex = trainings.find((x) => x.id === selectedTrainingId);
+                const ex = trainings.find(
+                  (x) => x.id === selectedTrainingId
+                );
                 if (!ex?.serieId) return null;
                 return (
                   <div className="card cardInset">
@@ -806,17 +1118,31 @@ export default function App() {
                     <div className="row">
                       <div className="field">
                         <label>Änderungen anwenden</label>
-                        <select value={applySerieScope} onChange={(e) => setApplySerieScope(e.target.value as any)}>
-                          <option value="nurDieses">Nur diesen Termin</option>
-                          <option value="abHeute">Alle Termine der Serie ab diesem Datum</option>
+                        <select
+                          value={applySerieScope}
+                          onChange={(e) =>
+                            setApplySerieScope(
+                              e.target.value as "nurDieses" | "abHeute"
+                            )
+                          }
+                        >
+                          <option value="nurDieses">
+                            Nur diesen Termin
+                          </option>
+                          <option value="abHeute">
+                            Alle Termine der Serie ab diesem Datum
+                          </option>
                         </select>
                       </div>
                       <span className="pill">
-                        Serie: <strong>{ex.serieId.slice(0, 8)}</strong>
+                        Serie:{" "}
+                        <strong>{ex.serieId.slice(0, 8)}</strong>
                       </span>
                     </div>
                     <div className="muted">
-                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif, Status und Notiz werden für alle zukünftigen Termine übernommen.
+                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
+                      Status und Notiz werden für alle zukünftigen
+                      Termine übernommen.
                     </div>
                   </div>
                 );
@@ -826,7 +1152,9 @@ export default function App() {
 
             <div className="row">
               <button className="btn" onClick={saveTraining}>
-                {selectedTrainingId ? "Änderungen speichern" : "Training speichern"}
+                {selectedTrainingId
+                  ? "Änderungen speichern"
+                  : "Training speichern"}
               </button>
               <button
                 className="btn btnGhost"
@@ -838,12 +1166,18 @@ export default function App() {
                 Zurück zum Kalender
               </button>
               {selectedTrainingId && (
-                <button className="btn btnWarn" onClick={() => deleteTraining(selectedTrainingId)}>
+                <button
+                  className="btn btnWarn"
+                  onClick={() =>
+                    deleteTraining(selectedTrainingId)
+                  }
+                >
                   Training löschen
                 </button>
               )}
               <span className="pill">
-                Preis Vorschau: <strong>{euro(preisVorschau)}</strong>
+                Preis Vorschau:{" "}
+                <strong>{euro(preisVorschau)}</strong>
               </span>
             </div>
 
@@ -852,8 +1186,14 @@ export default function App() {
             <h2>Schnellzugriff, nächste Trainings</h2>
             <ul className="list">
               {nextTrainings.map((t) => {
-                const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-                const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
+                const ta =
+                  tarifById.get(t.tarifId)?.name ?? "Tarif";
+                const sp = t.spielerIds
+                  .map(
+                    (id) =>
+                      spielerById.get(id)?.name ?? "Spieler"
+                  )
+                  .join(", ");
                 return (
                   <li key={t.id} className="listItem">
                     <div>
@@ -863,10 +1203,19 @@ export default function App() {
                       <div className="muted">
                         {ta}, {sp}
                       </div>
-                      {t.serieId ? <div className="muted">Serie: {t.serieId.slice(0, 8)}</div> : null}
+                      {t.serieId ? (
+                        <div className="muted">
+                          Serie: {t.serieId.slice(0, 8)}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="smallActions">
-                      <button className="btn micro btnGhost" onClick={() => fillTrainingFromSelected(t)}>
+                      <button
+                        className="btn micro btnGhost"
+                        onClick={() =>
+                          fillTrainingFromSelected(t)
+                        }
+                      >
                         Bearbeiten
                       </button>
                     </div>
@@ -875,7 +1224,10 @@ export default function App() {
               })}
             </ul>
 
-            <div className="muted">Tipp: Im Kalender kannst Du geplante Trainings per Doppelklick direkt abschließen.</div>
+            <div className="muted">
+              Tipp: Im Kalender kannst Du geplante Trainings per
+              Doppelklick direkt abschließen.
+            </div>
           </div>
 
           <div className="card">
@@ -883,10 +1235,17 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Suche</label>
-                <input value={spielerSuche} onChange={(e) => setSpielerSuche(e.target.value)} placeholder="Name oder Email" />
+                <input
+                  value={spielerSuche}
+                  onChange={(e) =>
+                    setSpielerSuche(e.target.value)
+                  }
+                  placeholder="Name oder Email"
+                />
               </div>
               <span className="pill">
-                Ausgewählt: <strong>{tSpielerIds.length}</strong>
+                Ausgewählt:{" "}
+                <strong>{tSpielerIds.length}</strong>
               </span>
             </div>
 
@@ -899,11 +1258,20 @@ export default function App() {
                       <strong>{s.name}</strong>
                       <div className="muted">
                         {s.kontaktEmail ?? ""}
-                        {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
+                        {s.kontaktTelefon
+                          ? `, ${s.kontaktTelefon}`
+                          : ""}
                       </div>
                     </div>
                     <div className="smallActions">
-                      <button className={`btn micro ${checked ? "" : "btnGhost"}`} onClick={() => toggleSpielerPick(s.id)}>
+                      <button
+                        className={`btn micro ${
+                          checked ? "" : "btnGhost"
+                        }`}
+                        onClick={() =>
+                          toggleSpielerPick(s.id)
+                        }
+                      >
                         {checked ? "Entfernen" : "Hinzufügen"}
                       </button>
                     </div>
@@ -913,7 +1281,10 @@ export default function App() {
             </ul>
 
             <div style={{ height: 10 }} />
-            <div className="muted">Pro Training: Gesamtpreis wird auf Spieler verteilt. Pro Spieler: jeder zahlt den vollen Preis.</div>
+            <div className="muted">
+              Pro Training: Gesamtpreis wird auf Spieler verteilt.
+              Pro Spieler: jeder zahlt den vollen Preis.
+            </div>
           </div>
         </div>
       )}
@@ -925,23 +1296,47 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={trainerName} onChange={(e) => setTrainerName(e.target.value)} placeholder="z.B. Artur" />
+                <input
+                  value={trainerName}
+                  onChange={(e) =>
+                    setTrainerName(e.target.value)
+                  }
+                  placeholder="z.B. Artur"
+                />
               </div>
               <div className="field">
                 <label>Email</label>
-                <input value={trainerEmail} onChange={(e) => setTrainerEmail(e.target.value)} placeholder="optional" />
+                <input
+                  value={trainerEmail}
+                  onChange={(e) =>
+                    setTrainerEmail(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
                 <button
                   className="btn"
-                  onClick={() => setTrainer({ name: trainerName.trim() || "Trainer", email: trainerEmail.trim() || undefined })}
+                  onClick={() =>
+                    setTrainer({
+                      name:
+                        trainerName.trim() || "Trainer",
+                      email:
+                        trainerEmail.trim() || undefined,
+                    })
+                  }
                 >
                   Speichern
                 </button>
               </div>
             </div>
-            <div className="muted">Ein Trainer, ohne Login.</div>
+            <div className="muted">
+              Ein Trainer, ohne Login.
+            </div>
           </div>
 
           <div className="card">
@@ -949,26 +1344,56 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={spielerName} onChange={(e) => setSpielerName(e.target.value)} placeholder="z.B. Melania" />
+                <input
+                  value={spielerName}
+                  onChange={(e) =>
+                    setSpielerName(e.target.value)
+                  }
+                  placeholder="z.B. Melania"
+                />
               </div>
               <div className="field">
                 <label>Email</label>
-                <input value={spielerEmail} onChange={(e) => setSpielerEmail(e.target.value)} placeholder="optional" />
+                <input
+                  value={spielerEmail}
+                  onChange={(e) =>
+                    setSpielerEmail(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
               <div className="field">
                 <label>Telefon</label>
-                <input value={spielerTelefon} onChange={(e) => setSpielerTelefon(e.target.value)} placeholder="optional" />
+                <input
+                  value={spielerTelefon}
+                  onChange={(e) =>
+                    setSpielerTelefon(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
             </div>
 
             <div className="row">
               <div className="field">
                 <label>Notizen</label>
-                <textarea value={spielerNotizen} onChange={(e) => setSpielerNotizen(e.target.value)} placeholder="optional" />
+                <textarea
+                  value={spielerNotizen}
+                  onChange={(e) =>
+                    setSpielerNotizen(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addSpieler}>
+                <button
+                  className="btn"
+                  onClick={addSpieler}
+                >
                   Spieler hinzufügen
                 </button>
               </div>
@@ -981,12 +1406,27 @@ export default function App() {
                     <strong>{s.name}</strong>
                     <div className="muted">
                       {s.kontaktEmail ?? ""}
-                      {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
+                      {s.kontaktTelefon
+                        ? `, ${s.kontaktTelefon}`
+                        : ""}
                     </div>
-                    {s.notizen ? <div className="muted">{s.notizen}</div> : null}
+                    {s.notizen ? (
+                      <div className="muted">
+                        {s.notizen}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <button className="btn micro btnGhost" onClick={() => setSpieler((prev) => prev.filter((x) => x.id !== s.id))}>
+                    <button
+                      className="btn micro btnGhost"
+                      onClick={() =>
+                        setSpieler((prev) =>
+                          prev.filter(
+                            (x) => x.id !== s.id
+                          )
+                        )
+                      }
+                    >
                       Löschen
                     </button>
                   </div>
@@ -1000,17 +1440,42 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={tarifName} onChange={(e) => setTarifName(e.target.value)} placeholder="z.B. Einzel" />
+                <input
+                  value={tarifName}
+                  onChange={(e) =>
+                    setTarifName(e.target.value)
+                  }
+                  placeholder="z.B. Einzel"
+                />
               </div>
               <div className="field">
                 <label>Preis pro Stunde</label>
-                <input type="number" value={tarifPreisProStunde} onChange={(e) => setTarifPreisProStunde(Number(e.target.value))} />
+                <input
+                  type="number"
+                  value={tarifPreisProStunde}
+                  onChange={(e) =>
+                    setTarifPreisProStunde(
+                      Number(e.target.value)
+                    )
+                  }
+                />
               </div>
               <div className="field">
                 <label>Abrechnung</label>
-                <select value={tarifAbrechnung} onChange={(e) => setTarifAbrechnung(e.target.value as any)}>
-                  <option value="proTraining">Pro Training</option>
-                  <option value="proSpieler">Pro Spieler</option>
+                <select
+                  value={tarifAbrechnung}
+                  onChange={(e) =>
+                    setTarifAbrechnung(
+                      e.target.value as "proTraining" | "proSpieler"
+                    )
+                  }
+                >
+                  <option value="proTraining">
+                    Pro Training
+                  </option>
+                  <option value="proSpieler">
+                    Pro Spieler
+                  </option>
                 </select>
               </div>
             </div>
@@ -1018,11 +1483,23 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Beschreibung</label>
-                <input value={tarifBeschreibung} onChange={(e) => setTarifBeschreibung(e.target.value)} placeholder="optional" />
+                <input
+                  value={tarifBeschreibung}
+                  onChange={(e) =>
+                    setTarifBeschreibung(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addTarif}>
+                <button
+                  className="btn"
+                  onClick={addTarif}
+                >
                   Tarif hinzufügen
                 </button>
               </div>
@@ -1034,12 +1511,28 @@ export default function App() {
                   <div>
                     <strong>{t.name}</strong>
                     <div className="muted">
-                      {t.preisProStunde} € pro Stunde, {t.abrechnung === "proSpieler" ? "pro Spieler" : "pro Training"}
+                      {t.preisProStunde} € pro Stunde,{" "}
+                      {t.abrechnung === "proSpieler"
+                        ? "pro Spieler"
+                        : "pro Training"}
                     </div>
-                    {t.beschreibung ? <div className="muted">{t.beschreibung}</div> : null}
+                    {t.beschreibung ? (
+                      <div className="muted">
+                        {t.beschreibung}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <button className="btn micro btnGhost" onClick={() => setTarife((prev) => prev.filter((x) => x.id !== t.id))}>
+                    <button
+                      className="btn micro btnGhost"
+                      onClick={() =>
+                        setTarife((prev) =>
+                          prev.filter(
+                            (x) => x.id !== t.id
+                          )
+                        )
+                      }
+                    >
                       Löschen
                     </button>
                   </div>
@@ -1058,7 +1551,8 @@ export default function App() {
                 Tarife: <strong>{tarife.length}</strong>
               </span>
               <span className="pill">
-                Trainings: <strong>{trainings.length}</strong>
+                Trainings:{" "}
+                <strong>{trainings.length}</strong>
               </span>
             </div>
 
@@ -1068,12 +1562,18 @@ export default function App() {
               <button
                 className="btn btnWarn"
                 onClick={() => {
-                  const ok = window.confirm("Wirklich alle Daten löschen?");
+                  const ok = window.confirm(
+                    "Wirklich alle Daten löschen?"
+                  );
                   if (!ok) return;
                   setSpieler([]);
                   setTarife([]);
                   setTrainings([]);
-                  setTrainer({ name: "Trainer", email: "" });
+                  setAbrechnungPaid({});
+                  setTrainer({
+                    name: "Trainer",
+                    email: "",
+                  });
                   setTrainerName("Trainer");
                   setTrainerEmail("");
                   localStorage.removeItem(STORAGE_KEY);
@@ -1084,7 +1584,9 @@ export default function App() {
             </div>
 
             <div style={{ height: 10 }} />
-            <div className="muted">Speicherung ist lokal im Browser.</div>
+            <div className="muted">
+              Speicherung ist lokal im Browser.
+            </div>
           </div>
         </div>
       )}
@@ -1094,18 +1596,24 @@ export default function App() {
           <div className="split">
             <div>
               <h2>Abrechnung</h2>
-              <div className="muted">Es werden nur durchgeführte Trainings angezeigt und berechnet.</div>
+              <div className="muted">
+                Es werden nur durchgeführte Trainings angezeigt
+                und berechnet.
+              </div>
             </div>
             <div className="row">
-              <div className="field" style={{ minWidth: 220 }}>
+              <div
+                className="field"
+                style={{ minWidth: 220 }}
+              >
                 <label>Monat</label>
-                <input type="month" value={abrechnungMonat} onChange={(e) => setAbrechnungMonat(e.target.value)} />
-              </div>
-              <div className="field" style={{ minWidth: 160 }}>
-                <label>&nbsp;</label>
-                <button className="btn" onClick={exportCSV}>
-                  CSV Export
-                </button>
+                <input
+                  type="month"
+                  value={abrechnungMonat}
+                  onChange={(e) =>
+                    setAbrechnungMonat(e.target.value)
+                  }
+                />
               </div>
             </div>
           </div>
@@ -1117,10 +1625,14 @@ export default function App() {
               Trainer: <strong>{trainer.name}</strong>
             </span>
             <span className="pill">
-              Umsatz gesamt: <strong>{euro(abrechnung.total)}</strong>
+              Umsatz gesamt:{" "}
+              <strong>{euro(abrechnung.total)}</strong>
             </span>
             <span className="pill">
-              Trainings: <strong>{completedTrainingsInMonth.length}</strong>
+              Trainings:{" "}
+              <strong>
+                {completedTrainingsInMonth.length}
+              </strong>
             </span>
           </div>
 
@@ -1132,16 +1644,49 @@ export default function App() {
               <thead>
                 <tr>
                   <th>Spieler</th>
+                  <th>Aufstellung</th>
                   <th>Summe</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {abrechnung.spielerRows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.name}</td>
-                    <td>{euro(r.sum)}</td>
-                  </tr>
-                ))}
+                {abrechnung.spielerRows.map((r) => {
+                  const breakdownText =
+                    r.breakdown.length === 0
+                      ? "-"
+                      : r.breakdown
+                          .map(
+                            (b) =>
+                              `${b.count} × ${euro(b.amount)}`
+                          )
+                          .join(" + ");
+
+                  const isPaid =
+                    paidForMonth.includes(r.id);
+
+                  return (
+                    <tr key={r.id}>
+                      <td>{r.name}</td>
+                      <td>{breakdownText}</td>
+                      <td>{euro(r.sum)}</td>
+                      <td>
+                        <button
+                          className={`btn micro ${
+                            isPaid ? "" : "btnGhost"
+                          }`}
+                          onClick={() =>
+                            toggleSpielerPaid(
+                              abrechnungMonat,
+                              r.id
+                            )
+                          }
+                        >
+                          {isPaid ? "Bezahlt" : "Offen"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1151,26 +1696,52 @@ export default function App() {
           <h2>Trainings im Monat</h2>
           <ul className="list">
             {completedTrainingsInMonth.map((t) => {
-              const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-              const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
-              const price = euro(trainingPreisGesamt(t));
+              const ta =
+                tarifById.get(t.tarifId)?.name ?? "Tarif";
+              const sp = t.spielerIds
+                .map(
+                  (id) =>
+                    spielerById.get(id)?.name ?? "Spieler"
+                )
+                .join(", ");
+              const price = euro(
+                round2(trainingPreisGesamt(t))
+              );
 
               return (
                 <li key={t.id} className="listItem">
                   <div>
                     <strong>
-                      {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                      {t.datum} {t.uhrzeitVon} bis{" "}
+                      {t.uhrzeitBis}
                     </strong>
                     <div className="muted">
-                      {ta}, {trainer.name}, {sp}
+                      {sp}, {ta}, {trainer.name}
                     </div>
-                    {t.notiz ? <div className="muted">{t.notiz}</div> : null}
-                    {t.serieId ? <div className="muted">Serie: {t.serieId.slice(0, 8)}</div> : null}
+                    {t.notiz ? (
+                      <div className="muted">
+                        {t.notiz}
+                      </div>
+                    ) : null}
+                    {t.serieId ? (
+                      <div className="muted">
+                        Serie: {t.serieId.slice(0, 8)}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <span className="badge badgeOk">durchgeführt</span>
-                    <span className="badge">{price}</span>
-                    <button className="btn micro btnGhost" onClick={() => fillTrainingFromSelected(t)}>
+                    <span className="badge badgeOk">
+                      durchgeführt
+                    </span>
+                    <span className="badge">
+                      {price}
+                    </span>
+                    <button
+                      className="btn micro btnGhost"
+                      onClick={() =>
+                        fillTrainingFromSelected(t)
+                      }
+                    >
                       Bearbeiten
                     </button>
                   </div>
