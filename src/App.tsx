@@ -265,6 +265,7 @@ export default function App() {
 
   const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)), [weekStart]);
+
   const visibleDays = useMemo(
     () => (calendarView === "week" ? weekDays : [weekAnchor]),
     [calendarView, weekDays, weekAnchor]
@@ -620,7 +621,8 @@ export default function App() {
     [trainingsInMonth]
   );
 
-  const abrechnung = useMemo(() => {
+  // Abrechnung pro Spieler berechnen
+  const abrechnung = (() => {
     const perSpieler = new Map<
       string,
       {
@@ -668,10 +670,12 @@ export default function App() {
     const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
     return { total, spielerRows };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completedTrainingsInMonth, spielerById]);
+  })();
 
-  const paidInMonth = abrechnungPaid[abrechnungMonat] ?? [];
+  const paidInMonth = useMemo(
+    () => abrechnungPaid[abrechnungMonat] ?? [],
+    [abrechnungPaid, abrechnungMonat]
+  );
 
   const totalBezahlt = round2(
     abrechnung.spielerRows
@@ -680,16 +684,12 @@ export default function App() {
   );
   const totalOffen = round2(abrechnung.total - totalBezahlt);
 
-  const filteredAbrechnungsRows = useMemo(
-    () =>
-      abrechnung.spielerRows.filter((r) => {
-        const isPaid = paidInMonth.includes(r.id);
-        if (abrechnungFilter === "alle") return true;
-        if (abrechnungFilter === "bezahlt") return isPaid;
-        return !isPaid;
-      }),
-    [abrechnung.spielerRows, paidInMonth, abrechnungFilter]
-  );
+  const filteredAbrechnungsRows = abrechnung.spielerRows.filter((r) => {
+    const isPaid = paidInMonth.includes(r.id);
+    if (abrechnungFilter === "alle") return true;
+    if (abrechnungFilter === "bezahlt") return isPaid;
+    return !isPaid;
+  });
 
   function toggleAbrechnungPaid(spielerId: string) {
     setAbrechnungPaid((prev) => {
@@ -854,8 +854,6 @@ export default function App() {
                         ? "rgba(239, 68, 68, 0.34)"
                         : "rgba(59, 130, 246, 0.30)";
 
-                      const showSecondLine = height >= 40;
-
                       return (
                         <div
                           key={t.id}
@@ -903,22 +901,6 @@ export default function App() {
                             </strong>
                             {statusBadge(t.status)}
                           </div>
-
-                          {showSecondLine ? (
-                            <div
-                              style={{
-                                display: "block",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                fontSize: 11,
-                                lineHeight: "14px",
-                              }}
-                              title={ta}
-                            >
-                              {ta}
-                            </div>
-                          ) : null}
                         </div>
                       );
                     })}
