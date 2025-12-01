@@ -182,6 +182,7 @@ export default function App() {
   const initial = initialRef.current;
 
   const [tab, setTab] = useState<Tab>("kalender");
+  const [calendarView, setCalendarView] = useState<"week" | "day">("week");
 
   const [trainer, setTrainer] = useState<TrainerSingle>(initial.state.trainer);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -228,6 +229,8 @@ export default function App() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
 
+  const [abrechnungFilter, setAbrechnungFilter] = useState<"alle" | "bezahlt" | "offen">("alle");
+
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
@@ -262,6 +265,10 @@ export default function App() {
 
   const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)), [weekStart]);
+  const visibleDays = useMemo(
+    () => (calendarView === "week" ? weekDays : [weekAnchor]),
+    [calendarView, weekDays, weekAnchor]
+  );
 
   const hours = useMemo(() => {
     const startHour = 7;
@@ -275,6 +282,11 @@ export default function App() {
       .filter((t) => t.datum >= weekStart && t.datum < end)
       .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
   }, [trainings, weekStart]);
+
+  const relevantTrainings = useMemo(
+    () => (calendarView === "week" ? trainingsInWeek : trainings),
+    [calendarView, trainingsInWeek, trainings]
+  );
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
@@ -659,6 +671,26 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completedTrainingsInMonth, spielerById]);
 
+  const paidInMonth = abrechnungPaid[abrechnungMonat] ?? [];
+
+  const totalBezahlt = round2(
+    abrechnung.spielerRows
+      .filter((r) => paidInMonth.includes(r.id))
+      .reduce((sum, r) => sum + r.sum, 0)
+  );
+  const totalOffen = round2(abrechnung.total - totalBezahlt);
+
+  const filteredAbrechnungsRows = useMemo(
+    () =>
+      abrechnung.spielerRows.filter((r) => {
+        const isPaid = paidInMonth.includes(r.id);
+        if (abrechnungFilter === "alle") return true;
+        if (abrechnungFilter === "bezahlt") return isPaid;
+        return !isPaid;
+      }),
+    [abrechnung.spielerRows, paidInMonth, abrechnungFilter]
+  );
+
   function toggleAbrechnungPaid(spielerId: string) {
     setAbrechnungPaid((prev) => {
       const month = abrechnungMonat;
@@ -668,8 +700,6 @@ export default function App() {
       return { ...prev, [month]: nextMonth };
     });
   }
-
-  const paidInMonth = abrechnungPaid[abrechnungMonat] ?? [];
 
   return (
     <div className="container">
@@ -705,13 +735,31 @@ export default function App() {
           <div className="split">
             <div className="row">
               <span className="pill">
-                Woche ab: <strong>{formatShort(weekStart)}</strong>
+                {calendarView === "week" ? "Woche ab:" : "Tag:"} <strong>{formatShort(weekAnchor)}</strong>
               </span>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}>
-                Woche zurück
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  if (calendarView === "week") {
+                    setWeekAnchor(addDaysISO(weekStart, -7));
+                  } else {
+                    setWeekAnchor(addDaysISO(weekAnchor, -1));
+                  }
+                }}
+              >
+                Zurück
               </button>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}>
-                Woche vor
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  if (calendarView === "week") {
+                    setWeekAnchor(addDaysISO(weekStart, 7));
+                  } else {
+                    setWeekAnchor(addDaysISO(weekAnchor, 1));
+                  }
+                }}
+              >
+                Vor
               </button>
               <button
                 className="btn"
@@ -722,10 +770,22 @@ export default function App() {
               >
                 Neues Training
               </button>
+              <button
+                className={`btn micro ${calendarView === "week" ? "" : "btnGhost"}`}
+                onClick={() => setCalendarView("week")}
+              >
+                Woche
+              </button>
+              <button
+                className={`btn micro ${calendarView === "day" ? "" : "btnGhost"}`}
+                onClick={() => setCalendarView("day")}
+              >
+                Tag
+              </button>
             </div>
             <div className="row">
               <div className="field" style={{ minWidth: 220 }}>
-                <label>Woche springen</label>
+                <label>{calendarView === "week" ? "Woche springen" : "Tag wählen"}</label>
                 <input type="date" value={weekAnchor} onChange={(e) => setWeekAnchor(e.target.value)} />
               </div>
               <span className="pill">
@@ -737,16 +797,22 @@ export default function App() {
           <div style={{ height: 12 }} />
 
           <div className="kgrid">
-            <div className="kHead">
+            <div
+              className="kHead"
+              style={{ gridTemplateColumns: `90px repeat(${visibleDays.length}, 1fr)` }}
+            >
               <div className="kHeadCell">Zeit</div>
-              {weekDays.map((d) => (
+              {visibleDays.map((d) => (
                 <div key={d} className="kHeadCell">
                   {formatShort(d)}
                 </div>
               ))}
             </div>
 
-            <div className="kBody">
+            <div
+              className="kBody"
+              style={{ gridTemplateColumns: `90px repeat(${visibleDays.length}, 1fr)` }}
+            >
               <div className="kTimeCol">
                 {hours.map((h) => (
                   <div key={h} className="kTime">
@@ -755,8 +821,8 @@ export default function App() {
                 ))}
               </div>
 
-              {weekDays.map((day) => {
-                const dayEvents = trainingsInWeek.filter((t) => t.datum === day);
+              {visibleDays.map((day) => {
+                const dayEvents = relevantTrainings.filter((t) => t.datum === day);
                 const startMin = 7 * 60;
 
                 return (
@@ -828,8 +894,8 @@ export default function App() {
                                 flex: "1 1 auto",
                                 overflow: "hidden",
                                 wordBreak: "break-word",
-                                fontSize: 14,
-                                lineHeight: "16px",
+                                fontSize: 12,
+                                lineHeight: "14px",
                               }}
                               title={sp}
                             >
@@ -845,10 +911,10 @@ export default function App() {
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
-                                fontSize: 12,
-                                lineHeight: "16px",
+                                fontSize: 11,
+                                lineHeight: "14px",
                               }}
-                              title={`${t.uhrzeitVon} bis ${t.uhrzeitBis}, ${ta}`}
+                              title={ta}
                             >
                               {ta}
                             </div>
@@ -1352,9 +1418,22 @@ export default function App() {
               <div className="muted">Es werden nur durchgeführte Trainings angezeigt und berechnet.</div>
             </div>
             <div className="row">
-              <div className="field" style={{ minWidth: 220 }}>
+              <div className="field" style={{ minWidth: 200 }}>
                 <label>Monat</label>
                 <input type="month" value={abrechnungMonat} onChange={(e) => setAbrechnungMonat(e.target.value)} />
+              </div>
+              <div className="field" style={{ minWidth: 160 }}>
+                <label>Filter</label>
+                <select
+                  value={abrechnungFilter}
+                  onChange={(e) =>
+                    setAbrechnungFilter(e.target.value as "alle" | "bezahlt" | "offen")
+                  }
+                >
+                  <option value="alle">Alle</option>
+                  <option value="offen">Nur offen</option>
+                  <option value="bezahlt">Nur bezahlt</option>
+                </select>
               </div>
             </div>
           </div>
@@ -1367,6 +1446,12 @@ export default function App() {
             </span>
             <span className="pill">
               Umsatz gesamt: <strong>{euro(abrechnung.total)}</strong>
+            </span>
+            <span className="pill">
+              Bezahlt: <strong>{euro(totalBezahlt)}</strong>
+            </span>
+            <span className="pill">
+              Offen: <strong>{euro(totalOffen)}</strong>
             </span>
             <span className="pill">
               Trainings: <strong>{completedTrainingsInMonth.length}</strong>
@@ -1387,7 +1472,7 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {abrechnung.spielerRows.map((r) => {
+                {filteredAbrechnungsRows.map((r) => {
                   const breakdownText =
                     r.breakdown.length === 0
                       ? "-"
