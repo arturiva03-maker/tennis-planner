@@ -353,3 +353,17 @@ textarea:focus{
   color: #334155;
   line-height: 1.1;
 }
+
+.authWrapper{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f7fb;
+}
+
+.column{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

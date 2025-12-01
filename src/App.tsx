@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import { supabase } from "./supabaseClient";
 
 type TrainerSingle = {
   name: string;
@@ -37,19 +38,26 @@ type Training = {
   serieId?: string;
 };
 
-type AbrechnungPaid = {
-  [monat: string]: string[];
-};
+type SpielerMonthKey = string; // `${spielerId}_${month}`
 
 type AppState = {
   trainer: TrainerSingle;
   spieler: Spieler[];
   tarife: Tarif[];
   trainings: Training[];
-  abrechnungPaid?: AbrechnungPaid;
+  // neue Struktur: gemerkte Zahlungen pro Spieler+Monat
+  zahlungen: Record<SpielerMonthKey, boolean>;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
+
+type AbrechnungFilter = "alle" | "offen" | "bezahlt";
+
+// Auth Nutzer
+type AuthUser = {
+  id: string;
+  email: string | null;
+};
 
 const STORAGE_KEY = "tennis_planner_single_trainer";
 const LEGACY_KEYS = [
@@ -110,33 +118,10 @@ function statusLabel(s: TrainingStatus) {
   return s === "geplant" ? "offen" : s === "durchgefuehrt" ? "durchgeführt" : "abgesagt";
 }
 
-function statusBadge(s: TrainingStatus) {
-  const isDone = s === "durchgefuehrt";
-  const isCancel = s === "abgesagt";
-  const bg = isDone
-    ? "rgba(34, 197, 94, 0.22)"
-    : isCancel
-    ? "rgba(239, 68, 68, 0.14)"
-    : "rgba(59, 130, 246, 0.18)";
-  const border = isDone
-    ? "rgba(34, 197, 94, 0.45)"
-    : isCancel
-    ? "rgba(239, 68, 68, 0.34)"
-    : "rgba(59, 130, 246, 0.30)";
-
-  return (
-    <span
-      style={{
-        flex: "0 0 auto",
-        width: 12,
-        height: 12,
-        borderRadius: 999,
-        background: bg,
-        border: `1px solid ${border}`,
-      }}
-      title={statusLabel(s)}
-    />
-  );
+function statusDotColor(s: TrainingStatus) {
+  if (s === "durchgefuehrt") return "#22c55e";
+  if (s === "abgesagt") return "#ef4444";
+  return "#3b82f6";
 }
 
 function normalizeState(parsed: Partial<AppState> | null | undefined): AppState {
@@ -145,7 +130,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     spieler: parsed?.spieler ?? [],
     tarife: parsed?.tarife ?? [],
     trainings: parsed?.trainings ?? [],
-    abrechnungPaid: parsed?.abrechnungPaid ?? {},
+    zahlungen: parsed?.zahlungen ?? {},
   };
 }
 
@@ -174,7 +159,76 @@ function writeState(state: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-export default function App() {
+// einfache Login/Registrierungs-Seite
+function AuthScreen() {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (mode === "register") {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      setError(err.message ?? "Fehler beim Login");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="authWrapper">
+      <div className="card" style={{ maxWidth: 420, width: "100%" }}>
+        <h2>{mode === "login" ? "Login" : "Registrieren"}</h2>
+        <form onSubmit={handleSubmit} className="column">
+          <div className="field">
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Passwort</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && (
+            <div className="muted" style={{ color: "#b91c1c" }}>
+              {error}
+            </div>
+          )}
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? "Bitte warten..." : mode === "login" ? "Einloggen" : "Registrieren"}
+          </button>
+        </form>
+        <button
+          className="btn btnGhost"
+          onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}
+          style={{ marginTop: 8 }}
+        >
+          {mode === "login" ? "Noch kein Konto? Registrieren" : "Schon Konto? Login"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ::::: eigentliche Trainer-App ::::: */
+
+function AppInner() {
   const initialRef = useRef<{ state: AppState; usedKey: string | null } | null>(null);
   if (initialRef.current === null) {
     initialRef.current = readStateWithMeta();
@@ -182,15 +236,15 @@ export default function App() {
   const initial = initialRef.current;
 
   const [tab, setTab] = useState<Tab>("kalender");
-  const [calendarView, setCalendarView] = useState<"week" | "day">("week");
 
   const [trainer, setTrainer] = useState<TrainerSingle>(initial.state.trainer);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
   const [trainings, setTrainings] = useState<Training[]>(initial.state.trainings);
-  const [abrechnungPaid, setAbrechnungPaid] = useState<AbrechnungPaid>(initial.state.abrechnungPaid ?? {});
+  const [zahlungen, setZahlungen] = useState<Record<SpielerMonthKey, boolean>>(initial.state.zahlungen);
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
+  const [viewMode, setViewMode] = useState<"week" | "day">("week");
 
   const [trainerName, setTrainerName] = useState(initial.state.trainer.name);
   const [trainerEmail, setTrainerEmail] = useState(initial.state.trainer.email ?? "");
@@ -228,8 +282,7 @@ export default function App() {
     const d = new Date();
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
-
-  const [abrechnungFilter, setAbrechnungFilter] = useState<"alle" | "bezahlt" | "offen">("alle");
+  const [abrechnungFilter, setAbrechnungFilter] = useState<AbrechnungFilter>("alle");
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -240,18 +293,19 @@ export default function App() {
   useEffect(() => {
     const usedKey = initial.usedKey;
     if (usedKey && usedKey !== STORAGE_KEY) {
-      writeState(initial.state);
+      writeState({ trainer, spieler, tarife, trainings, zahlungen });
       for (const k of LEGACY_KEYS) {
         if (k !== STORAGE_KEY && localStorage.getItem(k)) localStorage.removeItem(k);
       }
     }
     hasMountedRef.current = true;
-  }, [initial.usedKey, initial.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainer, spieler, tarife, trainings, abrechnungPaid });
-  }, [trainer, spieler, tarife, trainings, abrechnungPaid]);
+    writeState({ trainer, spieler, tarife, trainings, zahlungen });
+  }, [trainer, spieler, tarife, trainings, zahlungen]);
 
   useEffect(() => {
     return () => {
@@ -266,11 +320,6 @@ export default function App() {
   const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)), [weekStart]);
 
-  const visibleDays = useMemo(
-    () => (calendarView === "week" ? weekDays : [weekAnchor]),
-    [calendarView, weekDays, weekAnchor]
-  );
-
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
@@ -284,28 +333,15 @@ export default function App() {
       .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
   }, [trainings, weekStart]);
 
-  const relevantTrainings = useMemo(
-    () => (calendarView === "week" ? trainingsInWeek : trainings),
-    [calendarView, trainingsInWeek, trainings]
-  );
-
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
-    return spieler.filter((s) => {
-      const mail = (s.kontaktEmail ?? "").toLowerCase();
-      const tel = (s.kontaktTelefon ?? "").toLowerCase();
-      const addr = (s.rechnungsAdresse ?? "").toLowerCase();
-      return (
-        s.name.toLowerCase().includes(q) ||
-        mail.includes(q) ||
-        tel.includes(q) ||
-        addr.includes(q)
-      );
-    });
+    return spieler.filter(
+      (s) => s.name.toLowerCase().includes(q) || (s.kontaktEmail ?? "").toLowerCase().includes(q)
+    );
   }, [spieler, spielerSuche]);
 
-  function addSpieler() {
+  function addOrUpdateSpieler() {
     const name = spielerName.trim();
     if (!name) return;
 
@@ -344,7 +380,25 @@ export default function App() {
     setEditingSpielerId(null);
   }
 
-  function addTarif() {
+  function startEditSpieler(s: Spieler) {
+    setEditingSpielerId(s.id);
+    setSpielerName(s.name);
+    setSpielerEmail(s.kontaktEmail ?? "");
+    setSpielerTelefon(s.kontaktTelefon ?? "");
+    setSpielerNotizen(s.notizen ?? "");
+    setSpielerRechnungsAdresse(s.rechnungsAdresse ?? "");
+  }
+
+  function cancelEditSpieler() {
+    setEditingSpielerId(null);
+    setSpielerName("");
+    setSpielerEmail("");
+    setSpielerTelefon("");
+    setSpielerNotizen("");
+    setSpielerRechnungsAdresse("");
+  }
+
+  function addOrUpdateTarif() {
     const name = tarifName.trim();
     if (!name) return;
 
@@ -379,6 +433,22 @@ export default function App() {
     setTarifAbrechnung("proTraining");
     setTarifBeschreibung("");
     setEditingTarifId(null);
+  }
+
+  function startEditTarif(t: Tarif) {
+    setEditingTarifId(t.id);
+    setTarifName(t.name);
+    setTarifPreisProStunde(t.preisProStunde);
+    setTarifAbrechnung(t.abrechnung);
+    setTarifBeschreibung(t.beschreibung ?? "");
+  }
+
+  function cancelEditTarif() {
+    setEditingTarifId(null);
+    setTarifName("");
+    setTarifPreisProStunde(60);
+    setTarifAbrechnung("proTraining");
+    setTarifBeschreibung("");
   }
 
   function toggleSpielerPick(id: string) {
@@ -584,7 +654,7 @@ export default function App() {
     setTab("kalender");
   }
 
-  const preisVorschau = (() => {
+  const preisVorschau = useMemo(() => {
     if (!tTarifId || tSpielerIds.length === 0) return 0;
     const fake: Training = {
       id: "x",
@@ -597,7 +667,7 @@ export default function App() {
       notiz: tNotiz || undefined,
     };
     return trainingPreisGesamt(fake);
-  })();
+  }, [tDatum, tVon, tBis, tTarifId, tSpielerIds, tStatus, tNotiz, tarifById]);
 
   const nextTrainings = useMemo(() => {
     const t0 = todayISO();
@@ -621,8 +691,7 @@ export default function App() {
     [trainingsInMonth]
   );
 
-  // Abrechnung pro Spieler berechnen
-  const abrechnung = (() => {
+  const abrechnung = useMemo(() => {
     const perSpieler = new Map<
       string,
       {
@@ -658,48 +727,39 @@ export default function App() {
           }))
           .sort((a, b) => b.amount - a.amount);
 
+        const monthKey: SpielerMonthKey = `${id}_${abrechnungMonat}`;
+        const bezahlt = !!zahlungen[monthKey];
+
         return {
           id,
           name: v.name,
           sum: round2(v.sum),
           breakdown,
+          monthKey,
+          bezahlt,
         };
       })
       .sort((a, b) => b.sum - a.sum);
 
     const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
+    const totalBezahlt = round2(spielerRows.filter((r) => r.bezahlt).reduce((s, r) => s + r.sum, 0));
+    const totalOffen = round2(total - totalBezahlt);
 
-    return { total, spielerRows };
-  })();
+    let filteredRows = spielerRows;
+    if (abrechnungFilter === "offen") filteredRows = spielerRows.filter((r) => !r.bezahlt);
+    if (abrechnungFilter === "bezahlt") filteredRows = spielerRows.filter((r) => r.bezahlt);
 
-  const paidInMonth = useMemo(
-    () => abrechnungPaid[abrechnungMonat] ?? [],
-    [abrechnungPaid, abrechnungMonat]
-  );
+    return { total, totalBezahlt, totalOffen, spielerRows: filteredRows };
+  }, [completedTrainingsInMonth, spielerById, zahlungen, abrechnungMonat, abrechnungFilter, priceFürSpieler]);
 
-  const totalBezahlt = round2(
-    abrechnung.spielerRows
-      .filter((r) => paidInMonth.includes(r.id))
-      .reduce((sum, r) => sum + r.sum, 0)
-  );
-  const totalOffen = round2(abrechnung.total - totalBezahlt);
-
-  const filteredAbrechnungsRows = abrechnung.spielerRows.filter((r) => {
-    const isPaid = paidInMonth.includes(r.id);
-    if (abrechnungFilter === "alle") return true;
-    if (abrechnungFilter === "bezahlt") return isPaid;
-    return !isPaid;
-  });
-
-  function toggleAbrechnungPaid(spielerId: string) {
-    setAbrechnungPaid((prev) => {
-      const month = abrechnungMonat;
-      const current = prev[month] ?? [];
-      const isPaid = current.includes(spielerId);
-      const nextMonth = isPaid ? current.filter((id) => id !== spielerId) : [...current, spielerId];
-      return { ...prev, [month]: nextMonth };
-    });
+  function toggleBezahlt(monthKey: SpielerMonthKey) {
+    setZahlungen((prev) => ({
+      ...prev,
+      [monthKey]: !prev[monthKey],
+    }));
   }
+
+  const daysForView = viewMode === "week" ? weekDays : [weekAnchor];
 
   return (
     <div className="container">
@@ -709,10 +769,16 @@ export default function App() {
           <p>Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, lokale Speicherung.</p>
         </div>
         <div className="tabs">
-          <button className={`tabBtn ${tab === "kalender" ? "tabBtnActive" : ""}`} onClick={() => setTab("kalender")}>
+          <button
+            className={`tabBtn ${tab === "kalender" ? "tabBtnActive" : ""}`}
+            onClick={() => setTab("kalender")}
+          >
             Kalender
           </button>
-          <button className={`tabBtn ${tab === "training" ? "tabBtnActive" : ""}`} onClick={() => setTab("training")}>
+          <button
+            className={`tabBtn ${tab === "training" ? "tabBtnActive" : ""}`}
+            onClick={() => setTab("training")}
+          >
             Training
           </button>
           <button
@@ -727,6 +793,9 @@ export default function App() {
           >
             Abrechnung
           </button>
+          <button className="tabBtn" onClick={() => supabase.auth.signOut()}>
+            Logout
+          </button>
         </div>
       </div>
 
@@ -735,31 +804,13 @@ export default function App() {
           <div className="split">
             <div className="row">
               <span className="pill">
-                {calendarView === "week" ? "Woche ab:" : "Tag:"} <strong>{formatShort(weekAnchor)}</strong>
+                Woche ab: <strong>{formatShort(weekStart)}</strong>
               </span>
-              <button
-                className="btn btnGhost"
-                onClick={() => {
-                  if (calendarView === "week") {
-                    setWeekAnchor(addDaysISO(weekStart, -7));
-                  } else {
-                    setWeekAnchor(addDaysISO(weekAnchor, -1));
-                  }
-                }}
-              >
-                Zurück
+              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}>
+                Woche zurück
               </button>
-              <button
-                className="btn btnGhost"
-                onClick={() => {
-                  if (calendarView === "week") {
-                    setWeekAnchor(addDaysISO(weekStart, 7));
-                  } else {
-                    setWeekAnchor(addDaysISO(weekAnchor, 1));
-                  }
-                }}
-              >
-                Vor
+              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}>
+                Woche vor
               </button>
               <button
                 className="btn"
@@ -770,23 +821,25 @@ export default function App() {
               >
                 Neues Training
               </button>
-              <button
-                className={`btn micro ${calendarView === "week" ? "" : "btnGhost"}`}
-                onClick={() => setCalendarView("week")}
-              >
-                Woche
-              </button>
-              <button
-                className={`btn micro ${calendarView === "day" ? "" : "btnGhost"}`}
-                onClick={() => setCalendarView("day")}
-              >
-                Tag
-              </button>
             </div>
             <div className="row">
               <div className="field" style={{ minWidth: 220 }}>
-                <label>{calendarView === "week" ? "Woche springen" : "Tag wählen"}</label>
+                <label>Woche / Tag springen</label>
                 <input type="date" value={weekAnchor} onChange={(e) => setWeekAnchor(e.target.value)} />
+              </div>
+              <div className="row">
+                <button
+                  className={`btn btnGhost ${viewMode === "week" ? "tabBtnActive" : ""}`}
+                  onClick={() => setViewMode("week")}
+                >
+                  Wochenansicht
+                </button>
+                <button
+                  className={`btn btnGhost ${viewMode === "day" ? "tabBtnActive" : ""}`}
+                  onClick={() => setViewMode("day")}
+                >
+                  Tagesansicht
+                </button>
               </div>
               <span className="pill">
                 Trainer: <strong>{trainer.name}</strong>
@@ -797,22 +850,16 @@ export default function App() {
           <div style={{ height: 12 }} />
 
           <div className="kgrid">
-            <div
-              className="kHead"
-              style={{ gridTemplateColumns: `90px repeat(${visibleDays.length}, 1fr)` }}
-            >
+            <div className="kHead">
               <div className="kHeadCell">Zeit</div>
-              {visibleDays.map((d) => (
+              {daysForView.map((d) => (
                 <div key={d} className="kHeadCell">
                   {formatShort(d)}
                 </div>
               ))}
             </div>
 
-            <div
-              className="kBody"
-              style={{ gridTemplateColumns: `90px repeat(${visibleDays.length}, 1fr)` }}
-            >
+            <div className="kBody">
               <div className="kTimeCol">
                 {hours.map((h) => (
                   <div key={h} className="kTime">
@@ -821,8 +868,8 @@ export default function App() {
                 ))}
               </div>
 
-              {visibleDays.map((day) => {
-                const dayEvents = relevantTrainings.filter((t) => t.datum === day);
+              {daysForView.map((day) => {
+                const dayEvents = trainingsInWeek.filter((t) => t.datum === day);
                 const startMin = 7 * 60;
 
                 return (
@@ -836,7 +883,8 @@ export default function App() {
                       const height = Math.max(22, ((toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon)) / 60) * 40);
 
                       const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-                      const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
+                      const spNames = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler");
+                      const sp = spNames.join(", ");
 
                       const isDone = t.status === "durchgefuehrt";
                       const isCancel = t.status === "abgesagt";
@@ -870,10 +918,11 @@ export default function App() {
                             transition:
                               "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
                             display: "flex",
-                            flexDirection: "column",
+                            flexDirection: "row",
                             gap: 4,
                             overflow: "hidden",
                             padding: 8,
+                            alignItems: "flex-start",
                           }}
                           onClick={() => handleCalendarEventClick(t)}
                           onDoubleClick={(e) => {
@@ -881,17 +930,25 @@ export default function App() {
                             e.stopPropagation();
                             handleCalendarEventDoubleClick(t);
                           }}
-                          title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
+                          title={`Spieler: ${sp}\n${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
                             t.status
                           )}`}
                         >
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,
+                              flex: "1 1 auto",
+                              minWidth: 0,
+                            }}
+                          >
                             <strong
                               style={{
                                 display: "block",
-                                flex: "1 1 auto",
                                 overflow: "hidden",
-                                wordBreak: "break-word",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                                 fontSize: 12,
                                 lineHeight: "14px",
                               }}
@@ -899,8 +956,45 @@ export default function App() {
                             >
                               {sp}
                             </strong>
-                            {statusBadge(t.status)}
+                            {spNames.length > 1 && (
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  lineHeight: "13px",
+                                  color: "#334155",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {spNames.join(", ")}
+                              </span>
+                            )}
+                            <span
+                              style={{
+                                fontSize: 11,
+                                lineHeight: "13px",
+                                color: "#64748b",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {ta}
+                            </span>
                           </div>
+
+                          <div
+                            style={{
+                              flex: "0 0 auto",
+                              width: 18,
+                              height: 18,
+                              borderRadius: "999px",
+                              border: `2px solid ${statusDotColor(t.status)}`,
+                              background: "rgba(255,255,255,0.7)",
+                            }}
+                            title={statusLabel(t.status)}
+                          />
                         </div>
                       );
                     })}
@@ -1024,8 +1118,8 @@ export default function App() {
                       </span>
                     </div>
                     <div className="muted">
-                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif, Status und Notiz werden für alle zukünftigen Termine
-                      übernommen.
+                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif, Status und Notiz werden für alle zukünftigen
+                      Termine übernommen.
                     </div>
                   </div>
                 );
@@ -1092,7 +1186,11 @@ export default function App() {
             <div className="row">
               <div className="field">
                 <label>Suche</label>
-                <input value={spielerSuche} onChange={(e) => setSpielerSuche(e.target.value)} placeholder="Name oder Email" />
+                <input
+                  value={spielerSuche}
+                  onChange={(e) => setSpielerSuche(e.target.value)}
+                  placeholder="Name oder Email"
+                />
               </div>
               <span className="pill">
                 Ausgewählt: <strong>{tSpielerIds.length}</strong>
@@ -1110,9 +1208,7 @@ export default function App() {
                         {s.kontaktEmail ?? ""}
                         {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
                       </div>
-                      {s.rechnungsAdresse ? (
-                        <div className="muted">Rechnungsadresse: {s.rechnungsAdresse}</div>
-                      ) : null}
+                      {s.rechnungsAdresse ? <div className="muted">{s.rechnungsAdresse}</div> : null}
                     </div>
                     <div className="smallActions">
                       <button className={`btn micro ${checked ? "" : "btnGhost"}`} onClick={() => toggleSpielerPick(s.id)}>
@@ -1164,7 +1260,7 @@ export default function App() {
           </div>
 
           <div className="card">
-            <h2>Spieler anlegen</h2>
+            <h2>Spieler anlegen / bearbeiten</h2>
             <div className="row">
               <div className="field">
                 <label>Name</label>
@@ -1172,11 +1268,19 @@ export default function App() {
               </div>
               <div className="field">
                 <label>Email</label>
-                <input value={spielerEmail} onChange={(e) => setSpielerEmail(e.target.value)} placeholder="optional" />
+                <input
+                  value={spielerEmail}
+                  onChange={(e) => setSpielerEmail(e.target.value)}
+                  placeholder="optional"
+                />
               </div>
               <div className="field">
                 <label>Telefon</label>
-                <input value={spielerTelefon} onChange={(e) => setSpielerTelefon(e.target.value)} placeholder="optional" />
+                <input
+                  value={spielerTelefon}
+                  onChange={(e) => setSpielerTelefon(e.target.value)}
+                  placeholder="optional"
+                />
               </div>
             </div>
 
@@ -1197,24 +1301,14 @@ export default function App() {
                   placeholder="optional"
                 />
               </div>
-              <div className="field" style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="field" style={{ minWidth: 160 }}>
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addSpieler}>
-                  {editingSpielerId ? "Änderungen speichern" : "Spieler hinzufügen"}
+                <button className="btn" onClick={addOrUpdateSpieler}>
+                  {editingSpielerId ? "Spieler aktualisieren" : "Spieler hinzufügen"}
                 </button>
                 {editingSpielerId && (
-                  <button
-                    className="btn btnGhost"
-                    onClick={() => {
-                      setEditingSpielerId(null);
-                      setSpielerName("");
-                      setSpielerEmail("");
-                      setSpielerTelefon("");
-                      setSpielerNotizen("");
-                      setSpielerRechnungsAdresse("");
-                    }}
-                  >
-                    Bearbeitung abbrechen
+                  <button className="btn btnGhost" onClick={cancelEditSpieler} style={{ marginTop: 6 }}>
+                    Abbrechen
                   </button>
                 )}
               </div>
@@ -1229,23 +1323,11 @@ export default function App() {
                       {s.kontaktEmail ?? ""}
                       {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
                     </div>
+                    {s.rechnungsAdresse ? <div className="muted">{s.rechnungsAdresse}</div> : null}
                     {s.notizen ? <div className="muted">{s.notizen}</div> : null}
-                    {s.rechnungsAdresse ? (
-                      <div className="muted">Rechnungsadresse: {s.rechnungsAdresse}</div>
-                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <button
-                      className="btn micro"
-                      onClick={() => {
-                        setEditingSpielerId(s.id);
-                        setSpielerName(s.name);
-                        setSpielerEmail(s.kontaktEmail ?? "");
-                        setSpielerTelefon(s.kontaktTelefon ?? "");
-                        setSpielerNotizen(s.notizen ?? "");
-                        setSpielerRechnungsAdresse(s.rechnungsAdresse ?? "");
-                      }}
-                    >
+                    <button className="btn micro btnGhost" onClick={() => startEditSpieler(s)}>
                       Bearbeiten
                     </button>
                     <button
@@ -1261,7 +1343,7 @@ export default function App() {
           </div>
 
           <div className="card">
-            <h2>Tarife anlegen</h2>
+            <h2>Tarife anlegen / bearbeiten</h2>
             <div className="row">
               <div className="field">
                 <label>Name</label>
@@ -1293,23 +1375,14 @@ export default function App() {
                   placeholder="optional"
                 />
               </div>
-              <div className="field" style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div className="field" style={{ minWidth: 160 }}>
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addTarif}>
-                  {editingTarifId ? "Änderungen speichern" : "Tarif hinzufügen"}
+                <button className="btn" onClick={addOrUpdateTarif}>
+                  {editingTarifId ? "Tarif aktualisieren" : "Tarif hinzufügen"}
                 </button>
                 {editingTarifId && (
-                  <button
-                    className="btn btnGhost"
-                    onClick={() => {
-                      setEditingTarifId(null);
-                      setTarifName("");
-                      setTarifPreisProStunde(60);
-                      setTarifAbrechnung("proTraining");
-                      setTarifBeschreibung("");
-                    }}
-                  >
-                    Bearbeitung abbrechen
+                  <button className="btn btnGhost" onClick={cancelEditTarif} style={{ marginTop: 6 }}>
+                    Abbrechen
                   </button>
                 )}
               </div>
@@ -1326,16 +1399,7 @@ export default function App() {
                     {t.beschreibung ? <div className="muted">{t.beschreibung}</div> : null}
                   </div>
                   <div className="smallActions">
-                    <button
-                      className="btn micro"
-                      onClick={() => {
-                        setEditingTarifId(t.id);
-                        setTarifName(t.name);
-                        setTarifPreisProStunde(t.preisProStunde);
-                        setTarifAbrechnung(t.abrechnung);
-                        setTarifBeschreibung(t.beschreibung ?? "");
-                      }}
-                    >
+                    <button className="btn micro btnGhost" onClick={() => startEditTarif(t)}>
                       Bearbeiten
                     </button>
                     <button
@@ -1375,7 +1439,7 @@ export default function App() {
                   setSpieler([]);
                   setTarife([]);
                   setTrainings([]);
-                  setAbrechnungPaid({});
+                  setZahlungen({});
                   setTrainer({ name: "Trainer", email: "" });
                   setTrainerName("Trainer");
                   setTrainerEmail("");
@@ -1400,17 +1464,15 @@ export default function App() {
               <div className="muted">Es werden nur durchgeführte Trainings angezeigt und berechnet.</div>
             </div>
             <div className="row">
-              <div className="field" style={{ minWidth: 200 }}>
+              <div className="field" style={{ minWidth: 220 }}>
                 <label>Monat</label>
                 <input type="month" value={abrechnungMonat} onChange={(e) => setAbrechnungMonat(e.target.value)} />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div className="field">
                 <label>Filter</label>
                 <select
                   value={abrechnungFilter}
-                  onChange={(e) =>
-                    setAbrechnungFilter(e.target.value as "alle" | "bezahlt" | "offen")
-                  }
+                  onChange={(e) => setAbrechnungFilter(e.target.value as AbrechnungFilter)}
                 >
                   <option value="alle">Alle</option>
                   <option value="offen">Nur offen</option>
@@ -1430,10 +1492,10 @@ export default function App() {
               Umsatz gesamt: <strong>{euro(abrechnung.total)}</strong>
             </span>
             <span className="pill">
-              Bezahlt: <strong>{euro(totalBezahlt)}</strong>
+              Davon bezahlt: <strong>{euro(abrechnung.totalBezahlt)}</strong>
             </span>
             <span className="pill">
-              Offen: <strong>{euro(totalOffen)}</strong>
+              Offen: <strong>{euro(abrechnung.totalOffen)}</strong>
             </span>
             <span className="pill">
               Trainings: <strong>{completedTrainingsInMonth.length}</strong>
@@ -1450,11 +1512,11 @@ export default function App() {
                   <th>Spieler</th>
                   <th>Aufstellung</th>
                   <th>Summe</th>
-                  <th>Status</th>
+                  <th>Bezahlt</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAbrechnungsRows.map((r) => {
+                {abrechnung.spielerRows.map((r) => {
                   const breakdownText =
                     r.breakdown.length === 0
                       ? "-"
@@ -1462,7 +1524,7 @@ export default function App() {
                           .map((b) => `${b.count} × ${euro(b.amount)}`)
                           .join(" + ");
 
-                  const isPaid = paidInMonth.includes(r.id);
+                  const bezahlt = r.bezahlt;
 
                   return (
                     <tr key={r.id}>
@@ -1470,12 +1532,14 @@ export default function App() {
                       <td>{breakdownText}</td>
                       <td>{euro(r.sum)}</td>
                       <td>
-                        <button
-                          className={`btn micro ${isPaid ? "btnGhost" : ""}`}
-                          onClick={() => toggleAbrechnungPaid(r.id)}
-                        >
-                          {isPaid ? "Bezahlt" : "Offen"}
-                        </button>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                          <input
+                            type="checkbox"
+                            checked={bezahlt}
+                            onChange={() => toggleBezahlt(r.monthKey)}
+                          />
+                          {bezahlt ? "bezahlt" : "offen"}
+                        </label>
                       </td>
                     </tr>
                   );
@@ -1520,4 +1584,46 @@ export default function App() {
       )}
     </div>
   );
+}
+
+/* ::::: Wrapper mit Login ::::: */
+
+export default function App() {
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+  supabase.auth.getSession().then(({ data }) => {
+    const session = data.session;
+    setAuthUser(
+      session ? { id: session.user.id, email: session.user.email ?? null } : null
+    );
+    setAuthLoading(false);
+  });
+
+  const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    setAuthUser(
+      session ? { id: session.user.id, email: session.user.email ?? null } : null
+    );
+  });
+
+  return () => {
+    sub.subscription.unsubscribe();
+  };
+}, []);
+
+
+  if (authLoading) {
+    return (
+      <div className="container">
+        <p>Lade...</p>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return <AuthScreen />;
+  }
+
+  return <AppInner />;
 }
