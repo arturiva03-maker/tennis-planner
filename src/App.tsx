@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  FormEvent,
+} from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
@@ -12,8 +18,8 @@ type Spieler = {
   name: string;
   kontaktEmail?: string;
   kontaktTelefon?: string;
-  notizen?: string;
   rechnungsAdresse?: string;
+  notizen?: string;
 };
 
 type Tarif = {
@@ -38,26 +44,21 @@ type Training = {
   serieId?: string;
 };
 
-type SpielerMonthKey = string; // `${spielerId}_${month}`
-
 type AppState = {
   trainer: TrainerSingle;
   spieler: Spieler[];
   tarife: Tarif[];
   trainings: Training[];
-  // neue Struktur: gemerkte Zahlungen pro Spieler+Monat
-  zahlungen: Record<SpielerMonthKey, boolean>;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
 
-type AbrechnungFilter = "alle" | "offen" | "bezahlt";
-
-// Auth Nutzer
 type AuthUser = {
   id: string;
   email: string | null;
 };
+
+type ViewMode = "week" | "day";
 
 const STORAGE_KEY = "tennis_planner_single_trainer";
 const LEGACY_KEYS = [
@@ -78,7 +79,9 @@ function pad2(n: number) {
 
 function todayISO() {
   const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -90,18 +93,24 @@ function startOfWeekISO(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
   const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function addDaysISO(dateISO: string, days: number) {
   const d = new Date(dateISO + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function formatShort(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
-  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][(d.getDay() + 6) % 7];
+  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][
+    (d.getDay() + 6) % 7
+  ];
   return `${w} ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
 }
 
@@ -115,7 +124,11 @@ function round2(n: number) {
 }
 
 function statusLabel(s: TrainingStatus) {
-  return s === "geplant" ? "offen" : s === "durchgefuehrt" ? "durchgeführt" : "abgesagt";
+  return s === "geplant"
+    ? "offen"
+    : s === "durchgefuehrt"
+    ? "durchgeführt"
+    : "abgesagt";
 }
 
 function statusDotColor(s: TrainingStatus) {
@@ -130,7 +143,6 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     spieler: parsed?.spieler ?? [],
     tarife: parsed?.tarife ?? [],
     trainings: parsed?.trainings ?? [],
-    zahlungen: parsed?.zahlungen ?? {},
   };
 }
 
@@ -149,7 +161,11 @@ function readStateWithMeta(): { state: AppState; usedKey: string | null } {
 
   for (const k of LEGACY_KEYS) {
     const legacy = tryParse(localStorage.getItem(k));
-    if (legacy) return { state: normalizeState(legacy), usedKey: k };
+    if (legacy)
+      return {
+        state: normalizeState(legacy),
+        usedKey: k,
+      };
   }
 
   return { state: normalizeState(null), usedKey: null };
@@ -159,44 +175,54 @@ function writeState(state: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// einfache Login/Registrierungs-Seite
+/* ::::: Auth UI ::::: */
+
 function AuthScreen() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setBusy(true);
     setError(null);
-    setLoading(true);
 
     try {
-      if (mode === "register") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) setError(error.message);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) setError(error.message);
       }
-    } catch (err: any) {
-      setError(err.message ?? "Fehler beim Login");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
 
   return (
-    <div className="authWrapper">
-      <div className="card" style={{ maxWidth: 420, width: "100%" }}>
-        <h2>{mode === "login" ? "Login" : "Registrieren"}</h2>
-        <form onSubmit={handleSubmit} className="column">
+    <div className="container">
+      <div className="card" style={{ maxWidth: 420, margin: "60px auto" }}>
+        <h1>{mode === "login" ? "Login" : "Registrieren"}</h1>
+        <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-          <div className="field">
+          <div className="field" style={{ marginTop: 10 }}>
             <label>Passwort</label>
             <input
               type="password"
@@ -205,62 +231,92 @@ function AuthScreen() {
               required
             />
           </div>
-          {error && (
-            <div className="muted" style={{ color: "#b91c1c" }}>
+
+          {error ? (
+            <div
+              className="muted"
+              style={{ color: "#b91c1c", marginTop: 8 }}
+            >
               {error}
             </div>
-          )}
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? "Bitte warten..." : mode === "login" ? "Einloggen" : "Registrieren"}
-          </button>
+          ) : null}
+
+          <div style={{ marginTop: 16 }}>
+            <button className="btn" type="submit" disabled={busy}>
+              {busy
+                ? "Bitte warten..."
+                : mode === "login"
+                ? "Einloggen"
+                : "Registrieren"}
+            </button>
+          </div>
         </form>
-        <button
-          className="btn btnGhost"
-          onClick={() => setMode((m) => (m === "login" ? "register" : "login"))}
-          style={{ marginTop: 8 }}
-        >
-          {mode === "login" ? "Noch kein Konto? Registrieren" : "Schon Konto? Login"}
-        </button>
+
+        <div style={{ marginTop: 16 }}>
+          {mode === "login" ? (
+            <button
+              className="btn btnGhost"
+              onClick={() => setMode("register")}
+            >
+              Noch kein Konto? Registrieren
+            </button>
+          ) : (
+            <button
+              className="btn btnGhost"
+              onClick={() => setMode("login")}
+            >
+              Bereits registriert? Einloggen
+            </button>
+          )
+          }
+        </div>
       </div>
     </div>
   );
 }
 
-/* ::::: eigentliche Trainer-App ::::: */
+/* ::::: Haupt-App ::::: */
 
-function AppInner() {
-  const initialRef = useRef<{ state: AppState; usedKey: string | null } | null>(null);
+export default function App() {
+  const initialRef = useRef<{
+    state: AppState;
+    usedKey: string | null;
+  } | null>(null);
+
   if (initialRef.current === null) {
     initialRef.current = readStateWithMeta();
   }
   const initial = initialRef.current;
 
   const [tab, setTab] = useState<Tab>("kalender");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [dayIndex, setDayIndex] = useState<number>(0);
 
   const [trainer, setTrainer] = useState<TrainerSingle>(initial.state.trainer);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
-  const [trainings, setTrainings] = useState<Training[]>(initial.state.trainings);
-  const [zahlungen, setZahlungen] = useState<Record<SpielerMonthKey, boolean>>(initial.state.zahlungen);
+  const [trainings, setTrainings] = useState<Training[]>(
+    initial.state.trainings
+  );
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
-  const [viewMode, setViewMode] = useState<"week" | "day">("week");
 
   const [trainerName, setTrainerName] = useState(initial.state.trainer.name);
-  const [trainerEmail, setTrainerEmail] = useState(initial.state.trainer.email ?? "");
+  const [trainerEmail, setTrainerEmail] = useState(
+    initial.state.trainer.email ?? ""
+  );
 
   const [spielerName, setSpielerName] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
   const [spielerTelefon, setSpielerTelefon] = useState("");
+  const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
-  const [spielerRechnungsAdresse, setSpielerRechnungsAdresse] = useState("");
-  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
-  const [tarifAbrechnung, setTarifAbrechnung] = useState<"proTraining" | "proSpieler">("proTraining");
+  const [tarifAbrechnung, setTarifAbrechnung] =
+    useState<"proTraining" | "proSpieler">("proTraining");
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
-  const [editingTarifId, setEditingTarifId] = useState<string | null>(null);
 
   const [tDatum, setTDatum] = useState(todayISO());
   const [tVon, setTVon] = useState("16:00");
@@ -273,16 +329,20 @@ function AppInner() {
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
 
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-  const [repeatUntil, setRepeatUntil] = useState(() => addDaysISO(todayISO(), 56));
-  const [applySerieScope, setApplySerieScope] = useState<"nurDieses" | "abHeute">("nurDieses");
+  const [repeatUntil, setRepeatUntil] = useState(() =>
+    addDaysISO(todayISO(), 56)
+  );
+  const [applySerieScope, setApplySerieScope] =
+    useState<"nurDieses" | "abHeute">("nurDieses");
 
-  const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(null);
+  const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(
+    null
+  );
 
   const [abrechnungMonat, setAbrechnungMonat] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
-  const [abrechnungFilter, setAbrechnungFilter] = useState<AbrechnungFilter>("alle");
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -290,35 +350,165 @@ function AppInner() {
 
   const hasMountedRef = useRef(false);
 
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [initialSynced, setInitialSynced] = useState(false);
+
+  /* ::::: Local / Cloud Storage ::::: */
+
   useEffect(() => {
     const usedKey = initial.usedKey;
     if (usedKey && usedKey !== STORAGE_KEY) {
-      writeState({ trainer, spieler, tarife, trainings, zahlungen });
+      writeState(initial.state);
       for (const k of LEGACY_KEYS) {
-        if (k !== STORAGE_KEY && localStorage.getItem(k)) localStorage.removeItem(k);
+        if (k !== STORAGE_KEY && localStorage.getItem(k))
+          localStorage.removeItem(k);
       }
     }
     hasMountedRef.current = true;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initial.usedKey, initial.state]);
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainer, spieler, tarife, trainings, zahlungen });
-  }, [trainer, spieler, tarife, trainings, zahlungen]);
+    writeState({ trainer, spieler, tarife, trainings });
+  }, [trainer, spieler, tarife, trainings]);
+
+  /* ::::: Auth State von Supabase lesen ::::: */
 
   useEffect(() => {
+    supabase.auth.getSession().then((res) => {
+      const session = res.data.session;
+      setAuthUser(
+        session
+          ? { id: session.user.id, email: session.user.email ?? null }
+          : null
+      );
+      setAuthLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event: string, session: any) => {
+        setAuthUser(
+          session
+            ? { id: session.user.id, email: session.user.email ?? null }
+            : null
+        );
+        // Beim Benutzerwechsel neu aus der Cloud laden
+        setInitialSynced(false);
+      }
+    );
+
     return () => {
-      if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
-      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+      sub.subscription.unsubscribe();
     };
   }, []);
 
-  const spielerById = useMemo(() => new Map(spieler.map((s) => [s.id, s])), [spieler]);
-  const tarifById = useMemo(() => new Map(tarife.map((t) => [t.id, t])), [tarife]);
+  /* ::::: Initialen Zustand pro Benutzer laden ::::: */
 
-  const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
-  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)), [weekStart]);
+  useEffect(() => {
+    if (authLoading) return;
+    if (initialSynced) return;
+
+    async function loadState() {
+      if (!authUser) {
+        const local = readStateWithMeta();
+        setTrainer(local.state.trainer);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setInitialSynced(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("user_state")
+        .select("data")
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "Fehler beim Laden des Zustands aus Supabase",
+          error
+        );
+      }
+
+      if (data && data.data) {
+        const cloud = normalizeState(data.data as Partial<AppState>);
+        setTrainer(cloud.trainer);
+        setSpieler(cloud.spieler);
+        setTarife(cloud.tarife);
+        setTrainings(cloud.trainings);
+      } else {
+        const local = readStateWithMeta();
+        setTrainer(local.state.trainer);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+      }
+
+      setInitialSynced(true);
+    }
+
+    loadState();
+  }, [authLoading, authUser, initialSynced]);
+
+  /* ::::: Zustand nach Supabase schreiben ::::: */
+
+  useEffect(() => {
+    if (!authUser) return;
+    if (!initialSynced) return;
+
+    const payload: AppState = {
+      trainer,
+      spieler,
+      tarife,
+      trainings,
+    };
+
+    supabase
+      .from("user_state")
+      .upsert({
+        user_id: authUser.id,
+        data: payload,
+        updated_at: new Date().toISOString(),
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error(
+            "Fehler beim Speichern des Zustands in Supabase",
+            error
+          );
+        }
+      });
+  }, [authUser, initialSynced, trainer, spieler, tarife, trainings]);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimerRef.current)
+        window.clearTimeout(clickTimerRef.current);
+      if (flashTimerRef.current)
+        window.clearTimeout(flashTimerRef.current);
+    };
+  }, []);
+
+  const spielerById = useMemo(
+    () => new Map(spieler.map((s) => [s.id, s])),
+    [spieler]
+  );
+  const tarifById = useMemo(
+    () => new Map(tarife.map((t) => [t.id, t])),
+    [tarife]
+  );
+
+  const weekStart = useMemo(
+    () => startOfWeekISO(weekAnchor),
+    [weekAnchor]
+  );
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)),
+    [weekStart]
+  );
 
   const hours = useMemo(() => {
     const startHour = 7;
@@ -330,129 +520,68 @@ function AppInner() {
     const end = addDaysISO(weekStart, 7);
     return trainings
       .filter((t) => t.datum >= weekStart && t.datum < end)
-      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
+      .sort((a, b) =>
+        (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+      );
   }, [trainings, weekStart]);
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
     return spieler.filter(
-      (s) => s.name.toLowerCase().includes(q) || (s.kontaktEmail ?? "").toLowerCase().includes(q)
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.kontaktEmail ?? "").toLowerCase().includes(q)
     );
   }, [spieler, spielerSuche]);
 
-  function addOrUpdateSpieler() {
+  function addSpieler() {
     const name = spielerName.trim();
     if (!name) return;
 
-    if (editingSpielerId) {
-      setSpieler((prev) =>
-        prev.map((s) =>
-          s.id === editingSpielerId
-            ? {
-                ...s,
-                name,
-                kontaktEmail: spielerEmail.trim() || undefined,
-                kontaktTelefon: spielerTelefon.trim() || undefined,
-                notizen: spielerNotizen.trim() || undefined,
-                rechnungsAdresse: spielerRechnungsAdresse.trim() || undefined,
-              }
-            : s
-        )
-      );
-    } else {
-      const neu: Spieler = {
-        id: uid(),
-        name,
-        kontaktEmail: spielerEmail.trim() || undefined,
-        kontaktTelefon: spielerTelefon.trim() || undefined,
-        notizen: spielerNotizen.trim() || undefined,
-        rechnungsAdresse: spielerRechnungsAdresse.trim() || undefined,
-      };
-      setSpieler((prev) => [...prev, neu]);
-    }
+    const neu: Spieler = {
+      id: uid(),
+      name,
+      kontaktEmail: spielerEmail.trim() || undefined,
+      kontaktTelefon: spielerTelefon.trim() || undefined,
+      rechnungsAdresse: spielerRechnung.trim() || undefined,
+      notizen: spielerNotizen.trim() || undefined,
+    };
 
+    setSpieler((prev) => [...prev, neu]);
     setSpielerName("");
     setSpielerEmail("");
     setSpielerTelefon("");
+    setSpielerRechnung("");
     setSpielerNotizen("");
-    setSpielerRechnungsAdresse("");
-    setEditingSpielerId(null);
   }
 
-  function startEditSpieler(s: Spieler) {
-    setEditingSpielerId(s.id);
-    setSpielerName(s.name);
-    setSpielerEmail(s.kontaktEmail ?? "");
-    setSpielerTelefon(s.kontaktTelefon ?? "");
-    setSpielerNotizen(s.notizen ?? "");
-    setSpielerRechnungsAdresse(s.rechnungsAdresse ?? "");
-  }
-
-  function cancelEditSpieler() {
-    setEditingSpielerId(null);
-    setSpielerName("");
-    setSpielerEmail("");
-    setSpielerTelefon("");
-    setSpielerNotizen("");
-    setSpielerRechnungsAdresse("");
-  }
-
-  function addOrUpdateTarif() {
+  function addTarif() {
     const name = tarifName.trim();
     if (!name) return;
 
-    if (editingTarifId) {
-      setTarife((prev) =>
-        prev.map((t) =>
-          t.id === editingTarifId
-            ? {
-                ...t,
-                name,
-                preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
-                abrechnung: tarifAbrechnung,
-                beschreibung: tarifBeschreibung.trim() || undefined,
-              }
-            : t
-        )
-      );
-    } else {
-      const neu: Tarif = {
-        id: uid(),
-        name,
-        preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
-        abrechnung: tarifAbrechnung,
-        beschreibung: tarifBeschreibung.trim() || undefined,
-      };
-      setTarife((prev) => [...prev, neu]);
-      setTTarifId((prev) => (prev ? prev : neu.id));
-    }
+    const neu: Tarif = {
+      id: uid(),
+      name,
+      preisProStunde: Number.isFinite(tarifPreisProStunde)
+        ? tarifPreisProStunde
+        : 0,
+      abrechnung: tarifAbrechnung,
+      beschreibung: tarifBeschreibung.trim() || undefined,
+    };
 
+    setTarife((prev) => [...prev, neu]);
     setTarifName("");
     setTarifPreisProStunde(60);
     setTarifAbrechnung("proTraining");
     setTarifBeschreibung("");
-    setEditingTarifId(null);
-  }
-
-  function startEditTarif(t: Tarif) {
-    setEditingTarifId(t.id);
-    setTarifName(t.name);
-    setTarifPreisProStunde(t.preisProStunde);
-    setTarifAbrechnung(t.abrechnung);
-    setTarifBeschreibung(t.beschreibung ?? "");
-  }
-
-  function cancelEditTarif() {
-    setEditingTarifId(null);
-    setTarifName("");
-    setTarifPreisProStunde(60);
-    setTarifAbrechnung("proTraining");
-    setTarifBeschreibung("");
+    setTTarifId((prev) => (prev ? prev : neu.id));
   }
 
   function toggleSpielerPick(id: string) {
-    setTSpielerIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setTSpielerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   function durationMin(von: string, bis: string) {
@@ -466,7 +595,8 @@ function AppInner() {
     if (!tarif) return 0;
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     const basis = tarif.preisProStunde * (mins / 60);
-    if (tarif.abrechnung === "proSpieler") return basis * t.spielerIds.length;
+    if (tarif.abrechnung === "proSpieler")
+      return basis * t.spielerIds.length;
     return basis;
   }
 
@@ -515,12 +645,15 @@ function AppInner() {
 
   function triggerDonePulse(trainingId: string) {
     setDoneFlashId(trainingId);
-    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+    if (flashTimerRef.current)
+      window.clearTimeout(flashTimerRef.current);
     flashTimerRef.current = window.setTimeout(() => {
       setDoneFlashId((prev) => (prev === trainingId ? null : prev));
     }, 650);
 
-    const el = document.querySelector(`[data-training-id="${trainingId}"]`) as HTMLElement | null;
+    const el = document.querySelector(
+      `[data-training-id="${trainingId}"]`
+    ) as HTMLElement | null;
     if (el) {
       el.animate(
         [
@@ -549,7 +682,8 @@ function AppInner() {
   }
 
   function handleCalendarEventClick(t: Training) {
-    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+    if (clickTimerRef.current)
+      window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = window.setTimeout(() => {
       fillTrainingFromSelected(t);
       clickTimerRef.current = null;
@@ -557,17 +691,21 @@ function AppInner() {
   }
 
   function handleCalendarEventDoubleClick(t: Training) {
-    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+    if (clickTimerRef.current)
+      window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = null;
     markTrainingDone(t.id);
   }
 
   function saveTraining() {
-    if (!tDatum || !tVon || !tBis || !tTarifId || tSpielerIds.length === 0) return;
+    if (!tDatum || !tVon || !tBis || !tTarifId || tSpielerIds.length === 0)
+      return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
 
-    const existing = selectedTrainingId ? trainings.find((x) => x.id === selectedTrainingId) : undefined;
+    const existing = selectedTrainingId
+      ? trainings.find((x) => x.id === selectedTrainingId)
+      : undefined;
 
     if (selectedTrainingId && existing) {
       const payload: Training = {
@@ -599,7 +737,9 @@ function AppInner() {
           })
         );
       } else {
-        setTrainings((prev) => prev.map((x) => (x.id === selectedTrainingId ? payload : x)));
+        setTrainings((prev) =>
+          prev.map((x) => (x.id === selectedTrainingId ? payload : x))
+        );
       }
 
       resetTrainingForm();
@@ -673,7 +813,9 @@ function AppInner() {
     const t0 = todayISO();
     return trainings
       .slice()
-      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon))
+      .sort((a, b) =>
+        (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+      )
       .filter((t) => t.datum >= t0)
       .slice(0, 20);
   }, [trainings]);
@@ -682,26 +824,20 @@ function AppInner() {
     () =>
       trainings
         .filter((t) => t.datum.startsWith(abrechnungMonat))
-        .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)),
+        .filter((t) => t.status === "durchgefuehrt")
+        .sort((a, b) =>
+          (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+        ),
     [trainings, abrechnungMonat]
-  );
-
-  const completedTrainingsInMonth = useMemo(
-    () => trainingsInMonth.filter((t) => t.status === "durchgefuehrt"),
-    [trainingsInMonth]
   );
 
   const abrechnung = useMemo(() => {
     const perSpieler = new Map<
       string,
-      {
-        name: string;
-        sum: number;
-        counts: Map<number, number>;
-      }
+      { name: string; sum: number; counts: Map<number, number> }
     >();
 
-    completedTrainingsInMonth.forEach((t) => {
+    trainingsInMonth.forEach((t) => {
       const shareRaw = priceFürSpieler(t);
       const share = round2(shareRaw);
 
@@ -727,46 +863,53 @@ function AppInner() {
           }))
           .sort((a, b) => b.amount - a.amount);
 
-        const monthKey: SpielerMonthKey = `${id}_${abrechnungMonat}`;
-        const bezahlt = !!zahlungen[monthKey];
-
         return {
           id,
           name: v.name,
           sum: round2(v.sum),
           breakdown,
-          monthKey,
-          bezahlt,
         };
       })
       .sort((a, b) => b.sum - a.sum);
 
-    const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
-    const totalBezahlt = round2(spielerRows.filter((r) => r.bezahlt).reduce((s, r) => s + r.sum, 0));
-    const totalOffen = round2(total - totalBezahlt);
+    const total = round2(
+      spielerRows.reduce((sum, r) => sum + r.sum, 0)
+    );
 
-    let filteredRows = spielerRows;
-    if (abrechnungFilter === "offen") filteredRows = spielerRows.filter((r) => !r.bezahlt);
-    if (abrechnungFilter === "bezahlt") filteredRows = spielerRows.filter((r) => r.bezahlt);
+    return { total, spielerRows };
+  }, [trainingsInMonth, spielerById, priceFürSpieler]);
 
-    return { total, totalBezahlt, totalOffen, spielerRows: filteredRows };
-  }, [completedTrainingsInMonth, spielerById, zahlungen, abrechnungMonat, abrechnungFilter, priceFürSpieler]);
-
-  function toggleBezahlt(monthKey: SpielerMonthKey) {
-    setZahlungen((prev) => ({
-      ...prev,
-      [monthKey]: !prev[monthKey],
-    }));
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setAuthUser(null);
+    setInitialSynced(false);
   }
 
-  const daysForView = viewMode === "week" ? weekDays : [weekAnchor];
+  /* ::::: Rendering ::::: */
+
+  if (authLoading) {
+    return (
+      <div className="container">
+        <div className="card" style={{ marginTop: 60 }}>
+          Lädt ...
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="container">
       <div className="header">
         <div className="hTitle">
           <h1>Tennistrainer Planung</h1>
-          <p>Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, lokale Speicherung.</p>
+          <p>
+            Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, pro
+            Benutzer gespeichert.
+          </p>
         </div>
         <div className="tabs">
           <button
@@ -782,19 +925,23 @@ function AppInner() {
             Training
           </button>
           <button
-            className={`tabBtn ${tab === "verwaltung" ? "tabBtnActive" : ""}`}
+            className={`tabBtn ${
+              tab === "verwaltung" ? "tabBtnActive" : ""
+            }`}
             onClick={() => setTab("verwaltung")}
           >
             Verwaltung
           </button>
           <button
-            className={`tabBtn ${tab === "abrechnung" ? "tabBtnActive" : ""}`}
+            className={`tabBtn ${
+              tab === "abrechnung" ? "tabBtnActive" : ""
+            }`}
             onClick={() => setTab("abrechnung")}
           >
             Abrechnung
           </button>
-          <button className="tabBtn" onClick={() => supabase.auth.signOut()}>
-            Logout
+          <button className="tabBtn btnGhost" onClick={handleLogout}>
+            Logout ({authUser.email ?? "ohne Email"})
           </button>
         </div>
       </div>
@@ -806,10 +953,16 @@ function AppInner() {
               <span className="pill">
                 Woche ab: <strong>{formatShort(weekStart)}</strong>
               </span>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
+              >
                 Woche zurück
               </button>
-              <button className="btn btnGhost" onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
+              >
                 Woche vor
               </button>
               <button
@@ -824,22 +977,43 @@ function AppInner() {
             </div>
             <div className="row">
               <div className="field" style={{ minWidth: 220 }}>
-                <label>Woche / Tag springen</label>
-                <input type="date" value={weekAnchor} onChange={(e) => setWeekAnchor(e.target.value)} />
+                <label>Woche springen</label>
+                <input
+                  type="date"
+                  value={weekAnchor}
+                  onChange={(e) => setWeekAnchor(e.target.value)}
+                />
               </div>
               <div className="row">
                 <button
-                  className={`btn btnGhost ${viewMode === "week" ? "tabBtnActive" : ""}`}
+                  className={`tabBtn ${
+                    viewMode === "week" ? "tabBtnActive" : ""
+                  }`}
                   onClick={() => setViewMode("week")}
                 >
-                  Wochenansicht
+                  Woche
                 </button>
                 <button
-                  className={`btn btnGhost ${viewMode === "day" ? "tabBtnActive" : ""}`}
+                  className={`tabBtn ${
+                    viewMode === "day" ? "tabBtnActive" : ""
+                  }`}
                   onClick={() => setViewMode("day")}
                 >
-                  Tagesansicht
+                  Tag
                 </button>
+                {viewMode === "day" && (
+                  <select
+                    value={dayIndex}
+                    onChange={(e) => setDayIndex(Number(e.target.value))}
+                    style={{ marginLeft: 8 }}
+                  >
+                    {weekDays.map((d, idx) => (
+                      <option key={d} value={idx}>
+                        {formatShort(d)}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <span className="pill">
                 Trainer: <strong>{trainer.name}</strong>
@@ -852,11 +1026,13 @@ function AppInner() {
           <div className="kgrid">
             <div className="kHead">
               <div className="kHeadCell">Zeit</div>
-              {daysForView.map((d) => (
-                <div key={d} className="kHeadCell">
-                  {formatShort(d)}
-                </div>
-              ))}
+              {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
+                (d) => (
+                  <div key={d} className="kHeadCell">
+                    {formatShort(d)}
+                  </div>
+                )
+              )}
             </div>
 
             <div className="kBody">
@@ -868,145 +1044,152 @@ function AppInner() {
                 ))}
               </div>
 
-              {daysForView.map((day) => {
-                const dayEvents = trainingsInWeek.filter((t) => t.datum === day);
-                const startMin = 7 * 60;
+              {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
+                (day) => {
+                  const dayEvents = trainingsInWeek.filter(
+                    (t) => t.datum === day
+                  );
+                  const startMin = 7 * 60;
 
-                return (
-                  <div key={day} className="kDayCol">
-                    {hours.map((h) => (
-                      <div key={h} className="kHourLine" />
-                    ))}
+                  return (
+                    <div key={day} className="kDayCol">
+                      {hours.map((h) => (
+                        <div key={h} className="kHourLine" />
+                      ))}
 
-                    {dayEvents.map((t) => {
-                      const top = Math.max(0, (toMinutes(t.uhrzeitVon) - startMin) / 60) * 40;
-                      const height = Math.max(22, ((toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon)) / 60) * 40);
+                      {dayEvents.map((t) => {
+                        const top =
+                          Math.max(
+                            0,
+                            (toMinutes(t.uhrzeitVon) - startMin) / 60
+                          ) * 40;
+                        const height = Math.max(
+                          26,
+                          ((toMinutes(t.uhrzeitBis) -
+                            toMinutes(t.uhrzeitVon)) /
+                            60) *
+                            40
+                        );
 
-                      const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-                      const spNames = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler");
-                      const sp = spNames.join(", ");
+                        const ta =
+                          tarifById.get(t.tarifId)?.name ?? "Tarif";
+                        const sp = t.spielerIds
+                          .map(
+                            (id) =>
+                              spielerById.get(id)?.name ?? "Spieler"
+                          )
+                          .join(", ");
 
-                      const isDone = t.status === "durchgefuehrt";
-                      const isCancel = t.status === "abgesagt";
-                      const isPulse = doneFlashId === t.id;
+                        const isDone = t.status === "durchgefuehrt";
+                        const isCancel = t.status === "abgesagt";
+                        const isPulse = doneFlashId === t.id;
 
-                      const bg = isDone
-                        ? "rgba(34, 197, 94, 0.22)"
-                        : isCancel
-                        ? "rgba(239, 68, 68, 0.14)"
-                        : "rgba(59, 130, 246, 0.18)";
+                        const bg = isDone
+                          ? "rgba(34, 197, 94, 0.22)"
+                          : isCancel
+                          ? "rgba(239, 68, 68, 0.14)"
+                          : "rgba(59, 130, 246, 0.18)";
 
-                      const border = isDone
-                        ? "rgba(34, 197, 94, 0.45)"
-                        : isCancel
-                        ? "rgba(239, 68, 68, 0.34)"
-                        : "rgba(59, 130, 246, 0.30)";
+                        const border = isDone
+                          ? "rgba(34, 197, 94, 0.45)"
+                          : isCancel
+                          ? "rgba(239, 68, 68, 0.34)"
+                          : "rgba(59, 130, 246, 0.30)";
 
-                      return (
-                        <div
-                          key={t.id}
-                          data-training-id={t.id}
-                          className="kEvent"
-                          style={{
-                            top,
-                            height,
-                            backgroundColor: bg,
-                            border: `1px solid ${border}`,
-                            opacity: isCancel ? 0.85 : 1,
-                            transform: isPulse ? "scale(1.06)" : undefined,
-                            filter: isPulse ? "brightness(1.15)" : undefined,
-                            transition:
-                              "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 4,
-                            overflow: "hidden",
-                            padding: 8,
-                            alignItems: "flex-start",
-                          }}
-                          onClick={() => handleCalendarEventClick(t)}
-                          onDoubleClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleCalendarEventDoubleClick(t);
-                          }}
-                          title={`Spieler: ${sp}\n${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
-                            t.status
-                          )}`}
-                        >
+                        return (
                           <div
+                            key={t.id}
+                            data-training-id={t.id}
+                            className="kEvent"
                             style={{
+                              top,
+                              height,
+                              backgroundColor: bg,
+                              border: `1px solid ${border}`,
+                              opacity: isCancel ? 0.85 : 1,
+                              transform: isPulse
+                                ? "scale(1.06)"
+                                : undefined,
+                              filter: isPulse
+                                ? "brightness(1.15)"
+                                : undefined,
+                              transition:
+                                "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
                               display: "flex",
-                              flexDirection: "column",
-                              gap: 2,
-                              flex: "1 1 auto",
-                              minWidth: 0,
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              overflow: "hidden",
+                              padding: 8,
+                              gap: 6,
                             }}
+                            onClick={() =>
+                              handleCalendarEventClick(t)
+                            }
+                            onDoubleClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCalendarEventDoubleClick(t);
+                            }}
+                            title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
+                              t.status
+                            )}`}
                           >
-                            <strong
+                            <div
                               style={{
-                                display: "block",
+                                flex: "1 1 auto",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                fontSize: 12,
-                                lineHeight: "14px",
                               }}
-                              title={sp}
                             >
-                              {sp}
-                            </strong>
-                            {spNames.length > 1 && (
-                              <span
+                              <div
                                 style={{
-                                  fontSize: 11,
-                                  lineHeight: "13px",
-                                  color: "#334155",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
+                                  fontSize: 13,
+                                  fontWeight: 600,
                                   whiteSpace: "nowrap",
+                                  textOverflow: "ellipsis",
+                                  overflow: "hidden",
                                 }}
                               >
-                                {spNames.join(", ")}
-                              </span>
-                            )}
-                            <span
+                                {sp}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  whiteSpace: "nowrap",
+                                  textOverflow: "ellipsis",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                {ta}
+                              </div>
+                            </div>
+                            <div
                               style={{
-                                fontSize: 11,
-                                lineHeight: "13px",
-                                color: "#64748b",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
+                                width: 14,
+                                height: 14,
+                                borderRadius: "999px",
+                                border: "2px solid white",
+                                boxShadow:
+                                  "0 0 0 1px rgba(15,23,42,0.15)",
+                                backgroundColor: statusDotColor(
+                                  t.status
+                                ),
+                                flex: "0 0 auto",
                               }}
-                            >
-                              {ta}
-                            </span>
+                            />
                           </div>
-
-                          <div
-                            style={{
-                              flex: "0 0 auto",
-                              width: 18,
-                              height: 18,
-                              borderRadius: "999px",
-                              border: `2px solid ${statusDotColor(t.status)}`,
-                              background: "rgba(255,255,255,0.7)",
-                            }}
-                            title={statusLabel(t.status)}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                        );
+                      })}
+                    </div>
+                  );
+                }
+              )}
             </div>
           </div>
 
           <div style={{ height: 12 }} />
           <div className="muted">
-            Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen, Status und Farbe ändern sich sofort.
+            Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
           </div>
         </div>
       )}
@@ -1014,41 +1197,70 @@ function AppInner() {
       {tab === "training" && (
         <div className="grid2">
           <div className="card">
-            <h2>{selectedTrainingId ? "Training bearbeiten" : "Training anlegen"}</h2>
+            <h2>
+              {selectedTrainingId
+                ? "Training bearbeiten"
+                : "Training anlegen"}
+            </h2>
 
             <div className="row">
               <div className="field">
                 <label>Datum</label>
-                <input type="date" value={tDatum} onChange={(e) => setTDatum(e.target.value)} />
+                <input
+                  type="date"
+                  value={tDatum}
+                  onChange={(e) => setTDatum(e.target.value)}
+                />
               </div>
               <div className="field">
                 <label>Von</label>
-                <input type="time" value={tVon} onChange={(e) => setTVon(e.target.value)} />
+                <input
+                  type="time"
+                  value={tVon}
+                  onChange={(e) => setTVon(e.target.value)}
+                />
               </div>
               <div className="field">
                 <label>Bis</label>
-                <input type="time" value={tBis} onChange={(e) => setTBis(e.target.value)} />
+                <input
+                  type="time"
+                  value={tBis}
+                  onChange={(e) => setTBis(e.target.value)}
+                />
               </div>
             </div>
 
             <div className="row">
               <div className="field">
                 <label>Tarif</label>
-                <select value={tTarifId} onChange={(e) => setTTarifId(e.target.value)}>
+                <select
+                  value={tTarifId}
+                  onChange={(e) => setTTarifId(e.target.value)}
+                >
                   <option value="">Tarif wählen</option>
                   {tarife.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}, {t.preisProStunde} € pro Stunde,{" "}
-                      {t.abrechnung === "proSpieler" ? "pro Spieler" : "pro Training"}
+                      {t.abrechnung === "proSpieler"
+                        ? "pro Spieler"
+                        : "pro Training"}
                     </option>
                   ))}
                 </select>
-                <div className="muted">Wenn noch kein Tarif vorhanden ist: Verwaltung, Tarife anlegen.</div>
+                <div className="muted">
+                  Wenn noch kein Tarif vorhanden ist: Verwaltung, Tarife
+                  anlegen.
+                </div>
               </div>
 
               <div className="field">
                 <label>Status</label>
-                <select value={tStatus} onChange={(e) => setTStatus(e.target.value as TrainingStatus)}>
+                <select
+                  value={tStatus}
+                  onChange={(e) =>
+                    setTStatus(e.target.value as TrainingStatus)
+                  }
+                >
                   <option value="geplant">Geplant</option>
                   <option value="durchgefuehrt">Durchgeführt</option>
                   <option value="abgesagt">Abgesagt</option>
@@ -1059,7 +1271,11 @@ function AppInner() {
             <div className="row">
               <div className="field" style={{ minWidth: 260 }}>
                 <label>Notiz</label>
-                <input value={tNotiz} onChange={(e) => setTNotiz(e.target.value)} placeholder="optional" />
+                <input
+                  value={tNotiz}
+                  onChange={(e) => setTNotiz(e.target.value)}
+                  placeholder="optional"
+                />
               </div>
             </div>
 
@@ -1069,11 +1285,16 @@ function AppInner() {
               <div className="card cardInset">
                 <h2>Wiederholung</h2>
                 <div className="row">
-                  <label className="pill" style={{ cursor: "pointer" }}>
+                  <label
+                    className="pill"
+                    style={{ cursor: "pointer" }}
+                  >
                     <input
                       type="checkbox"
                       checked={repeatWeekly}
-                      onChange={(e) => setRepeatWeekly(e.target.checked)}
+                      onChange={(e) =>
+                        setRepeatWeekly(e.target.checked)
+                      }
                       style={{ marginRight: 8 }}
                     />
                     Wöchentlich wiederholen
@@ -1084,7 +1305,9 @@ function AppInner() {
                     <input
                       type="date"
                       value={repeatUntil}
-                      onChange={(e) => setRepeatUntil(e.target.value)}
+                      onChange={(e) =>
+                        setRepeatUntil(e.target.value)
+                      }
                       disabled={!repeatWeekly}
                     />
                   </div>
@@ -1094,13 +1317,18 @@ function AppInner() {
                   </span>
                 </div>
 
-                <div className="muted">Wenn aktiv: Es werden alle Termine wöchentlich bis zum Bis Datum angelegt.</div>
+                <div className="muted">
+                  Wenn aktiv: Es werden alle Termine wöchentlich bis zum
+                  Bis Datum angelegt.
+                </div>
               </div>
             )}
 
             {selectedTrainingId &&
               (() => {
-                const ex = trainings.find((x) => x.id === selectedTrainingId);
+                const ex = trainings.find(
+                  (x) => x.id === selectedTrainingId
+                );
                 if (!ex?.serieId) return null;
                 return (
                   <div className="card cardInset">
@@ -1108,18 +1336,31 @@ function AppInner() {
                     <div className="row">
                       <div className="field">
                         <label>Änderungen anwenden</label>
-                        <select value={applySerieScope} onChange={(e) => setApplySerieScope(e.target.value as any)}>
-                          <option value="nurDieses">Nur diesen Termin</option>
-                          <option value="abHeute">Alle Termine der Serie ab diesem Datum</option>
+                        <select
+                          value={applySerieScope}
+                          onChange={(e) =>
+                            setApplySerieScope(
+                              e.target.value as "nurDieses" | "abHeute"
+                            )
+                          }
+                        >
+                          <option value="nurDieses">
+                            Nur diesen Termin
+                          </option>
+                          <option value="abHeute">
+                            Alle Termine der Serie ab diesem Datum
+                          </option>
                         </select>
                       </div>
                       <span className="pill">
-                        Serie: <strong>{ex.serieId.slice(0, 8)}</strong>
+                        Serie:{" "}
+                        <strong>{ex.serieId.slice(0, 8)}</strong>
                       </span>
                     </div>
                     <div className="muted">
-                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif, Status und Notiz werden für alle zukünftigen
-                      Termine übernommen.
+                      Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
+                      Status und Notiz werden für alle zukünftigen Termine
+                      übernommen.
                     </div>
                   </div>
                 );
@@ -1129,7 +1370,9 @@ function AppInner() {
 
             <div className="row">
               <button className="btn" onClick={saveTraining}>
-                {selectedTrainingId ? "Änderungen speichern" : "Training speichern"}
+                {selectedTrainingId
+                  ? "Änderungen speichern"
+                  : "Training speichern"}
               </button>
               <button
                 className="btn btnGhost"
@@ -1141,12 +1384,18 @@ function AppInner() {
                 Zurück zum Kalender
               </button>
               {selectedTrainingId && (
-                <button className="btn btnWarn" onClick={() => deleteTraining(selectedTrainingId)}>
+                <button
+                  className="btn btnWarn"
+                  onClick={() =>
+                    deleteTraining(selectedTrainingId)
+                  }
+                >
                   Training löschen
                 </button>
               )}
               <span className="pill">
-                Preis Vorschau: <strong>{euro(preisVorschau)}</strong>
+                Preis Vorschau:{" "}
+                <strong>{euro(preisVorschau)}</strong>
               </span>
             </div>
 
@@ -1155,8 +1404,13 @@ function AppInner() {
             <h2>Schnellzugriff, nächste Trainings</h2>
             <ul className="list">
               {nextTrainings.map((t) => {
-                const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-                const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
+                const ta =
+                  tarifById.get(t.tarifId)?.name ?? "Tarif";
+                const sp = t.spielerIds
+                  .map(
+                    (id) => spielerById.get(id)?.name ?? "Spieler"
+                  )
+                  .join(", ");
                 return (
                   <li key={t.id} className="listItem">
                     <div>
@@ -1166,10 +1420,17 @@ function AppInner() {
                       <div className="muted">
                         {ta}, {sp}
                       </div>
-                      {t.serieId ? <div className="muted">Serie: {t.serieId.slice(0, 8)}</div> : null}
+                      {t.serieId ? (
+                        <div className="muted">
+                          Serie: {t.serieId.slice(0, 8)}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="smallActions">
-                      <button className="btn micro btnGhost" onClick={() => fillTrainingFromSelected(t)}>
+                      <button
+                        className="btn micro btnGhost"
+                        onClick={() => fillTrainingFromSelected(t)}
+                      >
                         Bearbeiten
                       </button>
                     </div>
@@ -1178,7 +1439,10 @@ function AppInner() {
               })}
             </ul>
 
-            <div className="muted">Tipp: Im Kalender kannst Du geplante Trainings per Doppelklick direkt abschließen.</div>
+            <div className="muted">
+              Tipp: Im Kalender kannst Du geplante Trainings per
+              Doppelklick direkt abschließen.
+            </div>
           </div>
 
           <div className="card">
@@ -1188,12 +1452,15 @@ function AppInner() {
                 <label>Suche</label>
                 <input
                   value={spielerSuche}
-                  onChange={(e) => setSpielerSuche(e.target.value)}
+                  onChange={(e) =>
+                    setSpielerSuche(e.target.value)
+                  }
                   placeholder="Name oder Email"
                 />
               </div>
               <span className="pill">
-                Ausgewählt: <strong>{tSpielerIds.length}</strong>
+                Ausgewählt:{" "}
+                <strong>{tSpielerIds.length}</strong>
               </span>
             </div>
 
@@ -1206,12 +1473,26 @@ function AppInner() {
                       <strong>{s.name}</strong>
                       <div className="muted">
                         {s.kontaktEmail ?? ""}
-                        {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
+                        {s.kontaktTelefon
+                          ? `, ${s.kontaktTelefon}`
+                          : ""}
                       </div>
-                      {s.rechnungsAdresse ? <div className="muted">{s.rechnungsAdresse}</div> : null}
+                      {s.rechnungsAdresse ? (
+                        <div className="muted">
+                          Rechnungsadresse: {s.rechnungsAdresse}
+                        </div>
+                      ) : null}
+                      {s.notizen ? (
+                        <div className="muted">{s.notizen}</div>
+                      ) : null}
                     </div>
                     <div className="smallActions">
-                      <button className={`btn micro ${checked ? "" : "btnGhost"}`} onClick={() => toggleSpielerPick(s.id)}>
+                      <button
+                        className={`btn micro ${
+                          checked ? "" : "btnGhost"
+                        }`}
+                        onClick={() => toggleSpielerPick(s.id)}
+                      >
                         {checked ? "Entfernen" : "Hinzufügen"}
                       </button>
                     </div>
@@ -1222,7 +1503,8 @@ function AppInner() {
 
             <div style={{ height: 10 }} />
             <div className="muted">
-              Pro Training: Gesamtpreis wird auf Spieler verteilt. Pro Spieler: jeder zahlt den vollen Preis.
+              Pro Training: Gesamtpreis wird auf Spieler verteilt. Pro
+              Spieler: jeder zahlt den vollen Preis.
             </div>
           </div>
         </div>
@@ -1235,13 +1517,28 @@ function AppInner() {
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={trainerName} onChange={(e) => setTrainerName(e.target.value)} placeholder="z.B. Artur" />
+                <input
+                  value={trainerName}
+                  onChange={(e) =>
+                    setTrainerName(e.target.value)
+                  }
+                  placeholder="z.B. Artur"
+                />
               </div>
               <div className="field">
                 <label>Email</label>
-                <input value={trainerEmail} onChange={(e) => setTrainerEmail(e.target.value)} placeholder="optional" />
+                <input
+                  value={trainerEmail}
+                  onChange={(e) =>
+                    setTrainerEmail(e.target.value)
+                  }
+                  placeholder="optional"
+                />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
                 <button
                   className="btn"
@@ -1256,21 +1553,32 @@ function AppInner() {
                 </button>
               </div>
             </div>
-            <div className="muted">Ein Trainer, ohne Login.</div>
+            <div className="muted">
+              Ein Trainer, ohne Login in der App (Login läuft über
+              Supabase).
+            </div>
           </div>
 
           <div className="card">
-            <h2>Spieler anlegen / bearbeiten</h2>
+            <h2>Spieler anlegen</h2>
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={spielerName} onChange={(e) => setSpielerName(e.target.value)} placeholder="z.B. Melania" />
+                <input
+                  value={spielerName}
+                  onChange={(e) =>
+                    setSpielerName(e.target.value)
+                  }
+                  placeholder="z.B. Melania"
+                />
               </div>
               <div className="field">
                 <label>Email</label>
                 <input
                   value={spielerEmail}
-                  onChange={(e) => setSpielerEmail(e.target.value)}
+                  onChange={(e) =>
+                    setSpielerEmail(e.target.value)
+                  }
                   placeholder="optional"
                 />
               </div>
@@ -1278,7 +1586,22 @@ function AppInner() {
                 <label>Telefon</label>
                 <input
                   value={spielerTelefon}
-                  onChange={(e) => setSpielerTelefon(e.target.value)}
+                  onChange={(e) =>
+                    setSpielerTelefon(e.target.value)
+                  }
+                  placeholder="optional"
+                />
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>Rechnungsadresse</label>
+                <textarea
+                  value={spielerRechnung}
+                  onChange={(e) =>
+                    setSpielerRechnung(e.target.value)
+                  }
                   placeholder="optional"
                 />
               </div>
@@ -1289,28 +1612,20 @@ function AppInner() {
                 <label>Notizen</label>
                 <textarea
                   value={spielerNotizen}
-                  onChange={(e) => setSpielerNotizen(e.target.value)}
+                  onChange={(e) =>
+                    setSpielerNotizen(e.target.value)
+                  }
                   placeholder="optional"
                 />
               </div>
-              <div className="field">
-                <label>Rechnungsadresse</label>
-                <textarea
-                  value={spielerRechnungsAdresse}
-                  onChange={(e) => setSpielerRechnungsAdresse(e.target.value)}
-                  placeholder="optional"
-                />
-              </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addOrUpdateSpieler}>
-                  {editingSpielerId ? "Spieler aktualisieren" : "Spieler hinzufügen"}
+                <button className="btn" onClick={addSpieler}>
+                  Spieler hinzufügen
                 </button>
-                {editingSpielerId && (
-                  <button className="btn btnGhost" onClick={cancelEditSpieler} style={{ marginTop: 6 }}>
-                    Abbrechen
-                  </button>
-                )}
               </div>
             </div>
 
@@ -1321,18 +1636,27 @@ function AppInner() {
                     <strong>{s.name}</strong>
                     <div className="muted">
                       {s.kontaktEmail ?? ""}
-                      {s.kontaktTelefon ? `, ${s.kontaktTelefon}` : ""}
+                      {s.kontaktTelefon
+                        ? `, ${s.kontaktTelefon}`
+                        : ""}
                     </div>
-                    {s.rechnungsAdresse ? <div className="muted">{s.rechnungsAdresse}</div> : null}
-                    {s.notizen ? <div className="muted">{s.notizen}</div> : null}
+                    {s.rechnungsAdresse ? (
+                      <div className="muted">
+                        Rechnungsadresse: {s.rechnungsAdresse}
+                      </div>
+                    ) : null}
+                    {s.notizen ? (
+                      <div className="muted">{s.notizen}</div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <button className="btn micro btnGhost" onClick={() => startEditSpieler(s)}>
-                      Bearbeiten
-                    </button>
                     <button
                       className="btn micro btnGhost"
-                      onClick={() => setSpieler((prev) => prev.filter((x) => x.id !== s.id))}
+                      onClick={() =>
+                        setSpieler((prev) =>
+                          prev.filter((x) => x.id !== s.id)
+                        )
+                      }
                     >
                       Löschen
                     </button>
@@ -1343,23 +1667,38 @@ function AppInner() {
           </div>
 
           <div className="card">
-            <h2>Tarife anlegen / bearbeiten</h2>
+            <h2>Tarife anlegen</h2>
             <div className="row">
               <div className="field">
                 <label>Name</label>
-                <input value={tarifName} onChange={(e) => setTarifName(e.target.value)} placeholder="z.B. Einzel" />
+                <input
+                  value={tarifName}
+                  onChange={(e) =>
+                    setTarifName(e.target.value)
+                  }
+                  placeholder="z.B. Einzel"
+                />
               </div>
               <div className="field">
                 <label>Preis pro Stunde</label>
                 <input
                   type="number"
                   value={tarifPreisProStunde}
-                  onChange={(e) => setTarifPreisProStunde(Number(e.target.value))}
+                  onChange={(e) =>
+                    setTarifPreisProStunde(Number(e.target.value))
+                  }
                 />
               </div>
               <div className="field">
                 <label>Abrechnung</label>
-                <select value={tarifAbrechnung} onChange={(e) => setTarifAbrechnung(e.target.value as any)}>
+                <select
+                  value={tarifAbrechnung}
+                  onChange={(e) =>
+                    setTarifAbrechnung(
+                      e.target.value as "proTraining" | "proSpieler"
+                    )
+                  }
+                >
                   <option value="proTraining">Pro Training</option>
                   <option value="proSpieler">Pro Spieler</option>
                 </select>
@@ -1371,20 +1710,20 @@ function AppInner() {
                 <label>Beschreibung</label>
                 <input
                   value={tarifBeschreibung}
-                  onChange={(e) => setTarifBeschreibung(e.target.value)}
+                  onChange={(e) =>
+                    setTarifBeschreibung(e.target.value)
+                  }
                   placeholder="optional"
                 />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div
+                className="field"
+                style={{ minWidth: 160 }}
+              >
                 <label>&nbsp;</label>
-                <button className="btn" onClick={addOrUpdateTarif}>
-                  {editingTarifId ? "Tarif aktualisieren" : "Tarif hinzufügen"}
+                <button className="btn" onClick={addTarif}>
+                  Tarif hinzufügen
                 </button>
-                {editingTarifId && (
-                  <button className="btn btnGhost" onClick={cancelEditTarif} style={{ marginTop: 6 }}>
-                    Abbrechen
-                  </button>
-                )}
               </div>
             </div>
 
@@ -1394,17 +1733,23 @@ function AppInner() {
                   <div>
                     <strong>{t.name}</strong>
                     <div className="muted">
-                      {t.preisProStunde} € pro Stunde, {t.abrechnung === "proSpieler" ? "pro Spieler" : "pro Training"}
+                      {t.preisProStunde} € pro Stunde,{" "}
+                      {t.abrechnung === "proSpieler"
+                        ? "pro Spieler"
+                        : "pro Training"}
                     </div>
-                    {t.beschreibung ? <div className="muted">{t.beschreibung}</div> : null}
+                    {t.beschreibung ? (
+                      <div className="muted">{t.beschreibung}</div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <button className="btn micro btnGhost" onClick={() => startEditTarif(t)}>
-                      Bearbeiten
-                    </button>
                     <button
                       className="btn micro btnGhost"
-                      onClick={() => setTarife((prev) => prev.filter((x) => x.id !== t.id))}
+                      onClick={() =>
+                        setTarife((prev) =>
+                          prev.filter((x) => x.id !== t.id)
+                        )
+                      }
                     >
                       Löschen
                     </button>
@@ -1434,12 +1779,13 @@ function AppInner() {
               <button
                 className="btn btnWarn"
                 onClick={() => {
-                  const ok = window.confirm("Wirklich alle Daten löschen?");
+                  const ok = window.confirm(
+                    "Wirklich alle Daten löschen?"
+                  );
                   if (!ok) return;
                   setSpieler([]);
                   setTarife([]);
                   setTrainings([]);
-                  setZahlungen({});
                   setTrainer({ name: "Trainer", email: "" });
                   setTrainerName("Trainer");
                   setTrainerEmail("");
@@ -1451,7 +1797,10 @@ function AppInner() {
             </div>
 
             <div style={{ height: 10 }} />
-            <div className="muted">Speicherung ist lokal im Browser.</div>
+            <div className="muted">
+              Speicherung lokal im Browser und für angemeldete
+              Benutzer zusätzlich in Supabase.
+            </div>
           </div>
         </div>
       )}
@@ -1461,23 +1810,21 @@ function AppInner() {
           <div className="split">
             <div>
               <h2>Abrechnung</h2>
-              <div className="muted">Es werden nur durchgeführte Trainings angezeigt und berechnet.</div>
+              <div className="muted">
+                Es werden nur durchgeführte Trainings angezeigt und
+                berechnet.
+              </div>
             </div>
             <div className="row">
               <div className="field" style={{ minWidth: 220 }}>
                 <label>Monat</label>
-                <input type="month" value={abrechnungMonat} onChange={(e) => setAbrechnungMonat(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Filter</label>
-                <select
-                  value={abrechnungFilter}
-                  onChange={(e) => setAbrechnungFilter(e.target.value as AbrechnungFilter)}
-                >
-                  <option value="alle">Alle</option>
-                  <option value="offen">Nur offen</option>
-                  <option value="bezahlt">Nur bezahlt</option>
-                </select>
+                <input
+                  type="month"
+                  value={abrechnungMonat}
+                  onChange={(e) =>
+                    setAbrechnungMonat(e.target.value)
+                  }
+                />
               </div>
             </div>
           </div>
@@ -1489,16 +1836,12 @@ function AppInner() {
               Trainer: <strong>{trainer.name}</strong>
             </span>
             <span className="pill">
-              Umsatz gesamt: <strong>{euro(abrechnung.total)}</strong>
+              Umsatz gesamt:{" "}
+              <strong>{euro(abrechnung.total)}</strong>
             </span>
             <span className="pill">
-              Davon bezahlt: <strong>{euro(abrechnung.totalBezahlt)}</strong>
-            </span>
-            <span className="pill">
-              Offen: <strong>{euro(abrechnung.totalOffen)}</strong>
-            </span>
-            <span className="pill">
-              Trainings: <strong>{completedTrainingsInMonth.length}</strong>
+              Trainings:{" "}
+              <strong>{trainingsInMonth.length}</strong>
             </span>
           </div>
 
@@ -1512,7 +1855,6 @@ function AppInner() {
                   <th>Spieler</th>
                   <th>Aufstellung</th>
                   <th>Summe</th>
-                  <th>Bezahlt</th>
                 </tr>
               </thead>
               <tbody>
@@ -1521,26 +1863,17 @@ function AppInner() {
                     r.breakdown.length === 0
                       ? "-"
                       : r.breakdown
-                          .map((b) => `${b.count} × ${euro(b.amount)}`)
+                          .map(
+                            (b) =>
+                              `${b.count} × ${euro(b.amount)}`
+                          )
                           .join(" + ");
-
-                  const bezahlt = r.bezahlt;
 
                   return (
                     <tr key={r.id}>
                       <td>{r.name}</td>
                       <td>{breakdownText}</td>
                       <td>{euro(r.sum)}</td>
-                      <td>
-                        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12 }}>
-                          <input
-                            type="checkbox"
-                            checked={bezahlt}
-                            onChange={() => toggleBezahlt(r.monthKey)}
-                          />
-                          {bezahlt ? "bezahlt" : "offen"}
-                        </label>
-                      </td>
                     </tr>
                   );
                 })}
@@ -1552,10 +1885,17 @@ function AppInner() {
 
           <h2>Trainings im Monat</h2>
           <ul className="list">
-            {completedTrainingsInMonth.map((t) => {
-              const ta = tarifById.get(t.tarifId)?.name ?? "Tarif";
-              const sp = t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Spieler").join(", ");
-              const price = euro(round2(trainingPreisGesamt(t)));
+            {trainingsInMonth.map((t) => {
+              const ta =
+                tarifById.get(t.tarifId)?.name ?? "Tarif";
+              const sp = t.spielerIds
+                .map(
+                  (id) => spielerById.get(id)?.name ?? "Spieler"
+                )
+                .join(", ");
+              const price = euro(
+                round2(trainingPreisGesamt(t))
+              );
 
               return (
                 <li key={t.id} className="listItem">
@@ -1566,13 +1906,24 @@ function AppInner() {
                     <div className="muted">
                       {sp}, {ta}, {trainer.name}
                     </div>
-                    {t.notiz ? <div className="muted">{t.notiz}</div> : null}
-                    {t.serieId ? <div className="muted">Serie: {t.serieId.slice(0, 8)}</div> : null}
+                    {t.notiz ? (
+                      <div className="muted">{t.notiz}</div>
+                    ) : null}
+                    {t.serieId ? (
+                      <div className="muted">
+                        Serie: {t.serieId.slice(0, 8)}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="smallActions">
-                    <span className="badge badgeOk">durchgeführt</span>
+                    <span className="badge badgeOk">
+                      durchgeführt
+                    </span>
                     <span className="badge">{price}</span>
-                    <button className="btn micro btnGhost" onClick={() => fillTrainingFromSelected(t)}>
+                    <button
+                      className="btn micro btnGhost"
+                      onClick={() => fillTrainingFromSelected(t)}
+                    >
                       Bearbeiten
                     </button>
                   </div>
@@ -1584,46 +1935,4 @@ function AppInner() {
       )}
     </div>
   );
-}
-
-/* ::::: Wrapper mit Login ::::: */
-
-export default function App() {
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-  supabase.auth.getSession().then(({ data }) => {
-    const session = data.session;
-    setAuthUser(
-      session ? { id: session.user.id, email: session.user.email ?? null } : null
-    );
-    setAuthLoading(false);
-  });
-
-  const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-    setAuthUser(
-      session ? { id: session.user.id, email: session.user.email ?? null } : null
-    );
-  });
-
-  return () => {
-    sub.subscription.unsubscribe();
-  };
-}, []);
-
-
-  if (authLoading) {
-    return (
-      <div className="container">
-        <p>Lade...</p>
-      </div>
-    );
-  }
-
-  if (!authUser) {
-    return <AuthScreen />;
-  }
-
-  return <AppInner />;
 }
