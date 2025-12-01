@@ -138,24 +138,22 @@ function statusBadge(s: TrainingStatus) {
     ? "rgba(239, 68, 68, 0.34)"
     : "rgba(59, 130, 246, 0.30)";
 
+  // kleiner farbiger Punkt ohne Text
   return (
     <span
       style={{
         flex: "0 0 auto",
-        fontSize: 12,
-        lineHeight: "14px",
-        padding: "6px 10px",
+        width: 12,
+        height: 12,
         borderRadius: 999,
         background: bg,
         border: `1px solid ${border}`,
-        whiteSpace: "nowrap",
       }}
-      title={statusLabel(s)}
-    >
-      {statusLabel(s)}
-    </span>
+      title={statusLabel(s)} // Tooltip zeigt weiterhin "durchgeführt"/"offen"/"abgesagt"
+    />
   );
 }
+
 
 function normalizeState(
   parsed: Partial<AppState> | null | undefined
