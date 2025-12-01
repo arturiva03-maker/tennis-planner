@@ -199,11 +199,13 @@ export default function App() {
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
   const [spielerRechnungsAdresse, setSpielerRechnungsAdresse] = useState("");
+  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
   const [tarifAbrechnung, setTarifAbrechnung] = useState<"proTraining" | "proSpieler">("proTraining");
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
+  const [editingTarifId, setEditingTarifId] = useState<string | null>(null);
 
   const [tDatum, setTDatum] = useState(todayISO());
   const [tVon, setTVon] = useState("16:00");
@@ -294,41 +296,76 @@ export default function App() {
     const name = spielerName.trim();
     if (!name) return;
 
-    const neu: Spieler = {
-      id: uid(),
-      name,
-      kontaktEmail: spielerEmail.trim() || undefined,
-      kontaktTelefon: spielerTelefon.trim() || undefined,
-      notizen: spielerNotizen.trim() || undefined,
-      rechnungsAdresse: spielerRechnungsAdresse.trim() || undefined,
-    };
+    if (editingSpielerId) {
+      setSpieler((prev) =>
+        prev.map((s) =>
+          s.id === editingSpielerId
+            ? {
+                ...s,
+                name,
+                kontaktEmail: spielerEmail.trim() || undefined,
+                kontaktTelefon: spielerTelefon.trim() || undefined,
+                notizen: spielerNotizen.trim() || undefined,
+                rechnungsAdresse: spielerRechnungsAdresse.trim() || undefined,
+              }
+            : s
+        )
+      );
+    } else {
+      const neu: Spieler = {
+        id: uid(),
+        name,
+        kontaktEmail: spielerEmail.trim() || undefined,
+        kontaktTelefon: spielerTelefon.trim() || undefined,
+        notizen: spielerNotizen.trim() || undefined,
+        rechnungsAdresse: spielerRechnungsAdresse.trim() || undefined,
+      };
+      setSpieler((prev) => [...prev, neu]);
+    }
 
-    setSpieler((prev) => [...prev, neu]);
     setSpielerName("");
     setSpielerEmail("");
     setSpielerTelefon("");
     setSpielerNotizen("");
     setSpielerRechnungsAdresse("");
+    setEditingSpielerId(null);
   }
 
   function addTarif() {
     const name = tarifName.trim();
     if (!name) return;
 
-    const neu: Tarif = {
-      id: uid(),
-      name,
-      preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
-      abrechnung: tarifAbrechnung,
-      beschreibung: tarifBeschreibung.trim() || undefined,
-    };
+    if (editingTarifId) {
+      setTarife((prev) =>
+        prev.map((t) =>
+          t.id === editingTarifId
+            ? {
+                ...t,
+                name,
+                preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
+                abrechnung: tarifAbrechnung,
+                beschreibung: tarifBeschreibung.trim() || undefined,
+              }
+            : t
+        )
+      );
+    } else {
+      const neu: Tarif = {
+        id: uid(),
+        name,
+        preisProStunde: Number.isFinite(tarifPreisProStunde) ? tarifPreisProStunde : 0,
+        abrechnung: tarifAbrechnung,
+        beschreibung: tarifBeschreibung.trim() || undefined,
+      };
+      setTarife((prev) => [...prev, neu]);
+      setTTarifId((prev) => (prev ? prev : neu.id));
+    }
 
-    setTarife((prev) => [...prev, neu]);
     setTarifName("");
     setTarifPreisProStunde(60);
     setTarifAbrechnung("proTraining");
     setTarifBeschreibung("");
-    setTTarifId((prev) => (prev ? prev : neu.id));
+    setEditingTarifId(null);
   }
 
   function toggleSpielerPick(id: string) {
@@ -534,7 +571,7 @@ export default function App() {
     setTab("kalender");
   }
 
-  const preisVorschau = useMemo(() => {
+  const preisVorschau = (() => {
     if (!tTarifId || tSpielerIds.length === 0) return 0;
     const fake: Training = {
       id: "x",
@@ -547,7 +584,7 @@ export default function App() {
       notiz: tNotiz || undefined,
     };
     return trainingPreisGesamt(fake);
-}, [tDatum, tVon, tBis, tTarifId, tSpielerIds, tStatus, tNotiz, trainingPreisGesamt]);
+  })();
 
   const nextTrainings = useMemo(() => {
     const t0 = todayISO();
@@ -1112,11 +1149,26 @@ export default function App() {
                   placeholder="optional"
                 />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div className="field" style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 6 }}>
                 <label>&nbsp;</label>
                 <button className="btn" onClick={addSpieler}>
-                  Spieler hinzufügen
+                  {editingSpielerId ? "Änderungen speichern" : "Spieler hinzufügen"}
                 </button>
+                {editingSpielerId && (
+                  <button
+                    className="btn btnGhost"
+                    onClick={() => {
+                      setEditingSpielerId(null);
+                      setSpielerName("");
+                      setSpielerEmail("");
+                      setSpielerTelefon("");
+                      setSpielerNotizen("");
+                      setSpielerRechnungsAdresse("");
+                    }}
+                  >
+                    Bearbeitung abbrechen
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1135,6 +1187,19 @@ export default function App() {
                     ) : null}
                   </div>
                   <div className="smallActions">
+                    <button
+                      className="btn micro"
+                      onClick={() => {
+                        setEditingSpielerId(s.id);
+                        setSpielerName(s.name);
+                        setSpielerEmail(s.kontaktEmail ?? "");
+                        setSpielerTelefon(s.kontaktTelefon ?? "");
+                        setSpielerNotizen(s.notizen ?? "");
+                        setSpielerRechnungsAdresse(s.rechnungsAdresse ?? "");
+                      }}
+                    >
+                      Bearbeiten
+                    </button>
                     <button
                       className="btn micro btnGhost"
                       onClick={() => setSpieler((prev) => prev.filter((x) => x.id !== s.id))}
@@ -1180,11 +1245,25 @@ export default function App() {
                   placeholder="optional"
                 />
               </div>
-              <div className="field" style={{ minWidth: 160 }}>
+              <div className="field" style={{ minWidth: 160, display: "flex", flexDirection: "column", gap: 6 }}>
                 <label>&nbsp;</label>
                 <button className="btn" onClick={addTarif}>
-                  Tarif hinzufügen
+                  {editingTarifId ? "Änderungen speichern" : "Tarif hinzufügen"}
                 </button>
+                {editingTarifId && (
+                  <button
+                    className="btn btnGhost"
+                    onClick={() => {
+                      setEditingTarifId(null);
+                      setTarifName("");
+                      setTarifPreisProStunde(60);
+                      setTarifAbrechnung("proTraining");
+                      setTarifBeschreibung("");
+                    }}
+                  >
+                    Bearbeitung abbrechen
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1199,6 +1278,18 @@ export default function App() {
                     {t.beschreibung ? <div className="muted">{t.beschreibung}</div> : null}
                   </div>
                   <div className="smallActions">
+                    <button
+                      className="btn micro"
+                      onClick={() => {
+                        setEditingTarifId(t.id);
+                        setTarifName(t.name);
+                        setTarifPreisProStunde(t.preisProStunde);
+                        setTarifAbrechnung(t.abrechnung);
+                        setTarifBeschreibung(t.beschreibung ?? "");
+                      }}
+                    >
+                      Bearbeiten
+                    </button>
                     <button
                       className="btn micro btnGhost"
                       onClick={() => setTarife((prev) => prev.filter((x) => x.id !== t.id))}
