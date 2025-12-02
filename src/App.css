@@ -6,11 +6,17 @@
   box-sizing: border-box;
 }
 
+html,
 body{
   margin: 0;
+  padding: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
   background: #f6f7fb;
   color: #0f172a;
+}
+
+body{
+  min-height: 100vh;
 }
 
 .container{
@@ -18,6 +24,25 @@ body{
   margin: 0 auto;
   padding: 18px;
 }
+
+/* Auth */
+
+.authWrapper{
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f7fb;
+  padding: 16px;
+}
+
+.authCard{
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Header, Tabs, Cards */
 
 .header{
   display: flex;
@@ -55,6 +80,8 @@ body{
   cursor: pointer;
   transition: transform 120ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .tabBtn:hover{
@@ -107,6 +134,12 @@ body{
   flex-wrap: wrap;
 }
 
+.column{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .field{
   display: flex;
   flex-direction: column;
@@ -127,6 +160,7 @@ textarea{
   border-radius: 12px;
   padding: 10px 12px;
   outline: none;
+  font-size: 14px;
 }
 
 textarea{
@@ -150,6 +184,7 @@ textarea:focus{
   cursor: pointer;
   transition: transform 120ms ease, filter 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
   box-shadow: 0 8px 18px rgba(14, 165, 233, 0.18);
+  font-size: 13px;
 }
 
 .btn:hover{
@@ -354,16 +389,97 @@ textarea:focus{
   line-height: 1.1;
 }
 
-.authWrapper{
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f6f7fb;
-}
+/* ::::: Responsive Mobile ::::: */
 
-.column{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+@media (max-width: 768px){
+  .container{
+    padding: 10px;
+  }
+
+  .header{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(#f6f7fb 0%, #f6f7fb 85%, transparent 100%);
+    padding-bottom: 6px;
+  }
+
+  .hTitle h1{
+    font-size: 18px;
+  }
+
+  .hTitle p{
+    font-size: 12px;
+  }
+
+  .tabs{
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .tabs::-webkit-scrollbar{
+    display: none;
+  }
+
+  .tabBtn{
+    flex: 0 0 auto;
+    padding: 8px 10px;
+  }
+
+  .card{
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .grid2{
+    grid-template-columns: 1fr;
+  }
+
+  .split{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .field{
+    width: 100%;
+  }
+
+  input,
+  select,
+  textarea{
+    width: 100%;
+  }
+
+  .listItem{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .smallActions{
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .kgrid{
+    overflow-x: auto;
+  }
+
+  .kHead,
+  .kBody{
+    grid-template-columns: 70px repeat(7, minmax(120px, 1fr));
+  }
+
+  .kBody{
+    min-width: 950px;
+  }
 }

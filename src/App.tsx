@@ -221,8 +221,8 @@ function AuthScreen() {
   }
 
   return (
-    <div className="container">
-      <div className="card" style={{ maxWidth: 420, margin: "60px auto" }}>
+    <div className="authWrapper">
+      <div className="card authCard">
         <h1>{mode === "login" ? "Login" : "Registrieren"}</h1>
         <form onSubmit={handleSubmit}>
           <div className="field">
