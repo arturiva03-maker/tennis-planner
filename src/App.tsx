@@ -551,89 +551,107 @@ export default function App() {
   }, [authUser?.id]);
 
 
-  useEffect(() => {
-    if (authLoading || profileLoading) return;
-    if (profileLoading) return;
-    if (initialSynced) return;
+  /* ::::: Initialen Zustand pro Account laden ::::: */
 
-    async function loadState() {
-      if (!authUser) {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-        setInitialSynced(true);
-        return;
-      }
+useEffect(() => {
+  if (authLoading || profileLoading) return;
+  if (initialSynced) return;
 
-      const { data, error } = await supabase
-        .from("user_state")
-        .select("data")
-        .eq("user_id", authUser.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error(
-          "Fehler beim Laden des Zustands aus Supabase",
-          error
-        );
-      }
-
-      if (data && data.data) {
-        const cloud = normalizeState(data.data as Partial<AppState>);
-        setTrainers(cloud.trainers);
-        setSpieler(cloud.spieler);
-        setTarife(cloud.tarife);
-        setTrainings(cloud.trainings);
-        setPayments(cloud.payments ?? {});
-      } else {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-      }
-
+  async function loadState() {
+    // nicht eingeloggt oder noch keine Account Zuordnung: wie bisher nur localStorage
+    if (!authUser || !authUser.accountId) {
+      const local = readStateWithMeta();
+      setTrainers(local.state.trainers);
+      setSpieler(local.state.spieler);
+      setTarife(local.state.tarife);
+      setTrainings(local.state.trainings);
+      setPayments(local.state.payments ?? {});
       setInitialSynced(true);
+      return;
     }
 
-    loadState();
-  }, [authLoading, authUser, initialSynced, profileLoading]);
+    // gemeinsamer Zustand pro Tennisschule
+    const { data, error } = await supabase
+      .from("account_state")
+      .select("data")
+      .eq("account_id", authUser.accountId)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        "Fehler beim Laden des Zustands aus Supabase",
+        error
+      );
+    }
+
+    if (data && data.data) {
+      const cloud = normalizeState(data.data as Partial<AppState>);
+      setTrainers(cloud.trainers);
+      setSpieler(cloud.spieler);
+      setTarife(cloud.tarife);
+      setTrainings(cloud.trainings);
+      setPayments(cloud.payments ?? {});
+    } else {
+      // noch kein Datensatz für diesen Account: lokal starten
+      const local = readStateWithMeta();
+      setTrainers(local.state.trainers);
+      setSpieler(local.state.spieler);
+      setTarife(local.state.tarife);
+      setTrainings(local.state.trainings);
+      setPayments(local.state.payments ?? {});
+    }
+
+    setInitialSynced(true);
+  }
+
+  loadState();
+}, [authLoading, profileLoading, authUser, initialSynced]);
+
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
-  useEffect(() => {
-    if (!authUser) return;
-    if (!initialSynced) return;
-    if (profileLoading) return;
+  /* ::::: Zustand nach Supabase schreiben ::::: */
 
-    const payload: AppState = {
-      trainers,
-      spieler,
-      tarife,
-      trainings,
-      payments,
-    };
+useEffect(() => {
+  if (!authUser) return;
+  if (!authUser.accountId) return;
+  if (!initialSynced) return;
+  if (profileLoading) return;
 
-    supabase
-      .from("user_state")
-      .upsert({
-        user_id: authUser.id,
-        data: payload,
-        updated_at: new Date().toISOString(),
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error(
-            "Fehler beim Speichern des Zustands in Supabase",
-            error
-          );
-        }
-      });
-  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments, profileLoading]);
+  const payload: AppState = {
+    trainers,
+    spieler,
+    tarife,
+    trainings,
+    payments,
+  };
+
+  supabase
+    .from("account_state")
+    .upsert({
+      account_id: authUser.accountId,
+      data: payload,
+      updated_at: new Date().toISOString(),
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.error(
+          "Fehler beim Speichern des Zustands in Supabase",
+          error
+        );
+      }
+    });
+}, [
+  authUser,
+  initialSynced,
+  trainers,
+  spieler,
+  tarife,
+  trainings,
+  payments,
+  profileLoading,
+]);
+
 
   useEffect(() => {
     return () => {
