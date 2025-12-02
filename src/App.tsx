@@ -44,11 +44,14 @@ type Training = {
   serieId?: string;
 };
 
+type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
+
 type AppState = {
   trainer: TrainerSingle;
   spieler: Spieler[];
   tarife: Tarif[];
   trainings: Training[];
+  payments: PaymentsMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
@@ -59,6 +62,8 @@ type AuthUser = {
 };
 
 type ViewMode = "week" | "day";
+
+type AbrechnungFilter = "alle" | "bezahlt" | "offen";
 
 const STORAGE_KEY = "tennis_planner_single_trainer";
 const LEGACY_KEYS = [
@@ -137,12 +142,17 @@ function statusDotColor(s: TrainingStatus) {
   return "#3b82f6";
 }
 
+function paymentKey(monat: string, spielerId: string) {
+  return `${monat}__${spielerId}`;
+}
+
 function normalizeState(parsed: Partial<AppState> | null | undefined): AppState {
   return {
     trainer: parsed?.trainer ?? { name: "Trainer", email: "" },
     spieler: parsed?.spieler ?? [],
     tarife: parsed?.tarife ?? [],
     trainings: parsed?.trainings ?? [],
+    payments: parsed?.payments ?? {},
   };
 }
 
@@ -267,8 +277,7 @@ function AuthScreen() {
             >
               Bereits registriert? Einloggen
             </button>
-          )
-          }
+          )}
         </div>
       </div>
     </div>
@@ -297,6 +306,9 @@ export default function App() {
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
   const [trainings, setTrainings] = useState<Training[]>(
     initial.state.trainings
+  );
+  const [payments, setPayments] = useState<PaymentsMap>(
+    initial.state.payments ?? {}
   );
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
@@ -344,6 +356,9 @@ export default function App() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
 
+  const [abrechnungFilter, setAbrechnungFilter] =
+    useState<AbrechnungFilter>("alle");
+
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
@@ -370,8 +385,8 @@ export default function App() {
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainer, spieler, tarife, trainings });
-  }, [trainer, spieler, tarife, trainings]);
+    writeState({ trainer, spieler, tarife, trainings, payments });
+  }, [trainer, spieler, tarife, trainings, payments]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -393,7 +408,6 @@ export default function App() {
             ? { id: session.user.id, email: session.user.email ?? null }
             : null
         );
-        // Beim Benutzerwechsel neu aus der Cloud laden
         setInitialSynced(false);
       }
     );
@@ -416,6 +430,7 @@ export default function App() {
         setSpieler(local.state.spieler);
         setTarife(local.state.tarife);
         setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
         setInitialSynced(true);
         return;
       }
@@ -439,12 +454,14 @@ export default function App() {
         setSpieler(cloud.spieler);
         setTarife(cloud.tarife);
         setTrainings(cloud.trainings);
+        setPayments(cloud.payments ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainer(local.state.trainer);
         setSpieler(local.state.spieler);
         setTarife(local.state.tarife);
         setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
       }
 
       setInitialSynced(true);
@@ -464,6 +481,7 @@ export default function App() {
       spieler,
       tarife,
       trainings,
+      payments,
     };
 
     supabase
@@ -481,7 +499,7 @@ export default function App() {
           );
         }
       });
-  }, [authUser, initialSynced, trainer, spieler, tarife, trainings]);
+  }, [authUser, initialSynced, trainer, spieler, tarife, trainings, payments]);
 
   useEffect(() => {
     return () => {
@@ -879,6 +897,14 @@ export default function App() {
     return { total, spielerRows };
   }, [trainingsInMonth, spielerById, priceFürSpieler]);
 
+  function togglePaidForPlayer(monat: string, spielerId: string) {
+    const key = paymentKey(monat, spielerId);
+    setPayments((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -900,6 +926,14 @@ export default function App() {
   if (!authUser) {
     return <AuthScreen />;
   }
+
+  const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
+    const key = paymentKey(abrechnungMonat, r.id);
+    const paid = payments[key] ?? false;
+    if (abrechnungFilter === "alle") return true;
+    if (abrechnungFilter === "bezahlt") return paid;
+    return !paid;
+  });
 
   return (
     <div className="container">
@@ -1786,6 +1820,7 @@ export default function App() {
                   setSpieler([]);
                   setTarife([]);
                   setTrainings([]);
+                  setPayments({});
                   setTrainer({ name: "Trainer", email: "" });
                   setTrainerName("Trainer");
                   setTrainerEmail("");
@@ -1826,6 +1861,21 @@ export default function App() {
                   }
                 />
               </div>
+              <div className="field" style={{ minWidth: 200 }}>
+                <label>Filter</label>
+                <select
+                  value={abrechnungFilter}
+                  onChange={(e) =>
+                    setAbrechnungFilter(
+                      e.target.value as AbrechnungFilter
+                    )
+                  }
+                >
+                  <option value="alle">Alle</option>
+                  <option value="bezahlt">Nur bezahlt</option>
+                  <option value="offen">Nur offen</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1845,6 +1895,12 @@ export default function App() {
             </span>
           </div>
 
+          <div style={{ height: 10 }} />
+          <div className="muted">
+            Hinweis: Der Status "bezahlt" gilt immer für einen Spieler
+            im ausgewählten Monat.
+          </div>
+
           <div style={{ height: 14 }} />
 
           <div className="card cardInset">
@@ -1855,10 +1911,12 @@ export default function App() {
                   <th>Spieler</th>
                   <th>Aufstellung</th>
                   <th>Summe</th>
+                  <th>Status</th>
+                  <th>Aktion</th>
                 </tr>
               </thead>
               <tbody>
-                {abrechnung.spielerRows.map((r) => {
+                {filteredSpielerRowsForMonth.map((r) => {
                   const breakdownText =
                     r.breakdown.length === 0
                       ? "-"
@@ -1869,11 +1927,33 @@ export default function App() {
                           )
                           .join(" + ");
 
+                  const key = paymentKey(abrechnungMonat, r.id);
+                  const paid = payments[key] ?? false;
+
                   return (
                     <tr key={r.id}>
                       <td>{r.name}</td>
                       <td>{breakdownText}</td>
                       <td>{euro(r.sum)}</td>
+                      <td>
+                        <span
+                          className={
+                            paid ? "badge badgeOk" : "badge"
+                          }
+                        >
+                          {paid ? "bezahlt" : "offen"}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          className="btn micro"
+                          onClick={() =>
+                            togglePaidForPlayer(abrechnungMonat, r.id)
+                          }
+                        >
+                          {paid ? "als offen markieren" : "als bezahlt markieren"}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
