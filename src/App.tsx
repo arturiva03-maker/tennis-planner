@@ -540,7 +540,10 @@ export default function App() {
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
-    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+    return Array.from(
+      { length: endHour - startHour + 1 },
+      (_, i) => startHour + i
+    );
   }, []);
 
   const trainingsInWeek = useMemo(() => {
@@ -782,8 +785,23 @@ export default function App() {
   }
 
   function deleteTraining(id: string) {
-    setTrainings((prev) => prev.filter((t) => t.id !== id));
-    if (selectedTrainingId === id) resetTrainingForm();
+    const existing = trainings.find((t) => t.id === id);
+
+    if (existing && existing.serieId && applySerieScope === "abHeute") {
+      const sid = existing.serieId;
+      const cutoff = existing.datum;
+      setTrainings((prev) =>
+        prev.filter(
+          (t) => !(t.serieId === sid && t.datum >= cutoff)
+        )
+      );
+    } else {
+      setTrainings((prev) => prev.filter((t) => t.id !== id));
+    }
+
+    if (selectedTrainingId === id) {
+      resetTrainingForm();
+    }
   }
 
   function triggerDonePulse(trainingId: string) {
@@ -1625,7 +1643,8 @@ export default function App() {
                     <div className="muted">
                       Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
                       Status und Notiz werden für alle zukünftigen Termine
-                      übernommen.
+                      übernommen. Beim Löschen mit dieser Option werden
+                      alle zukünftigen Termine der Serie entfernt.
                     </div>
                   </div>
                 );
@@ -1955,10 +1974,21 @@ export default function App() {
                     <button
                       className="btn micro btnGhost"
                       onClick={() => {
+                        const idToRemove = s.id;
                         setSpieler((prev) =>
-                          prev.filter((x) => x.id !== s.id)
+                          prev.filter((x) => x.id !== idToRemove)
                         );
-                        if (editingSpielerId === s.id) {
+                        setTrainings((prev) =>
+                          prev
+                            .map((t) => ({
+                              ...t,
+                              spielerIds: t.spielerIds.filter(
+                                (pid) => pid !== idToRemove
+                              ),
+                            }))
+                            .filter((t) => t.spielerIds.length > 0)
+                        );
+                        if (editingSpielerId === idToRemove) {
                           setEditingSpielerId(null);
                           setSpielerName("");
                           setSpielerEmail("");
