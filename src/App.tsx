@@ -27,7 +27,7 @@ type Tarif = {
   id: string;
   name: string;
   preisProStunde: number;
-  abrechnung: "proTraining" | "proSpieler";
+  abrechnung: "proTraining" | "proSpieler" | "monatlich";
   beschreibung?: string;
 };
 
@@ -371,8 +371,9 @@ export default function App() {
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
-  const [tarifAbrechnung, setTarifAbrechnung] =
-    useState<"proTraining" | "proSpieler">("proTraining");
+  const [tarifAbrechnung, setTarifAbrechnung] = useState<
+    "proTraining" | "proSpieler" | "monatlich"
+  >("proTraining");
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
   const [editingTarifId, setEditingTarifId] = useState<string | null>(null);
 
@@ -850,7 +851,10 @@ export default function App() {
   function getPreisConfig(
     t: Training,
     tarifByIdMap: Map<string, Tarif>
-  ): { preisProStunde: number; abrechnung: "proTraining" | "proSpieler" } | null {
+  ): {
+    preisProStunde: number;
+    abrechnung: "proTraining" | "proSpieler" | "monatlich";
+  } | null {
     if (t.tarifId) {
       const tarif = tarifByIdMap.get(t.tarifId);
       if (tarif) {
@@ -878,6 +882,8 @@ export default function App() {
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
+    if (cfg.abrechnung === "monatlich") return 0;
+
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     const basis = cfg.preisProStunde * (mins / 60);
 
@@ -887,9 +893,11 @@ export default function App() {
     return basis;
   }
 
-  function priceFürSpieler(t: Training) {
+  function priceFuerSpieler(t: Training) {
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
+
+    if (cfg.abrechnung === "monatlich") return 0;
 
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     const basis = cfg.preisProStunde * (mins / 60);
@@ -1205,20 +1213,40 @@ export default function App() {
       string,
       { name: string; sum: number; counts: Map<number, number> }
     >();
+    const monthlySeen = new Map<string, Set<string>>();
+
+    const addShare = (pid: string, name: string, amount: number) => {
+      const share = round2(amount);
+      let entry = perSpieler.get(pid);
+      if (!entry) {
+        entry = { name, sum: 0, counts: new Map<number, number>() };
+        perSpieler.set(pid, entry);
+      }
+      entry.sum = round2(entry.sum + share);
+      entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
+    };
 
     trainingsInMonth.forEach((t) => {
-      const shareRaw = priceFürSpieler(t);
-      const share = round2(shareRaw);
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg) return;
 
+      if (cfg.abrechnung === "monatlich") {
+        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+        t.spielerIds.forEach((pid) => {
+          const name = spielerById.get(pid)?.name ?? "Unbekannt";
+          const seen = monthlySeen.get(pid) ?? new Set<string>();
+          if (seen.has(tarifKey)) return;
+          seen.add(tarifKey);
+          monthlySeen.set(pid, seen);
+          addShare(pid, name, cfg.preisProStunde);
+        });
+        return;
+      }
+
+      const share = priceFuerSpieler(t);
       t.spielerIds.forEach((pid) => {
         const name = spielerById.get(pid)?.name ?? "Unbekannt";
-        let entry = perSpieler.get(pid);
-        if (!entry) {
-          entry = { name, sum: 0, counts: new Map<number, number>() };
-          perSpieler.set(pid, entry);
-        }
-        entry.sum = round2(entry.sum + share);
-        entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
+        addShare(pid, name, share);
       });
     });
 
@@ -1246,23 +1274,45 @@ export default function App() {
     );
 
     return { total, spielerRows };
-  }, [trainingsInMonth, spielerById, priceFürSpieler]);
+  }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
 
   const abrechnungTrainer = useMemo(() => {
     const perTrainer = new Map<
       string,
       { name: string; sum: number; trainings: number }
     >();
+    const monthlySeen = new Map<string, Set<string>>();
 
     trainingsInMonth.forEach((t) => {
       const tid = t.trainerId || defaultTrainerId;
       const name = trainerById.get(tid)?.name ?? "Trainer";
-      const amount = round2(trainingPreisGesamt(t));
-      const entry =
-        perTrainer.get(tid) ?? { name, sum: 0, trainings: 0 };
-      entry.sum = round2(entry.sum + amount);
-      entry.trainings += 1;
-      perTrainer.set(tid, entry);
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg) return;
+
+      if (cfg.abrechnung === "monatlich") {
+        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+        const seen = monthlySeen.get(tid) ?? new Set<string>();
+        const entry =
+          perTrainer.get(tid) ?? { name, sum: 0, trainings: 0 };
+        let added = false;
+        t.spielerIds.forEach((pid) => {
+          const key = `${tarifKey}__${pid}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          entry.sum = round2(entry.sum + cfg.preisProStunde);
+          added = true;
+        });
+        entry.trainings += 1;
+        perTrainer.set(tid, entry);
+        monthlySeen.set(tid, seen);
+      } else {
+        const amount = round2(trainingPreisGesamt(t));
+        const entry =
+          perTrainer.get(tid) ?? { name, sum: 0, trainings: 0 };
+        entry.sum = round2(entry.sum + amount);
+        entry.trainings += 1;
+        perTrainer.set(tid, entry);
+      }
     });
 
     const rows = Array.from(perTrainer.entries())
@@ -1271,7 +1321,7 @@ export default function App() {
 
     const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
     return { total, rows };
-  }, [defaultTrainerId, trainerById, trainingsInMonth]);
+  }, [defaultTrainerId, trainerById, trainingsInMonth, tarifById]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
     const key = paymentKey(monat, spielerId);
@@ -1518,7 +1568,9 @@ export default function App() {
                           ? tarifById.get(t.tarifId)
                           : undefined;
                         const ta = tarif
-                          ? tarif.name
+                          ? tarif.abrechnung === "monatlich"
+                            ? `${tarif.name} (monatlich ${tarif.preisProStunde} €)`
+                            : tarif.name
                           : t.customPreisProStunde
                           ? `Individuell (${t.customPreisProStunde} €/h)`
                           : "Tarif";
@@ -1711,14 +1763,21 @@ export default function App() {
                   <option value="">
                     Kein Tarif, individuellen Preis verwenden
                   </option>
-                  {tarife.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}, {t.preisProStunde} € pro Stunde,{" "}
-                      {t.abrechnung === "proSpieler"
-                        ? "pro Spieler"
-                        : "pro Training"}
-                    </option>
-                  ))}
+                  {tarife.map((t) => {
+                    const beschreibung =
+                      t.abrechnung === "monatlich"
+                        ? `${t.preisProStunde} € monatlich`
+                        : `${t.preisProStunde} € pro Stunde, ${
+                            t.abrechnung === "proSpieler"
+                              ? "pro Spieler"
+                              : "pro Training"
+                          }`;
+                    return (
+                      <option key={t.id} value={t.id}>
+                        {t.name}, {beschreibung}
+                      </option>
+                    );
+                  })}
                 </select>
                 <div className="muted">
                   Entweder einen Tarif auswählen oder unten einen
@@ -1924,7 +1983,9 @@ export default function App() {
                   ? tarifById.get(t.tarifId)
                   : undefined;
                 const ta = tarif
-                  ? tarif.name
+                  ? tarif.abrechnung === "monatlich"
+                    ? `${tarif.name} (monatlich ${tarif.preisProStunde} €)`
+                    : tarif.name
                   : t.customPreisProStunde
                   ? `Individuell (${t.customPreisProStunde} €/h)`
                   : "Tarif";
@@ -2314,11 +2375,13 @@ export default function App() {
                       e.target.value as
                         | "proTraining"
                         | "proSpieler"
+                        | "monatlich"
                     )
                   }
                 >
                   <option value="proTraining">Pro Training</option>
                   <option value="proSpieler">Pro Spieler</option>
+                  <option value="monatlich">Monatlich (fix)</option>
                 </select>
               </div>
             </div>
@@ -2374,10 +2437,13 @@ export default function App() {
                   <div>
                     <strong>{t.name}</strong>
                     <div className="muted">
-                      {t.preisProStunde} € pro Stunde,{" "}
-                      {t.abrechnung === "proSpieler"
-                        ? "pro Spieler"
-                        : "pro Training"}
+                      {t.abrechnung === "monatlich"
+                        ? `${t.preisProStunde} € monatlich`
+                        : `${t.preisProStunde} € pro Stunde, ${
+                            t.abrechnung === "proSpieler"
+                              ? "pro Spieler"
+                              : "pro Training"
+                          }`}
                     </div>
                     {t.beschreibung ? (
                       <div className="muted">{t.beschreibung}</div>
@@ -2655,7 +2721,9 @@ export default function App() {
                 ? tarifById.get(t.tarifId)
                 : undefined;
               const ta = tarif
-                ? tarif.name
+                ? tarif.abrechnung === "monatlich"
+                  ? `${tarif.name} (monatlich ${tarif.preisProStunde} €)`
+                  : tarif.name
                 : t.customPreisProStunde
                 ? `Individuell (${t.customPreisProStunde} €/h)`
                 : "Tarif";
@@ -2711,3 +2779,6 @@ export default function App() {
     </div>
   );
 }
+
+
+
