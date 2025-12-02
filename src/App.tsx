@@ -339,6 +339,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("kalender");
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [dayIndex, setDayIndex] = useState<number>(0);
+  const [kalenderTrainerFilter, setKalenderTrainerFilter] =
+    useState<string>("alle");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -606,6 +608,16 @@ export default function App() {
     }
   }, [abrechnungTrainerFilter, trainers]);
 
+  useEffect(() => {
+    if (!trainers.length) return;
+    if (
+      kalenderTrainerFilter !== "alle" &&
+      !trainers.some((t) => t.id === kalenderTrainerFilter)
+    ) {
+      setKalenderTrainerFilter("alle");
+    }
+  }, [kalenderTrainerFilter, trainers]);
+
   const weekStart = useMemo(
     () => startOfWeekISO(weekAnchor),
     [weekAnchor]
@@ -628,10 +640,15 @@ export default function App() {
     const end = addDaysISO(weekStart, 7);
     return trainings
       .filter((t) => t.datum >= weekStart && t.datum < end)
+      .filter((t) => {
+        if (kalenderTrainerFilter === "alle") return true;
+        const tid = t.trainerId || defaultTrainerId;
+        return tid === kalenderTrainerFilter;
+      })
       .sort((a, b) =>
         (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
       );
-  }, [trainings, weekStart]);
+  }, [trainings, weekStart, kalenderTrainerFilter, defaultTrainerId]);
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
@@ -1391,6 +1408,24 @@ export default function App() {
                   onChange={(e) => setWeekAnchor(e.target.value)}
                 />
               </div>
+              {trainers.length > 1 && (
+                <div className="field" style={{ minWidth: 200 }}>
+                  <label>Trainer-Filter</label>
+                  <select
+                    value={kalenderTrainerFilter}
+                    onChange={(e) =>
+                      setKalenderTrainerFilter(e.target.value)
+                    }
+                  >
+                    <option value="alle">Alle Trainer</option>
+                    {trainers.map((tr) => (
+                      <option key={tr.id} value={tr.id}>
+                        {tr.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="row">
                 <button
                   className={`tabBtn ${
@@ -2454,7 +2489,7 @@ export default function App() {
                 />
               </div>
               <div className="field" style={{ minWidth: 200 }}>
-                <label>Filter</label>
+                <label>Abrechnungsstatus</label>
                 <select
                   value={abrechnungFilter}
                   onChange={(e) =>
