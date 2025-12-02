@@ -389,6 +389,71 @@ textarea:focus{
   line-height: 1.1;
 }
 
+/* ::::: Modal ::::: */
+
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 50;
+  backdrop-filter: blur(2px);
+}
+
+.modalCard{
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 18px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.18);
+}
+
+.modalHeader{
+  display: grid;
+  gap: 6px;
+}
+
+.modalHeader h3{
+  margin: 0;
+  font-size: 18px;
+}
+
+.modalPill{
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  border: 1px solid #bfdbfe;
+}
+
+.modalSummary{
+  margin: 14px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalSummary strong{
+  font-size: 18px;
+}
+
+.modalActions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* ::::: Responsive Mobile ::::: */
 
 @media (max-width: 768px){

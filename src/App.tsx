@@ -60,9 +60,14 @@ type AppState = {
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
 
+type Role = "admin" | "trainer";
+
 type AuthUser = {
   id: string;
   email: string | null;
+  role: Role;
+  accountId: string | null;
+  trainerId: string | null;
 };
 
 type ViewMode = "week" | "day";
@@ -122,6 +127,13 @@ function formatShort(dateISO: string) {
     (d.getDay() + 6) % 7
   ];
   return `${w} ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
+}
+
+function formatMonthLabel(monthISO: string) {
+  const parts = monthISO.split("-");
+  const year = parts[0] ?? "";
+  const month = parts[1] ?? "";
+  return `${pad2(Number(month))}.${year}`;
 }
 
 function euro(n: number) {
@@ -351,6 +363,12 @@ export default function App() {
   const [payments, setPayments] = useState<PaymentsMap>(
     initial.state.payments ?? {}
   );
+  const [payConfirm, setPayConfirm] = useState<{
+    monat: string;
+    spielerId: string;
+    spielerName: string;
+    amount: number;
+  } | null>(null);
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
@@ -424,6 +442,7 @@ export default function App() {
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [initialSynced, setInitialSynced] = useState(false);
 
   /* ::::: Local / Cloud Storage ::::: */
@@ -452,7 +471,13 @@ export default function App() {
       const session = res.data.session;
       setAuthUser(
         session
-          ? { id: session.user.id, email: session.user.email ?? null }
+          ? {
+              id: session.user.id,
+              email: session.user.email ?? null,
+              role: "admin",
+              accountId: null,
+              trainerId: null,
+            }
           : null
       );
       setAuthLoading(false);
@@ -462,10 +487,17 @@ export default function App() {
       (_event: string, session: any) => {
         setAuthUser(
           session
-            ? { id: session.user.id, email: session.user.email ?? null }
+            ? {
+                id: session.user.id,
+                email: session.user.email ?? null,
+                role: "admin",
+                accountId: null,
+                trainerId: null,
+              }
             : null
         );
         setInitialSynced(false);
+        setProfileLoading(false);
       }
     );
 
@@ -476,8 +508,52 @@ export default function App() {
 
   /* ::::: Initialen Zustand pro Benutzer laden ::::: */
 
+    useEffect(() => {
+    if (!authUser?.id) return;
+
+    let cancelled = false;
+    setProfileLoading(true);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("role, account_id, trainer_id")
+          .eq("user_id", authUser.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Fehler beim Laden des Profils", error);
+        }
+
+        if (!cancelled) {
+          setAuthUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  role: (data?.role as Role) || "admin",
+                  accountId: (data as any)?.account_id ?? null,
+                  trainerId: (data as any)?.trainer_id ?? null,
+                }
+              : prev
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setProfileLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id]);
+
+
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || profileLoading) return;
+    if (profileLoading) return;
     if (initialSynced) return;
 
     async function loadState() {
@@ -525,13 +601,14 @@ export default function App() {
     }
 
     loadState();
-  }, [authLoading, authUser, initialSynced]);
+  }, [authLoading, authUser, initialSynced, profileLoading]);
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
   useEffect(() => {
     if (!authUser) return;
     if (!initialSynced) return;
+    if (profileLoading) return;
 
     const payload: AppState = {
       trainers,
@@ -556,7 +633,7 @@ export default function App() {
           );
         }
       });
-  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments]);
+  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments, profileLoading]);
 
   useEffect(() => {
     return () => {
@@ -580,6 +657,13 @@ export default function App() {
     () => new Map(tarife.map((t) => [t.id, t])),
     [tarife]
   );
+  const isTrainer = authUser?.role === "trainer";
+  const ownTrainerId =
+    (authUser?.trainerId &&
+      trainers.some((t) => t.id === authUser.trainerId) &&
+      authUser.trainerId) ||
+    trainers[0]?.id ||
+    "";
   const defaultTrainerId = trainers[0]?.id ?? "";
   const selectedTrainerName =
     trainerById.get(tTrainerId)?.name ??
@@ -591,33 +675,64 @@ export default function App() {
         ? trainers[0]?.name ?? "Alle Trainer"
         : "Alle Trainer"
       : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
+  const visibleTabs: Tab[] = isTrainer
+    ? ["kalender", "training", "abrechnung"]
+    : ["kalender", "training", "verwaltung", "abrechnung"];
+  const roleLabel = isTrainer ? "Trainer" : "Admin";
+  const trainerOptionsForSelect = isTrainer
+    ? trainers.filter((t) => t.id === ownTrainerId || !ownTrainerId || trainers.length === 1)
+    : trainers;
 
   useEffect(() => {
     if (!trainers.length) return;
+    if (isTrainer) {
+      if (ownTrainerId && tTrainerId !== ownTrainerId) {
+        setTTrainerId(ownTrainerId);
+      }
+      return;
+    }
     if (!tTrainerId || !trainers.some((t) => t.id === tTrainerId)) {
       setTTrainerId(trainers[0].id);
     }
-  }, [tTrainerId, trainers]);
+  }, [tTrainerId, trainers, isTrainer, ownTrainerId]);
 
   useEffect(() => {
     if (!trainers.length) return;
+    if (isTrainer) {
+      if (ownTrainerId && abrechnungTrainerFilter !== ownTrainerId) {
+        setAbrechnungTrainerFilter(ownTrainerId);
+      }
+      return;
+    }
     if (
       abrechnungTrainerFilter !== "alle" &&
       !trainers.some((t) => t.id === abrechnungTrainerFilter)
     ) {
       setAbrechnungTrainerFilter("alle");
     }
-  }, [abrechnungTrainerFilter, trainers]);
+  }, [abrechnungTrainerFilter, trainers, isTrainer, ownTrainerId]);
 
   useEffect(() => {
     if (!trainers.length) return;
+    if (isTrainer) {
+      if (ownTrainerId && kalenderTrainerFilter !== ownTrainerId) {
+        setKalenderTrainerFilter(ownTrainerId);
+      }
+      return;
+    }
     if (
       kalenderTrainerFilter !== "alle" &&
       !trainers.some((t) => t.id === kalenderTrainerFilter)
     ) {
       setKalenderTrainerFilter("alle");
     }
-  }, [kalenderTrainerFilter, trainers]);
+  }, [kalenderTrainerFilter, trainers, isTrainer, ownTrainerId]);
+
+  useEffect(() => {
+    if (isTrainer && tab === "verwaltung") {
+      setTab("kalender");
+    }
+  }, [isTrainer, tab]);
 
   const weekStart = useMemo(
     () => startOfWeekISO(weekAnchor),
@@ -1331,13 +1446,27 @@ export default function App() {
     }));
   }
 
+  function openPayConfirm(monat: string, spielerId: string, spielerName: string, amount: number) {
+    setPayConfirm({ monat: monat, spielerId, spielerName, amount });
+  }
+
+  function closePayConfirm() {
+    setPayConfirm(null);
+  }
+
+  function confirmPay() {
+    if (!payConfirm) return;
+    togglePaidForPlayer(payConfirm.monat, payConfirm.spielerId);
+    setPayConfirm(null);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
     setInitialSynced(false);
   }
 
-  if (authLoading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="container">
         <div className="card" style={{ marginTop: 60 }}>
@@ -1376,8 +1505,9 @@ export default function App() {
   );
 
   return (
-    <div className="container">
-      <div className="header">
+    <>
+      <div className="container">
+        <div className="header">
         <div className="hTitle">
           <h1>Tennistrainer Planung</h1>
           <p>
@@ -1386,34 +1516,19 @@ export default function App() {
           </p>
         </div>
         <div className="tabs">
-          <button
-            className={`tabBtn ${tab === "kalender" ? "tabBtnActive" : ""}`}
-            onClick={() => setTab("kalender")}
-          >
-            Kalender
-          </button>
-          <button
-            className={`tabBtn ${tab === "training" ? "tabBtnActive" : ""}`}
-            onClick={() => setTab("training")}
-          >
-            Training
-          </button>
-          <button
-            className={`tabBtn ${
-              tab === "verwaltung" ? "tabBtnActive" : ""
-            }`}
-            onClick={() => setTab("verwaltung")}
-          >
-            Verwaltung
-          </button>
-          <button
-            className={`tabBtn ${
-              tab === "abrechnung" ? "tabBtnActive" : ""
-            }`}
-            onClick={() => setTab("abrechnung")}
-          >
-            Abrechnung
-          </button>
+          {visibleTabs.map((t) => (
+            <button
+              key={t}
+              className={`tabBtn ${tab === t ? "tabBtnActive" : ""}`}
+              onClick={() => setTab(t)}
+            >
+              {t === "kalender" && "Kalender"}
+              {t === "training" && "Training"}
+              {t === "verwaltung" && "Verwaltung"}
+              {t === "abrechnung" && "Abrechnung"}
+            </button>
+          ))}
+          <span className="pill">Rolle: <strong>{roleLabel}</strong></span>
           <button className="tabBtn btnGhost" onClick={handleLogout}>
             Logout ({authUser.email ?? "ohne Email"})
           </button>
@@ -1463,11 +1578,12 @@ export default function App() {
                   <label>Trainer-Filter</label>
                   <select
                     value={kalenderTrainerFilter}
+                    disabled={isTrainer}
                     onChange={(e) =>
                       setKalenderTrainerFilter(e.target.value)
                     }
                   >
-                    <option value="alle">Alle Trainer</option>
+                    {!isTrainer && <option value="alle">Alle Trainer</option>}
                     {trainers.map((tr) => (
                       <option key={tr.id} value={tr.id}>
                         {tr.name}
@@ -1742,9 +1858,10 @@ export default function App() {
                 <label>Trainer</label>
                 <select
                   value={tTrainerId}
+                  disabled={isTrainer}
                   onChange={(e) => setTTrainerId(e.target.value)}
                 >
-                  {trainers.map((tr) => (
+                  {trainerOptionsForSelect.map((tr) => (
                     <option key={tr.id} value={tr.id}>
                       {tr.name}
                     </option>
@@ -2574,11 +2691,12 @@ export default function App() {
                   <label>Trainer-Filter</label>
                   <select
                     value={abrechnungTrainerFilter}
+                    disabled={isTrainer}
                     onChange={(e) =>
                       setAbrechnungTrainerFilter(e.target.value)
                     }
                   >
-                    <option value="alle">Alle Trainer</option>
+                    {!isTrainer && <option value="alle">Alle Trainer</option>}
                     {trainers.map((tr) => (
                       <option key={tr.id} value={tr.id}>
                         {tr.name}
@@ -2693,12 +2811,21 @@ export default function App() {
                       <td>
                         <button
                           className="btn micro"
-                          onClick={() =>
-                            togglePaidForPlayer(
-                              abrechnungMonat,
-                              r.id
-                            )
-                          }
+                          onClick={() => {
+                            if (paid) {
+                              togglePaidForPlayer(
+                                abrechnungMonat,
+                                r.id
+                              );
+                            } else {
+                              openPayConfirm(
+                                abrechnungMonat,
+                                r.id,
+                                r.name,
+                                r.sum
+                              );
+                            }
+                          }}
                         >
                           {paid
                             ? "als offen markieren"
@@ -2776,7 +2903,39 @@ export default function App() {
           </ul>
         </div>
       )}
-    </div>
+      </div>
+
+      {payConfirm && (
+        <div className="modalOverlay">
+          <div className="modalCard">
+            <div className="modalHeader">
+              <div className="modalPill">Zahlung bestaetigen</div>
+              <h3>
+                {payConfirm.spielerName} &middot;{" "}
+                {formatMonthLabel(payConfirm.monat)}
+              </h3>
+              <p className="muted">
+                Dieser Betrag wird als bezahlt markiert. Du kannst es spaeter wieder auf "offen" stellen.
+              </p>
+            </div>
+
+            <div className="modalSummary">
+              <span className="muted">Betrag</span>
+              <strong>{euro(payConfirm.amount)}</strong>
+            </div>
+
+            <div className="modalActions">
+              <button className="btn btnGhost" onClick={closePayConfirm}>
+                Abbrechen
+              </button>
+              <button className="btn" onClick={confirmPay}>
+                Ja, als bezahlt markieren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
