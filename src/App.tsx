@@ -38,10 +38,12 @@ type Training = {
   uhrzeitVon: string;
   uhrzeitBis: string;
   spielerIds: string[];
-  tarifId: string;
+  tarifId?: string;
   status: TrainingStatus;
   notiz?: string;
   serieId?: string;
+  customPreisProStunde?: number;
+  customAbrechnung?: "proTraining" | "proSpieler";
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
@@ -338,6 +340,11 @@ export default function App() {
   const [tTarifId, setTTarifId] = useState("");
   const [tStatus, setTStatus] = useState<TrainingStatus>("geplant");
   const [tNotiz, setTNotiz] = useState("");
+  const [tCustomPreisProStunde, setTCustomPreisProStunde] = useState<
+    number | ""
+  >("");
+  const [tCustomAbrechnung, setTCustomAbrechnung] =
+    useState<"proTraining" | "proSpieler">("proTraining");
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
@@ -685,22 +692,54 @@ export default function App() {
     return Math.max(0, b - a);
   }
 
+  function getPreisConfig(
+    t: Training,
+    tarifByIdMap: Map<string, Tarif>
+  ): { preisProStunde: number; abrechnung: "proTraining" | "proSpieler" } | null {
+    if (t.tarifId) {
+      const tarif = tarifByIdMap.get(t.tarifId);
+      if (tarif) {
+        return {
+          preisProStunde: tarif.preisProStunde,
+          abrechnung: tarif.abrechnung,
+        };
+      }
+    }
+
+    if (
+      typeof t.customPreisProStunde === "number" &&
+      t.customPreisProStunde > 0
+    ) {
+      return {
+        preisProStunde: t.customPreisProStunde,
+        abrechnung: t.customAbrechnung ?? "proTraining",
+      };
+    }
+
+    return null;
+  }
+
   function trainingPreisGesamt(t: Training) {
-    const tarif = tarifById.get(t.tarifId);
-    if (!tarif) return 0;
+    const cfg = getPreisConfig(t, tarifById);
+    if (!cfg) return 0;
+
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    const basis = tarif.preisProStunde * (mins / 60);
-    if (tarif.abrechnung === "proSpieler")
+    const basis = cfg.preisProStunde * (mins / 60);
+
+    if (cfg.abrechnung === "proSpieler") {
       return basis * t.spielerIds.length;
+    }
     return basis;
   }
 
   function priceFürSpieler(t: Training) {
-    const tarif = tarifById.get(t.tarifId);
-    if (!tarif) return 0;
+    const cfg = getPreisConfig(t, tarifById);
+    if (!cfg) return 0;
+
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    const basis = tarif.preisProStunde * (mins / 60);
-    if (tarif.abrechnung === "proSpieler") return basis;
+    const basis = cfg.preisProStunde * (mins / 60);
+
+    if (cfg.abrechnung === "proSpieler") return basis;
     const n = Math.max(1, t.spielerIds.length);
     return basis / n;
   }
@@ -709,13 +748,19 @@ export default function App() {
     setTDatum(t.datum);
     setTVon(t.uhrzeitVon);
     setTBis(t.uhrzeitBis);
-    setTTarifId(t.tarifId);
+    setTTarifId(t.tarifId ?? "");
     setTStatus(t.status);
     setTNotiz(t.notiz ?? "");
     setTSpielerIds(t.spielerIds);
     setSelectedTrainingId(t.id);
     setRepeatWeekly(false);
     setApplySerieScope("nurDieses");
+    setTCustomPreisProStunde(
+      typeof t.customPreisProStunde === "number"
+        ? t.customPreisProStunde
+        : ""
+    );
+    setTCustomAbrechnung(t.customAbrechnung ?? "proTraining");
     setTab("training");
   }
 
@@ -731,6 +776,9 @@ export default function App() {
     setRepeatWeekly(false);
     setRepeatUntil(addDaysISO(todayISO(), 56));
     setApplySerieScope("nurDieses");
+    setTTarifId("");
+    setTCustomPreisProStunde("");
+    setTCustomAbrechnung("proTraining");
   }
 
   function deleteTraining(id: string) {
@@ -793,10 +841,18 @@ export default function App() {
   }
 
   function saveTraining() {
-    if (!tDatum || !tVon || !tBis || !tTarifId || tSpielerIds.length === 0)
-      return;
+    const hasTarif = !!tTarifId;
+    const customPreis =
+      !tTarifId &&
+      typeof tCustomPreisProStunde === "number" &&
+      tCustomPreisProStunde > 0
+        ? tCustomPreisProStunde
+        : undefined;
+
+    if (!tDatum || !tVon || !tBis || tSpielerIds.length === 0) return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
+    if (!hasTarif && !customPreis) return;
 
     const existing = selectedTrainingId
       ? trainings.find((x) => x.id === selectedTrainingId)
@@ -808,10 +864,12 @@ export default function App() {
         datum: tDatum,
         uhrzeitVon: tVon,
         uhrzeitBis: tBis,
-        tarifId: tTarifId,
+        tarifId: hasTarif ? tTarifId : undefined,
         spielerIds: tSpielerIds,
         status: tStatus,
         notiz: tNotiz.trim() || undefined,
+        customPreisProStunde: customPreis,
+        customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
       };
 
       if (existing.serieId && applySerieScope === "abHeute") {
@@ -828,6 +886,8 @@ export default function App() {
               spielerIds: payload.spielerIds,
               status: payload.status,
               notiz: payload.notiz,
+              customPreisProStunde: payload.customPreisProStunde,
+              customAbrechnung: payload.customAbrechnung,
             };
           })
         );
@@ -856,11 +916,13 @@ export default function App() {
           datum: d,
           uhrzeitVon: tVon,
           uhrzeitBis: tBis,
-          tarifId: tTarifId,
+          tarifId: hasTarif ? tTarifId : undefined,
           spielerIds: tSpielerIds,
           status: tStatus,
           notiz: tNotiz.trim() || undefined,
           serieId,
+          customPreisProStunde: customPreis,
+          customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         });
         d = addDaysISO(d, 7);
       }
@@ -878,10 +940,12 @@ export default function App() {
         datum: tDatum,
         uhrzeitVon: tVon,
         uhrzeitBis: tBis,
-        tarifId: tTarifId,
+        tarifId: hasTarif ? tTarifId : undefined,
         spielerIds: tSpielerIds,
         status: tStatus,
         notiz: tNotiz.trim() || undefined,
+        customPreisProStunde: customPreis,
+        customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
       },
     ]);
 
@@ -890,19 +954,44 @@ export default function App() {
   }
 
   const preisVorschau = useMemo(() => {
-    if (!tTarifId || tSpielerIds.length === 0) return 0;
+    if (tSpielerIds.length === 0) return 0;
+
+    const hasTarif = !!tTarifId;
+    const customPreis =
+      !tTarifId &&
+      typeof tCustomPreisProStunde === "number" &&
+      tCustomPreisProStunde > 0
+        ? tCustomPreisProStunde
+        : undefined;
+
+    if (!hasTarif && !customPreis) return 0;
+
     const fake: Training = {
       id: "x",
       datum: tDatum,
       uhrzeitVon: tVon,
       uhrzeitBis: tBis,
-      tarifId: tTarifId,
+      tarifId: hasTarif ? tTarifId : undefined,
       spielerIds: tSpielerIds,
       status: tStatus,
       notiz: tNotiz || undefined,
+      customPreisProStunde: customPreis,
+      customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
     };
+
     return trainingPreisGesamt(fake);
-  }, [tDatum, tVon, tBis, tTarifId, tSpielerIds, tStatus, tNotiz, tarifById]);
+  }, [
+    tDatum,
+    tVon,
+    tBis,
+    tTarifId,
+    tSpielerIds,
+    tStatus,
+    tNotiz,
+    tCustomPreisProStunde,
+    tCustomAbrechnung,
+    tarifById,
+  ]);
 
   const nextTrainings = useMemo(() => {
     const t0 = todayISO();
@@ -987,8 +1076,6 @@ export default function App() {
     setAuthUser(null);
     setInitialSynced(false);
   }
-
-  /* ::::: Rendering ::::: */
 
   if (authLoading) {
     return (
@@ -1198,8 +1285,15 @@ export default function App() {
                             40
                         );
 
-                        const ta =
-                          tarifById.get(t.tarifId)?.name ?? "Tarif";
+                        const tarif = t.tarifId
+                          ? tarifById.get(t.tarifId)
+                          : undefined;
+                        const ta = tarif
+                          ? tarif.name
+                          : t.customPreisProStunde
+                          ? `Individuell (${t.customPreisProStunde} €/h)`
+                          : "Tarif";
+
                         const sp = t.spielerIds
                           .map(
                             (id) =>
@@ -1359,12 +1453,14 @@ export default function App() {
 
             <div className="row">
               <div className="field">
-                <label>Tarif</label>
+                <label>Tarif (optional)</label>
                 <select
                   value={tTarifId}
                   onChange={(e) => setTTarifId(e.target.value)}
                 >
-                  <option value="">Tarif wählen</option>
+                  <option value="">
+                    Kein Tarif, individuellen Preis verwenden
+                  </option>
                   {tarife.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}, {t.preisProStunde} € pro Stunde,{" "}
@@ -1375,8 +1471,8 @@ export default function App() {
                   ))}
                 </select>
                 <div className="muted">
-                  Wenn noch kein Tarif vorhanden ist: Verwaltung, Tarife
-                  anlegen.
+                  Entweder einen Tarif auswählen oder unten einen
+                  individuellen Preis pro Stunde eingeben.
                 </div>
               </div>
 
@@ -1391,6 +1487,48 @@ export default function App() {
                   <option value="geplant">Geplant</option>
                   <option value="durchgefuehrt">Durchgeführt</option>
                   <option value="abgesagt">Abgesagt</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="field">
+                <label>Individueller Preis pro Stunde</label>
+                <input
+                  type="number"
+                  value={
+                    tCustomPreisProStunde === ""
+                      ? ""
+                      : tCustomPreisProStunde
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") {
+                      setTCustomPreisProStunde("");
+                    } else {
+                      const n = Number(v);
+                      setTCustomPreisProStunde(
+                        Number.isFinite(n) ? n : ""
+                      );
+                    }
+                  }}
+                  placeholder="z.B. 60"
+                  disabled={!!tTarifId}
+                />
+              </div>
+              <div className="field">
+                <label>Individuelle Abrechnung</label>
+                <select
+                  value={tCustomAbrechnung}
+                  onChange={(e) =>
+                    setTCustomAbrechnung(
+                      e.target.value as "proTraining" | "proSpieler"
+                    )
+                  }
+                  disabled={!!tTarifId}
+                >
+                  <option value="proTraining">Pro Training</option>
+                  <option value="proSpieler">Pro Spieler</option>
                 </select>
               </div>
             </div>
@@ -1531,8 +1669,15 @@ export default function App() {
             <h2>Schnellzugriff, nächste Trainings</h2>
             <ul className="list">
               {nextTrainings.map((t) => {
-                const ta =
-                  tarifById.get(t.tarifId)?.name ?? "Tarif";
+                const tarif = t.tarifId
+                  ? tarifById.get(t.tarifId)
+                  : undefined;
+                const ta = tarif
+                  ? tarif.name
+                  : t.customPreisProStunde
+                  ? `Individuell (${t.customPreisProStunde} €/h)`
+                  : "Tarif";
+
                 const sp = t.spielerIds
                   .map(
                     (id) => spielerById.get(id)?.name ?? "Spieler"
@@ -2150,8 +2295,15 @@ export default function App() {
           <h2>Trainings im Monat</h2>
           <ul className="list">
             {trainingsInMonth.map((t) => {
-              const ta =
-                tarifById.get(t.tarifId)?.name ?? "Tarif";
+              const tarif = t.tarifId
+                ? tarifById.get(t.tarifId)
+                : undefined;
+              const ta = tarif
+                ? tarif.name
+                : t.customPreisProStunde
+                ? `Individuell (${t.customPreisProStunde} €/h)`
+                : "Tarif";
+
               const sp = t.spielerIds
                 .map(
                   (id) => spielerById.get(id)?.name ?? "Spieler"
