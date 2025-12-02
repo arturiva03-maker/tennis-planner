@@ -2318,6 +2318,356 @@ useEffect(() => {
             </div>
           ))}
 
+                  {tab === "verwaltung" && !isTrainer && (
+          <>
+            <div className="grid2">
+              {/* Trainer verwalten */}
+              <div className="card">
+                <h2>Trainer verwalten</h2>
+                <div className="row">
+                  <div className="field">
+                    <label>Name</label>
+                    <input
+                      value={trainerName}
+                      onChange={(e) => setTrainerName(e.target.value)}
+                      placeholder="z.B. Jesper"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Email</label>
+                    <input
+                      value={trainerEmail}
+                      onChange={(e) => setTrainerEmail(e.target.value)}
+                      placeholder="z.B. trainer@example.com"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Stundensatz Trainer Honorar</label>
+                    <input
+                      type="number"
+                      value={
+                        trainerStundensatz === ""
+                          ? ""
+                          : trainerStundensatz
+                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === "") {
+                          setTrainerStundensatz("");
+                        } else {
+                          const n = Number(v);
+                          setTrainerStundensatz(
+                            Number.isFinite(n) ? n : ""
+                          );
+                        }
+                      }}
+                      placeholder="z.B. 20"
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <button
+                    className="btn"
+                    onClick={editingTrainerId ? saveTrainer : addTrainer}
+                  >
+                    {editingTrainerId
+                      ? "Trainer speichern"
+                      : "Trainer hinzufügen"}
+                  </button>
+                  {editingTrainerId && (
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => {
+                        setEditingTrainerId(null);
+                        setTrainerName("");
+                        setTrainerEmail("");
+                        setTrainerStundensatz(0);
+                      }}
+                    >
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
+
+                <ul className="list">
+                  {trainers.map((t) => (
+                    <li key={t.id} className="listItem">
+                      <div>
+                        <strong>{t.name}</strong>
+                        {t.email && (
+                          <div className="muted">{t.email}</div>
+                        )}
+                        <div className="muted">
+                          Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
+                        </div>
+                      </div>
+                      <div className="smallActions">
+                        <button
+                          className="btn micro btnGhost"
+                          onClick={() => startEditTrainer(t)}
+                        >
+                          Bearbeiten
+                        </button>
+                        {trainers.length > 1 && (
+                          <button
+                            className="btn micro btnWarn"
+                            onClick={() => deleteTrainer(t.id)}
+                          >
+                            Löschen
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Spieler verwalten */}
+              <div className="card">
+                <h2>Spieler verwalten</h2>
+                <div className="row">
+                  <div className="field">
+                    <label>Name</label>
+                    <input
+                      value={spielerName}
+                      onChange={(e) => setSpielerName(e.target.value)}
+                      placeholder="Name"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Email</label>
+                    <input
+                      value={spielerEmail}
+                      onChange={(e) => setSpielerEmail(e.target.value)}
+                      placeholder="Kontakt Email"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Telefon</label>
+                    <input
+                      value={spielerTelefon}
+                      onChange={(e) =>
+                        setSpielerTelefon(e.target.value)
+                      }
+                      placeholder="Telefon"
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="field" style={{ minWidth: 260 }}>
+                    <label>Rechnungsadresse</label>
+                    <input
+                      value={spielerRechnung}
+                      onChange={(e) =>
+                        setSpielerRechnung(e.target.value)
+                      }
+                      placeholder="optional"
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="field" style={{ minWidth: 260 }}>
+                    <label>Notizen</label>
+                    <input
+                      value={spielerNotizen}
+                      onChange={(e) =>
+                        setSpielerNotizen(e.target.value)
+                      }
+                      placeholder="optional"
+                    />
+                  </div>
+                </div>
+
+                <div className="row">
+                  <button
+                    className="btn"
+                    onClick={editingSpielerId ? saveSpieler : addSpieler}
+                  >
+                    {editingSpielerId
+                      ? "Spieler speichern"
+                      : "Spieler hinzufügen"}
+                  </button>
+                  {editingSpielerId && (
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => {
+                        setEditingSpielerId(null);
+                        setSpielerName("");
+                        setSpielerEmail("");
+                        setSpielerTelefon("");
+                        setSpielerRechnung("");
+                        setSpielerNotizen("");
+                      }}
+                    >
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
+
+                <ul className="list">
+                  {spieler.map((s) => (
+                    <li key={s.id} className="listItem">
+                      <div>
+                        <strong>{s.name}</strong>
+                        <div className="muted">
+                          {s.kontaktEmail ?? ""}
+                          {s.kontaktTelefon
+                            ? `, ${s.kontaktTelefon}`
+                            : ""}
+                        </div>
+                        {s.rechnungsAdresse && (
+                          <div className="muted">
+                            Rechnungsadresse: {s.rechnungsAdresse}
+                          </div>
+                        )}
+                        {s.notizen && (
+                          <div className="muted">{s.notizen}</div>
+                        )}
+                      </div>
+                      <div className="smallActions">
+                        <button
+                          className="btn micro btnGhost"
+                          onClick={() => startEditSpieler(s)}
+                        >
+                          Bearbeiten
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ height: 16 }} />
+
+            {/* Tarife verwalten */}
+            <div className="card">
+              <h2>Tarife verwalten</h2>
+              <div className="row">
+                <div className="field">
+                  <label>Name</label>
+                  <input
+                    value={tarifName}
+                    onChange={(e) => setTarifName(e.target.value)}
+                    placeholder="z.B. Gruppentraining"
+                  />
+                </div>
+                <div className="field">
+                  <label>Preis pro Stunde</label>
+                  <input
+                    type="number"
+                    value={tarifPreisProStunde}
+                    onChange={(e) =>
+                      setTarifPreisProStunde(
+                        Number(e.target.value) || 0
+                      )
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label>Abrechnung</label>
+                  <select
+                    value={tarifAbrechnung}
+                    onChange={(e) =>
+                      setTarifAbrechnung(
+                        e.target.value as
+                          | "proTraining"
+                          | "proSpieler"
+                          | "monatlich"
+                      )
+                    }
+                  >
+                    <option value="proTraining">Pro Training</option>
+                    <option value="proSpieler">Pro Spieler</option>
+                    <option value="monatlich">Monatlich</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="row">
+                <div className="field" style={{ minWidth: 260 }}>
+                  <label>Beschreibung</label>
+                  <input
+                    value={tarifBeschreibung}
+                    onChange={(e) =>
+                      setTarifBeschreibung(e.target.value)
+                    }
+                    placeholder="optional"
+                  />
+                </div>
+              </div>
+
+              <div className="row">
+                <button
+                  className="btn"
+                  onClick={editingTarifId ? saveTarif : addTarif}
+                >
+                  {editingTarifId
+                    ? "Tarif speichern"
+                    : "Tarif hinzufügen"}
+                </button>
+                {editingTarifId && (
+                  <button
+                    className="btn btnGhost"
+                    onClick={() => {
+                      setEditingTarifId(null);
+                      setTarifName("");
+                      setTarifPreisProStunde(60);
+                      setTarifAbrechnung("proTraining");
+                      setTarifBeschreibung("");
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+                )}
+              </div>
+
+              <ul className="list">
+                {tarife.map((t) => (
+                  <li key={t.id} className="listItem">
+                    <div>
+                      <strong>{t.name}</strong>
+                      <div className="muted">
+                        {t.abrechnung === "monatlich"
+                          ? `${t.preisProStunde} EUR monatlich`
+                          : `${t.preisProStunde} EUR pro Stunde, ${
+                              t.abrechnung === "proSpieler"
+                                ? "pro Spieler"
+                                : "pro Training"
+                            }`}
+                      </div>
+                      {t.beschreibung && (
+                        <div className="muted">{t.beschreibung}</div>
+                      )}
+                    </div>
+                    <div className="smallActions">
+                      <button
+                        className="btn micro btnGhost"
+                        onClick={() => startEditTarif(t)}
+                      >
+                        Bearbeiten
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
+
+        {tab === "verwaltung" && isTrainer && (
+          <div className="card">
+            <h2>Kein Zugriff</h2>
+            <p className="muted">
+              Die Verwaltung ist nur für den Hauptaccount verfügbar.
+            </p>
+          </div>
+        )}
+
+
         {tab === "abrechnung" && (
           <div className="card">
             <h2>Abrechnung</h2>
