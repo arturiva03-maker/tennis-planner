@@ -8,7 +8,8 @@ import React, {
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
-type TrainerSingle = {
+type Trainer = {
+  id: string;
   name: string;
   email?: string;
 };
@@ -34,6 +35,7 @@ type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type Training = {
   id: string;
+  trainerId?: string;
   datum: string;
   uhrzeitVon: string;
   uhrzeitBis: string;
@@ -49,7 +51,7 @@ type Training = {
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 
 type AppState = {
-  trainer: TrainerSingle;
+  trainers: Trainer[];
   spieler: Spieler[];
   tarife: Tarif[];
   trainings: Training[];
@@ -67,8 +69,9 @@ type ViewMode = "week" | "day";
 
 type AbrechnungFilter = "alle" | "bezahlt" | "offen";
 
-const STORAGE_KEY = "tennis_planner_single_trainer";
+const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const LEGACY_KEYS = [
+  "tennis_planner_single_trainer",
   "tennis_planner_single_trainer_v5",
   "tennis_planner_single_trainer_v4",
   "tennis_planner_single_trainer_v3",
@@ -148,12 +151,46 @@ function paymentKey(monat: string, spielerId: string) {
   return `${monat}__${spielerId}`;
 }
 
+function ensureTrainerList(
+  parsed: Partial<AppState> & { trainer?: Trainer | { name: string; email?: string } }
+): Trainer[] {
+  const inputList = Array.isArray(parsed?.trainers) ? parsed!.trainers : [];
+  const normalized = inputList
+    .filter(Boolean)
+    .map((t, idx) => ({
+      id: t.id || `trainer-${idx + 1}`,
+      name: t.name?.trim() || `Trainer ${idx + 1}`,
+      email: t.email?.trim() || undefined,
+    }));
+
+  if (normalized.length > 0) return normalized;
+
+  const single = (parsed as any)?.trainer as Trainer | undefined;
+  return [
+    {
+      id: "trainer-1",
+      name: single?.name?.trim() || "Trainer",
+      email: single?.email?.trim() || undefined,
+    },
+  ];
+}
+
 function normalizeState(parsed: Partial<AppState> | null | undefined): AppState {
+  const trainers = ensureTrainerList(parsed || {});
+  const defaultTrainerId = trainers[0]?.id || "trainer-1";
+
   return {
-    trainer: parsed?.trainer ?? { name: "Trainer", email: "" },
+    trainers,
     spieler: parsed?.spieler ?? [],
     tarife: parsed?.tarife ?? [],
-    trainings: parsed?.trainings ?? [],
+    trainings: (parsed?.trainings ?? []).map((t, idx) => ({
+      ...t,
+      id: t.id || `training-${idx + 1}`,
+      trainerId:
+        t.trainerId && trainers.some((tr) => tr.id === t.trainerId)
+          ? t.trainerId
+          : defaultTrainerId,
+    })),
     payments: parsed?.payments ?? {},
   };
 }
@@ -303,7 +340,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [dayIndex, setDayIndex] = useState<number>(0);
 
-  const [trainer, setTrainer] = useState<TrainerSingle>(initial.state.trainer);
+  const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
   const [trainings, setTrainings] = useState<Training[]>(
@@ -315,10 +352,13 @@ export default function App() {
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
-  const [trainerName, setTrainerName] = useState(initial.state.trainer.name);
-  const [trainerEmail, setTrainerEmail] = useState(
-    initial.state.trainer.email ?? ""
+  const [trainerName, setTrainerName] = useState(
+    initial.state.trainers[0]?.name ?? ""
   );
+  const [trainerEmail, setTrainerEmail] = useState(
+    initial.state.trainers[0]?.email ?? ""
+  );
+  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
@@ -334,6 +374,9 @@ export default function App() {
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
   const [editingTarifId, setEditingTarifId] = useState<string | null>(null);
 
+  const [tTrainerId, setTTrainerId] = useState(
+    initial.state.trainers[0]?.id ?? ""
+  );
   const [tDatum, setTDatum] = useState(todayISO());
   const [tVon, setTVon] = useState("16:00");
   const [tBis, setTBis] = useState("17:00");
@@ -367,6 +410,8 @@ export default function App() {
 
   const [abrechnungFilter, setAbrechnungFilter] =
     useState<AbrechnungFilter>("alle");
+  const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
+    useState<string>("alle");
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -394,8 +439,8 @@ export default function App() {
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainer, spieler, tarife, trainings, payments });
-  }, [trainer, spieler, tarife, trainings, payments]);
+    writeState({ trainers, spieler, tarife, trainings, payments });
+  }, [trainers, spieler, tarife, trainings, payments]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -435,7 +480,7 @@ export default function App() {
     async function loadState() {
       if (!authUser) {
         const local = readStateWithMeta();
-        setTrainer(local.state.trainer);
+        setTrainers(local.state.trainers);
         setSpieler(local.state.spieler);
         setTarife(local.state.tarife);
         setTrainings(local.state.trainings);
@@ -459,14 +504,14 @@ export default function App() {
 
       if (data && data.data) {
         const cloud = normalizeState(data.data as Partial<AppState>);
-        setTrainer(cloud.trainer);
+        setTrainers(cloud.trainers);
         setSpieler(cloud.spieler);
         setTarife(cloud.tarife);
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
       } else {
         const local = readStateWithMeta();
-        setTrainer(local.state.trainer);
+        setTrainers(local.state.trainers);
         setSpieler(local.state.spieler);
         setTarife(local.state.tarife);
         setTrainings(local.state.trainings);
@@ -486,7 +531,7 @@ export default function App() {
     if (!initialSynced) return;
 
     const payload: AppState = {
-      trainer,
+      trainers,
       spieler,
       tarife,
       trainings,
@@ -508,7 +553,7 @@ export default function App() {
           );
         }
       });
-  }, [authUser, initialSynced, trainer, spieler, tarife, trainings, payments]);
+  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments]);
 
   useEffect(() => {
     return () => {
@@ -519,6 +564,11 @@ export default function App() {
     };
   }, []);
 
+  const trainerById = useMemo(
+    () => new Map(trainers.map((t) => [t.id, t])),
+    [trainers]
+  );
+
   const spielerById = useMemo(
     () => new Map(spieler.map((s) => [s.id, s])),
     [spieler]
@@ -527,6 +577,34 @@ export default function App() {
     () => new Map(tarife.map((t) => [t.id, t])),
     [tarife]
   );
+  const defaultTrainerId = trainers[0]?.id ?? "";
+  const selectedTrainerName =
+    trainerById.get(tTrainerId)?.name ??
+    trainerById.get(defaultTrainerId)?.name ??
+    "Trainer";
+  const trainerFilterLabel =
+    abrechnungTrainerFilter === "alle"
+      ? trainers.length === 1
+        ? trainers[0]?.name ?? "Alle Trainer"
+        : "Alle Trainer"
+      : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
+
+  useEffect(() => {
+    if (!trainers.length) return;
+    if (!tTrainerId || !trainers.some((t) => t.id === tTrainerId)) {
+      setTTrainerId(trainers[0].id);
+    }
+  }, [tTrainerId, trainers]);
+
+  useEffect(() => {
+    if (!trainers.length) return;
+    if (
+      abrechnungTrainerFilter !== "alle" &&
+      !trainers.some((t) => t.id === abrechnungTrainerFilter)
+    ) {
+      setAbrechnungTrainerFilter("alle");
+    }
+  }, [abrechnungTrainerFilter, trainers]);
 
   const weekStart = useMemo(
     () => startOfWeekISO(weekAnchor),
@@ -564,6 +642,63 @@ export default function App() {
         (s.kontaktEmail ?? "").toLowerCase().includes(q)
     );
   }, [spieler, spielerSuche]);
+
+  function addTrainer() {
+    const name = trainerName.trim();
+    if (!name) return;
+
+    const neu: Trainer = {
+      id: uid(),
+      name,
+      email: trainerEmail.trim() || undefined,
+    };
+
+    setTrainers((prev) => [...prev, neu]);
+    setTrainerName("");
+    setTrainerEmail("");
+    setEditingTrainerId(null);
+    if (!tTrainerId) setTTrainerId(neu.id);
+  }
+
+  function startEditTrainer(t: Trainer) {
+    setEditingTrainerId(t.id);
+    setTrainerName(t.name);
+    setTrainerEmail(t.email ?? "");
+  }
+
+  function saveTrainer() {
+    if (!editingTrainerId) return;
+    const name = trainerName.trim();
+    if (!name) return;
+
+    setTrainers((prev) =>
+      prev.map((t) =>
+        t.id === editingTrainerId
+          ? { ...t, name, email: trainerEmail.trim() || undefined }
+          : t
+      )
+    );
+
+    setEditingTrainerId(null);
+    setTrainerName("");
+    setTrainerEmail("");
+  }
+
+  function deleteTrainer(id: string) {
+    if (trainers.length <= 1) return;
+    const remaining = trainers.filter((t) => t.id !== id);
+    const fallbackId = remaining[0]?.id ?? id;
+    setTrainers(remaining);
+    setTrainings((prev) =>
+      prev.map((t) =>
+        t.trainerId === id ? { ...t, trainerId: fallbackId } : t
+      )
+    );
+    if (tTrainerId === id) setTTrainerId(fallbackId);
+    if (abrechnungTrainerFilter === id) {
+      setAbrechnungTrainerFilter("alle");
+    }
+  }
 
   function addSpieler() {
     const name = spielerName.trim();
@@ -748,6 +883,7 @@ export default function App() {
   }
 
   function fillTrainingFromSelected(t: Training) {
+    setTTrainerId(t.trainerId ?? defaultTrainerId);
     setTDatum(t.datum);
     setTVon(t.uhrzeitVon);
     setTBis(t.uhrzeitBis);
@@ -769,6 +905,7 @@ export default function App() {
 
   function resetTrainingForm() {
     setSelectedTrainingId(null);
+    setTTrainerId(defaultTrainerId);
     setTDatum(todayISO());
     setTVon("16:00");
     setTBis("17:00");
@@ -871,6 +1008,8 @@ export default function App() {
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
     if (!hasTarif && !customPreis) return;
+    const trainerIdForSave = tTrainerId || defaultTrainerId;
+    if (!trainerIdForSave) return;
 
     const existing = selectedTrainingId
       ? trainings.find((x) => x.id === selectedTrainingId)
@@ -879,6 +1018,7 @@ export default function App() {
     if (selectedTrainingId && existing) {
       const payload: Training = {
         ...existing,
+        trainerId: trainerIdForSave,
         datum: tDatum,
         uhrzeitVon: tVon,
         uhrzeitBis: tBis,
@@ -900,6 +1040,7 @@ export default function App() {
               ...x,
               uhrzeitVon: payload.uhrzeitVon,
               uhrzeitBis: payload.uhrzeitBis,
+              trainerId: payload.trainerId,
               tarifId: payload.tarifId,
               spielerIds: payload.spielerIds,
               status: payload.status,
@@ -934,6 +1075,7 @@ export default function App() {
           datum: d,
           uhrzeitVon: tVon,
           uhrzeitBis: tBis,
+          trainerId: trainerIdForSave,
           tarifId: hasTarif ? tTarifId : undefined,
           spielerIds: tSpielerIds,
           status: tStatus,
@@ -955,6 +1097,7 @@ export default function App() {
       ...prev,
       {
         id: uid(),
+        trainerId: trainerIdForSave,
         datum: tDatum,
         uhrzeitVon: tVon,
         uhrzeitBis: tBis,
@@ -986,6 +1129,7 @@ export default function App() {
 
     const fake: Training = {
       id: "x",
+      trainerId: tTrainerId || defaultTrainerId,
       datum: tDatum,
       uhrzeitVon: tVon,
       uhrzeitBis: tBis,
@@ -1027,10 +1171,16 @@ export default function App() {
       trainings
         .filter((t) => t.datum.startsWith(abrechnungMonat))
         .filter((t) => t.status === "durchgefuehrt")
+        .filter((t) => {
+          if (abrechnungTrainerFilter === "alle")
+            return true;
+          const tid = t.trainerId || defaultTrainerId;
+          return tid === abrechnungTrainerFilter;
+        })
         .sort((a, b) =>
           (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
         ),
-    [trainings, abrechnungMonat]
+    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
   );
 
   const abrechnung = useMemo(() => {
@@ -1080,6 +1230,31 @@ export default function App() {
 
     return { total, spielerRows };
   }, [trainingsInMonth, spielerById, priceFürSpieler]);
+
+  const abrechnungTrainer = useMemo(() => {
+    const perTrainer = new Map<
+      string,
+      { name: string; sum: number; trainings: number }
+    >();
+
+    trainingsInMonth.forEach((t) => {
+      const tid = t.trainerId || defaultTrainerId;
+      const name = trainerById.get(tid)?.name ?? "Trainer";
+      const amount = round2(trainingPreisGesamt(t));
+      const entry =
+        perTrainer.get(tid) ?? { name, sum: 0, trainings: 0 };
+      entry.sum = round2(entry.sum + amount);
+      entry.trainings += 1;
+      perTrainer.set(tid, entry);
+    });
+
+    const rows = Array.from(perTrainer.entries())
+      .map(([id, v]) => ({ id, ...v }))
+      .sort((a, b) => b.sum - a.sum);
+
+    const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
+    return { total, rows };
+  }, [defaultTrainerId, trainerById, trainingsInMonth]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
     const key = paymentKey(monat, spielerId);
@@ -1139,8 +1314,8 @@ export default function App() {
         <div className="hTitle">
           <h1>Tennistrainer Planung</h1>
           <p>
-            Ein Trainer, wiederkehrende Termine, Tarife pro Stunde, pro
-            Benutzer gespeichert.
+            Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
+            pro Benutzer gespeichert.
           </p>
         </div>
         <div className="tabs">
@@ -1248,7 +1423,8 @@ export default function App() {
                 )}
               </div>
               <span className="pill">
-                Trainer: <strong>{trainer.name}</strong>
+                Trainer gesamt:{" "}
+                <strong>{trainers.length}</strong>
               </span>
             </div>
           </div>
@@ -1318,6 +1494,14 @@ export default function App() {
                               spielerById.get(id)?.name ?? "Spieler"
                           )
                           .join(", ");
+                        const trainerName =
+                          trainerById.get(
+                            t.trainerId ?? defaultTrainerId
+                          )?.name ?? "Trainer";
+                        const taLine =
+                          trainers.length > 1
+                            ? `${ta} • ${trainerName}`
+                            : ta;
 
                         const isDone = t.status === "durchgefuehrt";
                         const isCancel = t.status === "abgesagt";
@@ -1370,7 +1554,7 @@ export default function App() {
                               e.stopPropagation();
                               handleCalendarEventDoubleClick(t);
                             }}
-                            title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nStatus: ${statusLabel(
+                            title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}\nTarif: ${ta}\nTrainer: ${trainerName}\nStatus: ${statusLabel(
                               t.status
                             )}`}
                           >
@@ -1399,7 +1583,7 @@ export default function App() {
                                   overflow: "hidden",
                                 }}
                               >
-                                {ta}
+                                {taLine}
                               </div>
                             </div>
                             <div
@@ -1466,6 +1650,19 @@ export default function App() {
                   value={tBis}
                   onChange={(e) => setTBis(e.target.value)}
                 />
+              </div>
+              <div className="field">
+                <label>Trainer</label>
+                <select
+                  value={tTrainerId}
+                  onChange={(e) => setTTrainerId(e.target.value)}
+                >
+                  {trainers.map((tr) => (
+                    <option key={tr.id} value={tr.id}>
+                      {tr.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -1596,7 +1793,7 @@ export default function App() {
                   </div>
 
                   <span className="pill">
-                    Trainer: <strong>{trainer.name}</strong>
+                    Trainer: <strong>{selectedTrainerName}</strong>
                   </span>
                 </div>
 
@@ -1702,6 +1899,9 @@ export default function App() {
                     (id) => spielerById.get(id)?.name ?? "Spieler"
                   )
                   .join(", ");
+                const trainerName =
+                  trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
+                  "Trainer";
                 return (
                   <li key={t.id} className="listItem">
                     <div>
@@ -1709,7 +1909,7 @@ export default function App() {
                         {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
                       </strong>
                       <div className="muted">
-                        {ta}, {sp}
+                        {ta}, {sp}, {trainerName}
                       </div>
                       {t.serieId ? (
                         <div className="muted">
@@ -1804,7 +2004,7 @@ export default function App() {
       {tab === "verwaltung" && (
         <div className="grid2">
           <div className="card">
-            <h2>Trainer bearbeiten</h2>
+            <h2>Trainer anlegen / bearbeiten</h2>
             <div className="row">
               <div className="field">
                 <label>Name</label>
@@ -1828,26 +2028,65 @@ export default function App() {
               </div>
               <div
                 className="field"
-                style={{ minWidth: 160 }}
+                style={{ minWidth: 200 }}
               >
                 <label>&nbsp;</label>
-                <button
-                  className="btn"
-                  onClick={() =>
-                    setTrainer({
-                      name: trainerName.trim() || "Trainer",
-                      email: trainerEmail.trim() || undefined,
-                    })
-                  }
-                >
-                  Speichern
-                </button>
+                <div className="row" style={{ gap: 8 }}>
+                  <button
+                    className="btn"
+                    onClick={
+                      editingTrainerId ? saveTrainer : addTrainer
+                    }
+                  >
+                    {editingTrainerId
+                      ? "Trainer speichern"
+                      : "Trainer hinzufügen"}
+                  </button>
+                  {editingTrainerId && (
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => {
+                        setEditingTrainerId(null);
+                        setTrainerName("");
+                        setTrainerEmail("");
+                      }}
+                    >
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="muted">
-              Ein Trainer, ohne Login in der App (Login läuft über
-              Supabase).
+              Mehrere Trainer möglich, Zuweisung pro Training.
             </div>
+            <ul className="list">
+              {trainers.map((tr) => (
+                <li key={tr.id} className="listItem">
+                  <div>
+                    <strong>{tr.name}</strong>
+                    {tr.email ? (
+                      <div className="muted">{tr.email}</div>
+                    ) : null}
+                  </div>
+                  <div className="smallActions">
+                    <button
+                      className="btn micro"
+                      onClick={() => startEditTrainer(tr)}
+                    >
+                      Bearbeiten
+                    </button>
+                    <button
+                      className="btn micro btnGhost"
+                      onClick={() => deleteTrainer(tr.id)}
+                      disabled={trainers.length <= 1}
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="card">
@@ -2167,9 +2406,16 @@ export default function App() {
                   setTarife([]);
                   setTrainings([]);
                   setPayments({});
-                  setTrainer({ name: "Trainer", email: "" });
-                  setTrainerName("Trainer");
+                  const fallbackTrainer = {
+                    id: "trainer-1",
+                    name: "Trainer",
+                    email: "",
+                  };
+                  setTrainers([fallbackTrainer]);
+                  setTTrainerId(fallbackTrainer.id);
+                  setTrainerName("");
                   setTrainerEmail("");
+                  setAbrechnungTrainerFilter("alle");
                   localStorage.removeItem(STORAGE_KEY);
                 }}
               >
@@ -2222,6 +2468,24 @@ export default function App() {
                   <option value="offen">Nur offen</option>
                 </select>
               </div>
+              {trainers.length > 1 && (
+                <div className="field" style={{ minWidth: 200 }}>
+                  <label>Trainer-Filter</label>
+                  <select
+                    value={abrechnungTrainerFilter}
+                    onChange={(e) =>
+                      setAbrechnungTrainerFilter(e.target.value)
+                    }
+                  >
+                    <option value="alle">Alle Trainer</option>
+                    {trainers.map((tr) => (
+                      <option key={tr.id} value={tr.id}>
+                        {tr.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2229,7 +2493,7 @@ export default function App() {
 
           <div className="row">
             <span className="pill">
-              Trainer: <strong>{trainer.name}</strong>
+              Trainer-Filter: <strong>{trainerFilterLabel}</strong>
             </span>
             <span className="pill">
               Umsatz gesamt:{" "}
@@ -2254,6 +2518,33 @@ export default function App() {
             Hinweis: Der Status "bezahlt" gilt immer für einen Spieler
             im ausgewählten Monat.
           </div>
+
+          {trainers.length > 1 && (
+            <>
+              <div style={{ height: 14 }} />
+              <div className="card cardInset">
+                <h2>Summe pro Trainer</h2>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Trainer</th>
+                      <th>Trainings</th>
+                      <th>Umsatz</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {abrechnungTrainer.rows.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.name}</td>
+                        <td>{r.trainings}</td>
+                        <td>{euro(r.sum)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           <div style={{ height: 14 }} />
 
@@ -2339,6 +2630,9 @@ export default function App() {
                   (id) => spielerById.get(id)?.name ?? "Spieler"
                 )
                 .join(", ");
+              const trainerName =
+                trainerById.get(t.trainerId ?? defaultTrainerId)
+                  ?.name ?? "Trainer";
               const price = euro(
                 round2(trainingPreisGesamt(t))
               );
@@ -2350,7 +2644,7 @@ export default function App() {
                       {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
                     </strong>
                     <div className="muted">
-                      {sp}, {ta}, {trainer.name}
+                      {sp}, {ta}, {trainerName}
                     </div>
                     {t.notiz ? (
                       <div className="muted">{t.notiz}</div>
