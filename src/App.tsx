@@ -516,7 +516,7 @@ export default function App() {
 
   /* ::::: Initialen Zustand pro Benutzer laden ::::: */
 
-    useEffect(() => {
+  useEffect(() => {
     if (!authUser?.id) return;
 
     let cancelled = false;
@@ -558,108 +558,115 @@ export default function App() {
     };
   }, [authUser?.id]);
 
-
   /* ::::: Initialen Zustand pro Account laden ::::: */
 
-useEffect(() => {
-  if (authLoading || profileLoading) return;
-  if (initialSynced) return;
+  useEffect(() => {
+    if (authLoading || profileLoading) return;
+    if (initialSynced) return;
 
-  async function loadState() {
-    // nicht eingeloggt oder noch keine Account Zuordnung: wie bisher nur localStorage
-    if (!authUser || !authUser.accountId) {
-      const local = readStateWithMeta();
-      setTrainers(local.state.trainers);
-      setSpieler(local.state.spieler);
-      setTarife(local.state.tarife);
-      setTrainings(local.state.trainings);
-      setPayments(local.state.payments ?? {});
+    console.log("[loadState] authUser:", authUser);
+
+    async function loadState() {
+      // nicht eingeloggt oder noch keine Account Zuordnung: wie bisher nur localStorage
+      if (!authUser || !authUser.accountId) {
+        console.log("[loadState] kein Account, nutze localStorage");
+        const local = readStateWithMeta();
+        setTrainers(local.state.trainers);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
+        setInitialSynced(true);
+        return;
+      }
+
+      console.log("[loadState] lade von Supabase, accountId =", authUser.accountId);
+
+      const { data, error } = await supabase
+        .from("account_state")
+        .select("data")
+        .eq("account_id", authUser.accountId)
+        .maybeSingle();
+
+      console.log("[loadState] Supabase Antwort:", { data, error });
+
+      if (error) {
+        console.error(
+          "Fehler beim Laden des Zustands aus Supabase",
+          error
+        );
+      }
+
+      if (data && data.data) {
+        const cloud = normalizeState(data.data as Partial<AppState>);
+        setTrainers(cloud.trainers);
+        setSpieler(cloud.spieler);
+        setTarife(cloud.tarife);
+        setTrainings(cloud.trainings);
+        setPayments(cloud.payments ?? {});
+      } else {
+        // noch kein Datensatz für diesen Account: lokal starten
+        console.log("[loadState] kein Cloud-Datensatz, benutze localStorage");
+        const local = readStateWithMeta();
+        setTrainers(local.state.trainers);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
+      }
+
       setInitialSynced(true);
-      return;
     }
 
-    // gemeinsamer Zustand pro Tennisschule
-    const { data, error } = await supabase
+    loadState();
+  }, [authLoading, profileLoading, authUser, initialSynced]);
+
+  /* ::::: Zustand nach Supabase schreiben ::::: */
+
+  useEffect(() => {
+    if (!authUser) return;
+    if (!authUser.accountId) return;
+    if (!initialSynced) return;
+    if (profileLoading) return;
+
+    const payload: AppState = {
+      trainers,
+      spieler,
+      tarife,
+      trainings,
+      payments,
+    };
+
+    supabase
       .from("account_state")
-      .select("data")
-      .eq("account_id", authUser.accountId)
-      .maybeSingle();
-
-    if (error) {
-      console.error(
-        "Fehler beim Laden des Zustands aus Supabase",
-        error
-      );
-    }
-
-    if (data && data.data) {
-      const cloud = normalizeState(data.data as Partial<AppState>);
-      setTrainers(cloud.trainers);
-      setSpieler(cloud.spieler);
-      setTarife(cloud.tarife);
-      setTrainings(cloud.trainings);
-      setPayments(cloud.payments ?? {});
-    } else {
-      // noch kein Datensatz für diesen Account: lokal starten
-      const local = readStateWithMeta();
-      setTrainers(local.state.trainers);
-      setSpieler(local.state.spieler);
-      setTarife(local.state.tarife);
-      setTrainings(local.state.trainings);
-      setPayments(local.state.payments ?? {});
-    }
-
-    setInitialSynced(true);
-  }
-
-  loadState();
-}, [authLoading, profileLoading, authUser, initialSynced]);
-
-
-  /* ::::: Zustand nach Supabase schreiben ::::: */
-
-  /* ::::: Zustand nach Supabase schreiben ::::: */
-
-useEffect(() => {
-  if (!authUser) return;
-  if (!authUser.accountId) return;
-  if (!initialSynced) return;
-  if (profileLoading) return;
-
-  const payload: AppState = {
+      .upsert({
+        account_id: authUser.accountId,
+        data: payload,
+        updated_at: new Date().toISOString(),
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error(
+            "Fehler beim Speichern des Zustands in Supabase",
+            error
+          );
+        } else {
+          console.log(
+            "[saveState] erfolgreich gespeichert für",
+            authUser.accountId
+          );
+        }
+      });
+  }, [
+    authUser,
+    initialSynced,
     trainers,
     spieler,
     tarife,
     trainings,
     payments,
-  };
-
-  supabase
-    .from("account_state")
-    .upsert({
-      account_id: authUser.accountId,
-      data: payload,
-      updated_at: new Date().toISOString(),
-    })
-    .then(({ error }) => {
-      if (error) {
-        console.error(
-          "Fehler beim Speichern des Zustands in Supabase",
-          error
-        );
-      }
-    });
-}, [
-  authUser,
-  initialSynced,
-  trainers,
-  spieler,
-  tarife,
-  trainings,
-  payments,
-  profileLoading,
-]);
-
+    profileLoading,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -1443,7 +1450,7 @@ useEffect(() => {
     return { total, spielerRows };
   }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
 
-    const abrechnungTrainer = useMemo(() => {
+  const abrechnungTrainer = useMemo(() => {
     type TrainerAbrechnungSummary = {
       name: string;
       sum: number;
@@ -2318,7 +2325,7 @@ useEffect(() => {
             </div>
           ))}
 
-                  {tab === "verwaltung" && !isTrainer && (
+        {tab === "verwaltung" && !isTrainer && (
           <>
             <div className="grid2">
               {/* Trainer verwalten */}
@@ -2667,7 +2674,6 @@ useEffect(() => {
           </div>
         )}
 
-
         {tab === "abrechnung" && (
           <div className="card">
             <h2>Abrechnung</h2>
@@ -2972,11 +2978,3 @@ useEffect(() => {
     </>
   );
 }
-
-
-
-
-
-
-
-
