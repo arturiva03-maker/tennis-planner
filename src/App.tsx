@@ -60,7 +60,6 @@ type AppState = {
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
-
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -72,7 +71,6 @@ type AuthUser = {
 };
 
 type ViewMode = "week" | "day";
-
 type AbrechnungFilter = "alle" | "bezahlt" | "offen";
 
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
@@ -95,9 +93,7 @@ function pad2(n: number) {
 
 function todayISO() {
   const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -109,24 +105,18 @@ function startOfWeekISO(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
   const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function addDaysISO(dateISO: string, days: number) {
   const d = new Date(dateISO + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function formatShort(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
-  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][
-    (d.getDay() + 6) % 7
-  ];
+  const w = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][(d.getDay() + 6) % 7];
   return `${w} ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
 }
 
@@ -299,10 +289,7 @@ function AuthScreen() {
           </div>
 
           {error ? (
-            <div
-              className="muted"
-              style={{ color: "#b91c1c", marginTop: 8 }}
-            >
+            <div className="muted" style={{ color: "#b91c1c", marginTop: 8 }}>
               {error}
             </div>
           ) : null}
@@ -327,10 +314,7 @@ function AuthScreen() {
               Noch kein Konto? Registrieren
             </button>
           ) : (
-            <button
-              className="btn btnGhost"
-              onClick={() => setMode("login")}
-            >
+            <button className="btn btnGhost" onClick={() => setMode("login")}>
               Bereits registriert? Einloggen
             </button>
           )}
@@ -362,9 +346,7 @@ export default function App() {
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
-  const [trainings, setTrainings] = useState<Training[]>(
-    initial.state.trainings
-  );
+  const [trainings, setTrainings] = useState<Training[]>(initial.state.trainings);
   const [payments, setPayments] = useState<PaymentsMap>(
     initial.state.payments ?? {}
   );
@@ -383,9 +365,9 @@ export default function App() {
   const [trainerEmail, setTrainerEmail] = useState(
     initial.state.trainers[0]?.email ?? ""
   );
-  const [trainerStundensatz, setTrainerStundensatz] = useState<
-    number | ""
-  >(initial.state.trainers[0]?.stundensatz ?? 0);
+  const [trainerStundensatz, setTrainerStundensatz] = useState<number | "">(
+    initial.state.trainers[0]?.stundensatz ?? 0
+  );
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
@@ -450,10 +432,9 @@ export default function App() {
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
   const [initialSynced, setInitialSynced] = useState(false);
 
-  /* ::::: Local / Cloud Storage ::::: */
+  /* ::::: Local / Cloud Storage Migration ::::: */
 
   useEffect(() => {
     const usedKey = initial.usedKey;
@@ -483,7 +464,7 @@ export default function App() {
               id: session.user.id,
               email: session.user.email ?? null,
               role: "admin",
-              accountId: null,
+              accountId: session.user.id, // Account ist die User ID
               trainerId: null,
             }
           : null
@@ -499,13 +480,12 @@ export default function App() {
                 id: session.user.id,
                 email: session.user.email ?? null,
                 role: "admin",
-                accountId: null,
+                accountId: session.user.id,
                 trainerId: null,
               }
             : null
         );
         setInitialSynced(false);
-        setProfileLoading(false);
       }
     );
 
@@ -514,62 +494,15 @@ export default function App() {
     };
   }, []);
 
-  /* ::::: Initialen Zustand pro Benutzer laden ::::: */
+  /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
 
   useEffect(() => {
-    if (!authUser?.id) return;
-
-    let cancelled = false;
-    setProfileLoading(true);
-
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_profiles")
-          .select("role, account_id, trainer_id")
-          .eq("user_id", authUser.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Fehler beim Laden des Profils", error);
-        }
-
-        if (!cancelled) {
-          setAuthUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  role: (data?.role as Role) || "admin",
-                  accountId: (data as any)?.account_id ?? null,
-                  trainerId: (data as any)?.trainer_id ?? null,
-                }
-              : prev
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setProfileLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authUser?.id]);
-
-  /* ::::: Initialen Zustand pro Account laden ::::: */
-
-  useEffect(() => {
-    if (authLoading || profileLoading) return;
+    if (authLoading) return;
     if (initialSynced) return;
 
-    console.log("[loadState] authUser:", authUser);
-
     async function loadState() {
-      // nicht eingeloggt oder noch keine Account Zuordnung: wie bisher nur localStorage
-      if (!authUser || !authUser.accountId) {
-        console.log("[loadState] kein Account, nutze localStorage");
+      // Nicht eingeloggt: nur localStorage
+      if (!authUser) {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
         setSpieler(local.state.spieler);
@@ -580,21 +513,16 @@ export default function App() {
         return;
       }
 
-      console.log("[loadState] lade von Supabase, accountId =", authUser.accountId);
-
+      // Eingeloggt: gemeinsamer Zustand aus Supabase pro accountId = user.id
+      const accountId = authUser.accountId;
       const { data, error } = await supabase
         .from("account_state")
         .select("data")
-        .eq("account_id", authUser.accountId)
+        .eq("account_id", accountId)
         .maybeSingle();
 
-      console.log("[loadState] Supabase Antwort:", { data, error });
-
       if (error) {
-        console.error(
-          "Fehler beim Laden des Zustands aus Supabase",
-          error
-        );
+        console.error("Fehler beim Laden des Zustands aus Supabase", error);
       }
 
       if (data && data.data) {
@@ -605,8 +533,7 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
       } else {
-        // noch kein Datensatz für diesen Account: lokal starten
-        console.log("[loadState] kein Cloud-Datensatz, benutze localStorage");
+        // noch kein Datensatz in Supabase: lokale Daten als Start verwenden
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
         setSpieler(local.state.spieler);
@@ -619,7 +546,7 @@ export default function App() {
     }
 
     loadState();
-  }, [authLoading, profileLoading, authUser, initialSynced]);
+  }, [authLoading, authUser, initialSynced]);
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -627,7 +554,6 @@ export default function App() {
     if (!authUser) return;
     if (!authUser.accountId) return;
     if (!initialSynced) return;
-    if (profileLoading) return;
 
     const payload: AppState = {
       trainers,
@@ -646,34 +572,15 @@ export default function App() {
       })
       .then(({ error }) => {
         if (error) {
-          console.error(
-            "Fehler beim Speichern des Zustands in Supabase",
-            error
-          );
-        } else {
-          console.log(
-            "[saveState] erfolgreich gespeichert für",
-            authUser.accountId
-          );
+          console.error("Fehler beim Speichern des Zustands in Supabase", error);
         }
       });
-  }, [
-    authUser,
-    initialSynced,
-    trainers,
-    spieler,
-    tarife,
-    trainings,
-    payments,
-    profileLoading,
-  ]);
+  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments]);
 
   useEffect(() => {
     return () => {
-      if (clickTimerRef.current)
-        window.clearTimeout(clickTimerRef.current);
-      if (flashTimerRef.current)
-        window.clearTimeout(flashTimerRef.current);
+      if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
     };
   }, []);
 
@@ -686,10 +593,12 @@ export default function App() {
     () => new Map(spieler.map((s) => [s.id, s])),
     [spieler]
   );
+
   const tarifById = useMemo(
     () => new Map(tarife.map((t) => [t.id, t])),
     [tarife]
   );
+
   const isTrainer = authUser?.role === "trainer";
   const ownTrainerId =
     (authUser?.trainerId &&
@@ -708,12 +617,17 @@ export default function App() {
         ? trainers[0]?.name ?? "Alle Trainer"
         : "Alle Trainer"
       : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
+
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "training", "abrechnung"]
     : ["kalender", "training", "verwaltung", "abrechnung"];
+
   const roleLabel = isTrainer ? "Trainer" : "Admin";
+
   const trainerOptionsForSelect = isTrainer
-    ? trainers.filter((t) => t.id === ownTrainerId || !ownTrainerId || trainers.length === 1)
+    ? trainers.filter(
+        (t) => t.id === ownTrainerId || !ownTrainerId || trainers.length === 1
+      )
     : trainers;
 
   useEffect(() => {
@@ -767,10 +681,7 @@ export default function App() {
     }
   }, [isTrainer, tab]);
 
-  const weekStart = useMemo(
-    () => startOfWeekISO(weekAnchor),
-    [weekAnchor]
-  );
+  const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)),
     [weekStart]
@@ -779,10 +690,7 @@ export default function App() {
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
-    return Array.from(
-      { length: endHour - startHour + 1 },
-      (_, i) => startHour + i
-    );
+    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   }, []);
 
   const trainingsInWeek = useMemo(() => {
@@ -834,9 +742,7 @@ export default function App() {
     setEditingTrainerId(t.id);
     setTrainerName(t.name);
     setTrainerEmail(t.email ?? "");
-    setTrainerStundensatz(
-      typeof t.stundensatz === "number" ? t.stundensatz : 0
-    );
+    setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
   }
 
   function saveTrainer() {
@@ -1092,9 +998,7 @@ export default function App() {
     setRepeatWeekly(false);
     setApplySerieScope("nurDieses");
     setTCustomPreisProStunde(
-      typeof t.customPreisProStunde === "number"
-        ? t.customPreisProStunde
-        : ""
+      typeof t.customPreisProStunde === "number" ? t.customPreisProStunde : ""
     );
     setTCustomAbrechnung(t.customAbrechnung ?? "proTraining");
     setTab("training");
@@ -1126,9 +1030,7 @@ export default function App() {
       const sid = existing.serieId;
       const cutoff = existing.datum;
       setTrainings((prev) =>
-        prev.filter(
-          (t) => !(t.serieId === sid && t.datum >= cutoff)
-        )
+        prev.filter((t) => !(t.serieId === sid && t.datum >= cutoff))
       );
     } else {
       setTrainings((prev) => prev.filter((t) => t.id !== id));
@@ -1141,8 +1043,7 @@ export default function App() {
 
   function triggerDonePulse(trainingId: string) {
     setDoneFlashId(trainingId);
-    if (flashTimerRef.current)
-      window.clearTimeout(flashTimerRef.current);
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
     flashTimerRef.current = window.setTimeout(() => {
       setDoneFlashId((prev) => (prev === trainingId ? null : prev));
     }, 650);
@@ -1178,8 +1079,7 @@ export default function App() {
   }
 
   function handleCalendarEventClick(t: Training) {
-    if (clickTimerRef.current)
-      window.clearTimeout(clickTimerRef.current);
+    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = window.setTimeout(() => {
       fillTrainingFromSelected(t);
       clickTimerRef.current = null;
@@ -1187,8 +1087,7 @@ export default function App() {
   }
 
   function handleCalendarEventDoubleClick(t: Training) {
-    if (clickTimerRef.current)
-      window.clearTimeout(clickTimerRef.current);
+    if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = null;
     markTrainingDone(t.id);
   }
@@ -1371,8 +1270,7 @@ export default function App() {
         .filter((t) => t.datum.startsWith(abrechnungMonat))
         .filter((t) => t.status === "durchgefuehrt")
         .filter((t) => {
-          if (abrechnungTrainerFilter === "alle")
-            return true;
+          if (abrechnungTrainerFilter === "alle") return true;
           const tid = t.trainerId || defaultTrainerId;
           return tid === abrechnungTrainerFilter;
         })
@@ -1443,9 +1341,7 @@ export default function App() {
       })
       .sort((a, b) => b.sum - a.sum);
 
-    const total = round2(
-      spielerRows.reduce((sum, r) => sum + r.sum, 0)
-    );
+    const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
     return { total, spielerRows };
   }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
@@ -1518,9 +1414,7 @@ export default function App() {
       .sort((a, b) => b.sum - a.sum);
 
     const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
-    const totalHonorar = round2(
-      rows.reduce((acc, r) => acc + r.honorar, 0)
-    );
+    const totalHonorar = round2(rows.reduce((acc, r) => acc + r.honorar, 0));
 
     return { total, rows, totalHonorar };
   }, [defaultTrainerId, trainerById, trainingsInMonth, tarifById]);
@@ -1559,7 +1453,7 @@ export default function App() {
     setInitialSynced(false);
   }
 
-  if (authLoading || profileLoading) {
+  if (authLoading) {
     return (
       <div className="container">
         <div className="card" style={{ marginTop: 60 }}>
@@ -1598,10 +1492,7 @@ export default function App() {
   );
 
   const trainerHonorarTotal = round2(
-    trainingsInMonth.reduce(
-      (acc, t) => acc + trainerHonorarFuerTraining(t),
-      0
-    )
+    trainingsInMonth.reduce((acc, t) => acc + trainerHonorarFuerTraining(t), 0)
   );
 
   return (
@@ -1611,8 +1502,8 @@ export default function App() {
           <div className="hTitle">
             <h1>Tennistrainer Planung</h1>
             <p>
-              Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
-              pro Benutzer gespeichert.
+              Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde, pro
+              Benutzer gespeichert.
             </p>
           </div>
           <div className="tabs">
@@ -1681,9 +1572,7 @@ export default function App() {
                     <select
                       value={kalenderTrainerFilter}
                       disabled={isTrainer}
-                      onChange={(e) =>
-                        setKalenderTrainerFilter(e.target.value)
-                      }
+                      onChange={(e) => setKalenderTrainerFilter(e.target.value)}
                     >
                       {!isTrainer && (
                         <option value="alle">Alle Trainer</option>
@@ -1796,8 +1685,7 @@ export default function App() {
 
                           const sp = t.spielerIds
                             .map(
-                              (id) =>
-                                spielerById.get(id)?.name ?? "Spieler"
+                              (id) => spielerById.get(id)?.name ?? "Spieler"
                             )
                             .join(", ");
                           const trainerName =
@@ -1838,9 +1726,7 @@ export default function App() {
                                 backgroundColor: bg,
                                 border: `1px solid ${border}`,
                                 opacity: isCancel ? 0.85 : 1,
-                                transform: isPulse
-                                  ? "scale(1.06)"
-                                  : undefined,
+                                transform: isPulse ? "scale(1.06)" : undefined,
                                 filter: isPulse
                                   ? "brightness(1.15)"
                                   : undefined,
@@ -1860,7 +1746,9 @@ export default function App() {
                                 e.stopPropagation();
                                 handleCalendarEventDoubleClick(t);
                               }}
-                              title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${t.uhrzeitBis}${
+                              title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
+                                t.uhrzeitBis
+                              }${
                                 isTrainer ? "" : `\nTarif: ${ta}`
                               }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
                                 t.status
@@ -2141,9 +2029,7 @@ export default function App() {
                               value={applySerieScope}
                               onChange={(e) =>
                                 setApplySerieScope(
-                                  e.target.value as
-                                    | "nurDieses"
-                                    | "abHeute"
+                                  e.target.value as "nurDieses" | "abHeute"
                                 )
                               }
                             >
@@ -2221,8 +2107,7 @@ export default function App() {
 
                     const sp = t.spielerIds
                       .map(
-                        (id) =>
-                          spielerById.get(id)?.name ?? "Spieler"
+                        (id) => spielerById.get(id)?.name ?? "Spieler"
                       )
                       .join(", ");
                     const trainerName =
@@ -2248,9 +2133,7 @@ export default function App() {
                         <div className="smallActions">
                           <button
                             className="btn micro btnGhost"
-                            onClick={() =>
-                              fillTrainingFromSelected(t)
-                            }
+                            onClick={() => fillTrainingFromSelected(t)}
                           >
                             Bearbeiten
                           </button>
@@ -2273,9 +2156,7 @@ export default function App() {
                     <label>Suche</label>
                     <input
                       value={spielerSuche}
-                      onChange={(e) =>
-                        setSpielerSuche(e.target.value)
-                      }
+                      onChange={(e) => setSpielerSuche(e.target.value)}
                       placeholder="Name oder Email"
                     />
                   </div>
@@ -2406,7 +2287,8 @@ export default function App() {
                           <div className="muted">{t.email}</div>
                         )}
                         <div className="muted">
-                          Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
+                          Honorar: {euro(t.stundensatz ?? 0)} pro
+                          Stunde
                         </div>
                       </div>
                       <div className="smallActions">
@@ -2568,9 +2450,7 @@ export default function App() {
                     type="number"
                     value={tarifPreisProStunde}
                     onChange={(e) =>
-                      setTarifPreisProStunde(
-                        Number(e.target.value) || 0
-                      )
+                      setTarifPreisProStunde(Number(e.target.value) || 0)
                     }
                   />
                 </div>
@@ -2693,9 +2573,7 @@ export default function App() {
                 <select
                   value={abrechnungFilter}
                   onChange={(e) =>
-                    setAbrechnungFilter(
-                      e.target.value as AbrechnungFilter
-                    )
+                    setAbrechnungFilter(e.target.value as AbrechnungFilter)
                   }
                 >
                   <option value="alle">Alle</option>
@@ -2811,10 +2689,7 @@ export default function App() {
                                 )
                                 .join(" + ");
 
-                        const key = paymentKey(
-                          abrechnungMonat,
-                          r.id
-                        );
+                        const key = paymentKey(abrechnungMonat, r.id);
                         const paid = payments[key] ?? false;
 
                         return (
@@ -2825,9 +2700,7 @@ export default function App() {
                             <td>
                               <span
                                 className={
-                                  paid
-                                    ? "badge badgeOk"
-                                    : "badge"
+                                  paid ? "badge badgeOk" : "badge"
                                 }
                               >
                                 {paid ? "bezahlt" : "offen"}
@@ -2891,9 +2764,7 @@ export default function App() {
                   trainerById.get(t.trainerId ?? defaultTrainerId)
                     ?.name ?? "Trainer";
                 const price = euro(round2(trainingPreisGesamt(t)));
-                const honorarBadge = euro(
-                  trainerHonorarFuerTraining(t)
-                );
+                const honorarBadge = euro(trainerHonorarFuerTraining(t));
 
                 return (
                   <li key={t.id} className="listItem">
@@ -2954,8 +2825,8 @@ export default function App() {
                 {formatMonthLabel(payConfirm.monat)}
               </h3>
               <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es später
-                wieder auf offen stellen.
+                Dieser Betrag wird als bezahlt markiert, Du kannst es
+                später wieder auf offen stellen.
               </p>
             </div>
 
