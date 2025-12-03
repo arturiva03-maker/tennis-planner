@@ -50,6 +50,7 @@ type Training = {
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
+type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
 
 type AppState = {
   trainers: Trainer[];
@@ -57,6 +58,7 @@ type AppState = {
   tarife: Tarif[];
   trainings: Training[];
   payments: PaymentsMap;
+  trainerPayments: TrainerPaymentsMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
@@ -155,7 +157,9 @@ function paymentKey(monat: string, spielerId: string) {
 }
 
 function ensureTrainerList(
-  parsed: Partial<AppState> & { trainer?: Trainer | { name: string; email?: string } }
+  parsed: Partial<AppState> & {
+    trainer?: Trainer | { name: string; email?: string };
+  }
 ): Trainer[] {
   const inputList = Array.isArray(parsed?.trainers) ? parsed!.trainers : [];
   const normalized = inputList
@@ -199,6 +203,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
           : defaultTrainerId,
     })),
     payments: parsed?.payments ?? {},
+    trainerPayments: parsed?.trainerPayments ?? {},
   };
 }
 
@@ -346,9 +351,14 @@ export default function App() {
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
-  const [trainings, setTrainings] = useState<Training[]>(initial.state.trainings);
+  const [trainings, setTrainings] = useState<Training[]>(
+    initial.state.trainings
+  );
   const [payments, setPayments] = useState<PaymentsMap>(
     initial.state.payments ?? {}
+  );
+  const [trainerPayments, setTrainerPayments] = useState<TrainerPaymentsMap>(
+    initial.state.trainerPayments ?? {}
   );
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
@@ -436,7 +446,6 @@ export default function App() {
   const [profileFinished, setProfileFinished] = useState(false);
   const [initialSynced, setInitialSynced] = useState(false);
 
-
   /* ::::: Local / Cloud Storage Migration ::::: */
 
   useEffect(() => {
@@ -453,31 +462,21 @@ export default function App() {
 
   useEffect(() => {
     if (!hasMountedRef.current) return;
-    writeState({ trainers, spieler, tarife, trainings, payments });
-  }, [trainers, spieler, tarife, trainings, payments]);
+    writeState({
+      trainers,
+      spieler,
+      tarife,
+      trainings,
+      payments,
+      trainerPayments,
+    });
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
   useEffect(() => {
-  supabase.auth.getSession().then((res) => {
-    const session = res.data.session;
-    setAuthUser(
-      session
-        ? {
-            id: session.user.id,
-            email: session.user.email ?? null,
-            // Startwerte, werden gleich über user_profiles überschrieben
-            role: "admin",
-            accountId: null,
-            trainerId: null,
-          }
-        : null
-    );
-    setAuthLoading(false);
-  });
-
-  const { data: sub } = supabase.auth.onAuthStateChange(
-    (_event: string, session: any) => {
+    supabase.auth.getSession().then((res) => {
+      const session = res.data.session;
       setAuthUser(
         session
           ? {
@@ -489,135 +488,149 @@ export default function App() {
             }
           : null
       );
-      setInitialSynced(false);
-      setProfileFinished(false);
-    }
-  );
+      setAuthLoading(false);
+    });
 
-  return () => {
-    sub.subscription.unsubscribe();
-  };
-}, []);
-
-/* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
-
-useEffect(() => {
-  if (!authUser?.id) {
-    setProfileFinished(false);
-    return;
-  }
-
-  let cancelled = false;
-  setProfileLoading(true);
-  setProfileFinished(false);
-
-  (async () => {
-    try {
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select("role, account_id, trainer_id")
-        .eq("user_id", authUser.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Fehler beim Laden des Profils", error);
-      }
-
-      if (!cancelled && data) {
-        setAuthUser((prev) =>
-          prev
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event: string, session: any) => {
+        setAuthUser(
+          session
             ? {
-                ...prev,
-                role: (data.role as Role) || "admin",
-                accountId: data.account_id ?? prev.id,
-                trainerId: data.trainer_id ?? null,
+                id: session.user.id,
+                email: session.user.email ?? null,
+                role: "admin",
+                accountId: null,
+                trainerId: null,
               }
-            : prev
+            : null
         );
+        setInitialSynced(false);
+        setProfileFinished(false);
       }
-    } finally {
-      if (!cancelled) {
-        setProfileLoading(false);
-        setProfileFinished(true);
-      }
+    );
+
+    return () => {
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  /* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
+
+  useEffect(() => {
+    if (!authUser?.id) {
+      setProfileFinished(false);
+      return;
     }
-  })();
 
-  return () => {
-    cancelled = true;
-  };
-}, [authUser?.id]);
+    let cancelled = false;
+    setProfileLoading(true);
+    setProfileFinished(false);
 
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_profiles")
+          .select("role, account_id, trainer_id")
+          .eq("user_id", authUser.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Fehler beim Laden des Profils", error);
+        }
+
+        if (!cancelled && data) {
+          setAuthUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  role: (data.role as Role) || "admin",
+                  accountId: data.account_id ?? prev.id,
+                  trainerId: data.trainer_id ?? null,
+                }
+              : prev
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setProfileLoading(false);
+          setProfileFinished(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id]);
 
   /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
 
   useEffect(() => {
-  if (authLoading || profileLoading) return;
-  if (initialSynced) return;
+    if (authLoading || profileLoading) return;
+    if (initialSynced) return;
 
-  async function loadState() {
-    // Nicht eingeloggt: nur localStorage
-    if (!authUser) {
-      const local = readStateWithMeta();
-      setTrainers(local.state.trainers);
-      setSpieler(local.state.spieler);
-      setTarife(local.state.tarife);
-      setTrainings(local.state.trainings);
-      setPayments(local.state.payments ?? {});
+    async function loadState() {
+      if (!authUser) {
+        const local = readStateWithMeta();
+        setTrainers(local.state.trainers);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
+        setTrainerPayments(local.state.trainerPayments ?? {});
+        setInitialSynced(true);
+        return;
+      }
+
+      if (!profileFinished) {
+        return;
+      }
+
+      if (!authUser.accountId) {
+        const local = readStateWithMeta();
+        setTrainers(local.state.trainers);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
+        setTrainerPayments(local.state.trainerPayments ?? {});
+        setInitialSynced(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("account_state")
+        .select("data")
+        .eq("account_id", authUser.accountId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Fehler beim Laden des Zustands aus Supabase", error);
+      }
+
+      if (data && data.data) {
+        const cloud = normalizeState(data.data as Partial<AppState>);
+        setTrainers(cloud.trainers);
+        setSpieler(cloud.spieler);
+        setTarife(cloud.tarife);
+        setTrainings(cloud.trainings);
+        setPayments(cloud.payments ?? {});
+        setTrainerPayments(cloud.trainerPayments ?? {});
+      } else {
+        const local = readStateWithMeta();
+        setTrainers(local.state.trainers);
+        setSpieler(local.state.spieler);
+        setTarife(local.state.tarife);
+        setTrainings(local.state.trainings);
+        setPayments(local.state.payments ?? {});
+        setTrainerPayments(local.state.trainerPayments ?? {});
+      }
+
       setInitialSynced(true);
-      return;
     }
 
-    // Profil ist noch nicht fertig geladen: später nochmal probieren
-    if (!profileFinished) {
-      return;
-    }
-
-    // Wenn es (noch) keine Account-Zuordnung gibt, fallback auf localStorage
-    if (!authUser.accountId) {
-      const local = readStateWithMeta();
-      setTrainers(local.state.trainers);
-      setSpieler(local.state.spieler);
-      setTarife(local.state.tarife);
-      setTrainings(local.state.trainings);
-      setPayments(local.state.payments ?? {});
-      setInitialSynced(true);
-      return;
-    }
-
-    // Eingeloggt: gemeinsamer Zustand aus Supabase pro accountId
-    const { data, error } = await supabase
-      .from("account_state")
-      .select("data")
-      .eq("account_id", authUser.accountId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Fehler beim Laden des Zustands aus Supabase", error);
-    }
-
-    if (data && data.data) {
-      const cloud = normalizeState(data.data as Partial<AppState>);
-      setTrainers(cloud.trainers);
-      setSpieler(cloud.spieler);
-      setTarife(cloud.tarife);
-      setTrainings(cloud.trainings);
-      setPayments(cloud.payments ?? {});
-    } else {
-      const local = readStateWithMeta();
-      setTrainers(local.state.trainers);
-      setSpieler(local.state.spieler);
-      setTarife(local.state.tarife);
-      setTrainings(local.state.trainings);
-      setPayments(local.state.payments ?? {});
-    }
-
-    setInitialSynced(true);
-  }
-
-  loadState();
-}, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
-
+    loadState();
+  }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -632,6 +645,7 @@ useEffect(() => {
       tarife,
       trainings,
       payments,
+      trainerPayments,
     };
 
     supabase
@@ -646,7 +660,16 @@ useEffect(() => {
           console.error("Fehler beim Speichern des Zustands in Supabase", error);
         }
       });
-  }, [authUser, initialSynced, trainers, spieler, tarife, trainings, payments]);
+  }, [
+    authUser,
+    initialSynced,
+    trainers,
+    spieler,
+    tarife,
+    trainings,
+    payments,
+    trainerPayments,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -1322,6 +1345,8 @@ useEffect(() => {
     tCustomPreisProStunde,
     tCustomAbrechnung,
     tarifById,
+    tTrainerId,
+    defaultTrainerId,
   ]);
 
   const nextTrainings = useMemo(() => {
@@ -1423,6 +1448,8 @@ useEffect(() => {
       sum: number;
       trainings: number;
       honorar: number;
+      honorarBezahlt: number;
+      honorarOffen: number;
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
@@ -1435,49 +1462,43 @@ useEffect(() => {
       if (!cfg) return;
 
       const honorar = trainerHonorarFuerTraining(t);
+      let entry =
+        perTrainer.get(tid) ?? {
+          name,
+          sum: 0,
+          trainings: 0,
+          honorar: 0,
+          honorarBezahlt: 0,
+          honorarOffen: 0,
+        };
 
       if (cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
         const seen = monthlySeen.get(tid) ?? new Set<string>();
-        let entry =
-          perTrainer.get(tid) ?? {
-            name,
-            sum: 0,
-            trainings: 0,
-            honorar: 0,
-          };
-        let added = false;
-
         t.spielerIds.forEach((pid) => {
           const key = `${tarifKey}__${pid}`;
-          if (seen.has(key)) return;
-          seen.add(key);
-          entry.sum = round2(entry.sum + cfg.preisProStunde);
-          added = true;
+          if (!seen.has(key)) {
+            seen.add(key);
+            entry.sum = round2(entry.sum + cfg.preisProStunde);
+          }
         });
-
-        if (added) {
-          entry.trainings += 1;
-          entry.honorar = round2(entry.honorar + honorar);
-        }
-
-        perTrainer.set(tid, entry);
         monthlySeen.set(tid, seen);
       } else {
         const amount = round2(trainingPreisGesamt(t));
-        let entry =
-          perTrainer.get(tid) ?? {
-            name,
-            sum: 0,
-            trainings: 0,
-            honorar: 0,
-          };
-
         entry.sum = round2(entry.sum + amount);
-        entry.trainings += 1;
-        entry.honorar = round2(entry.honorar + honorar);
-        perTrainer.set(tid, entry);
       }
+
+      entry.trainings += 1;
+      entry.honorar = round2(entry.honorar + honorar);
+
+      const paid = !!trainerPayments[t.id];
+      if (paid) {
+        entry.honorarBezahlt = round2(entry.honorarBezahlt + honorar);
+      } else {
+        entry.honorarOffen = round2(entry.honorarOffen + honorar);
+      }
+
+      perTrainer.set(tid, entry);
     });
 
     const rows = Array.from(perTrainer.entries())
@@ -1486,9 +1507,23 @@ useEffect(() => {
 
     const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
     const totalHonorar = round2(rows.reduce((acc, r) => acc + r.honorar, 0));
+    const totalHonorarBezahlt = round2(
+      rows.reduce((acc, r) => acc + r.honorarBezahlt, 0)
+    );
+    const totalHonorarOffen = round2(
+      rows.reduce((acc, r) => acc + r.honorarOffen, 0)
+    );
 
-    return { total, rows, totalHonorar };
-  }, [defaultTrainerId, trainerById, trainingsInMonth, tarifById]);
+    return { total, rows, totalHonorar, totalHonorarBezahlt, totalHonorarOffen };
+  }, [
+    defaultTrainerId,
+    trainerById,
+    trainingsInMonth,
+    tarifById,
+    trainerHonorarFuerTraining,
+    trainerPayments,
+    trainingPreisGesamt,
+  ]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
     if (isTrainer) return;
@@ -1518,12 +1553,20 @@ useEffect(() => {
     setPayConfirm(null);
   }
 
- async function handleLogout() {
-  await supabase.auth.signOut();
-  setAuthUser(null);
-  setInitialSynced(false);
-  setProfileFinished(false);
-}
+  function toggleTrainerPaid(trainingId: string) {
+    if (isTrainer) return;
+    setTrainerPayments((prev) => ({
+      ...prev,
+      [trainingId]: !prev[trainingId],
+    }));
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setAuthUser(null);
+    setInitialSynced(false);
+    setProfileFinished(false);
+  }
 
   if (authLoading) {
     return (
@@ -1563,9 +1606,9 @@ useEffect(() => {
     }, 0)
   );
 
-  const trainerHonorarTotal = round2(
-    trainingsInMonth.reduce((acc, t) => acc + trainerHonorarFuerTraining(t), 0)
-  );
+  const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
+  const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
+  const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
 
   return (
     <>
@@ -2048,16 +2091,11 @@ useEffect(() => {
                   <div className="card cardInset">
                     <h2>Wiederholung</h2>
                     <div className="row">
-                      <label
-                        className="pill"
-                        style={{ cursor: "pointer" }}
-                      >
+                      <label className="pill" style={{ cursor: "pointer" }}>
                         <input
                           type="checkbox"
                           checked={repeatWeekly}
-                          onChange={(e) =>
-                            setRepeatWeekly(e.target.checked)
-                          }
+                          onChange={(e) => setRepeatWeekly(e.target.checked)}
                           style={{ marginRight: 8 }}
                         />
                         Wöchentlich wiederholen
@@ -2114,8 +2152,7 @@ useEffect(() => {
                             </select>
                           </div>
                           <span className="pill">
-                            Serie:{" "}
-                            <strong>{ex.serieId.slice(0, 8)}</strong>
+                            Serie: <strong>{ex.serieId.slice(0, 8)}</strong>
                           </span>
                         </div>
                         <div className="muted">
@@ -2148,16 +2185,13 @@ useEffect(() => {
                   {selectedTrainingId && (
                     <button
                       className="btn btnWarn"
-                      onClick={() =>
-                        deleteTraining(selectedTrainingId)
-                      }
+                      onClick={() => deleteTraining(selectedTrainingId)}
                     >
                       Training löschen
                     </button>
                   )}
                   <span className="pill">
-                    Preis Vorschau:{" "}
-                    <strong>{euro(preisVorschau)}</strong>
+                    Preis Vorschau: <strong>{euro(preisVorschau)}</strong>
                   </span>
                 </div>
 
@@ -2233,8 +2267,7 @@ useEffect(() => {
                     />
                   </div>
                   <span className="pill">
-                    Ausgewählt:{" "}
-                    <strong>{tSpielerIds.length}</strong>
+                    Ausgewählt: <strong>{tSpielerIds.length}</strong>
                   </span>
                 </div>
 
@@ -2281,7 +2314,6 @@ useEffect(() => {
         {tab === "verwaltung" && !isTrainer && (
           <>
             <div className="grid2">
-              {/* Trainer verwalten */}
               <div className="card">
                 <h2>Trainer verwalten</h2>
                 <div className="row">
@@ -2359,8 +2391,7 @@ useEffect(() => {
                           <div className="muted">{t.email}</div>
                         )}
                         <div className="muted">
-                          Honorar: {euro(t.stundensatz ?? 0)} pro
-                          Stunde
+                          Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
                         </div>
                       </div>
                       <div className="smallActions">
@@ -2384,7 +2415,6 @@ useEffect(() => {
                 </ul>
               </div>
 
-              {/* Spieler verwalten */}
               <div className="card">
                 <h2>Spieler verwalten</h2>
                 <div className="row">
@@ -2504,7 +2534,6 @@ useEffect(() => {
 
             <div style={{ height: 16 }} />
 
-            {/* Tarife verwalten */}
             <div className="card">
               <h2>Tarife verwalten</h2>
               <div className="row">
@@ -2684,8 +2713,7 @@ useEffect(() => {
                   <strong>{euro(abrechnung.total)}</strong>
                 </span>
                 <span className="pill">
-                  Bereits bezahlt:{" "}
-                  <strong>{euro(sumBezahlt)}</strong>
+                  Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
                 </span>
                 <span className="pill">
                   Offen: <strong>{euro(sumOffen)}</strong>
@@ -2694,6 +2722,14 @@ useEffect(() => {
                   Trainer Honorar gesamt:{" "}
                   <strong>{euro(trainerHonorarTotal)}</strong>
                 </span>
+                <span className="pill">
+                  Honorar bezahlt:{" "}
+                  <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                </span>
+                <span className="pill">
+                  Honorar offen:{" "}
+                  <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                </span>
               </div>
             )}
 
@@ -2701,7 +2737,8 @@ useEffect(() => {
             {!isTrainer && (
               <div className="muted">
                 Hinweis: Der Status bezahlt gilt immer für einen Spieler im
-                ausgewählten Monat.
+                ausgewählten Monat. Das Trainerhonorar wird pro Training
+                abgerechnet.
               </div>
             )}
 
@@ -2717,6 +2754,8 @@ useEffect(() => {
                         <th>Trainings</th>
                         <th>Umsatz</th>
                         <th>Trainer Honorar</th>
+                        <th>Honorar bezahlt</th>
+                        <th>Honorar offen</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2726,6 +2765,8 @@ useEffect(() => {
                           <td>{r.trainings}</td>
                           <td>{euro(r.sum)}</td>
                           <td>{euro(r.honorar)}</td>
+                          <td>{euro(r.honorarBezahlt)}</td>
+                          <td>{euro(r.honorarOffen)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2837,6 +2878,7 @@ useEffect(() => {
                     ?.name ?? "Trainer";
                 const price = euro(round2(trainingPreisGesamt(t)));
                 const honorarBadge = euro(trainerHonorarFuerTraining(t));
+                const trainerPaid = trainerPayments[t.id] ?? false;
 
                 return (
                   <li key={t.id} className="listItem">
@@ -2863,20 +2905,38 @@ useEffect(() => {
                       <span className="badge badgeOk">
                         durchgeführt
                       </span>
-                      {isTrainer ? (
-                        <span className="badge">
-                          Honorar: {honorarBadge}
-                        </span>
-                      ) : (
+                      {!isTrainer && (
                         <span className="badge">{price}</span>
                       )}
+                      <span className="badge">
+                        Honorar: {honorarBadge}
+                      </span>
+                      <span
+                        className={
+                          trainerPaid ? "badge badgeOk" : "badge"
+                        }
+                      >
+                        {trainerPaid
+                          ? "Honorar abgerechnet"
+                          : "Honorar offen"}
+                      </span>
                       {!isTrainer && (
-                        <button
-                          className="btn micro btnGhost"
-                          onClick={() => fillTrainingFromSelected(t)}
-                        >
-                          Bearbeiten
-                        </button>
+                        <>
+                          <button
+                            className="btn micro"
+                            onClick={() => toggleTrainerPaid(t.id)}
+                          >
+                            {trainerPaid
+                              ? "Honorar als offen markieren"
+                              : "Honorar als abgerechnet markieren"}
+                          </button>
+                          <button
+                            className="btn micro btnGhost"
+                            onClick={() => fillTrainingFromSelected(t)}
+                          >
+                            Bearbeiten
+                          </button>
+                        </>
                       )}
                     </div>
                   </li>
@@ -2897,8 +2957,8 @@ useEffect(() => {
                 {formatMonthLabel(payConfirm.monat)}
               </h3>
               <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es
-                später wieder auf offen stellen.
+                Dieser Betrag wird als bezahlt markiert, Du kannst es später
+                wieder auf offen stellen.
               </p>
             </div>
 
