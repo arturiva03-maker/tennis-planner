@@ -432,7 +432,10 @@ export default function App() {
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileFinished, setProfileFinished] = useState(false);
   const [initialSynced, setInitialSynced] = useState(false);
+
 
   /* ::::: Local / Cloud Storage Migration ::::: */
 
@@ -456,97 +459,165 @@ export default function App() {
   /* ::::: Auth State von Supabase lesen ::::: */
 
   useEffect(() => {
-    supabase.auth.getSession().then((res) => {
-      const session = res.data.session;
+  supabase.auth.getSession().then((res) => {
+    const session = res.data.session;
+    setAuthUser(
+      session
+        ? {
+            id: session.user.id,
+            email: session.user.email ?? null,
+            // Startwerte, werden gleich über user_profiles überschrieben
+            role: "admin",
+            accountId: null,
+            trainerId: null,
+          }
+        : null
+    );
+    setAuthLoading(false);
+  });
+
+  const { data: sub } = supabase.auth.onAuthStateChange(
+    (_event: string, session: any) => {
       setAuthUser(
         session
           ? {
               id: session.user.id,
               email: session.user.email ?? null,
               role: "admin",
-              accountId: session.user.id, // Account ist die User ID
+              accountId: null,
               trainerId: null,
             }
           : null
       );
-      setAuthLoading(false);
-    });
+      setInitialSynced(false);
+      setProfileFinished(false);
+    }
+  );
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event: string, session: any) => {
-        setAuthUser(
-          session
-            ? {
-                id: session.user.id,
-                email: session.user.email ?? null,
-                role: "admin",
-                accountId: session.user.id,
-                trainerId: null,
-              }
-            : null
-        );
-        setInitialSynced(false);
+  return () => {
+    sub.subscription.unsubscribe();
+  };
+}, []);
+
+/* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
+
+useEffect(() => {
+  if (!authUser?.id) {
+    setProfileFinished(false);
+    return;
+  }
+
+  let cancelled = false;
+  setProfileLoading(true);
+  setProfileFinished(false);
+
+  (async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("role, account_id, trainer_id")
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Fehler beim Laden des Profils", error);
       }
-    );
 
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, []);
+      if (!cancelled && data) {
+        setAuthUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                role: (data.role as Role) || "admin",
+                accountId: data.account_id ?? prev.id,
+                trainerId: data.trainer_id ?? null,
+              }
+            : prev
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setProfileLoading(false);
+        setProfileFinished(true);
+      }
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+}, [authUser?.id]);
+
 
   /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
 
   useEffect(() => {
-    if (authLoading) return;
-    if (initialSynced) return;
+  if (authLoading || profileLoading) return;
+  if (initialSynced) return;
 
-    async function loadState() {
-      // Nicht eingeloggt: nur localStorage
-      if (!authUser) {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-        setInitialSynced(true);
-        return;
-      }
-
-      // Eingeloggt: gemeinsamer Zustand aus Supabase pro accountId = user.id
-      const accountId = authUser.accountId;
-      const { data, error } = await supabase
-        .from("account_state")
-        .select("data")
-        .eq("account_id", accountId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Fehler beim Laden des Zustands aus Supabase", error);
-      }
-
-      if (data && data.data) {
-        const cloud = normalizeState(data.data as Partial<AppState>);
-        setTrainers(cloud.trainers);
-        setSpieler(cloud.spieler);
-        setTarife(cloud.tarife);
-        setTrainings(cloud.trainings);
-        setPayments(cloud.payments ?? {});
-      } else {
-        // noch kein Datensatz in Supabase: lokale Daten als Start verwenden
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-      }
-
+  async function loadState() {
+    // Nicht eingeloggt: nur localStorage
+    if (!authUser) {
+      const local = readStateWithMeta();
+      setTrainers(local.state.trainers);
+      setSpieler(local.state.spieler);
+      setTarife(local.state.tarife);
+      setTrainings(local.state.trainings);
+      setPayments(local.state.payments ?? {});
       setInitialSynced(true);
+      return;
     }
 
-    loadState();
-  }, [authLoading, authUser, initialSynced]);
+    // Profil ist noch nicht fertig geladen: später nochmal probieren
+    if (!profileFinished) {
+      return;
+    }
+
+    // Wenn es (noch) keine Account-Zuordnung gibt, fallback auf localStorage
+    if (!authUser.accountId) {
+      const local = readStateWithMeta();
+      setTrainers(local.state.trainers);
+      setSpieler(local.state.spieler);
+      setTarife(local.state.tarife);
+      setTrainings(local.state.trainings);
+      setPayments(local.state.payments ?? {});
+      setInitialSynced(true);
+      return;
+    }
+
+    // Eingeloggt: gemeinsamer Zustand aus Supabase pro accountId
+    const { data, error } = await supabase
+      .from("account_state")
+      .select("data")
+      .eq("account_id", authUser.accountId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Fehler beim Laden des Zustands aus Supabase", error);
+    }
+
+    if (data && data.data) {
+      const cloud = normalizeState(data.data as Partial<AppState>);
+      setTrainers(cloud.trainers);
+      setSpieler(cloud.spieler);
+      setTarife(cloud.tarife);
+      setTrainings(cloud.trainings);
+      setPayments(cloud.payments ?? {});
+    } else {
+      const local = readStateWithMeta();
+      setTrainers(local.state.trainers);
+      setSpieler(local.state.spieler);
+      setTarife(local.state.tarife);
+      setTrainings(local.state.trainings);
+      setPayments(local.state.payments ?? {});
+    }
+
+    setInitialSynced(true);
+  }
+
+  loadState();
+}, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
+
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -1447,11 +1518,12 @@ export default function App() {
     setPayConfirm(null);
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    setAuthUser(null);
-    setInitialSynced(false);
-  }
+ async function handleLogout() {
+  await supabase.auth.signOut();
+  setAuthUser(null);
+  setInitialSynced(false);
+  setProfileFinished(false);
+}
 
   if (authLoading) {
     return (
