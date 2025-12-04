@@ -34,6 +34,9 @@ type Tarif = {
 
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
+type AbrechnungTab = "spieler" | "trainer";
+type VerwaltungTab = "spieler" | "trainer" | "tarife";
+
 type Training = {
   id: string;
   trainerId?: string;
@@ -51,6 +54,7 @@ type Training = {
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
+type StudentCashPaymentsMap = Record<string, boolean>; // key: trainingId
 
 type AppState = {
   trainers: Trainer[];
@@ -59,6 +63,7 @@ type AppState = {
   trainings: Training[];
   payments: PaymentsMap;
   trainerPayments: TrainerPaymentsMap;
+  studentCashPayments: StudentCashPaymentsMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
@@ -74,7 +79,6 @@ type AuthUser = {
 
 type ViewMode = "week" | "day";
 type AbrechnungFilter = "alle" | "bezahlt" | "offen";
-type AbrechnungTab = "spieler" | "trainer";
 
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const LEGACY_KEYS = [
@@ -96,7 +100,9 @@ function pad2(n: number) {
 
 function todayISO() {
   const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -108,13 +114,17 @@ function startOfWeekISO(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
   const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function addDaysISO(dateISO: string, days: number) {
   const d = new Date(dateISO + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )}`;
 }
 
 function formatShort(dateISO: string) {
@@ -129,8 +139,18 @@ function formatWeekRange(weekStartISO: string) {
   end.setDate(start.getDate() + 6);
 
   const months = [
-    "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni",
-    "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."
+    "Jan.",
+    "Feb.",
+    "März",
+    "Apr.",
+    "Mai",
+    "Juni",
+    "Juli",
+    "Aug.",
+    "Sep.",
+    "Okt.",
+    "Nov.",
+    "Dez.",
   ];
 
   const sDay = start.getDate();
@@ -227,6 +247,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     })),
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
+    studentCashPayments: parsed?.studentCashPayments ?? {},
   };
 }
 
@@ -371,6 +392,11 @@ export default function App() {
   const [kalenderTrainerFilter, setKalenderTrainerFilter] =
     useState<string>("alle");
 
+  const [abrechnungTab, setAbrechnungTab] =
+    useState<AbrechnungTab>("spieler");
+  const [verwaltungTab, setVerwaltungTab] =
+    useState<VerwaltungTab>("trainer");
+
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
@@ -380,9 +406,13 @@ export default function App() {
   const [payments, setPayments] = useState<PaymentsMap>(
     initial.state.payments ?? {}
   );
-  const [trainerPayments, setTrainerPayments] = useState<TrainerPaymentsMap>(
-    initial.state.trainerPayments ?? {}
-  );
+  const [trainerPayments, setTrainerPayments] =
+    useState<TrainerPaymentsMap>(initial.state.trainerPayments ?? {});
+  const [studentCashPayments, setStudentCashPayments] =
+    useState<StudentCashPaymentsMap>(
+      initial.state.studentCashPayments ?? {}
+    );
+
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -401,14 +431,18 @@ export default function App() {
   const [trainerStundensatz, setTrainerStundensatz] = useState<number | "">(
     initial.state.trainers[0]?.stundensatz ?? 0
   );
-  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
+  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(
+    null
+  );
 
   const [spielerName, setSpielerName] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
-  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
+  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(
+    null
+  );
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
@@ -456,7 +490,6 @@ export default function App() {
     useState<AbrechnungFilter>("alle");
   const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
     useState<string>("alle");
-  const [abrechnungTab, setAbrechnungTab] = useState<AbrechnungTab>("spieler");  
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
   const clickTimerRef = useRef<number | null>(null);
@@ -494,8 +527,17 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
+      studentCashPayments,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
+  }, [
+    trainers,
+    spieler,
+    tarife,
+    trainings,
+    payments,
+    trainerPayments,
+    studentCashPayments,
+  ]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -603,6 +645,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setStudentCashPayments(local.state.studentCashPayments ?? {});
         setInitialSynced(true);
         return;
       }
@@ -619,6 +662,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setStudentCashPayments(local.state.studentCashPayments ?? {});
         setInitialSynced(true);
         return;
       }
@@ -641,6 +685,7 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
+        setStudentCashPayments(cloud.studentCashPayments ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -649,13 +694,20 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setStudentCashPayments(local.state.studentCashPayments ?? {});
       }
 
       setInitialSynced(true);
     }
 
     loadState();
-  }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
+  }, [
+    authLoading,
+    profileLoading,
+    authUser,
+    initialSynced,
+    profileFinished,
+  ]);
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -671,6 +723,7 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
+      studentCashPayments,
     };
 
     supabase
@@ -682,7 +735,10 @@ export default function App() {
       })
       .then(({ error }) => {
         if (error) {
-          console.error("Fehler beim Speichern des Zustands in Supabase", error);
+          console.error(
+            "Fehler beim Speichern des Zustands in Supabase",
+            error
+          );
         }
       });
   }, [
@@ -694,6 +750,7 @@ export default function App() {
     trainings,
     payments,
     trainerPayments,
+    studentCashPayments,
   ]);
 
   useEffect(() => {
@@ -745,7 +802,10 @@ export default function App() {
 
   const trainerOptionsForSelect = isTrainer
     ? trainers.filter(
-        (t) => t.id === ownTrainerId || !ownTrainerId || trainers.length === 1
+        (t) =>
+          t.id === ownTrainerId ||
+          !ownTrainerId ||
+          trainers.length === 1
       )
     : trainers;
 
@@ -801,13 +861,12 @@ export default function App() {
   }, [isTrainer, tab]);
 
   useEffect(() => {
-  if (isTrainer) {
-    setAbrechnungTab("trainer");
-  } else {
-    // optional: Admins wieder auf Spieler-Ansicht
-    setAbrechnungTab("spieler");
-  }
-}, [isTrainer]);
+    if (isTrainer) {
+      setAbrechnungTab("trainer");
+    } else {
+      setAbrechnungTab("spieler");
+    }
+  }, [isTrainer]);
 
   const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(
@@ -818,7 +877,10 @@ export default function App() {
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
-    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+    return Array.from(
+      { length: endHour - startHour + 1 },
+      (_, i) => startHour + i
+    );
   }, []);
 
   const trainingsInWeek = useMemo(() => {
@@ -870,7 +932,9 @@ export default function App() {
     setEditingTrainerId(t.id);
     setTrainerName(t.name);
     setTrainerEmail(t.email ?? "");
-    setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
+    setTrainerStundensatz(
+      typeof t.stundensatz === "number" ? t.stundensatz : 0
+    );
   }
 
   function saveTrainer() {
@@ -1206,17 +1270,16 @@ export default function App() {
     if (changed) triggerDonePulse(trainingId);
   }
 
-    function goToToday() {
+  function goToToday() {
     const t = todayISO();
     setWeekAnchor(t);
 
     if (viewMode === "day") {
       const d = new Date(t + "T12:00:00");
-      const idx = (d.getDay() + 6) % 7; // 0 = Mo ... 6 = So
+      const idx = (d.getDay() + 6) % 7;
       setDayIndex(idx);
     }
   }
-
 
   function handleCalendarEventClick(t: Training) {
     if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
@@ -1395,17 +1458,6 @@ export default function App() {
     defaultTrainerId,
   ]);
 
-  const nextTrainings = useMemo(() => {
-    const t0 = todayISO();
-    return trainings
-      .slice()
-      .sort((a, b) =>
-        (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
-      )
-      .filter((t) => t.datum >= t0)
-      .slice(0, 20);
-  }, [trainings]);
-
   const trainingsInMonth = useMemo(
     () =>
       trainings
@@ -1428,6 +1480,7 @@ export default function App() {
       { name: string; sum: number; counts: Map<number, number> }
     >();
     const monthlySeen = new Map<string, Set<string>>();
+    let barTotal = 0;
 
     const addShare = (pid: string, name: string, amount: number) => {
       const share = round2(amount);
@@ -1458,6 +1511,15 @@ export default function App() {
       }
 
       const share = priceFuerSpieler(t);
+
+      if (studentCashPayments[t.id]) {
+        // komplette Stunde bar bezahlt, alle Spieler bar
+        t.spielerIds.forEach(() => {
+          barTotal = round2(barTotal + share);
+        });
+        return;
+      }
+
       t.spielerIds.forEach((pid) => {
         const name = spielerById.get(pid)?.name ?? "Unbekannt";
         addShare(pid, name, share);
@@ -1483,10 +1545,24 @@ export default function App() {
       })
       .sort((a, b) => b.sum - a.sum);
 
-    const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
+    const totalInvoice = round2(
+      spielerRows.reduce((sum, r) => sum + r.sum, 0)
+    );
+    const totalMitBar = round2(totalInvoice + barTotal);
 
-    return { total, spielerRows };
-  }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
+    return {
+      total: totalInvoice,
+      spielerRows,
+      barTotal,
+      totalMitBar,
+    };
+  }, [
+    trainingsInMonth,
+    spielerById,
+    priceFuerSpieler,
+    tarifById,
+    studentCashPayments,
+  ]);
 
   const abrechnungTrainer = useMemo(() => {
     type TrainerAbrechnungSummary = {
@@ -1496,6 +1572,7 @@ export default function App() {
       honorar: number;
       honorarBezahlt: number;
       honorarOffen: number;
+      barDifferenz: number;
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
@@ -1507,7 +1584,6 @@ export default function App() {
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
 
-      const honorar = trainerHonorarFuerTraining(t);
       let entry =
         perTrainer.get(tid) ?? {
           name,
@@ -1516,7 +1592,10 @@ export default function App() {
           honorar: 0,
           honorarBezahlt: 0,
           honorarOffen: 0,
+          barDifferenz: 0,
         };
+
+      let amount = 0;
 
       if (cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
@@ -1530,18 +1609,29 @@ export default function App() {
         });
         monthlySeen.set(tid, seen);
       } else {
-        const amount = round2(trainingPreisGesamt(t));
+        amount = round2(trainingPreisGesamt(t));
         entry.sum = round2(entry.sum + amount);
       }
+
+      const honorar = trainerHonorarFuerTraining(t);
+      const isCash = !!studentCashPayments[t.id];
 
       entry.trainings += 1;
       entry.honorar = round2(entry.honorar + honorar);
 
-      const paid = !!trainerPayments[t.id];
+      const paidBySchool = !!trainerPayments[t.id];
+      const paid = paidBySchool || isCash;
+
       if (paid) {
         entry.honorarBezahlt = round2(entry.honorarBezahlt + honorar);
       } else {
         entry.honorarOffen = round2(entry.honorarOffen + honorar);
+      }
+
+      if (isCash && amount > 0) {
+        const diff = round2(amount - honorar);
+        const positiveDiff = diff > 0 ? diff : 0;
+        entry.barDifferenz = round2(entry.barDifferenz + positiveDiff);
       }
 
       perTrainer.set(tid, entry);
@@ -1552,15 +1642,27 @@ export default function App() {
       .sort((a, b) => b.sum - a.sum);
 
     const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
-    const totalHonorar = round2(rows.reduce((acc, r) => acc + r.honorar, 0));
+    const totalHonorar = round2(
+      rows.reduce((acc, r) => acc + r.honorar, 0)
+    );
     const totalHonorarBezahlt = round2(
       rows.reduce((acc, r) => acc + r.honorarBezahlt, 0)
     );
     const totalHonorarOffen = round2(
       rows.reduce((acc, r) => acc + r.honorarOffen, 0)
     );
+    const totalBarDifferenz = round2(
+      rows.reduce((acc, r) => acc + r.barDifferenz, 0)
+    );
 
-    return { total, rows, totalHonorar, totalHonorarBezahlt, totalHonorarOffen };
+    return {
+      total,
+      rows,
+      totalHonorar,
+      totalHonorarBezahlt,
+      totalHonorarOffen,
+      totalBarDifferenz,
+    };
   }, [
     defaultTrainerId,
     trainerById,
@@ -1568,6 +1670,7 @@ export default function App() {
     tarifById,
     trainerHonorarFuerTraining,
     trainerPayments,
+    studentCashPayments,
     trainingPreisGesamt,
   ]);
 
@@ -1607,6 +1710,14 @@ export default function App() {
     }));
   }
 
+  function toggleStudentCashPayment(trainingId: string) {
+    if (isTrainer) return;
+    setStudentCashPayments((prev) => ({
+      ...prev,
+      [trainingId]: !prev[trainingId],
+    }));
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -1614,10 +1725,12 @@ export default function App() {
     setProfileFinished(false);
   }
 
-   if (authLoading) {
+  if (authLoading) {
     return (
       <div className="container">
-        <div className="card" style={{ marginTop: 60 }}>Lädt ...</div>
+        <div className="card" style={{ marginTop: 60 }}>
+          Lädt ...
+        </div>
       </div>
     );
   }
@@ -1626,13 +1739,15 @@ export default function App() {
     return <AuthScreen />;
   }
 
-  const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
-    const key = paymentKey(abrechnungMonat, r.id);
-    const paid = payments[key] ?? false;
-    if (abrechnungFilter === "alle") return true;
-    if (abrechnungFilter === "bezahlt") return paid;
-    return !paid;
-  });
+  const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter(
+    (r) => {
+      const key = paymentKey(abrechnungMonat, r.id);
+      const paid = payments[key] ?? false;
+      if (abrechnungFilter === "alle") return true;
+      if (abrechnungFilter === "bezahlt") return paid;
+      return !paid;
+    }
+  );
 
   const sumBezahlt = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
@@ -1651,10 +1766,13 @@ export default function App() {
   );
 
   const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
-  const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
+  const trainerHonorarBezahltTotal =
+    abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
+  const trainerRueckzahlungTotal =
+    abrechnungTrainer.totalBarDifferenz;
 
-    return (
+  return (
     <>
       <div className="appShell">
         {/* Mobile Top Bar */}
@@ -1677,7 +1795,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Seitennavigation, auf Desktop immer sichtbar, auf Mobile als Drawer */}
+        {/* Seitennavigation */}
         <aside
           className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}
         >
@@ -1701,7 +1819,7 @@ export default function App() {
                 }`}
                 onClick={() => {
                   setTab(t);
-                  setIsSideNavOpen(false); // beim Tabwechsel auf Mobile schließen
+                  setIsSideNavOpen(false);
                 }}
               >
                 {t === "kalender" && "Kalender"}
@@ -1717,7 +1835,6 @@ export default function App() {
           </button>
         </aside>
 
-        {/* Dunkler Overlay, wenn Menü auf Mobile offen ist */}
         {isSideNavOpen && (
           <div
             className="sideNavOverlay"
@@ -1732,55 +1849,75 @@ export default function App() {
               <div className="hTitle">
                 <h1>Tennistrainer Planung</h1>
                 <p>
-                  Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
-                  pro Benutzer gespeichert.
+                  Mehrere Trainer, wiederkehrende Termine, Tarife pro
+                  Stunde, pro Benutzer gespeichert.
                 </p>
               </div>
             </div>
 
             {/* Kalender */}
-           {tab === "kalender" && (
-  <div className="card">
-    <div className="split">
-      <div className="row calendarNav">
-        <span className="calendarWeekLabel">
-          {formatWeekRange(weekStart)}
-        </span>
+            {tab === "kalender" && (
+              <div className="card">
+                <div className="split">
+                  <div className="row calendarNav">
+                    <span className="calendarWeekLabel">
+                      {formatWeekRange(weekStart)}
+                    </span>
 
-        <div className="calendarNavControls">
-          <button
-            className="navArrowBtn"
-            onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
-            aria-label="Vorherige Woche"
-          >
-            ‹
-          </button>
-          <button
-            className="todayBtn"
-            onClick={goToToday}
-          >
-            Heute
-          </button>
-          <button
-            className="navArrowBtn"
-            onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
-            aria-label="Nächste Woche"
-          >
-            ›
-          </button>
+                    <div className="calendarNavControls">
+                      <button
+                        className="navArrowBtn"
+                        onClick={() => {
+                          if (viewMode === "week") {
+                            setWeekAnchor(addDaysISO(weekStart, -7));
+                          } else {
+                            const currentDay = weekDays[dayIndex];
+                            const prevDay = addDaysISO(currentDay, -1);
+                            setWeekAnchor(prevDay);
+                            const d = new Date(prevDay + "T12:00:00");
+                            const idx = (d.getDay() + 6) % 7;
+                            setDayIndex(idx);
+                          }
+                        }}
+                        aria-label="Vorheriger Zeitraum"
+                      >
+                        ‹
+                      </button>
 
-          <button
-            className="btn"
-            onClick={() => {
-              resetTrainingForm();
-              setTab("training");
-            }}
-          >
-            Neues Training
-          </button>
-        </div>
-      </div>
+                      <button className="todayBtn" onClick={goToToday}>
+                        Heute
+                      </button>
 
+                      <button
+                        className="navArrowBtn"
+                        onClick={() => {
+                          if (viewMode === "week") {
+                            setWeekAnchor(addDaysISO(weekStart, 7));
+                          } else {
+                            const currentDay = weekDays[dayIndex];
+                            const nextDay = addDaysISO(currentDay, 1);
+                            setWeekAnchor(nextDay);
+                            const d = new Date(nextDay + "T12:00:00");
+                            const idx = (d.getDay() + 6) % 7;
+                            setDayIndex(idx);
+                          }
+                        }}
+                        aria-label="Nächster Zeitraum"
+                      >
+                        ›
+                      </button>
+
+                      <button
+                        className="btn"
+                        onClick={() => {
+                          resetTrainingForm();
+                          setTab("training");
+                        }}
+                      >
+                        Neues Training
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="row">
                     <div className="field" style={{ minWidth: 220 }}>
@@ -1834,7 +1971,9 @@ export default function App() {
                       {viewMode === "day" && (
                         <select
                           value={dayIndex}
-                          onChange={(e) => setDayIndex(Number(e.target.value))}
+                          onChange={(e) =>
+                            setDayIndex(Number(e.target.value))
+                          }
                           style={{ marginLeft: 8 }}
                         >
                           {weekDays.map((d, idx) => (
@@ -1847,23 +1986,29 @@ export default function App() {
                     </div>
 
                     <span className="pill">
-                      Trainer gesamt: <strong>{trainers.length}</strong>
+                      Trainer gesamt:{" "}
+                      <strong>{trainers.length}</strong>
                     </span>
                   </div>
                 </div>
 
                 <div style={{ height: 12 }} />
 
-                <div className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}>
+                <div
+                  className={`kgrid ${
+                    viewMode === "day" ? "kgridDay" : ""
+                  }`}
+                >
                   <div className="kHead">
                     <div className="kHeadCell">Zeit</div>
-                    {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
-                      (d) => (
-                        <div key={d} className="kHeadCell">
-                          {formatShort(d)}
-                        </div>
-                      )
-                    )}
+                    {(viewMode === "week"
+                      ? weekDays
+                      : [weekDays[dayIndex]]
+                    ).map((d) => (
+                      <div key={d} className="kHeadCell">
+                        {formatShort(d)}
+                      </div>
+                    ))}
                   </div>
 
                   <div className="kBody">
@@ -1911,7 +2056,7 @@ export default function App() {
                                 ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
                                 : tarif.name
                               : t.customPreisProStunde
-                              ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`  
+                              ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
                               : "Tarif";
                             const sp = t.spielerIds
                               .map(
@@ -1930,8 +2075,10 @@ export default function App() {
                               ? `${ta} | ${trainerName}`
                               : ta;
 
-                            const isDone = t.status === "durchgefuehrt";
-                            const isCancel = t.status === "abgesagt";
+                            const isDone =
+                              t.status === "durchgefuehrt";
+                            const isCancel =
+                              t.status === "abgesagt";
                             const isPulse = doneFlashId === t.id;
 
                             const bg = isDone
@@ -1956,7 +2103,9 @@ export default function App() {
                                   backgroundColor: bg,
                                   border: `1px solid ${border}`,
                                   opacity: isCancel ? 0.85 : 1,
-                                  transform: isPulse ? "scale(1.06)" : undefined,
+                                  transform: isPulse
+                                    ? "scale(1.06)"
+                                    : undefined,
                                   filter: isPulse
                                     ? "brightness(1.15)"
                                     : undefined,
@@ -1970,15 +2119,17 @@ export default function App() {
                                   padding: 8,
                                   gap: 6,
                                 }}
-                                onClick={() => handleCalendarEventClick(t)}
+                                onClick={() =>
+                                  handleCalendarEventClick(t)
+                                }
                                 onDoubleClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   handleCalendarEventDoubleClick(t);
                                 }}
-                                title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
-                                  t.uhrzeitBis
-                                }${
+                                title={`Spieler: ${sp}\nZeit: ${
+                                  t.uhrzeitVon
+                                } bis ${t.uhrzeitBis}${
                                   isTrainer ? "" : `\nTarif: ${ta}`
                                 }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
                                   t.status
@@ -2020,7 +2171,8 @@ export default function App() {
                                     border: "2px solid white",
                                     boxShadow:
                                       "0 0 0 1px rgba(15,23,42,0.15)",
-                                    backgroundColor: statusDotColor(t.status),
+                                    backgroundColor:
+                                      statusDotColor(t.status),
                                     flex: "0 0 auto",
                                   }}
                                 />
@@ -2035,7 +2187,8 @@ export default function App() {
 
                 <div style={{ height: 12 }} />
                 <div className="muted">
-                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
+                  Hinweis: Klick: Bearbeiten, Doppelklick:
+                  Abschließen.
                 </div>
               </div>
             )}
@@ -2046,8 +2199,8 @@ export default function App() {
                 <div className="card">
                   <h2>Nur Lesen für Trainer</h2>
                   <p className="muted">
-                    Trainings können nur vom Hauptaccount angelegt oder
-                    bearbeitet werden.
+                    Trainings können nur vom Hauptaccount angelegt
+                    oder bearbeitet werden.
                   </p>
                 </div>
               ) : (
@@ -2088,7 +2241,9 @@ export default function App() {
                         <select
                           value={tTrainerId}
                           disabled={isTrainer}
-                          onChange={(e) => setTTrainerId(e.target.value)}
+                          onChange={(e) =>
+                            setTTrainerId(e.target.value)
+                          }
                         >
                           {trainerOptionsForSelect.map((tr) => (
                             <option key={tr.id} value={tr.id}>
@@ -2126,8 +2281,9 @@ export default function App() {
                           })}
                         </select>
                         <div className="muted">
-                          Entweder einen Tarif auswählen oder unten einen
-                          individuellen Preis pro Stunde eingeben.
+                          Entweder einen Tarif auswählen oder unten
+                          einen individuellen Preis pro Stunde
+                          eingeben.
                         </div>
                       </div>
 
@@ -2136,12 +2292,19 @@ export default function App() {
                         <select
                           value={tStatus}
                           onChange={(e) =>
-                            setTStatus(e.target.value as TrainingStatus)
+                            setTStatus(
+                              e.target
+                                .value as TrainingStatus
+                            )
                           }
                         >
                           <option value="geplant">Geplant</option>
-                          <option value="durchgefuehrt">Durchgeführt</option>
-                          <option value="abgesagt">Abgesagt</option>
+                          <option value="durchgefuehrt">
+                            Durchgeführt
+                          </option>
+                          <option value="abgesagt">
+                            Abgesagt
+                          </option>
                         </select>
                       </div>
                     </div>
@@ -2177,13 +2340,20 @@ export default function App() {
                           value={tCustomAbrechnung}
                           onChange={(e) =>
                             setTCustomAbrechnung(
-                              e.target.value as "proTraining" | "proSpieler"
+                              e.target
+                                .value as
+                                | "proTraining"
+                                | "proSpieler"
                             )
                           }
                           disabled={!!tTarifId}
                         >
-                          <option value="proTraining">Pro Training</option>
-                          <option value="proSpieler">Pro Spieler</option>
+                          <option value="proTraining">
+                            Pro Training
+                          </option>
+                          <option value="proSpieler">
+                            Pro Spieler
+                          </option>
                         </select>
                       </div>
                     </div>
@@ -2193,7 +2363,9 @@ export default function App() {
                         <label>Notiz</label>
                         <input
                           value={tNotiz}
-                          onChange={(e) => setTNotiz(e.target.value)}
+                          onChange={(e) =>
+                            setTNotiz(e.target.value)
+                          }
                           placeholder="optional"
                         />
                       </div>
@@ -2213,30 +2385,41 @@ export default function App() {
                               type="checkbox"
                               checked={repeatWeekly}
                               onChange={(e) =>
-                                setRepeatWeekly(e.target.checked)
+                                setRepeatWeekly(
+                                  e.target.checked
+                                )
                               }
                               style={{ marginRight: 8 }}
                             />
                             Wöchentlich wiederholen
                           </label>
-                          <div className="field" style={{ minWidth: 220 }}>
+                          <div
+                            className="field"
+                            style={{ minWidth: 220 }}
+                          >
                             <label>Bis Datum</label>
                             <input
                               type="date"
                               value={repeatUntil}
                               onChange={(e) =>
-                                setRepeatUntil(e.target.value)
+                                setRepeatUntil(
+                                  e.target.value
+                                )
                               }
                               disabled={!repeatWeekly}
                             />
                           </div>
                           <span className="pill">
-                            Trainer: <strong>{selectedTrainerName}</strong>
+                            Trainer:{" "}
+                            <strong>
+                              {selectedTrainerName}
+                            </strong>
                           </span>
                         </div>
                         <div className="muted">
-                          Wenn aktiv: Es werden alle Termine wöchentlich bis zum
-                          Bis Datum angelegt.
+                          Wenn aktiv: Es werden alle Termine
+                          wöchentlich bis zum Bis Datum
+                          angelegt.
                         </div>
                       </div>
                     )}
@@ -2252,12 +2435,15 @@ export default function App() {
                             <h2>Serie bearbeiten</h2>
                             <div className="row">
                               <div className="field">
-                                <label>Änderungen anwenden</label>
+                                <label>
+                                  Änderungen anwenden
+                                </label>
                                 <select
                                   value={applySerieScope}
                                   onChange={(e) =>
                                     setApplySerieScope(
-                                      e.target.value as
+                                      e.target
+                                        .value as
                                         | "nurDieses"
                                         | "abHeute"
                                     )
@@ -2267,20 +2453,27 @@ export default function App() {
                                     Nur diesen Termin
                                   </option>
                                   <option value="abHeute">
-                                    Alle Termine der Serie ab diesem Datum
+                                    Alle Termine der Serie
+                                    ab diesem Datum
                                   </option>
                                 </select>
                               </div>
                               <span className="pill">
                                 Serie:{" "}
-                                <strong>{ex.serieId.slice(0, 8)}</strong>
+                                <strong>
+                                  {ex.serieId.slice(0, 8)}
+                                </strong>
                               </span>
                             </div>
                             <div className="muted">
-                              Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
-                              Status und Notiz werden für alle zukünftigen
-                              Termine übernommen. Beim Löschen mit dieser Option
-                              werden alle zukünftigen Termine der Serie entfernt.
+                              Bei ab diesem Datum:
+                              Uhrzeiten, Spieler, Tarif,
+                              Status und Notiz werden
+                              für alle zukünftigen Termine
+                              übernommen. Beim Löschen
+                              mit dieser Option werden
+                              alle zukünftigen Termine der
+                              Serie entfernt.
                             </div>
                           </div>
                         );
@@ -2289,7 +2482,10 @@ export default function App() {
                     <div style={{ height: 10 }} />
 
                     <div className="row">
-                      <button className="btn" onClick={saveTraining}>
+                      <button
+                        className="btn"
+                        onClick={saveTraining}
+                      >
                         {selectedTrainingId
                           ? "Änderungen speichern"
                           : "Training speichern"}
@@ -2307,7 +2503,9 @@ export default function App() {
                         <button
                           className="btn btnWarn"
                           onClick={() =>
-                            deleteTraining(selectedTrainingId)
+                            deleteTraining(
+                              selectedTrainingId
+                            )
                           }
                         >
                           Training löschen
@@ -2317,67 +2515,6 @@ export default function App() {
                         Preis Vorschau:{" "}
                         <strong>{euro(preisVorschau)}</strong>
                       </span>
-                    </div>
-
-                    <div style={{ height: 14 }} />
-
-                    <h2>Schnellzugriff, nächste Trainings</h2>
-                    <ul className="list">
-                      {nextTrainings.map((t) => {
-                        const tarif = t.tarifId
-                          ? tarifById.get(t.tarifId)
-                          : undefined;
-                        const ta = tarif
-                          ? tarif.abrechnung === "monatlich"
-                            ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                            : tarif.name
-                          : t.customPreisProStunde
-                          ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                          : "Tarif";
-                        const sp = t.spielerIds
-                          .map(
-                            (id) =>
-                              spielerById.get(id)?.name ?? "Spieler"
-                          )
-                          .join(", ");
-                        const trainerName =
-                          trainerById.get(
-                            t.trainerId ?? defaultTrainerId
-                          )?.name ?? "Trainer";
-
-                        return (
-                          <li key={t.id} className="listItem">
-                            <div>
-                              <strong>
-                                {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
-                              </strong>
-                              <div className="muted">
-                                {ta}, {sp}, {trainerName}
-                              </div>
-                              {t.serieId ? (
-                                <div className="muted">
-                                  Serie: {t.serieId.slice(0, 8)}
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="smallActions">
-                              <button
-                                className="btn micro btnGhost"
-                                onClick={() =>
-                                  fillTrainingFromSelected(t)
-                                }
-                              >
-                                Bearbeiten
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-
-                    <div className="muted">
-                      Tipp: Im Kalender kannst Du geplante Trainings per
-                      Doppelklick direkt abschließen.
                     </div>
                   </div>
 
@@ -2402,9 +2539,13 @@ export default function App() {
 
                     <ul className="list">
                       {filteredSpielerForPick.map((s) => {
-                        const checked = tSpielerIds.includes(s.id);
+                        const checked =
+                          tSpielerIds.includes(s.id);
                         return (
-                          <li key={s.id} className="listItem">
+                          <li
+                            key={s.id}
+                            className="listItem"
+                          >
                             <div>
                               <strong>{s.name}</strong>
                               <div className="muted">
@@ -2415,7 +2556,8 @@ export default function App() {
                               </div>
                               {s.rechnungsAdresse ? (
                                 <div className="muted">
-                                  Rechnungsadresse: {s.rechnungsAdresse}
+                                  Rechnungsadresse:{" "}
+                                  {s.rechnungsAdresse}
                                 </div>
                               ) : null}
                               {s.notizen ? (
@@ -2427,11 +2569,17 @@ export default function App() {
                             <div className="smallActions">
                               <button
                                 className={`btn micro ${
-                                  checked ? "" : "btnGhost"
+                                  checked
+                                    ? ""
+                                    : "btnGhost"
                                 }`}
-                                onClick={() => toggleSpielerPick(s.id)}
+                                onClick={() =>
+                                  toggleSpielerPick(s.id)
+                                }
                               >
-                                {checked ? "Entfernen" : "Hinzufügen"}
+                                {checked
+                                  ? "Entfernen"
+                                  : "Hinzufügen"}
                               </button>
                             </div>
                           </li>
@@ -2445,7 +2593,42 @@ export default function App() {
             {/* Verwaltung */}
             {tab === "verwaltung" && !isTrainer && (
               <>
-                <div className="grid2">
+                <div className="subTabs">
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "trainer"
+                        ? "tabBtnActive"
+                        : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("trainer")}
+                  >
+                    Trainer
+                  </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "spieler"
+                        ? "tabBtnActive"
+                        : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("spieler")}
+                  >
+                    Spieler
+                  </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "tarife"
+                        ? "tabBtnActive"
+                        : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("tarife")}
+                  >
+                    Tarife
+                  </button>
+                </div>
+
+                <div style={{ height: 12 }} />
+
+                {verwaltungTab === "trainer" && (
                   <div className="card">
                     <h2>Trainer verwalten</h2>
                     <div className="row">
@@ -2470,7 +2653,9 @@ export default function App() {
                         />
                       </div>
                       <div className="field">
-                        <label>Stundensatz Trainer Honorar</label>
+                        <label>
+                          Stundensatz Trainer Honorar
+                        </label>
                         <input
                           type="number"
                           value={
@@ -2485,7 +2670,9 @@ export default function App() {
                             } else {
                               const n = Number(v);
                               setTrainerStundensatz(
-                                Number.isFinite(n) ? n : ""
+                                Number.isFinite(n)
+                                  ? n
+                                  : ""
                               );
                             }
                           }}
@@ -2498,7 +2685,9 @@ export default function App() {
                       <button
                         className="btn"
                         onClick={
-                          editingTrainerId ? saveTrainer : addTrainer
+                          editingTrainerId
+                            ? saveTrainer
+                            : addTrainer
                         }
                       >
                         {editingTrainerId
@@ -2522,28 +2711,38 @@ export default function App() {
 
                     <ul className="list">
                       {trainers.map((t) => (
-                        <li key={t.id} className="listItem">
+                        <li
+                          key={t.id}
+                          className="listItem"
+                        >
                           <div>
                             <strong>{t.name}</strong>
                             {t.email && (
-                              <div className="muted">{t.email}</div>
+                              <div className="muted">
+                                {t.email}
+                              </div>
                             )}
                             <div className="muted">
                               Honorar:{" "}
-                              {euro(t.stundensatz ?? 0)} pro Stunde
+                              {euro(t.stundensatz ?? 0)}{" "}
+                              pro Stunde
                             </div>
                           </div>
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() => startEditTrainer(t)}
+                              onClick={() =>
+                                startEditTrainer(t)
+                              }
                             >
                               Bearbeiten
                             </button>
                             {trainers.length > 1 && (
                               <button
                                 className="btn micro btnWarn"
-                                onClick={() => deleteTrainer(t.id)}
+                                onClick={() =>
+                                  deleteTrainer(t.id)
+                                }
                               >
                                 Löschen
                               </button>
@@ -2553,7 +2752,9 @@ export default function App() {
                       ))}
                     </ul>
                   </div>
+                )}
 
+                {verwaltungTab === "spieler" && (
                   <div className="card">
                     <h2>Spieler verwalten</h2>
                     <div className="row">
@@ -2590,12 +2791,17 @@ export default function App() {
                     </div>
 
                     <div className="row">
-                      <div className="field" style={{ minWidth: 260 }}>
+                      <div
+                        className="field"
+                        style={{ minWidth: 260 }}
+                      >
                         <label>Rechnungsadresse</label>
                         <input
                           value={spielerRechnung}
                           onChange={(e) =>
-                            setSpielerRechnung(e.target.value)
+                            setSpielerRechnung(
+                              e.target.value
+                            )
                           }
                           placeholder="optional"
                         />
@@ -2603,12 +2809,17 @@ export default function App() {
                     </div>
 
                     <div className="row">
-                      <div className="field" style={{ minWidth: 260 }}>
+                      <div
+                        className="field"
+                        style={{ minWidth: 260 }}
+                      >
                         <label>Notizen</label>
                         <input
                           value={spielerNotizen}
                           onChange={(e) =>
-                            setSpielerNotizen(e.target.value)
+                            setSpielerNotizen(
+                              e.target.value
+                            )
                           }
                           placeholder="optional"
                         />
@@ -2619,7 +2830,9 @@ export default function App() {
                       <button
                         className="btn"
                         onClick={
-                          editingSpielerId ? saveSpieler : addSpieler
+                          editingSpielerId
+                            ? saveSpieler
+                            : addSpieler
                         }
                       >
                         {editingSpielerId
@@ -2645,7 +2858,10 @@ export default function App() {
 
                     <ul className="list">
                       {spieler.map((s) => (
-                        <li key={s.id} className="listItem">
+                        <li
+                          key={s.id}
+                          className="listItem"
+                        >
                           <div>
                             <strong>{s.name}</strong>
                             <div className="muted">
@@ -2656,7 +2872,8 @@ export default function App() {
                             </div>
                             {s.rechnungsAdresse && (
                               <div className="muted">
-                                Rechnungsadresse: {s.rechnungsAdresse}
+                                Rechnungsadresse:{" "}
+                                {s.rechnungsAdresse}
                               </div>
                             )}
                             {s.notizen && (
@@ -2668,7 +2885,9 @@ export default function App() {
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() => startEditSpieler(s)}
+                              onClick={() =>
+                                startEditSpieler(s)
+                              }
                             >
                               Bearbeiten
                             </button>
@@ -2677,125 +2896,144 @@ export default function App() {
                       ))}
                     </ul>
                   </div>
-                </div>
+                )}
 
-                <div style={{ height: 16 }} />
+                {verwaltungTab === "tarife" && (
+                  <div className="card">
+                    <h2>Tarife verwalten</h2>
+                    <div className="row">
+                      <div className="field">
+                        <label>Name</label>
+                        <input
+                          value={tarifName}
+                          onChange={(e) =>
+                            setTarifName(e.target.value)
+                          }
+                          placeholder="z.B. Gruppentraining"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Preis pro Stunde</label>
+                        <input
+                          type="number"
+                          value={tarifPreisProStunde}
+                          onChange={(e) =>
+                            setTarifPreisProStunde(
+                              Number(e.target.value) || 0
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Abrechnung</label>
+                        <select
+                          value={tarifAbrechnung}
+                          onChange={(e) =>
+                            setTarifAbrechnung(
+                              e.target
+                                .value as
+                                | "proTraining"
+                                | "proSpieler"
+                                | "monatlich"
+                            )
+                          }
+                        >
+                          <option value="proTraining">
+                            Pro Training
+                          </option>
+                          <option value="proSpieler">
+                            Pro Spieler
+                          </option>
+                          <option value="monatlich">
+                            Monatlich
+                          </option>
+                        </select>
+                      </div>
+                    </div>
 
-                <div className="card">
-                  <h2>Tarife verwalten</h2>
-                  <div className="row">
-                    <div className="field">
-                      <label>Name</label>
-                      <input
-                        value={tarifName}
-                        onChange={(e) =>
-                          setTarifName(e.target.value)
-                        }
-                        placeholder="z.B. Gruppentraining"
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Preis pro Stunde</label>
-                      <input
-                        type="number"
-                        value={tarifPreisProStunde}
-                        onChange={(e) =>
-                          setTarifPreisProStunde(
-                            Number(e.target.value) || 0
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Abrechnung</label>
-                      <select
-                        value={tarifAbrechnung}
-                        onChange={(e) =>
-                          setTarifAbrechnung(
-                            e.target.value as
-                              | "proTraining"
-                              | "proSpieler"
-                              | "monatlich"
-                          )
-                        }
+                    <div className="row">
+                      <div
+                        className="field"
+                        style={{ minWidth: 260 }}
                       >
-                        <option value="proTraining">Pro Training</option>
-                        <option value="proSpieler">Pro Spieler</option>
-                        <option value="monatlich">Monatlich</option>
-                      </select>
+                        <label>Beschreibung</label>
+                        <input
+                          value={tarifBeschreibung}
+                          onChange={(e) =>
+                            setTarifBeschreibung(
+                              e.target.value
+                            )
+                          }
+                          placeholder="optional"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="row">
-                    <div className="field" style={{ minWidth: 260 }}>
-                      <label>Beschreibung</label>
-                      <input
-                        value={tarifBeschreibung}
-                        onChange={(e) =>
-                          setTarifBeschreibung(e.target.value)
-                        }
-                        placeholder="optional"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="row">
-                    <button
-                      className="btn"
-                      onClick={editingTarifId ? saveTarif : addTarif}
-                    >
-                      {editingTarifId
-                        ? "Tarif speichern"
-                        : "Tarif hinzufügen"}
-                    </button>
-                    {editingTarifId && (
+                    <div className="row">
                       <button
-                        className="btn btnGhost"
-                        onClick={() => {
-                          setEditingTarifId(null);
-                          setTarifName("");
-                          setTarifPreisProStunde(60);
-                          setTarifAbrechnung("proTraining");
-                          setTarifBeschreibung("");
-                        }}
+                        className="btn"
+                        onClick={
+                          editingTarifId ? saveTarif : addTarif
+                        }
                       >
-                        Abbrechen
+                        {editingTarifId
+                          ? "Tarif speichern"
+                          : "Tarif hinzufügen"}
                       </button>
-                    )}
-                  </div>
+                      {editingTarifId && (
+                        <button
+                          className="btn btnGhost"
+                          onClick={() => {
+                            setEditingTarifId(null);
+                            setTarifName("");
+                            setTarifPreisProStunde(60);
+                            setTarifAbrechnung("proTraining");
+                            setTarifBeschreibung("");
+                          }}
+                        >
+                          Abbrechen
+                        </button>
+                      )}
+                    </div>
 
-                  <ul className="list">
-                    {tarife.map((t) => (
-                      <li key={t.id} className="listItem">
-                        <div>
-                          <strong>{t.name}</strong>
-                          <div className="muted">
-                            {t.abrechnung === "monatlich"
-                              ? `${t.preisProStunde} EUR monatlich`
-                              : `${t.preisProStunde} EUR pro Stunde, ${
-                                  t.abrechnung === "proSpieler"
-                                    ? "pro Spieler"
-                                    : "pro Training"
-                                }`}
-                          </div>
-                          {t.beschreibung && (
+                    <ul className="list">
+                      {tarife.map((t) => (
+                        <li
+                          key={t.id}
+                          className="listItem"
+                        >
+                          <div>
+                            <strong>{t.name}</strong>
                             <div className="muted">
-                              {t.beschreibung}
+                              {t.abrechnung === "monatlich"
+                                ? `${t.preisProStunde} EUR monatlich`
+                                : `${t.preisProStunde} EUR pro Stunde, ${
+                                    t.abrechnung === "proSpieler"
+                                      ? "pro Spieler"
+                                      : "pro Training"
+                                  }`}
                             </div>
-                          )}
-                        </div>
-                        <div className="smallActions">
-                          <button
-                            className="btn micro btnGhost"
-                            onClick={() => startEditTarif(t)}
-                          >
-                            Bearbeiten
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                            {t.beschreibung && (
+                              <div className="muted">
+                                {t.beschreibung}
+                              </div>
+                            )}
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() =>
+                                startEditTarif(t)
+                              }
+                            >
+                              Bearbeiten
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
 
@@ -2803,7 +3041,8 @@ export default function App() {
               <div className="card">
                 <h2>Kein Zugriff</h2>
                 <p className="muted">
-                  Die Verwaltung ist nur für den Hauptaccount verfügbar.
+                  Die Verwaltung ist nur für den Hauptaccount
+                  verfügbar.
                 </p>
               </div>
             )}
@@ -2819,7 +3058,9 @@ export default function App() {
                     <input
                       type="month"
                       value={abrechnungMonat}
-                      onChange={(e) => setAbrechnungMonat(e.target.value)}
+                      onChange={(e) =>
+                        setAbrechnungMonat(e.target.value)
+                      }
                     />
                   </div>
                   <div className="field">
@@ -2827,7 +3068,9 @@ export default function App() {
                     <select
                       value={abrechnungFilter}
                       onChange={(e) =>
-                        setAbrechnungFilter(e.target.value as AbrechnungFilter)
+                        setAbrechnungFilter(
+                          e.target.value as AbrechnungFilter
+                        )
                       }
                     >
                       <option value="alle">Alle</option>
@@ -2842,10 +3085,16 @@ export default function App() {
                         value={abrechnungTrainerFilter}
                         disabled={isTrainer}
                         onChange={(e) =>
-                          setAbrechnungTrainerFilter(e.target.value)
+                          setAbrechnungTrainerFilter(
+                            e.target.value
+                          )
                         }
                       >
-                        {!isTrainer && <option value="alle">Alle Trainer</option>}
+                        {!isTrainer && (
+                          <option value="alle">
+                            Alle Trainer
+                          </option>
+                        )}
                         {trainers.map((tr) => (
                           <option key={tr.id} value={tr.id}>
                             {tr.name}
@@ -2860,7 +3109,9 @@ export default function App() {
                   <div className="subTabs">
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "spieler" ? "tabBtnActive" : ""
+                        abrechnungTab === "spieler"
+                          ? "tabBtnActive"
+                          : ""
                       }`}
                       onClick={() => setAbrechnungTab("spieler")}
                     >
@@ -2868,7 +3119,9 @@ export default function App() {
                     </button>
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "trainer" ? "tabBtnActive" : ""
+                        abrechnungTab === "trainer"
+                          ? "tabBtnActive"
+                          : ""
                       }`}
                       onClick={() => setAbrechnungTab("trainer")}
                     >
@@ -2877,7 +3130,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Spieler Abrechnung Seite */}
+                {/* Spieler Abrechnung */}
                 {abrechnungTab === "spieler" && !isTrainer && (
                   <>
                     <div className="row" style={{ marginTop: 12 }}>
@@ -2885,18 +3138,28 @@ export default function App() {
                         Umsatz gesamt:{" "}
                         <strong>{euro(abrechnung.total)}</strong>
                       </span>
+                      {abrechnung.barTotal > 0 && (
+                        <span className="pill">
+                          Bar bezahlt (dieser Monat):{" "}
+                          <strong>
+                            {euro(abrechnung.barTotal)}
+                          </strong>
+                        </span>
+                      )}
                       <span className="pill">
-                        Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
+                        Bereits bezahlt:{" "}
+                        <strong>{euro(sumBezahlt)}</strong>
                       </span>
                       <span className="pill">
-                        Offen: <strong>{euro(sumOffen)}</strong>
+                        Offen:{" "}
+                        <strong>{euro(sumOffen)}</strong>
                       </span>
                     </div>
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Der Status bezahlt gilt immer für einen Spieler im
-                      ausgewählten Monat.
+                      Hinweis: Der Status bezahlt gilt immer für
+                      einen Spieler im ausgewählten Monat.
                     </div>
 
                     <div style={{ height: 14 }} />
@@ -2920,11 +3183,17 @@ export default function App() {
                                 : r.breakdown
                                     .map(
                                       (b) =>
-                                        `${b.count} × ${euro(b.amount)}`
+                                        `${b.count} × ${euro(
+                                          b.amount
+                                        )}`
                                     )
                                     .join(" + ");
-                            const key = paymentKey(abrechnungMonat, r.id);
-                            const paid = payments[key] ?? false;
+                            const key = paymentKey(
+                              abrechnungMonat,
+                              r.id
+                            );
+                            const paid =
+                              payments[key] ?? false;
                             return (
                               <tr key={r.id}>
                                 <td>{r.name}</td>
@@ -2933,10 +3202,14 @@ export default function App() {
                                 <td>
                                   <span
                                     className={
-                                      paid ? "badge badgeOk" : "badge"
+                                      paid
+                                        ? "badge badgeOk"
+                                        : "badge"
                                     }
                                   >
-                                    {paid ? "bezahlt" : "offen"}
+                                    {paid
+                                      ? "bezahlt"
+                                      : "offen"}
                                   </span>
                                 </td>
                                 <td>
@@ -2972,33 +3245,53 @@ export default function App() {
                   </>
                 )}
 
-                {/* Trainer Abrechnung Seite */}
+                {/* Trainer Abrechnung */}
                 {abrechnungTab === "trainer" && (
                   <>
                     {!isTrainer && (
                       <div className="row" style={{ marginTop: 12 }}>
                         <span className="pill">
                           Umsatz gesamt:{" "}
-                          <strong>{euro(abrechnung.total)}</strong>
+                          <strong>
+                            {euro(abrechnungTrainer.total)}
+                          </strong>
                         </span>
                         <span className="pill">
                           Trainer Honorar gesamt:{" "}
-                          <strong>{euro(trainerHonorarTotal)}</strong>
+                          <strong>
+                            {euro(trainerHonorarTotal)}
+                          </strong>
                         </span>
                         <span className="pill">
                           Honorar bezahlt:{" "}
-                          <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                          <strong>
+                            {euro(
+                              trainerHonorarBezahltTotal
+                            )}
+                          </strong>
                         </span>
                         <span className="pill">
                           Honorar offen:{" "}
-                          <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                          <strong>
+                            {euro(trainerHonorarOffenTotal)}
+                          </strong>
+                        </span>
+                        <span className="pill">
+                          Rückzahlung Trainer gesamt:{" "}
+                          <strong>
+                            {euro(trainerRueckzahlungTotal)}
+                          </strong>
                         </span>
                       </div>
                     )}
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
+                      Hinweis: Das Trainerhonorar wird pro
+                      Training abgerechnet. Bei Barzahlung durch
+                      den Schüler muss der Trainer die Differenz
+                      aus Gesamtbetrag minus Honorar
+                      zurückzahlen.
                     </div>
 
                     {!isTrainer && trainers.length > 1 && (
@@ -3015,19 +3308,42 @@ export default function App() {
                                 <th>Trainer Honorar</th>
                                 <th>Honorar bezahlt</th>
                                 <th>Honorar offen</th>
+                                <th>
+                                  Rückzahlung
+                                  (Bar)
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {abrechnungTrainer.rows.map((r) => (
-                                <tr key={r.id}>
-                                  <td>{r.name}</td>
-                                  <td>{r.trainings}</td>
-                                  <td>{euro(r.sum)}</td>
-                                  <td>{euro(r.honorar)}</td>
-                                  <td>{euro(r.honorarBezahlt)}</td>
-                                  <td>{euro(r.honorarOffen)}</td>
-                                </tr>
-                              ))}
+                              {abrechnungTrainer.rows.map(
+                                (r) => (
+                                  <tr key={r.id}>
+                                    <td>{r.name}</td>
+                                    <td>{r.trainings}</td>
+                                    <td>
+                                      {euro(r.sum)}
+                                    </td>
+                                    <td>
+                                      {euro(r.honorar)}
+                                    </td>
+                                    <td>
+                                      {euro(
+                                        r.honorarBezahlt
+                                      )}
+                                    </td>
+                                    <td>
+                                      {euro(
+                                        r.honorarOffen
+                                      )}
+                                    </td>
+                                    <td>
+                                      {euro(
+                                        r.barDifferenz
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -3051,22 +3367,45 @@ export default function App() {
                       ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
                       : "Tarif";
                     const sp = t.spielerIds
-                      .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                      .map(
+                        (id) =>
+                          spielerById.get(id)?.name ??
+                          "Spieler"
+                      )
                       .join(", ");
                     const trainerName =
-                      trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
-                      "Trainer";
-                    const price = euro(round2(trainingPreisGesamt(t)));
-                    const honorarBadge = euro(trainerHonorarFuerTraining(t));
-                    const trainerPaid = trainerPayments[t.id] ?? false;
+                      trainerById.get(
+                        t.trainerId ?? defaultTrainerId
+                      )?.name ?? "Trainer";
+                    const betragGesamt = round2(
+                      trainingPreisGesamt(t)
+                    );
+                    const price = euro(betragGesamt);
+                    const honorar = trainerHonorarFuerTraining(t);
+                    const honorarBadge = euro(honorar);
+                    const isCash = !!studentCashPayments[t.id];
+                    const diffRückzahlung = round2(
+                      betragGesamt - honorar
+                    );
+                    const positiveDiff =
+                      diffRückzahlung > 0 ? diffRückzahlung : 0;
+                    const trainerPaidFlag =
+                      trainerPayments[t.id] ?? false;
+                    const trainerPaid =
+                      trainerPaidFlag || isCash;
                     const showTrainerInfo =
-                      isTrainer || abrechnungTab === "trainer";
+                      isTrainer ||
+                      abrechnungTab === "trainer";
+                    const canCash =
+                      !tarif ||
+                      tarif.abrechnung !== "monatlich";
 
                     return (
                       <li key={t.id} className="listItem">
                         <div>
                           <strong>
-                            {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                            {t.datum} {t.uhrzeitVon} bis{" "}
+                            {t.uhrzeitBis}
                           </strong>
                           <div className="muted">
                             {showTrainerInfo
@@ -3074,17 +3413,40 @@ export default function App() {
                               : `${sp}, ${ta}, ${trainerName}`}
                           </div>
                           {t.notiz ? (
-                            <div className="muted">{t.notiz}</div>
+                            <div className="muted">
+                              {t.notiz}
+                            </div>
                           ) : null}
                           {t.serieId ? (
                             <div className="muted">
-                              Serie: {t.serieId.slice(0, 8)}
+                              Serie:{" "}
+                              {t.serieId.slice(0, 8)}
                             </div>
                           ) : null}
+                          {isCash &&
+                            canCash &&
+                            positiveDiff > 0 && (
+                              <div className="muted">
+                                Bar bezahlt durch
+                                Schüler ·
+                                Rückzahlung Trainer:{" "}
+                                <strong>
+                                  {euro(
+                                    positiveDiff
+                                  )}
+                                </strong>
+                              </div>
+                            )}
                         </div>
                         <div className="smallActions">
-                          <span className="badge badgeOk">durchgeführt</span>
-                          {!isTrainer && <span className="badge">{price}</span>}
+                          <span className="badge badgeOk">
+                            durchgeführt
+                          </span>
+                          {!isTrainer && (
+                            <span className="badge">
+                              {price}
+                            </span>
+                          )}
                           {showTrainerInfo && (
                             <>
                               <span className="badge">
@@ -3092,33 +3454,93 @@ export default function App() {
                               </span>
                               <span
                                 className={
-                                  trainerPaid ? "badge badgeOk" : "badge"
+                                  trainerPaid
+                                    ? "badge badgeOk"
+                                    : "badge"
                                 }
                               >
-                                {trainerPaid
+                                {isCash
+                                  ? "Bar bezahlt (Schüler)"
+                                  : trainerPaid
                                   ? "Honorar abgerechnet"
                                   : "Honorar offen"}
                               </span>
                             </>
                           )}
-                          {!isTrainer && abrechnungTab === "trainer" && (
-                            <>
+
+                          {/* Spieler-Abrechnung: Bar bezahlt Button (rot) */}
+                          {!isTrainer &&
+                            abrechnungTab === "spieler" &&
+                            canCash && (
                               <button
                                 className="btn micro"
-                                onClick={() => toggleTrainerPaid(t.id)}
+                                style={{
+                                  backgroundColor:
+                                    "#dc2626",
+                                  borderColor: "#b91c1c",
+                                }}
+                                onClick={() =>
+                                  toggleStudentCashPayment(
+                                    t.id
+                                  )
+                                }
                               >
-                                {trainerPaid
-                                  ? "Honorar als offen markieren"
-                                  : "Honorar als abgerechnet markieren"}
+                                {isCash
+                                  ? "Barzahlung entfernen"
+                                  : "Bar bezahlt"}
                               </button>
-                              <button
-                                className="btn micro btnGhost"
-                                onClick={() => fillTrainingFromSelected(t)}
-                              >
-                                Bearbeiten
-                              </button>
-                            </>
-                          )}
+                            )}
+
+                          {/* Trainer-Abrechnung: Bar bezahlt Button (lila) und Honorar-Button */}
+                          {!isTrainer &&
+                            abrechnungTab === "trainer" && (
+                              <>
+                                {canCash && (
+                                  <button
+                                    className="btn micro"
+                                    style={{
+                                      backgroundColor:
+                                        "#dc2626",
+                                      borderColor:
+                                        "#7c3aed",
+                                    }}
+                                    onClick={() =>
+                                      toggleStudentCashPayment(
+                                        t.id
+                                      )
+                                    }
+                                  >
+                                    {isCash
+                                      ? "Barzahlung entfernen"
+                                      : "Bar bezahlt"}
+                                  </button>
+                                )}
+                                {!isCash && (
+                                  <button
+                                    className="btn micro"
+                                    onClick={() =>
+                                      toggleTrainerPaid(
+                                        t.id
+                                      )
+                                    }
+                                  >
+                                    {trainerPaidFlag
+                                      ? "Honorar als offen markieren"
+                                      : "Honorar als abgerechnet markieren"}
+                                  </button>
+                                )}
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() =>
+                                    fillTrainingFromSelected(
+                                      t
+                                    )
+                                  }
+                                >
+                                  Bearbeiten
+                                </button>
+                              </>
+                            )}
                         </div>
                       </li>
                     );
@@ -3134,14 +3556,16 @@ export default function App() {
         <div className="modalOverlay">
           <div className="modalCard">
             <div className="modalHeader">
-              <div className="modalPill">Zahlung bestätigen</div>
+              <div className="modalPill">
+                Zahlung bestätigen
+              </div>
               <h3>
                 {payConfirm.spielerName} ·{" "}
                 {formatMonthLabel(payConfirm.monat)}
               </h3>
               <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es später
-                wieder auf offen stellen.
+                Dieser Betrag wird als bezahlt markiert, Du
+                kannst es später wieder auf offen stellen.
               </p>
             </div>
             <div className="modalSummary">
@@ -3149,7 +3573,10 @@ export default function App() {
               <strong>{euro(payConfirm.amount)}</strong>
             </div>
             <div className="modalActions">
-              <button className="btn btnGhost" onClick={closePayConfirm}>
+              <button
+                className="btn btnGhost"
+                onClick={closePayConfirm}
+              >
                 Abbrechen
               </button>
               <button className="btn" onClick={confirmPay}>
@@ -3162,4 +3589,3 @@ export default function App() {
     </>
   );
 }
-
