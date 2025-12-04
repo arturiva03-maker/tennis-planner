@@ -369,6 +369,10 @@ display: grid;
 grid-template-columns: 60px repeat(7, 1fr);
 }
 
+.kgridDay .kHeadCell:nth-child(2) {
+  text-align: center;
+}
+
 .kTimeCol {
 border-right: 1px solid #e5e7eb;
 background: #f8fafc;
@@ -428,6 +432,57 @@ display: inline-flex;
 align-items: center;
 gap: 4px;
 }
+
+/* Kalender Navigation oben */
+
+.calendarNav {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendarWeekLabel {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.calendarNavControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navArrowBtn,
+.todayBtn {
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.navArrowBtn {
+  width: 30px;
+  padding: 0;
+  font-size: 16px; /* etwas größerer Pfeil */
+}
+
+.navArrowBtn:hover,
+.todayBtn:hover {
+  background: #f1f5f9;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+.todayBtn {
+  font-weight: 500;
+  color: #0f172a;
+}
+
 
 .tabBtnActive {
 background: #ffffff;
@@ -643,4 +698,13 @@ grid-template-columns: 50px repeat(7, 1fr);
 .kTime {
 font-size: 10px;
 }
+
+.kgridDay .kHead {
+    grid-template-columns: 50px 1fr;
+  }
+
+  .kgridDay .kBody {
+    grid-template-columns: 50px 1fr;
+  }
+  
 }

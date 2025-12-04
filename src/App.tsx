@@ -123,6 +123,28 @@ function formatShort(dateISO: string) {
   return `${w} ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
 }
 
+function formatWeekRange(weekStartISO: string) {
+  const start = new Date(weekStartISO + "T12:00:00");
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+
+  const months = [
+    "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni",
+    "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."
+  ];
+
+  const sDay = start.getDate();
+  const eDay = end.getDate();
+  const sMonth = start.getMonth();
+  const eMonth = end.getMonth();
+  const year = end.getFullYear();
+
+  if (sMonth === eMonth) {
+    return `${sDay} – ${eDay}. ${months[eMonth]} ${year}`;
+  }
+  return `${sDay}. ${months[sMonth]} – ${eDay}. ${months[eMonth]} ${year}`;
+}
+
 function formatMonthLabel(monthISO: string) {
   const parts = monthISO.split("-");
   const year = parts[0] ?? "";
@@ -1184,6 +1206,18 @@ export default function App() {
     if (changed) triggerDonePulse(trainingId);
   }
 
+    function goToToday() {
+    const t = todayISO();
+    setWeekAnchor(t);
+
+    if (viewMode === "day") {
+      const d = new Date(t + "T12:00:00");
+      const idx = (d.getDay() + 6) % 7; // 0 = Mo ... 6 = So
+      setDayIndex(idx);
+    }
+  }
+
+
   function handleCalendarEventClick(t: Training) {
     if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = window.setTimeout(() => {
@@ -1705,35 +1739,48 @@ export default function App() {
             </div>
 
             {/* Kalender */}
-            {tab === "kalender" && (
-              <div className="card">
-                <div className="split">
-                  <div className="row">
-                    <span className="pill">
-                      Woche ab: <strong>{formatShort(weekStart)}</strong>
-                    </span>
-                    <button
-                      className="btn btnGhost"
-                      onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
-                    >
-                      Woche zurück
-                    </button>
-                    <button
-                      className="btn btnGhost"
-                      onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
-                    >
-                      Woche vor
-                    </button>
-                    <button
-                      className="btn"
-                      onClick={() => {
-                        resetTrainingForm();
-                        setTab("training");
-                      }}
-                    >
-                      Neues Training
-                    </button>
-                  </div>
+           {tab === "kalender" && (
+  <div className="card">
+    <div className="split">
+      <div className="row calendarNav">
+        <span className="calendarWeekLabel">
+          {formatWeekRange(weekStart)}
+        </span>
+
+        <div className="calendarNavControls">
+          <button
+            className="navArrowBtn"
+            onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
+            aria-label="Vorherige Woche"
+          >
+            ‹
+          </button>
+          <button
+            className="todayBtn"
+            onClick={goToToday}
+          >
+            Heute
+          </button>
+          <button
+            className="navArrowBtn"
+            onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
+            aria-label="Nächste Woche"
+          >
+            ›
+          </button>
+
+          <button
+            className="btn"
+            onClick={() => {
+              resetTrainingForm();
+              setTab("training");
+            }}
+          >
+            Neues Training
+          </button>
+        </div>
+      </div>
+
 
                   <div className="row">
                     <div className="field" style={{ minWidth: 220 }}>
@@ -1807,7 +1854,7 @@ export default function App() {
 
                 <div style={{ height: 12 }} />
 
-                <div className="kgrid">
+                <div className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}>
                   <div className="kHead">
                     <div className="kHeadCell">Zeit</div>
                     {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
