@@ -74,6 +74,7 @@ type AuthUser = {
 
 type ViewMode = "week" | "day";
 type AbrechnungFilter = "alle" | "bezahlt" | "offen";
+type AbrechnungTab = "spieler" | "trainer";
 
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const LEGACY_KEYS = [
@@ -433,6 +434,7 @@ export default function App() {
     useState<AbrechnungFilter>("alle");
   const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
     useState<string>("alle");
+  const [abrechnungTab, setAbrechnungTab] = useState<AbrechnungTab>("spieler");  
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -774,6 +776,15 @@ export default function App() {
       setTab("kalender");
     }
   }, [isTrainer, tab]);
+
+  useEffect(() => {
+  if (isTrainer) {
+    setAbrechnungTab("trainer");
+  } else {
+    // optional: Admins wieder auf Spieler-Ansicht
+    setAbrechnungTab("spieler");
+  }
+}, [isTrainer]);
 
   const weekStart = useMemo(() => startOfWeekISO(weekAnchor), [weekAnchor]);
   const weekDays = useMemo(
@@ -1568,12 +1579,10 @@ export default function App() {
     setProfileFinished(false);
   }
 
-  if (authLoading) {
+   if (authLoading) {
     return (
       <div className="container">
-        <div className="card" style={{ marginTop: 60 }}>
-          Lädt ...
-        </div>
+        <div className="card" style={{ marginTop: 60 }}>Lädt ...</div>
       </div>
     );
   }
@@ -1612,20 +1621,26 @@ export default function App() {
 
   return (
     <>
-      <div className="container">
-        <div className="header">
-          <div className="hTitle">
-            <h1>Tennistrainer Planung</h1>
-            <p>
-              Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde, pro
-              Benutzer gespeichert.
-            </p>
+      <div className="appShell">
+        <aside className="sideNav">
+          <div className="sideNavHeader">
+            <div className="sideTitle">Tennistrainer Planung</div>
+            <div className="sideSubtitle">
+              Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde.
+            </div>
           </div>
-          <div className="tabs">
+
+          <span className="pill sideRolePill">
+            Rolle: <strong>{roleLabel}</strong>
+          </span>
+
+          <nav className="sideTabs">
             {visibleTabs.map((t) => (
               <button
                 key={t}
-                className={`tabBtn ${tab === t ? "tabBtnActive" : ""}`}
+                className={`tabBtn sideTabBtn ${
+                  tab === t ? "tabBtnActive" : ""
+                }`}
                 onClick={() => setTab(t)}
               >
                 {t === "kalender" && "Kalender"}
@@ -1634,64 +1649,1120 @@ export default function App() {
                 {t === "abrechnung" && "Abrechnung"}
               </button>
             ))}
-            <span className="pill">
-              Rolle: <strong>{roleLabel}</strong>
-            </span>
-            <button className="tabBtn btnGhost" onClick={handleLogout}>
-              Logout ({authUser.email ?? "ohne Email"})
-            </button>
-          </div>
-        </div>
+          </nav>
 
-        {tab === "kalender" && (
-          <div className="card">
-            <div className="split">
-              <div className="row">
-                <span className="pill">
-                  Woche ab: <strong>{formatShort(weekStart)}</strong>
-                </span>
-                <button
-                  className="btn btnGhost"
-                  onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
-                >
-                  Woche zurück
-                </button>
-                <button
-                  className="btn btnGhost"
-                  onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
-                >
-                  Woche vor
-                </button>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    resetTrainingForm();
-                    setTab("training");
-                  }}
-                >
-                  Neues Training
-                </button>
+          <button className="btn btnGhost sideLogout" onClick={handleLogout}>
+            Logout ({authUser.email ?? "ohne Email"})
+          </button>
+        </aside>
+
+        <main className="mainArea">
+          <div className="container">
+            <div className="header">
+              <div className="hTitle">
+                <h1>Tennistrainer Planung</h1>
+                <p>
+                  Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
+                  pro Benutzer gespeichert.
+                </p>
               </div>
+            </div>
+
+            {/* Kalender */}
+            {tab === "kalender" && (
+              <div className="card">
+                <div className="split">
+                  <div className="row">
+                    <span className="pill">
+                      Woche ab: <strong>{formatShort(weekStart)}</strong>
+                    </span>
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => setWeekAnchor(addDaysISO(weekStart, -7))}
+                    >
+                      Woche zurück
+                    </button>
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => setWeekAnchor(addDaysISO(weekStart, 7))}
+                    >
+                      Woche vor
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        resetTrainingForm();
+                        setTab("training");
+                      }}
+                    >
+                      Neues Training
+                    </button>
+                  </div>
+
+                  <div className="row">
+                    <div className="field" style={{ minWidth: 220 }}>
+                      <label>Woche springen</label>
+                      <input
+                        type="date"
+                        value={weekAnchor}
+                        onChange={(e) => setWeekAnchor(e.target.value)}
+                      />
+                    </div>
+
+                    {trainers.length > 1 && (
+                      <div className="field" style={{ minWidth: 200 }}>
+                        <label>Trainer Filter</label>
+                        <select
+                          value={kalenderTrainerFilter}
+                          disabled={isTrainer}
+                          onChange={(e) =>
+                            setKalenderTrainerFilter(e.target.value)
+                          }
+                        >
+                          {!isTrainer && (
+                            <option value="alle">Alle Trainer</option>
+                          )}
+                          {trainers.map((tr) => (
+                            <option key={tr.id} value={tr.id}>
+                              {tr.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="row">
+                      <button
+                        className={`tabBtn ${
+                          viewMode === "week" ? "tabBtnActive" : ""
+                        }`}
+                        onClick={() => setViewMode("week")}
+                      >
+                        Woche
+                      </button>
+                      <button
+                        className={`tabBtn ${
+                          viewMode === "day" ? "tabBtnActive" : ""
+                        }`}
+                        onClick={() => setViewMode("day")}
+                      >
+                        Tag
+                      </button>
+                      {viewMode === "day" && (
+                        <select
+                          value={dayIndex}
+                          onChange={(e) => setDayIndex(Number(e.target.value))}
+                          style={{ marginLeft: 8 }}
+                        >
+                          {weekDays.map((d, idx) => (
+                            <option key={d} value={idx}>
+                              {formatShort(d)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <span className="pill">
+                      Trainer gesamt: <strong>{trainers.length}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ height: 12 }} />
+
+                <div className="kgrid">
+                  <div className="kHead">
+                    <div className="kHeadCell">Zeit</div>
+                    {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
+                      (d) => (
+                        <div key={d} className="kHeadCell">
+                          {formatShort(d)}
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  <div className="kBody">
+                    <div className="kTimeCol">
+                      {hours.map((h) => (
+                        <div key={h} className="kTime">
+                          {pad2(h)}:00
+                        </div>
+                      ))}
+                    </div>
+
+                    {(viewMode === "week"
+                      ? weekDays
+                      : [weekDays[dayIndex]]
+                    ).map((day) => {
+                      const dayEvents = trainingsInWeek.filter(
+                        (t) => t.datum === day
+                      );
+                      const startMin = 7 * 60;
+
+                      return (
+                        <div key={day} className="kDayCol">
+                          {hours.map((h) => (
+                            <div key={h} className="kHourLine" />
+                          ))}
+
+                          {dayEvents.map((t) => {
+                            const top =
+                              Math.max(
+                                0,
+                                (toMinutes(t.uhrzeitVon) - startMin) / 60
+                              ) * 40;
+                            const height = Math.max(
+                              26,
+                              ((toMinutes(t.uhrzeitBis) -
+                                toMinutes(t.uhrzeitVon)) /
+                                60) *
+                                40
+                            );
+                            const tarif = t.tarifId
+                              ? tarifById.get(t.tarifId)
+                              : undefined;
+                            const ta = tarif
+                              ? tarif.abrechnung === "monatlich"
+                                ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
+                                : tarif.name
+                              : t.customPreisProStunde
+                              ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                              : "Tarif";
+                            const sp = t.spielerIds
+                              .map(
+                                (id) =>
+                                  spielerById.get(id)?.name ?? "Spieler"
+                              )
+                              .join(", ");
+                            const trainerName =
+                              trainerById.get(
+                                t.trainerId ?? defaultTrainerId
+                              )?.name ?? "Trainer";
+
+                            const taLine = isTrainer
+                              ? `Trainer: ${trainerName}`
+                              : trainers.length > 1
+                              ? `${ta} | ${trainerName}`
+                              : ta;
+
+                            const isDone = t.status === "durchgefuehrt";
+                            const isCancel = t.status === "abgesagt";
+                            const isPulse = doneFlashId === t.id;
+
+                            const bg = isDone
+                              ? "rgba(34, 197, 94, 0.22)"
+                              : isCancel
+                              ? "rgba(239, 68, 68, 0.14)"
+                              : "rgba(59, 130, 246, 0.18)";
+                            const border = isDone
+                              ? "rgba(34, 197, 94, 0.45)"
+                              : isCancel
+                              ? "rgba(239, 68, 68, 0.34)"
+                              : "rgba(59, 130, 246, 0.30)";
+
+                            return (
+                              <div
+                                key={t.id}
+                                data-training-id={t.id}
+                                className="kEvent"
+                                style={{
+                                  top,
+                                  height,
+                                  backgroundColor: bg,
+                                  border: `1px solid ${border}`,
+                                  opacity: isCancel ? 0.85 : 1,
+                                  transform: isPulse ? "scale(1.06)" : undefined,
+                                  filter: isPulse
+                                    ? "brightness(1.15)"
+                                    : undefined,
+                                  transition:
+                                    "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  overflow: "hidden",
+                                  padding: 8,
+                                  gap: 6,
+                                }}
+                                onClick={() => handleCalendarEventClick(t)}
+                                onDoubleClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCalendarEventDoubleClick(t);
+                                }}
+                                title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
+                                  t.uhrzeitBis
+                                }${
+                                  isTrainer ? "" : `\nTarif: ${ta}`
+                                }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
+                                  t.status
+                                )}`}
+                              >
+                                <div
+                                  style={{
+                                    flex: "1 1 auto",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: 600,
+                                      whiteSpace: "nowrap",
+                                      textOverflow: "ellipsis",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {sp}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      whiteSpace: "nowrap",
+                                      textOverflow: "ellipsis",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {taLine}
+                                  </div>
+                                </div>
+                                <div
+                                  style={{
+                                    width: 14,
+                                    height: 14,
+                                    borderRadius: "999px",
+                                    border: "2px solid white",
+                                    boxShadow:
+                                      "0 0 0 1px rgba(15,23,42,0.15)",
+                                    backgroundColor: statusDotColor(t.status),
+                                    flex: "0 0 auto",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ height: 12 }} />
+                <div className="muted">
+                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
+                </div>
+              </div>
+            )}
+
+            {/* Training */}
+            {tab === "training" &&
+              (isTrainer ? (
+                <div className="card">
+                  <h2>Nur Lesen für Trainer</h2>
+                  <p className="muted">
+                    Trainings können nur vom Hauptaccount angelegt oder
+                    bearbeitet werden.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid2">
+                  <div className="card">
+                    <h2>
+                      {selectedTrainingId
+                        ? "Training bearbeiten"
+                        : "Training anlegen"}
+                    </h2>
+                    <div className="row">
+                      <div className="field">
+                        <label>Datum</label>
+                        <input
+                          type="date"
+                          value={tDatum}
+                          onChange={(e) => setTDatum(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Von</label>
+                        <input
+                          type="time"
+                          value={tVon}
+                          onChange={(e) => setTVon(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Bis</label>
+                        <input
+                          type="time"
+                          value={tBis}
+                          onChange={(e) => setTBis(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Trainer</label>
+                        <select
+                          value={tTrainerId}
+                          disabled={isTrainer}
+                          onChange={(e) => setTTrainerId(e.target.value)}
+                        >
+                          {trainerOptionsForSelect.map((tr) => (
+                            <option key={tr.id} value={tr.id}>
+                              {tr.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Tarif (optional)</label>
+                        <select
+                          value={tTarifId}
+                          onChange={(e) => setTTarifId(e.target.value)}
+                        >
+                          <option value="">
+                            Kein Tarif, individuellen Preis verwenden
+                          </option>
+                          {tarife.map((t) => {
+                            const beschreibung =
+                              t.abrechnung === "monatlich"
+                                ? `${t.preisProStunde} EUR monatlich`
+                                : `${t.preisProStunde} EUR pro Stunde, ${
+                                    t.abrechnung === "proSpieler"
+                                      ? "pro Spieler"
+                                      : "pro Training"
+                                  }`;
+                            return (
+                              <option key={t.id} value={t.id}>
+                                {t.name}, {beschreibung}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <div className="muted">
+                          Entweder einen Tarif auswählen oder unten einen
+                          individuellen Preis pro Stunde eingeben.
+                        </div>
+                      </div>
+
+                      <div className="field">
+                        <label>Status</label>
+                        <select
+                          value={tStatus}
+                          onChange={(e) =>
+                            setTStatus(e.target.value as TrainingStatus)
+                          }
+                        >
+                          <option value="geplant">Geplant</option>
+                          <option value="durchgefuehrt">Durchgeführt</option>
+                          <option value="abgesagt">Abgesagt</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Individueller Preis pro Stunde</label>
+                        <input
+                          type="number"
+                          value={
+                            tCustomPreisProStunde === ""
+                              ? ""
+                              : tCustomPreisProStunde
+                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") {
+                              setTCustomPreisProStunde("");
+                            } else {
+                              const n = Number(v);
+                              setTCustomPreisProStunde(
+                                Number.isFinite(n) ? n : ""
+                              );
+                            }
+                          }}
+                          placeholder="z.B. 60"
+                          disabled={!!tTarifId}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Individuelle Abrechnung</label>
+                        <select
+                          value={tCustomAbrechnung}
+                          onChange={(e) =>
+                            setTCustomAbrechnung(
+                              e.target.value as "proTraining" | "proSpieler"
+                            )
+                          }
+                          disabled={!!tTarifId}
+                        >
+                          <option value="proTraining">Pro Training</option>
+                          <option value="proSpieler">Pro Spieler</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field" style={{ minWidth: 260 }}>
+                        <label>Notiz</label>
+                        <input
+                          value={tNotiz}
+                          onChange={(e) => setTNotiz(e.target.value)}
+                          placeholder="optional"
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ height: 10 }} />
+
+                    {!selectedTrainingId && (
+                      <div className="card cardInset">
+                        <h2>Wiederholung</h2>
+                        <div className="row">
+                          <label
+                            className="pill"
+                            style={{ cursor: "pointer" }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={repeatWeekly}
+                              onChange={(e) =>
+                                setRepeatWeekly(e.target.checked)
+                              }
+                              style={{ marginRight: 8 }}
+                            />
+                            Wöchentlich wiederholen
+                          </label>
+                          <div className="field" style={{ minWidth: 220 }}>
+                            <label>Bis Datum</label>
+                            <input
+                              type="date"
+                              value={repeatUntil}
+                              onChange={(e) =>
+                                setRepeatUntil(e.target.value)
+                              }
+                              disabled={!repeatWeekly}
+                            />
+                          </div>
+                          <span className="pill">
+                            Trainer: <strong>{selectedTrainerName}</strong>
+                          </span>
+                        </div>
+                        <div className="muted">
+                          Wenn aktiv: Es werden alle Termine wöchentlich bis zum
+                          Bis Datum angelegt.
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedTrainingId &&
+                      (() => {
+                        const ex = trainings.find(
+                          (x) => x.id === selectedTrainingId
+                        );
+                        if (!ex?.serieId) return null;
+                        return (
+                          <div className="card cardInset">
+                            <h2>Serie bearbeiten</h2>
+                            <div className="row">
+                              <div className="field">
+                                <label>Änderungen anwenden</label>
+                                <select
+                                  value={applySerieScope}
+                                  onChange={(e) =>
+                                    setApplySerieScope(
+                                      e.target.value as
+                                        | "nurDieses"
+                                        | "abHeute"
+                                    )
+                                  }
+                                >
+                                  <option value="nurDieses">
+                                    Nur diesen Termin
+                                  </option>
+                                  <option value="abHeute">
+                                    Alle Termine der Serie ab diesem Datum
+                                  </option>
+                                </select>
+                              </div>
+                              <span className="pill">
+                                Serie:{" "}
+                                <strong>{ex.serieId.slice(0, 8)}</strong>
+                              </span>
+                            </div>
+                            <div className="muted">
+                              Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
+                              Status und Notiz werden für alle zukünftigen
+                              Termine übernommen. Beim Löschen mit dieser Option
+                              werden alle zukünftigen Termine der Serie entfernt.
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                    <div style={{ height: 10 }} />
+
+                    <div className="row">
+                      <button className="btn" onClick={saveTraining}>
+                        {selectedTrainingId
+                          ? "Änderungen speichern"
+                          : "Training speichern"}
+                      </button>
+                      <button
+                        className="btn btnGhost"
+                        onClick={() => {
+                          resetTrainingForm();
+                          setTab("kalender");
+                        }}
+                      >
+                        Zurück zum Kalender
+                      </button>
+                      {selectedTrainingId && (
+                        <button
+                          className="btn btnWarn"
+                          onClick={() =>
+                            deleteTraining(selectedTrainingId)
+                          }
+                        >
+                          Training löschen
+                        </button>
+                      )}
+                      <span className="pill">
+                        Preis Vorschau:{" "}
+                        <strong>{euro(preisVorschau)}</strong>
+                      </span>
+                    </div>
+
+                    <div style={{ height: 14 }} />
+
+                    <h2>Schnellzugriff, nächste Trainings</h2>
+                    <ul className="list">
+                      {nextTrainings.map((t) => {
+                        const tarif = t.tarifId
+                          ? tarifById.get(t.tarifId)
+                          : undefined;
+                        const ta = tarif
+                          ? tarif.abrechnung === "monatlich"
+                            ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
+                            : tarif.name
+                          : t.customPreisProStunde
+                          ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                          : "Tarif";
+                        const sp = t.spielerIds
+                          .map(
+                            (id) =>
+                              spielerById.get(id)?.name ?? "Spieler"
+                          )
+                          .join(", ");
+                        const trainerName =
+                          trainerById.get(
+                            t.trainerId ?? defaultTrainerId
+                          )?.name ?? "Trainer";
+
+                        return (
+                          <li key={t.id} className="listItem">
+                            <div>
+                              <strong>
+                                {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                              </strong>
+                              <div className="muted">
+                                {ta}, {sp}, {trainerName}
+                              </div>
+                              {t.serieId ? (
+                                <div className="muted">
+                                  Serie: {t.serieId.slice(0, 8)}
+                                </div>
+                              ) : null}
+                            </div>
+                            <div className="smallActions">
+                              <button
+                                className="btn micro btnGhost"
+                                onClick={() =>
+                                  fillTrainingFromSelected(t)
+                                }
+                              >
+                                Bearbeiten
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    <div className="muted">
+                      Tipp: Im Kalender kannst Du geplante Trainings per
+                      Doppelklick direkt abschließen.
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <h2>Spieler auswählen</h2>
+                    <div className="row">
+                      <div className="field">
+                        <label>Suche</label>
+                        <input
+                          value={spielerSuche}
+                          onChange={(e) =>
+                            setSpielerSuche(e.target.value)
+                          }
+                          placeholder="Name oder Email"
+                        />
+                      </div>
+                      <span className="pill">
+                        Ausgewählt:{" "}
+                        <strong>{tSpielerIds.length}</strong>
+                      </span>
+                    </div>
+
+                    <ul className="list">
+                      {filteredSpielerForPick.map((s) => {
+                        const checked = tSpielerIds.includes(s.id);
+                        return (
+                          <li key={s.id} className="listItem">
+                            <div>
+                              <strong>{s.name}</strong>
+                              <div className="muted">
+                                {s.kontaktEmail ?? ""}
+                                {s.kontaktTelefon
+                                  ? `, ${s.kontaktTelefon}`
+                                  : ""}
+                              </div>
+                              {s.rechnungsAdresse ? (
+                                <div className="muted">
+                                  Rechnungsadresse: {s.rechnungsAdresse}
+                                </div>
+                              ) : null}
+                              {s.notizen ? (
+                                <div className="muted">
+                                  {s.notizen}
+                                </div>
+                              ) : null}
+                            </div>
+                            <div className="smallActions">
+                              <button
+                                className={`btn micro ${
+                                  checked ? "" : "btnGhost"
+                                }`}
+                                onClick={() => toggleSpielerPick(s.id)}
+                              >
+                                {checked ? "Entfernen" : "Hinzufügen"}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+
+            {/* Verwaltung */}
+            {tab === "verwaltung" && !isTrainer && (
+              <>
+                <div className="grid2">
+                  <div className="card">
+                    <h2>Trainer verwalten</h2>
+                    <div className="row">
+                      <div className="field">
+                        <label>Name</label>
+                        <input
+                          value={trainerName}
+                          onChange={(e) =>
+                            setTrainerName(e.target.value)
+                          }
+                          placeholder="z.B. Jesper"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Email</label>
+                        <input
+                          value={trainerEmail}
+                          onChange={(e) =>
+                            setTrainerEmail(e.target.value)
+                          }
+                          placeholder="z.B. trainer@example.com"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Stundensatz Trainer Honorar</label>
+                        <input
+                          type="number"
+                          value={
+                            trainerStundensatz === ""
+                              ? ""
+                              : trainerStundensatz
+                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") {
+                              setTrainerStundensatz("");
+                            } else {
+                              const n = Number(v);
+                              setTrainerStundensatz(
+                                Number.isFinite(n) ? n : ""
+                              );
+                            }
+                          }}
+                          placeholder="z.B. 20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <button
+                        className="btn"
+                        onClick={
+                          editingTrainerId ? saveTrainer : addTrainer
+                        }
+                      >
+                        {editingTrainerId
+                          ? "Trainer speichern"
+                          : "Trainer hinzufügen"}
+                      </button>
+                      {editingTrainerId && (
+                        <button
+                          className="btn btnGhost"
+                          onClick={() => {
+                            setEditingTrainerId(null);
+                            setTrainerName("");
+                            setTrainerEmail("");
+                            setTrainerStundensatz(0);
+                          }}
+                        >
+                          Abbrechen
+                        </button>
+                      )}
+                    </div>
+
+                    <ul className="list">
+                      {trainers.map((t) => (
+                        <li key={t.id} className="listItem">
+                          <div>
+                            <strong>{t.name}</strong>
+                            {t.email && (
+                              <div className="muted">{t.email}</div>
+                            )}
+                            <div className="muted">
+                              Honorar:{" "}
+                              {euro(t.stundensatz ?? 0)} pro Stunde
+                            </div>
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => startEditTrainer(t)}
+                            >
+                              Bearbeiten
+                            </button>
+                            {trainers.length > 1 && (
+                              <button
+                                className="btn micro btnWarn"
+                                onClick={() => deleteTrainer(t.id)}
+                              >
+                                Löschen
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="card">
+                    <h2>Spieler verwalten</h2>
+                    <div className="row">
+                      <div className="field">
+                        <label>Name</label>
+                        <input
+                          value={spielerName}
+                          onChange={(e) =>
+                            setSpielerName(e.target.value)
+                          }
+                          placeholder="Name"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Email</label>
+                        <input
+                          value={spielerEmail}
+                          onChange={(e) =>
+                            setSpielerEmail(e.target.value)
+                          }
+                          placeholder="Kontakt Email"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Telefon</label>
+                        <input
+                          value={spielerTelefon}
+                          onChange={(e) =>
+                            setSpielerTelefon(e.target.value)
+                          }
+                          placeholder="Telefon"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field" style={{ minWidth: 260 }}>
+                        <label>Rechnungsadresse</label>
+                        <input
+                          value={spielerRechnung}
+                          onChange={(e) =>
+                            setSpielerRechnung(e.target.value)
+                          }
+                          placeholder="optional"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field" style={{ minWidth: 260 }}>
+                        <label>Notizen</label>
+                        <input
+                          value={spielerNotizen}
+                          onChange={(e) =>
+                            setSpielerNotizen(e.target.value)
+                          }
+                          placeholder="optional"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <button
+                        className="btn"
+                        onClick={
+                          editingSpielerId ? saveSpieler : addSpieler
+                        }
+                      >
+                        {editingSpielerId
+                          ? "Spieler speichern"
+                          : "Spieler hinzufügen"}
+                      </button>
+                      {editingSpielerId && (
+                        <button
+                          className="btn btnGhost"
+                          onClick={() => {
+                            setEditingSpielerId(null);
+                            setSpielerName("");
+                            setSpielerEmail("");
+                            setSpielerTelefon("");
+                            setSpielerRechnung("");
+                            setSpielerNotizen("");
+                          }}
+                        >
+                          Abbrechen
+                        </button>
+                      )}
+                    </div>
+
+                    <ul className="list">
+                      {spieler.map((s) => (
+                        <li key={s.id} className="listItem">
+                          <div>
+                            <strong>{s.name}</strong>
+                            <div className="muted">
+                              {s.kontaktEmail ?? ""}
+                              {s.kontaktTelefon
+                                ? `, ${s.kontaktTelefon}`
+                                : ""}
+                            </div>
+                            {s.rechnungsAdresse && (
+                              <div className="muted">
+                                Rechnungsadresse: {s.rechnungsAdresse}
+                              </div>
+                            )}
+                            {s.notizen && (
+                              <div className="muted">
+                                {s.notizen}
+                              </div>
+                            )}
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => startEditSpieler(s)}
+                            >
+                              Bearbeiten
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div style={{ height: 16 }} />
+
+                <div className="card">
+                  <h2>Tarife verwalten</h2>
+                  <div className="row">
+                    <div className="field">
+                      <label>Name</label>
+                      <input
+                        value={tarifName}
+                        onChange={(e) =>
+                          setTarifName(e.target.value)
+                        }
+                        placeholder="z.B. Gruppentraining"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Preis pro Stunde</label>
+                      <input
+                        type="number"
+                        value={tarifPreisProStunde}
+                        onChange={(e) =>
+                          setTarifPreisProStunde(
+                            Number(e.target.value) || 0
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Abrechnung</label>
+                      <select
+                        value={tarifAbrechnung}
+                        onChange={(e) =>
+                          setTarifAbrechnung(
+                            e.target.value as
+                              | "proTraining"
+                              | "proSpieler"
+                              | "monatlich"
+                          )
+                        }
+                      >
+                        <option value="proTraining">Pro Training</option>
+                        <option value="proSpieler">Pro Spieler</option>
+                        <option value="monatlich">Monatlich</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    <div className="field" style={{ minWidth: 260 }}>
+                      <label>Beschreibung</label>
+                      <input
+                        value={tarifBeschreibung}
+                        onChange={(e) =>
+                          setTarifBeschreibung(e.target.value)
+                        }
+                        placeholder="optional"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    <button
+                      className="btn"
+                      onClick={editingTarifId ? saveTarif : addTarif}
+                    >
+                      {editingTarifId
+                        ? "Tarif speichern"
+                        : "Tarif hinzufügen"}
+                    </button>
+                    {editingTarifId && (
+                      <button
+                        className="btn btnGhost"
+                        onClick={() => {
+                          setEditingTarifId(null);
+                          setTarifName("");
+                          setTarifPreisProStunde(60);
+                          setTarifAbrechnung("proTraining");
+                          setTarifBeschreibung("");
+                        }}
+                      >
+                        Abbrechen
+                      </button>
+                    )}
+                  </div>
+
+                  <ul className="list">
+                    {tarife.map((t) => (
+                      <li key={t.id} className="listItem">
+                        <div>
+                          <strong>{t.name}</strong>
+                          <div className="muted">
+                            {t.abrechnung === "monatlich"
+                              ? `${t.preisProStunde} EUR monatlich`
+                              : `${t.preisProStunde} EUR pro Stunde, ${
+                                  t.abrechnung === "proSpieler"
+                                    ? "pro Spieler"
+                                    : "pro Training"
+                                }`}
+                          </div>
+                          {t.beschreibung && (
+                            <div className="muted">
+                              {t.beschreibung}
+                            </div>
+                          )}
+                        </div>
+                        <div className="smallActions">
+                          <button
+                            className="btn micro btnGhost"
+                            onClick={() => startEditTarif(t)}
+                          >
+                            Bearbeiten
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {tab === "verwaltung" && isTrainer && (
+              <div className="card">
+                <h2>Kein Zugriff</h2>
+                <p className="muted">
+                  Die Verwaltung ist nur für den Hauptaccount verfügbar.
+                </p>
+              </div>
+            )}
+
+            {/* Abrechnung */}
+                      {tab === "abrechnung" && (
+            <div className="card">
+              <h2>Abrechnung</h2>
+
               <div className="row">
-                <div className="field" style={{ minWidth: 220 }}>
-                  <label>Woche springen</label>
+                <div className="field">
+                  <label>Monat</label>
                   <input
-                    type="date"
-                    value={weekAnchor}
-                    onChange={(e) => setWeekAnchor(e.target.value)}
+                    type="month"
+                    value={abrechnungMonat}
+                    onChange={(e) => setAbrechnungMonat(e.target.value)}
                   />
                 </div>
+                <div className="field">
+                  <label>Filter</label>
+                  <select
+                    value={abrechnungFilter}
+                    onChange={(e) =>
+                      setAbrechnungFilter(e.target.value as AbrechnungFilter)
+                    }
+                  >
+                    <option value="alle">Alle</option>
+                    <option value="bezahlt">Nur bezahlt</option>
+                    <option value="offen">Nur offen</option>
+                  </select>
+                </div>
                 {trainers.length > 1 && (
-                  <div className="field" style={{ minWidth: 200 }}>
-                    <label>Trainer Filter</label>
+                  <div className="field">
+                    <label>Trainer</label>
                     <select
-                      value={kalenderTrainerFilter}
+                      value={abrechnungTrainerFilter}
                       disabled={isTrainer}
-                      onChange={(e) => setKalenderTrainerFilter(e.target.value)}
+                      onChange={(e) =>
+                        setAbrechnungTrainerFilter(e.target.value)
+                      }
                     >
-                      {!isTrainer && (
-                        <option value="alle">Alle Trainer</option>
-                      )}
+                      {!isTrainer && <option value="alle">Alle Trainer</option>}
                       {trainers.map((tr) => (
                         <option key={tr.id} value={tr.id}>
                           {tr.name}
@@ -1700,1284 +2771,309 @@ export default function App() {
                     </select>
                   </div>
                 )}
-                <div className="row">
+              </div>
+
+              {!isTrainer && (
+                <div className="subTabs">
                   <button
                     className={`tabBtn ${
-                      viewMode === "week" ? "tabBtnActive" : ""
+                      abrechnungTab === "spieler" ? "tabBtnActive" : ""
                     }`}
-                    onClick={() => setViewMode("week")}
+                    onClick={() => setAbrechnungTab("spieler")}
                   >
-                    Woche
+                    Spieler Abrechnung
                   </button>
                   <button
                     className={`tabBtn ${
-                      viewMode === "day" ? "tabBtnActive" : ""
+                      abrechnungTab === "trainer" ? "tabBtnActive" : ""
                     }`}
-                    onClick={() => setViewMode("day")}
+                    onClick={() => setAbrechnungTab("trainer")}
                   >
-                    Tag
+                    Trainer Abrechnung
                   </button>
-                  {viewMode === "day" && (
-                    <select
-                      value={dayIndex}
-                      onChange={(e) => setDayIndex(Number(e.target.value))}
-                      style={{ marginLeft: 8 }}
-                    >
-                      {weekDays.map((d, idx) => (
-                        <option key={d} value={idx}>
-                          {formatShort(d)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-                <span className="pill">
-                  Trainer gesamt: <strong>{trainers.length}</strong>
-                </span>
-              </div>
-            </div>
-
-            <div style={{ height: 12 }} />
-
-            <div className="kgrid">
-              <div className="kHead">
-                <div className="kHeadCell">Zeit</div>
-                {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
-                  (d) => (
-                    <div key={d} className="kHeadCell">
-                      {formatShort(d)}
-                    </div>
-                  )
-                )}
-              </div>
-
-              <div className="kBody">
-                <div className="kTimeCol">
-                  {hours.map((h) => (
-                    <div key={h} className="kTime">
-                      {pad2(h)}:00
-                    </div>
-                  ))}
-                </div>
-
-                {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
-                  (day) => {
-                    const dayEvents = trainingsInWeek.filter(
-                      (t) => t.datum === day
-                    );
-                    const startMin = 7 * 60;
-
-                    return (
-                      <div key={day} className="kDayCol">
-                        {hours.map((h) => (
-                          <div key={h} className="kHourLine" />
-                        ))}
-
-                        {dayEvents.map((t) => {
-                          const top =
-                            Math.max(
-                              0,
-                              (toMinutes(t.uhrzeitVon) - startMin) / 60
-                            ) * 40;
-                          const height = Math.max(
-                            26,
-                            ((toMinutes(t.uhrzeitBis) -
-                              toMinutes(t.uhrzeitVon)) /
-                              60) *
-                              40
-                          );
-
-                          const tarif = t.tarifId
-                            ? tarifById.get(t.tarifId)
-                            : undefined;
-                          const ta = tarif
-                            ? tarif.abrechnung === "monatlich"
-                              ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                              : tarif.name
-                            : t.customPreisProStunde
-                            ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                            : "Tarif";
-
-                          const sp = t.spielerIds
-                            .map(
-                              (id) => spielerById.get(id)?.name ?? "Spieler"
-                            )
-                            .join(", ");
-                          const trainerName =
-                            trainerById.get(
-                              t.trainerId ?? defaultTrainerId
-                            )?.name ?? "Trainer";
-
-                          const taLine = isTrainer
-                            ? `Trainer: ${trainerName}`
-                            : trainers.length > 1
-                            ? `${ta} | ${trainerName}`
-                            : ta;
-
-                          const isDone = t.status === "durchgefuehrt";
-                          const isCancel = t.status === "abgesagt";
-                          const isPulse = doneFlashId === t.id;
-
-                          const bg = isDone
-                            ? "rgba(34, 197, 94, 0.22)"
-                            : isCancel
-                            ? "rgba(239, 68, 68, 0.14)"
-                            : "rgba(59, 130, 246, 0.18)";
-
-                          const border = isDone
-                            ? "rgba(34, 197, 94, 0.45)"
-                            : isCancel
-                            ? "rgba(239, 68, 68, 0.34)"
-                            : "rgba(59, 130, 246, 0.30)";
-
-                          return (
-                            <div
-                              key={t.id}
-                              data-training-id={t.id}
-                              className="kEvent"
-                              style={{
-                                top,
-                                height,
-                                backgroundColor: bg,
-                                border: `1px solid ${border}`,
-                                opacity: isCancel ? 0.85 : 1,
-                                transform: isPulse ? "scale(1.06)" : undefined,
-                                filter: isPulse
-                                  ? "brightness(1.15)"
-                                  : undefined,
-                                transition:
-                                  "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                overflow: "hidden",
-                                padding: 8,
-                                gap: 6,
-                              }}
-                              onClick={() => handleCalendarEventClick(t)}
-                              onDoubleClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleCalendarEventDoubleClick(t);
-                              }}
-                              title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
-                                t.uhrzeitBis
-                              }${
-                                isTrainer ? "" : `\nTarif: ${ta}`
-                              }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
-                                t.status
-                              )}`}
-                            >
-                              <div
-                                style={{
-                                  flex: "1 1 auto",
-                                  overflow: "hidden",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    whiteSpace: "nowrap",
-                                    textOverflow: "ellipsis",
-                                    overflow: "hidden",
-                                  }}
-                                >
-                                  {sp}
-                                </div>
-                                <div
-                                  style={{
-                                    fontSize: 11,
-                                    whiteSpace: "nowrap",
-                                    textOverflow: "ellipsis",
-                                    overflow: "hidden",
-                                  }}
-                                >
-                                  {taLine}
-                                </div>
-                              </div>
-                              <div
-                                style={{
-                                  width: 14,
-                                  height: 14,
-                                  borderRadius: "999px",
-                                  border: "2px solid white",
-                                  boxShadow:
-                                    "0 0 0 1px rgba(15,23,42,0.15)",
-                                  backgroundColor: statusDotColor(t.status),
-                                  flex: "0 0 auto",
-                                }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  }
-                )}
-              </div>
-            </div>
-
-            <div style={{ height: 12 }} />
-            <div className="muted">
-              Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
-            </div>
-          </div>
-        )}
-
-        {tab === "training" &&
-          (isTrainer ? (
-            <div className="card">
-              <h2>Nur Lesen für Trainer</h2>
-              <p className="muted">
-                Trainings können nur vom Hauptaccount angelegt oder bearbeitet
-                werden.
-              </p>
-            </div>
-          ) : (
-            <div className="grid2">
-              <div className="card">
-                <h2>
-                  {selectedTrainingId
-                    ? "Training bearbeiten"
-                    : "Training anlegen"}
-                </h2>
-
-                <div className="row">
-                  <div className="field">
-                    <label>Datum</label>
-                    <input
-                      type="date"
-                      value={tDatum}
-                      onChange={(e) => setTDatum(e.target.value)}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Von</label>
-                    <input
-                      type="time"
-                      value={tVon}
-                      onChange={(e) => setTVon(e.target.value)}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Bis</label>
-                    <input
-                      type="time"
-                      value={tBis}
-                      onChange={(e) => setTBis(e.target.value)}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Trainer</label>
-                    <select
-                      value={tTrainerId}
-                      disabled={isTrainer}
-                      onChange={(e) => setTTrainerId(e.target.value)}
-                    >
-                      {trainerOptionsForSelect.map((tr) => (
-                        <option key={tr.id} value={tr.id}>
-                          {tr.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="field">
-                    <label>Tarif (optional)</label>
-                    <select
-                      value={tTarifId}
-                      onChange={(e) => setTTarifId(e.target.value)}
-                    >
-                      <option value="">
-                        Kein Tarif, individuellen Preis verwenden
-                      </option>
-                      {tarife.map((t) => {
-                        const beschreibung =
-                          t.abrechnung === "monatlich"
-                            ? `${t.preisProStunde} EUR monatlich`
-                            : `${t.preisProStunde} EUR pro Stunde, ${
-                                t.abrechnung === "proSpieler"
-                                  ? "pro Spieler"
-                                  : "pro Training"
-                              }`;
-                        return (
-                          <option key={t.id} value={t.id}>
-                            {t.name}, {beschreibung}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <div className="muted">
-                      Entweder einen Tarif auswählen oder unten einen
-                      individuellen Preis pro Stunde eingeben.
-                    </div>
-                  </div>
-
-                  <div className="field">
-                    <label>Status</label>
-                    <select
-                      value={tStatus}
-                      onChange={(e) =>
-                        setTStatus(e.target.value as TrainingStatus)
-                      }
-                    >
-                      <option value="geplant">Geplant</option>
-                      <option value="durchgefuehrt">Durchgeführt</option>
-                      <option value="abgesagt">Abgesagt</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="field">
-                    <label>Individueller Preis pro Stunde</label>
-                    <input
-                      type="number"
-                      value={
-                        tCustomPreisProStunde === ""
-                          ? ""
-                          : tCustomPreisProStunde
-                      }
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v === "") {
-                          setTCustomPreisProStunde("");
-                        } else {
-                          const n = Number(v);
-                          setTCustomPreisProStunde(
-                            Number.isFinite(n) ? n : ""
-                          );
-                        }
-                      }}
-                      placeholder="z.B. 60"
-                      disabled={!!tTarifId}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Individuelle Abrechnung</label>
-                    <select
-                      value={tCustomAbrechnung}
-                      onChange={(e) =>
-                        setTCustomAbrechnung(
-                          e.target.value as "proTraining" | "proSpieler"
-                        )
-                      }
-                      disabled={!!tTarifId}
-                    >
-                      <option value="proTraining">Pro Training</option>
-                      <option value="proSpieler">Pro Spieler</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="field" style={{ minWidth: 260 }}>
-                    <label>Notiz</label>
-                    <input
-                      value={tNotiz}
-                      onChange={(e) => setTNotiz(e.target.value)}
-                      placeholder="optional"
-                    />
-                  </div>
-                </div>
-
-                <div style={{ height: 10 }} />
-
-                {!selectedTrainingId && (
-                  <div className="card cardInset">
-                    <h2>Wiederholung</h2>
-                    <div className="row">
-                      <label className="pill" style={{ cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={repeatWeekly}
-                          onChange={(e) => setRepeatWeekly(e.target.checked)}
-                          style={{ marginRight: 8 }}
-                        />
-                        Wöchentlich wiederholen
-                      </label>
-
-                      <div className="field" style={{ minWidth: 220 }}>
-                        <label>Bis Datum</label>
-                        <input
-                          type="date"
-                          value={repeatUntil}
-                          onChange={(e) => setRepeatUntil(e.target.value)}
-                          disabled={!repeatWeekly}
-                        />
-                      </div>
-
-                      <span className="pill">
-                        Trainer: <strong>{selectedTrainerName}</strong>
-                      </span>
-                    </div>
-
-                    <div className="muted">
-                      Wenn aktiv: Es werden alle Termine wöchentlich bis zum
-                      Bis Datum angelegt.
-                    </div>
-                  </div>
-                )}
-
-                {selectedTrainingId &&
-                  (() => {
-                    const ex = trainings.find(
-                      (x) => x.id === selectedTrainingId
-                    );
-                    if (!ex?.serieId) return null;
-                    return (
-                      <div className="card cardInset">
-                        <h2>Serie bearbeiten</h2>
-                        <div className="row">
-                          <div className="field">
-                            <label>Änderungen anwenden</label>
-                            <select
-                              value={applySerieScope}
-                              onChange={(e) =>
-                                setApplySerieScope(
-                                  e.target.value as "nurDieses" | "abHeute"
-                                )
-                              }
-                            >
-                              <option value="nurDieses">
-                                Nur diesen Termin
-                              </option>
-                              <option value="abHeute">
-                                Alle Termine der Serie ab diesem Datum
-                              </option>
-                            </select>
-                          </div>
-                          <span className="pill">
-                            Serie: <strong>{ex.serieId.slice(0, 8)}</strong>
-                          </span>
-                        </div>
-                        <div className="muted">
-                          Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
-                          Status und Notiz werden für alle zukünftigen Termine
-                          übernommen. Beim Löschen mit dieser Option werden
-                          alle zukünftigen Termine der Serie entfernt.
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                <div style={{ height: 10 }} />
-
-                <div className="row">
-                  <button className="btn" onClick={saveTraining}>
-                    {selectedTrainingId
-                      ? "Änderungen speichern"
-                      : "Training speichern"}
-                  </button>
-                  <button
-                    className="btn btnGhost"
-                    onClick={() => {
-                      resetTrainingForm();
-                      setTab("kalender");
-                    }}
-                  >
-                    Zurück zum Kalender
-                  </button>
-                  {selectedTrainingId && (
-                    <button
-                      className="btn btnWarn"
-                      onClick={() => deleteTraining(selectedTrainingId)}
-                    >
-                      Training löschen
-                    </button>
-                  )}
-                  <span className="pill">
-                    Preis Vorschau: <strong>{euro(preisVorschau)}</strong>
-                  </span>
-                </div>
-
-                <div style={{ height: 14 }} />
-
-                <h2>Schnellzugriff, nächste Trainings</h2>
-                <ul className="list">
-                  {nextTrainings.map((t) => {
-                    const tarif = t.tarifId
-                      ? tarifById.get(t.tarifId)
-                      : undefined;
-                    const ta = tarif
-                      ? tarif.abrechnung === "monatlich"
-                        ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                        : tarif.name
-                      : t.customPreisProStunde
-                      ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                      : "Tarif";
-
-                    const sp = t.spielerIds
-                      .map(
-                        (id) => spielerById.get(id)?.name ?? "Spieler"
-                      )
-                      .join(", ");
-                    const trainerName =
-                      trainerById.get(
-                        t.trainerId ?? defaultTrainerId
-                      )?.name ?? "Trainer";
-
-                    return (
-                      <li key={t.id} className="listItem">
-                        <div>
-                          <strong>
-                            {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
-                          </strong>
-                          <div className="muted">
-                            {ta}, {sp}, {trainerName}
-                          </div>
-                          {t.serieId ? (
-                            <div className="muted">
-                              Serie: {t.serieId.slice(0, 8)}
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className="smallActions">
-                          <button
-                            className="btn micro btnGhost"
-                            onClick={() => fillTrainingFromSelected(t)}
-                          >
-                            Bearbeiten
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                <div className="muted">
-                  Tipp: Im Kalender kannst Du geplante Trainings per
-                  Doppelklick direkt abschließen.
-                </div>
-              </div>
-
-              <div className="card">
-                <h2>Spieler auswählen</h2>
-                <div className="row">
-                  <div className="field">
-                    <label>Suche</label>
-                    <input
-                      value={spielerSuche}
-                      onChange={(e) => setSpielerSuche(e.target.value)}
-                      placeholder="Name oder Email"
-                    />
-                  </div>
-                  <span className="pill">
-                    Ausgewählt: <strong>{tSpielerIds.length}</strong>
-                  </span>
-                </div>
-
-                <ul className="list">
-                  {filteredSpielerForPick.map((s) => {
-                    const checked = tSpielerIds.includes(s.id);
-                    return (
-                      <li key={s.id} className="listItem">
-                        <div>
-                          <strong>{s.name}</strong>
-                          <div className="muted">
-                            {s.kontaktEmail ?? ""}
-                            {s.kontaktTelefon
-                              ? `, ${s.kontaktTelefon}`
-                              : ""}
-                          </div>
-                          {s.rechnungsAdresse ? (
-                            <div className="muted">
-                              Rechnungsadresse: {s.rechnungsAdresse}
-                            </div>
-                          ) : null}
-                          {s.notizen ? (
-                            <div className="muted">{s.notizen}</div>
-                          ) : null}
-                        </div>
-                        <div className="smallActions">
-                          <button
-                            className={`btn micro ${
-                              checked ? "" : "btnGhost"
-                            }`}
-                            onClick={() => toggleSpielerPick(s.id)}
-                          >
-                            {checked ? "Entfernen" : "Hinzufügen"}
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          ))}
-
-        {tab === "verwaltung" && !isTrainer && (
-          <>
-            <div className="grid2">
-              <div className="card">
-                <h2>Trainer verwalten</h2>
-                <div className="row">
-                  <div className="field">
-                    <label>Name</label>
-                    <input
-                      value={trainerName}
-                      onChange={(e) => setTrainerName(e.target.value)}
-                      placeholder="z.B. Jesper"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Email</label>
-                    <input
-                      value={trainerEmail}
-                      onChange={(e) => setTrainerEmail(e.target.value)}
-                      placeholder="z.B. trainer@example.com"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Stundensatz Trainer Honorar</label>
-                    <input
-                      type="number"
-                      value={
-                        trainerStundensatz === ""
-                          ? ""
-                          : trainerStundensatz
-                      }
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v === "") {
-                          setTrainerStundensatz("");
-                        } else {
-                          const n = Number(v);
-                          setTrainerStundensatz(
-                            Number.isFinite(n) ? n : ""
-                          );
-                        }
-                      }}
-                      placeholder="z.B. 20"
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <button
-                    className="btn"
-                    onClick={editingTrainerId ? saveTrainer : addTrainer}
-                  >
-                    {editingTrainerId
-                      ? "Trainer speichern"
-                      : "Trainer hinzufügen"}
-                  </button>
-                  {editingTrainerId && (
-                    <button
-                      className="btn btnGhost"
-                      onClick={() => {
-                        setEditingTrainerId(null);
-                        setTrainerName("");
-                        setTrainerEmail("");
-                        setTrainerStundensatz(0);
-                      }}
-                    >
-                      Abbrechen
-                    </button>
-                  )}
-                </div>
-
-                <ul className="list">
-                  {trainers.map((t) => (
-                    <li key={t.id} className="listItem">
-                      <div>
-                        <strong>{t.name}</strong>
-                        {t.email && (
-                          <div className="muted">{t.email}</div>
-                        )}
-                        <div className="muted">
-                          Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
-                        </div>
-                      </div>
-                      <div className="smallActions">
-                        <button
-                          className="btn micro btnGhost"
-                          onClick={() => startEditTrainer(t)}
-                        >
-                          Bearbeiten
-                        </button>
-                        {trainers.length > 1 && (
-                          <button
-                            className="btn micro btnWarn"
-                            onClick={() => deleteTrainer(t.id)}
-                          >
-                            Löschen
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="card">
-                <h2>Spieler verwalten</h2>
-                <div className="row">
-                  <div className="field">
-                    <label>Name</label>
-                    <input
-                      value={spielerName}
-                      onChange={(e) => setSpielerName(e.target.value)}
-                      placeholder="Name"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Email</label>
-                    <input
-                      value={spielerEmail}
-                      onChange={(e) => setSpielerEmail(e.target.value)}
-                      placeholder="Kontakt Email"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Telefon</label>
-                    <input
-                      value={spielerTelefon}
-                      onChange={(e) =>
-                        setSpielerTelefon(e.target.value)
-                      }
-                      placeholder="Telefon"
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="field" style={{ minWidth: 260 }}>
-                    <label>Rechnungsadresse</label>
-                    <input
-                      value={spielerRechnung}
-                      onChange={(e) =>
-                        setSpielerRechnung(e.target.value)
-                      }
-                      placeholder="optional"
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="field" style={{ minWidth: 260 }}>
-                    <label>Notizen</label>
-                    <input
-                      value={spielerNotizen}
-                      onChange={(e) =>
-                        setSpielerNotizen(e.target.value)
-                      }
-                      placeholder="optional"
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <button
-                    className="btn"
-                    onClick={editingSpielerId ? saveSpieler : addSpieler}
-                  >
-                    {editingSpielerId
-                      ? "Spieler speichern"
-                      : "Spieler hinzufügen"}
-                  </button>
-                  {editingSpielerId && (
-                    <button
-                      className="btn btnGhost"
-                      onClick={() => {
-                        setEditingSpielerId(null);
-                        setSpielerName("");
-                        setSpielerEmail("");
-                        setSpielerTelefon("");
-                        setSpielerRechnung("");
-                        setSpielerNotizen("");
-                      }}
-                    >
-                      Abbrechen
-                    </button>
-                  )}
-                </div>
-
-                <ul className="list">
-                  {spieler.map((s) => (
-                    <li key={s.id} className="listItem">
-                      <div>
-                        <strong>{s.name}</strong>
-                        <div className="muted">
-                          {s.kontaktEmail ?? ""}
-                          {s.kontaktTelefon
-                            ? `, ${s.kontaktTelefon}`
-                            : ""}
-                        </div>
-                        {s.rechnungsAdresse && (
-                          <div className="muted">
-                            Rechnungsadresse: {s.rechnungsAdresse}
-                          </div>
-                        )}
-                        {s.notizen && (
-                          <div className="muted">{s.notizen}</div>
-                        )}
-                      </div>
-                      <div className="smallActions">
-                        <button
-                          className="btn micro btnGhost"
-                          onClick={() => startEditSpieler(s)}
-                        >
-                          Bearbeiten
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div style={{ height: 16 }} />
-
-            <div className="card">
-              <h2>Tarife verwalten</h2>
-              <div className="row">
-                <div className="field">
-                  <label>Name</label>
-                  <input
-                    value={tarifName}
-                    onChange={(e) => setTarifName(e.target.value)}
-                    placeholder="z.B. Gruppentraining"
-                  />
-                </div>
-                <div className="field">
-                  <label>Preis pro Stunde</label>
-                  <input
-                    type="number"
-                    value={tarifPreisProStunde}
-                    onChange={(e) =>
-                      setTarifPreisProStunde(Number(e.target.value) || 0)
-                    }
-                  />
-                </div>
-                <div className="field">
-                  <label>Abrechnung</label>
-                  <select
-                    value={tarifAbrechnung}
-                    onChange={(e) =>
-                      setTarifAbrechnung(
-                        e.target.value as
-                          | "proTraining"
-                          | "proSpieler"
-                          | "monatlich"
-                      )
-                    }
-                  >
-                    <option value="proTraining">Pro Training</option>
-                    <option value="proSpieler">Pro Spieler</option>
-                    <option value="monatlich">Monatlich</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="row">
-                <div className="field" style={{ minWidth: 260 }}>
-                  <label>Beschreibung</label>
-                  <input
-                    value={tarifBeschreibung}
-                    onChange={(e) =>
-                      setTarifBeschreibung(e.target.value)
-                    }
-                    placeholder="optional"
-                  />
-                </div>
-              </div>
-
-              <div className="row">
-                <button
-                  className="btn"
-                  onClick={editingTarifId ? saveTarif : addTarif}
-                >
-                  {editingTarifId
-                    ? "Tarif speichern"
-                    : "Tarif hinzufügen"}
-                </button>
-                {editingTarifId && (
-                  <button
-                    className="btn btnGhost"
-                    onClick={() => {
-                      setEditingTarifId(null);
-                      setTarifName("");
-                      setTarifPreisProStunde(60);
-                      setTarifAbrechnung("proTraining");
-                      setTarifBeschreibung("");
-                    }}
-                  >
-                    Abbrechen
-                  </button>
-                )}
-              </div>
-
-              <ul className="list">
-                {tarife.map((t) => (
-                  <li key={t.id} className="listItem">
-                    <div>
-                      <strong>{t.name}</strong>
-                      <div className="muted">
-                        {t.abrechnung === "monatlich"
-                          ? `${t.preisProStunde} EUR monatlich`
-                          : `${t.preisProStunde} EUR pro Stunde, ${
-                              t.abrechnung === "proSpieler"
-                                ? "pro Spieler"
-                                : "pro Training"
-                            }`}
-                      </div>
-                      {t.beschreibung && (
-                        <div className="muted">{t.beschreibung}</div>
-                      )}
-                    </div>
-                    <div className="smallActions">
-                      <button
-                        className="btn micro btnGhost"
-                        onClick={() => startEditTarif(t)}
-                      >
-                        Bearbeiten
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
-
-        {tab === "verwaltung" && isTrainer && (
-          <div className="card">
-            <h2>Kein Zugriff</h2>
-            <p className="muted">
-              Die Verwaltung ist nur für den Hauptaccount verfügbar.
-            </p>
-          </div>
-        )}
-
-        {tab === "abrechnung" && (
-          <div className="card">
-            <h2>Abrechnung</h2>
-
-            <div className="row">
-              <div className="field">
-                <label>Monat</label>
-                <input
-                  type="month"
-                  value={abrechnungMonat}
-                  onChange={(e) => setAbrechnungMonat(e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label>Filter</label>
-                <select
-                  value={abrechnungFilter}
-                  onChange={(e) =>
-                    setAbrechnungFilter(e.target.value as AbrechnungFilter)
-                  }
-                >
-                  <option value="alle">Alle</option>
-                  <option value="bezahlt">Nur bezahlt</option>
-                  <option value="offen">Nur offen</option>
-                </select>
-              </div>
-
-              {trainers.length > 1 && (
-                <div className="field">
-                  <label>Trainer</label>
-                  <select
-                    value={abrechnungTrainerFilter}
-                    disabled={isTrainer}
-                    onChange={(e) =>
-                      setAbrechnungTrainerFilter(e.target.value)
-                    }
-                  >
-                    {!isTrainer && (
-                      <option value="alle">Alle Trainer</option>
-                    )}
-                    {trainers.map((tr) => (
-                      <option key={tr.id} value={tr.id}>
-                        {tr.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               )}
-            </div>
 
-            {!isTrainer && (
-              <div className="row" style={{ marginTop: 12 }}>
-                <span className="pill">
-                  Umsatz gesamt:{" "}
-                  <strong>{euro(abrechnung.total)}</strong>
-                </span>
-                <span className="pill">
-                  Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
-                </span>
-                <span className="pill">
-                  Offen: <strong>{euro(sumOffen)}</strong>
-                </span>
-                <span className="pill">
-                  Trainer Honorar gesamt:{" "}
-                  <strong>{euro(trainerHonorarTotal)}</strong>
-                </span>
-                <span className="pill">
-                  Honorar bezahlt:{" "}
-                  <strong>{euro(trainerHonorarBezahltTotal)}</strong>
-                </span>
-                <span className="pill">
-                  Honorar offen:{" "}
-                  <strong>{euro(trainerHonorarOffenTotal)}</strong>
-                </span>
-              </div>
-            )}
+              {/* Spieler Abrechnung Seite */}
+              {abrechnungTab === "spieler" && !isTrainer && (
+                <>
+                  <div className="row" style={{ marginTop: 12 }}>
+                    <span className="pill">
+                      Umsatz gesamt:{" "}
+                      <strong>{euro(abrechnung.total)}</strong>
+                    </span>
+                    <span className="pill">
+                      Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
+                    </span>
+                    <span className="pill">
+                      Offen: <strong>{euro(sumOffen)}</strong>
+                    </span>
+                  </div>
 
-            <div style={{ height: 10 }} />
-            {!isTrainer && (
-              <div className="muted">
-                Hinweis: Der Status bezahlt gilt immer für einen Spieler im
-                ausgewählten Monat. Das Trainerhonorar wird pro Training
-                abgerechnet.
-              </div>
-            )}
+                  <div style={{ height: 10 }} />
+                  <div className="muted">
+                    Hinweis: Der Status bezahlt gilt immer für einen Spieler im
+                    ausgewählten Monat.
+                  </div>
 
-            {!isTrainer && trainers.length > 1 && (
-              <>
-                <div style={{ height: 14 }} />
-                <div className="card cardInset">
-                  <h2>Summe pro Trainer</h2>
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Trainer</th>
-                        <th>Trainings</th>
-                        <th>Umsatz</th>
-                        <th>Trainer Honorar</th>
-                        <th>Honorar bezahlt</th>
-                        <th>Honorar offen</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {abrechnungTrainer.rows.map((r) => (
-                        <tr key={r.id}>
-                          <td>{r.name}</td>
-                          <td>{r.trainings}</td>
-                          <td>{euro(r.sum)}</td>
-                          <td>{euro(r.honorar)}</td>
-                          <td>{euro(r.honorarBezahlt)}</td>
-                          <td>{euro(r.honorarOffen)}</td>
+                  <div style={{ height: 14 }} />
+                  <div className="card cardInset">
+                    <h2>Summe pro Spieler</h2>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Spieler</th>
+                          <th>Aufstellung</th>
+                          <th>Summe</th>
+                          <th>Status</th>
+                          <th>Aktion</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+                      </thead>
+                      <tbody>
+                        {filteredSpielerRowsForMonth.map((r) => {
+                          const breakdownText =
+                            r.breakdown.length === 0
+                              ? "-"
+                              : r.breakdown
+                                  .map(
+                                    (b) => `${b.count} × ${euro(b.amount)}`
+                                  )
+                                  .join(" + ");
+                          const key = paymentKey(abrechnungMonat, r.id);
+                          const paid = payments[key] ?? false;
+                          return (
+                            <tr key={r.id}>
+                              <td>{r.name}</td>
+                              <td>{breakdownText}</td>
+                              <td>{euro(r.sum)}</td>
+                              <td>
+                                <span
+                                  className={paid ? "badge badgeOk" : "badge"}
+                                >
+                                  {paid ? "bezahlt" : "offen"}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  className="btn micro"
+                                  onClick={() => {
+                                    if (paid) {
+                                      togglePaidForPlayer(
+                                        abrechnungMonat,
+                                        r.id
+                                      );
+                                    } else {
+                                      openPayConfirm(
+                                        abrechnungMonat,
+                                        r.id,
+                                        r.name,
+                                        r.sum
+                                      );
+                                    }
+                                  }}
+                                >
+                                  {paid
+                                    ? "als offen markieren"
+                                    : "als bezahlt markieren"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
 
-            {!isTrainer && (
-              <>
-                <div style={{ height: 14 }} />
-                <div className="card cardInset">
-                  <h2>Summe pro Spieler</h2>
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Spieler</th>
-                        <th>Aufstellung</th>
-                        <th>Summe</th>
-                        <th>Status</th>
-                        <th>Aktion</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSpielerRowsForMonth.map((r) => {
-                        const breakdownText =
-                          r.breakdown.length === 0
-                            ? "-"
-                            : r.breakdown
-                                .map(
-                                  (b) =>
-                                    `${b.count} × ${euro(b.amount)}`
-                                )
-                                .join(" + ");
+              {/* Trainer Abrechnung Seite */}
+              {abrechnungTab === "trainer" && (
+                <>
+                  {!isTrainer && (
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <span className="pill">
+                        Umsatz gesamt:{" "}
+                        <strong>{euro(abrechnung.total)}</strong>
+                      </span>
+                      <span className="pill">
+                        Trainer Honorar gesamt:{" "}
+                        <strong>{euro(trainerHonorarTotal)}</strong>
+                      </span>
+                      <span className="pill">
+                        Honorar bezahlt:{" "}
+                        <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                      </span>
+                      <span className="pill">
+                        Honorar offen:{" "}
+                        <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                      </span>
+                    </div>
+                  )}
 
-                        const key = paymentKey(abrechnungMonat, r.id);
-                        const paid = payments[key] ?? false;
+                  <div style={{ height: 10 }} />
+                  <div className="muted">
+                    Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
+                  </div>
 
-                        return (
-                          <tr key={r.id}>
-                            <td>{r.name}</td>
-                            <td>{breakdownText}</td>
-                            <td>{euro(r.sum)}</td>
-                            <td>
-                              <span
-                                className={
-                                  paid ? "badge badgeOk" : "badge"
-                                }
-                              >
-                                {paid ? "bezahlt" : "offen"}
-                              </span>
-                            </td>
-                            <td>
-                              <button
-                                className="btn micro"
-                                onClick={() => {
-                                  if (paid) {
-                                    togglePaidForPlayer(
-                                      abrechnungMonat,
-                                      r.id
-                                    );
-                                  } else {
-                                    openPayConfirm(
-                                      abrechnungMonat,
-                                      r.id,
-                                      r.name,
-                                      r.sum
-                                    );
-                                  }
-                                }}
-                              >
-                                {paid
-                                  ? "als offen markieren"
-                                  : "als bezahlt markieren"}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
-            <div style={{ height: 14 }} />
-
-            <h2>Trainings im Monat</h2>
-            <ul className="list">
-              {trainingsInMonth.map((t) => {
-                const tarif = t.tarifId
-                  ? tarifById.get(t.tarifId)
-                  : undefined;
-                const ta = tarif
-                  ? tarif.abrechnung === "monatlich"
-                    ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                    : tarif.name
-                  : t.customPreisProStunde
-                  ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                  : "Tarif";
-
-                const sp = t.spielerIds
-                  .map(
-                    (id) => spielerById.get(id)?.name ?? "Spieler"
-                  )
-                  .join(", ");
-                const trainerName =
-                  trainerById.get(t.trainerId ?? defaultTrainerId)
-                    ?.name ?? "Trainer";
-                const price = euro(round2(trainingPreisGesamt(t)));
-                const honorarBadge = euro(trainerHonorarFuerTraining(t));
-                const trainerPaid = trainerPayments[t.id] ?? false;
-
-                return (
-                  <li key={t.id} className="listItem">
-                    <div>
-                      <strong>
-                        {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
-                      </strong>
-                      <div className="muted">
-                        {sp}
-                        {isTrainer
-                          ? `, Trainer Honorar: ${honorarBadge}`
-                          : `, ${ta}, ${trainerName}`}
+                  {!isTrainer && trainers.length > 1 && (
+                    <>
+                      <div style={{ height: 14 }} />
+                      <div className="card cardInset">
+                        <h2>Summe pro Trainer</h2>
+                        <table className="table">
+                          <thead>
+                            <tr>
+                              <th>Trainer</th>
+                              <th>Trainings</th>
+                              <th>Umsatz</th>
+                              <th>Trainer Honorar</th>
+                              <th>Honorar bezahlt</th>
+                              <th>Honorar offen</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {abrechnungTrainer.rows.map((r) => (
+                              <tr key={r.id}>
+                                <td>{r.name}</td>
+                                <td>{r.trainings}</td>
+                                <td>{euro(r.sum)}</td>
+                                <td>{euro(r.honorar)}</td>
+                                <td>{euro(r.honorarBezahlt)}</td>
+                                <td>{euro(r.honorarOffen)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      {t.notiz ? (
-                        <div className="muted">{t.notiz}</div>
-                      ) : null}
-                      {t.serieId ? (
+                    </>
+                  )}
+                </>
+              )}
+
+              <div style={{ height: 14 }} />
+              <h2>Trainings im Monat</h2>
+              <ul className="list">
+                {trainingsInMonth.map((t) => {
+                  const tarif = t.tarifId
+                    ? tarifById.get(t.tarifId)
+                    : undefined;
+                  const ta = tarif
+                    ? tarif.abrechnung === "monatlich"
+                      ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
+                      : tarif.name
+                    : t.customPreisProStunde
+                    ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                    : "Tarif";
+                  const sp = t.spielerIds
+                    .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                    .join(", ");
+                  const trainerName =
+                    trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
+                    "Trainer";
+                  const price = euro(round2(trainingPreisGesamt(t)));
+                  const honorarBadge = euro(trainerHonorarFuerTraining(t));
+                  const trainerPaid = trainerPayments[t.id] ?? false;
+                  const showTrainerInfo =
+                    isTrainer || abrechnungTab === "trainer";
+
+                  return (
+                    <li key={t.id} className="listItem">
+                      <div>
+                        <strong>
+                          {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                        </strong>
                         <div className="muted">
-                          Serie: {t.serieId.slice(0, 8)}
+                          {showTrainerInfo
+                            ? `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
+                            : `${sp}, ${ta}, ${trainerName}`}
                         </div>
-                      ) : null}
-                    </div>
-                    <div className="smallActions">
-                      <span className="badge badgeOk">
-                        durchgeführt
-                      </span>
-                      {!isTrainer && (
-                        <span className="badge">{price}</span>
-                      )}
-                      <span className="badge">
-                        Honorar: {honorarBadge}
-                      </span>
-                      <span
-                        className={
-                          trainerPaid ? "badge badgeOk" : "badge"
-                        }
-                      >
-                        {trainerPaid
-                          ? "Honorar abgerechnet"
-                          : "Honorar offen"}
-                      </span>
-                      {!isTrainer && (
-                        <>
-                          <button
-                            className="btn micro"
-                            onClick={() => toggleTrainerPaid(t.id)}
-                          >
-                            {trainerPaid
-                              ? "Honorar als offen markieren"
-                              : "Honorar als abgerechnet markieren"}
-                          </button>
-                          <button
-                            className="btn micro btnGhost"
-                            onClick={() => fillTrainingFromSelected(t)}
-                          >
-                            Bearbeiten
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                        {t.notiz ? (
+                          <div className="muted">{t.notiz}</div>
+                        ) : null}
+                        {t.serieId ? (
+                          <div className="muted">
+                            Serie: {t.serieId.slice(0, 8)}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="smallActions">
+                        <span className="badge badgeOk">durchgeführt</span>
+                        {!isTrainer && <span className="badge">{price}</span>}
+                        {showTrainerInfo && (
+                          <>
+                            <span className="badge">
+                              Honorar: {honorarBadge}
+                            </span>
+                            <span
+                              className={
+                                trainerPaid ? "badge badgeOk" : "badge"
+                              }
+                            >
+                              {trainerPaid
+                                ? "Honorar abgerechnet"
+                                : "Honorar offen"}
+                            </span>
+                          </>
+                        )}
+                        {!isTrainer && abrechnungTab === "trainer" && (
+                          <>
+                            <button
+                              className="btn micro"
+                              onClick={() => toggleTrainerPaid(t.id)}
+                            >
+                              {trainerPaid
+                                ? "Honorar als offen markieren"
+                                : "Honorar als abgerechnet markieren"}
+                            </button>
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => fillTrainingFromSelected(t)}
+                            >
+                              Bearbeiten
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+        </div>
+      </main>
+    </div>
+
+    {payConfirm && (
+      <div className="modalOverlay">
+        <div className="modalCard">
+          <div className="modalHeader">
+            <div className="modalPill">Zahlung bestätigen</div>
+            <h3>
+              {payConfirm.spielerName} ·{" "}
+              {formatMonthLabel(payConfirm.monat)}
+            </h3>
+            <p className="muted">
+              Dieser Betrag wird als bezahlt markiert, Du kannst es später
+              wieder auf offen stellen.
+            </p>
           </div>
-        )}
-      </div>
-
-      {payConfirm && (
-        <div className="modalOverlay">
-          <div className="modalCard">
-            <div className="modalHeader">
-              <div className="modalPill">Zahlung bestätigen</div>
-              <h3>
-                {payConfirm.spielerName} ·{" "}
-                {formatMonthLabel(payConfirm.monat)}
-              </h3>
-              <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es später
-                wieder auf offen stellen.
-              </p>
-            </div>
-
-            <div className="modalSummary">
-              <span className="muted">Betrag</span>
-              <strong>{euro(payConfirm.amount)}</strong>
-            </div>
-
-            <div className="modalActions">
-              <button className="btn btnGhost" onClick={closePayConfirm}>
-                Abbrechen
-              </button>
-              <button className="btn" onClick={confirmPay}>
-                Ja, als bezahlt markieren
-              </button>
-            </div>
+          <div className="modalSummary">
+            <span className="muted">Betrag</span>
+            <strong>{euro(payConfirm.amount)}</strong>
+          </div>
+          <div className="modalActions">
+            <button className="btn btnGhost" onClick={closePayConfirm}>
+              Abbrechen
+            </button>
+            <button className="btn" onClick={confirmPay}>
+              Ja, als bezahlt markieren
+            </button>
           </div>
         </div>
-      )}
-    </>
-  );
+      </div>
+    )}
+  </>
+);
 }
