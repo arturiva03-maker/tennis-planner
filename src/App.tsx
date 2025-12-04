@@ -1530,6 +1530,7 @@ export default function App() {
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
     const monthlySeen = new Map<string, Set<string>>();
 
+
     trainingsInMonth.forEach((t) => {
       const tid = t.trainerId || defaultTrainerId;
       const name = trainerById.get(tid)?.name ?? "Trainer";
@@ -1711,10 +1712,20 @@ export default function App() {
     }, 0)
   );
 
-  const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
+    const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
   const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
   const trainerRueckzahlungTotal = abrechnungTrainer.totalRueckzahlung;
+  const ownTrainerRow = isTrainer
+    ? abrechnungTrainer.rows.find((r) => r.id === ownTrainerId) ?? null
+    : null;
+
+  function formatDateDE(dateISO: string) {
+    if (!dateISO) return "";
+    const [y, m, d] = dateISO.split("-");
+    if (!y || !m || !d) return dateISO;
+    return `${d}.${m}.${y}`;
+  }
 
   return (
     <>
@@ -3018,33 +3029,78 @@ export default function App() {
                 {abrechnungTab === "trainer" && (
                   <>
                     <div className="row" style={{ marginTop: 12 }}>
-                      <span className="pill">
-                        Umsatz gesamt:{" "}
-                        <strong>{euro(abrechnungTrainer.total)}</strong>
-                      </span>
-                      <span className="pill">
-                        Trainer Honorar gesamt:{" "}
-                        <strong>{euro(trainerHonorarTotal)}</strong>
-                      </span>
-                      <span className="pill">
-                        Honorar bezahlt:{" "}
-                        <strong>{euro(trainerHonorarBezahltTotal)}</strong>
-                      </span>
-                      <span className="pill">
-                        Honorar offen:{" "}
-                        <strong>{euro(trainerHonorarOffenTotal)}</strong>
-                      </span>
-                      <span className="pill">
-                        Rückzahlung Trainer gesamt:{" "}
-                        <strong>{euro(trainerRueckzahlungTotal)}</strong>
-                      </span>
+                      {isTrainer ? (
+                        <>
+                          <span className="pill">
+                            Dein Umsatz gesamt:{" "}
+                            <strong>
+                              {euro(ownTrainerRow?.sum ?? 0)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Dein Honorar gesamt:{" "}
+                            <strong>
+                              {euro(ownTrainerRow?.honorar ?? 0)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Dein Honorar bezahlt:{" "}
+                            <strong>
+                              {euro(ownTrainerRow?.honorarBezahlt ?? 0)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Dein Honorar offen:{" "}
+                            <strong>
+                              {euro(ownTrainerRow?.honorarOffen ?? 0)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Deine Rückzahlung (Bar):{" "}
+                            <strong>
+                              {euro(ownTrainerRow?.barDifferenz ?? 0)}
+                            </strong>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="pill">
+                            Umsatz gesamt:{" "}
+                            <strong>
+                              {euro(abrechnungTrainer.total)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Trainer Honorar gesamt:{" "}
+                            <strong>{euro(trainerHonorarTotal)}</strong>
+                          </span>
+                          <span className="pill">
+                            Honorar bezahlt:{" "}
+                            <strong>
+                              {euro(trainerHonorarBezahltTotal)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Honorar offen:{" "}
+                            <strong>
+                              {euro(trainerHonorarOffenTotal)}
+                            </strong>
+                          </span>
+                          <span className="pill">
+                            Rückzahlung Trainer gesamt:{" "}
+                            <strong>
+                              {euro(trainerRueckzahlungTotal)}
+                            </strong>
+                          </span>
+                        </>
+                      )}
                     </div>
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
                       Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
-                      Bei Barzahlung durch den Schüler muss der Trainer die
-                      Differenz aus Schülerzahlung minus Honorar zurückzahlen.
+                      Bei Barzahlung durch den Schüler wird die Differenz aus
+                      Schülerzahlung minus Honorar als Rückzahlung angezeigt.
                     </div>
 
                     {!isTrainer && trainers.length > 1 && (
@@ -3117,7 +3173,8 @@ export default function App() {
                       <li key={t.id} className="listItem">
                         <div>
                           <strong>
-                            {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                            {formatDateDE(t.datum)} {t.uhrzeitVon} bis{" "}
+                            {t.uhrzeitBis}
                           </strong>
                           <div className="muted">
                             {showTrainerInfo
@@ -3242,4 +3299,6 @@ export default function App() {
     </>
   );
 }
+
+
 
