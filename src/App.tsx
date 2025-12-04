@@ -50,11 +50,11 @@ type Training = {
   serieId?: string;
   customPreisProStunde?: number;
   customAbrechnung?: "proTraining" | "proSpieler";
+  barBezahlt?: boolean;
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
-type StudentCashPaymentsMap = Record<string, boolean>; // key: trainingId
 
 type AppState = {
   trainers: Trainer[];
@@ -63,7 +63,6 @@ type AppState = {
   trainings: Training[];
   payments: PaymentsMap;
   trainerPayments: TrainerPaymentsMap;
-  studentCashPayments: StudentCashPaymentsMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
@@ -78,7 +77,7 @@ type AuthUser = {
 };
 
 type ViewMode = "week" | "day";
-type AbrechnungFilter = "alle" | "bezahlt" | "offen";
+type AbrechnungFilter = "alle" | "bezahlt" | "offen" | "bar";
 
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const LEGACY_KEYS = [
@@ -100,9 +99,7 @@ function pad2(n: number) {
 
 function todayISO() {
   const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -114,17 +111,13 @@ function startOfWeekISO(dateISO: string) {
   const d = new Date(dateISO + "T12:00:00");
   const day = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function addDaysISO(dateISO: string, days: number) {
   const d = new Date(dateISO + "T12:00:00");
   d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 function formatShort(dateISO: string) {
@@ -247,7 +240,6 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     })),
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
-    studentCashPayments: parsed?.studentCashPayments ?? {},
   };
 }
 
@@ -408,11 +400,6 @@ export default function App() {
   );
   const [trainerPayments, setTrainerPayments] =
     useState<TrainerPaymentsMap>(initial.state.trainerPayments ?? {});
-  const [studentCashPayments, setStudentCashPayments] =
-    useState<StudentCashPaymentsMap>(
-      initial.state.studentCashPayments ?? {}
-    );
-
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -431,18 +418,14 @@ export default function App() {
   const [trainerStundensatz, setTrainerStundensatz] = useState<number | "">(
     initial.state.trainers[0]?.stundensatz ?? 0
   );
-  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(
-    null
-  );
+  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
-  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(
-    null
-  );
+  const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
@@ -527,17 +510,8 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
-      studentCashPayments,
     });
-  }, [
-    trainers,
-    spieler,
-    tarife,
-    trainings,
-    payments,
-    trainerPayments,
-    studentCashPayments,
-  ]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -645,7 +619,6 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
-        setStudentCashPayments(local.state.studentCashPayments ?? {});
         setInitialSynced(true);
         return;
       }
@@ -662,7 +635,6 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
-        setStudentCashPayments(local.state.studentCashPayments ?? {});
         setInitialSynced(true);
         return;
       }
@@ -685,7 +657,6 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
-        setStudentCashPayments(cloud.studentCashPayments ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -694,20 +665,13 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
-        setStudentCashPayments(local.state.studentCashPayments ?? {});
       }
 
       setInitialSynced(true);
     }
 
     loadState();
-  }, [
-    authLoading,
-    profileLoading,
-    authUser,
-    initialSynced,
-    profileFinished,
-  ]);
+  }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -723,7 +687,6 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
-      studentCashPayments,
     };
 
     supabase
@@ -735,10 +698,7 @@ export default function App() {
       })
       .then(({ error }) => {
         if (error) {
-          console.error(
-            "Fehler beim Speichern des Zustands in Supabase",
-            error
-          );
+          console.error("Fehler beim Speichern des Zustands in Supabase", error);
         }
       });
   }, [
@@ -750,7 +710,6 @@ export default function App() {
     trainings,
     payments,
     trainerPayments,
-    studentCashPayments,
   ]);
 
   useEffect(() => {
@@ -802,10 +761,7 @@ export default function App() {
 
   const trainerOptionsForSelect = isTrainer
     ? trainers.filter(
-        (t) =>
-          t.id === ownTrainerId ||
-          !ownTrainerId ||
-          trainers.length === 1
+        (t) => t.id === ownTrainerId || !ownTrainerId || trainers.length === 1
       )
     : trainers;
 
@@ -877,10 +833,7 @@ export default function App() {
   const hours = useMemo(() => {
     const startHour = 7;
     const endHour = 22;
-    return Array.from(
-      { length: endHour - startHour + 1 },
-      (_, i) => startHour + i
-    );
+    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   }, []);
 
   const trainingsInWeek = useMemo(() => {
@@ -932,9 +885,7 @@ export default function App() {
     setEditingTrainerId(t.id);
     setTrainerName(t.name);
     setTrainerEmail(t.email ?? "");
-    setTrainerStundensatz(
-      typeof t.stundensatz === "number" ? t.stundensatz : 0
-    );
+    setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
   }
 
   function saveTrainer() {
@@ -1474,13 +1425,20 @@ export default function App() {
     [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
   );
 
-  const abrechnung = useMemo(() => {
+  const trainingsForAbrechnung = useMemo(
+    () =>
+      abrechnungFilter === "bar"
+        ? trainingsInMonth.filter((t) => t.barBezahlt)
+        : trainingsInMonth,
+    [trainingsInMonth, abrechnungFilter]
+  );
+
+   const abrechnung = useMemo(() => {
     const perSpieler = new Map<
       string,
       { name: string; sum: number; counts: Map<number, number> }
     >();
     const monthlySeen = new Map<string, Set<string>>();
-    let barTotal = 0;
 
     const addShare = (pid: string, name: string, amount: number) => {
       const share = round2(amount);
@@ -1493,7 +1451,10 @@ export default function App() {
       entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
     };
 
+    // Rechnung: nur nicht-bar bezahlte Stunden
     trainingsInMonth.forEach((t) => {
+      if (t.barBezahlt) return;
+
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
 
@@ -1511,15 +1472,6 @@ export default function App() {
       }
 
       const share = priceFuerSpieler(t);
-
-      if (studentCashPayments[t.id]) {
-        // komplette Stunde bar bezahlt, alle Spieler bar
-        t.spielerIds.forEach(() => {
-          barTotal = round2(barTotal + share);
-        });
-        return;
-      }
-
       t.spielerIds.forEach((pid) => {
         const name = spielerById.get(pid)?.name ?? "Unbekannt";
         addShare(pid, name, share);
@@ -1545,24 +1497,24 @@ export default function App() {
       })
       .sort((a, b) => b.sum - a.sum);
 
-    const totalInvoice = round2(
-      spielerRows.reduce((sum, r) => sum + r.sum, 0)
-    );
-    const totalMitBar = round2(totalInvoice + barTotal);
+    const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
-    return {
-      total: totalInvoice,
-      spielerRows,
-      barTotal,
-      totalMitBar,
-    };
-  }, [
-    trainingsInMonth,
-    spielerById,
-    priceFuerSpieler,
-    tarifById,
-    studentCashPayments,
-  ]);
+    // Bar-Umsatz separat berechnen
+    let barTotal = 0;
+    trainingsInMonth.forEach((t) => {
+      if (!t.barBezahlt) return;
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg) return;
+      if (cfg.abrechnung === "monatlich") return;
+
+      const amount = round2(trainingPreisGesamt(t));
+      barTotal = round2(barTotal + amount);
+    });
+
+    const totalMitBar = round2(total + barTotal);
+
+    return { total, spielerRows, barTotal, totalMitBar };
+  }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
 
   const abrechnungTrainer = useMemo(() => {
     type TrainerAbrechnungSummary = {
@@ -1584,6 +1536,7 @@ export default function App() {
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
 
+      const honorar = trainerHonorarFuerTraining(t);
       let entry =
         perTrainer.get(tid) ?? {
           name,
@@ -1613,25 +1566,19 @@ export default function App() {
         entry.sum = round2(entry.sum + amount);
       }
 
-      const honorar = trainerHonorarFuerTraining(t);
-      const isCash = !!studentCashPayments[t.id];
+      if (t.barBezahlt && cfg.abrechnung !== "monatlich") {
+        const diff = round2(amount - honorar);
+        entry.barDifferenz = round2(entry.barDifferenz + diff);
+      }
 
       entry.trainings += 1;
       entry.honorar = round2(entry.honorar + honorar);
 
-      const paidBySchool = !!trainerPayments[t.id];
-      const paid = paidBySchool || isCash;
-
+      const paid = !!trainerPayments[t.id];
       if (paid) {
         entry.honorarBezahlt = round2(entry.honorarBezahlt + honorar);
       } else {
         entry.honorarOffen = round2(entry.honorarOffen + honorar);
-      }
-
-      if (isCash && amount > 0) {
-        const diff = round2(amount - honorar);
-        const positiveDiff = diff > 0 ? diff : 0;
-        entry.barDifferenz = round2(entry.barDifferenz + positiveDiff);
       }
 
       perTrainer.set(tid, entry);
@@ -1642,16 +1589,14 @@ export default function App() {
       .sort((a, b) => b.sum - a.sum);
 
     const total = round2(rows.reduce((acc, r) => acc + r.sum, 0));
-    const totalHonorar = round2(
-      rows.reduce((acc, r) => acc + r.honorar, 0)
-    );
+    const totalHonorar = round2(rows.reduce((acc, r) => acc + r.honorar, 0));
     const totalHonorarBezahlt = round2(
       rows.reduce((acc, r) => acc + r.honorarBezahlt, 0)
     );
     const totalHonorarOffen = round2(
       rows.reduce((acc, r) => acc + r.honorarOffen, 0)
     );
-    const totalBarDifferenz = round2(
+    const totalRueckzahlung = round2(
       rows.reduce((acc, r) => acc + r.barDifferenz, 0)
     );
 
@@ -1661,7 +1606,7 @@ export default function App() {
       totalHonorar,
       totalHonorarBezahlt,
       totalHonorarOffen,
-      totalBarDifferenz,
+      totalRueckzahlung,
     };
   }, [
     defaultTrainerId,
@@ -1670,7 +1615,6 @@ export default function App() {
     tarifById,
     trainerHonorarFuerTraining,
     trainerPayments,
-    studentCashPayments,
     trainingPreisGesamt,
   ]);
 
@@ -1710,12 +1654,13 @@ export default function App() {
     }));
   }
 
-  function toggleStudentCashPayment(trainingId: string) {
+  function toggleBarBezahlt(trainingId: string) {
     if (isTrainer) return;
-    setStudentCashPayments((prev) => ({
-      ...prev,
-      [trainingId]: !prev[trainingId],
-    }));
+    setTrainings((prev) =>
+      prev.map((t) =>
+        t.id === trainingId ? { ...t, barBezahlt: !t.barBezahlt } : t
+      )
+    );
   }
 
   async function handleLogout() {
@@ -1739,15 +1684,16 @@ export default function App() {
     return <AuthScreen />;
   }
 
-  const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter(
-    (r) => {
-      const key = paymentKey(abrechnungMonat, r.id);
-      const paid = payments[key] ?? false;
-      if (abrechnungFilter === "alle") return true;
-      if (abrechnungFilter === "bezahlt") return paid;
-      return !paid;
-    }
-  );
+  const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
+    const key = paymentKey(abrechnungMonat, r.id);
+    const paid = payments[key] ?? false;
+
+    if (abrechnungFilter === "alle") return true;
+    if (abrechnungFilter === "bezahlt") return paid;
+    if (abrechnungFilter === "offen") return !paid;
+    if (abrechnungFilter === "bar") return true;
+    return true;
+  });
 
   const sumBezahlt = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
@@ -1766,16 +1712,13 @@ export default function App() {
   );
 
   const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
-  const trainerHonorarBezahltTotal =
-    abrechnungTrainer.totalHonorarBezahlt;
+  const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
-  const trainerRueckzahlungTotal =
-    abrechnungTrainer.totalBarDifferenz;
+  const trainerRueckzahlungTotal = abrechnungTrainer.totalRueckzahlung;
 
   return (
     <>
       <div className="appShell">
-        {/* Mobile Top Bar */}
         <header className="mobileTopBar">
           <button
             className="iconButton"
@@ -1795,10 +1738,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Seitennavigation */}
-        <aside
-          className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}
-        >
+        <aside className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}>
           <div className="sideNavHeader">
             <div className="sideTitle">Tennistrainer Planung</div>
             <div className="sideSubtitle">
@@ -1842,20 +1782,18 @@ export default function App() {
           />
         )}
 
-        {/* Hauptinhalt */}
         <main className="mainArea">
           <div className="container">
             <div className="header">
               <div className="hTitle">
                 <h1>Tennistrainer Planung</h1>
                 <p>
-                  Mehrere Trainer, wiederkehrende Termine, Tarife pro
-                  Stunde, pro Benutzer gespeichert.
+                  Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
+                  pro Benutzer gespeichert.
                 </p>
               </div>
             </div>
 
-            {/* Kalender */}
             {tab === "kalender" && (
               <div className="card">
                 <div className="split">
@@ -1868,38 +1806,30 @@ export default function App() {
                       <button
                         className="navArrowBtn"
                         onClick={() => {
-                          if (viewMode === "week") {
-                            setWeekAnchor(addDaysISO(weekStart, -7));
+                          if (viewMode === "day") {
+                            const newIndex = (dayIndex + 7 - 1) % 7;
+                            setDayIndex(newIndex);
+                            setWeekAnchor(weekDays[newIndex]);
                           } else {
-                            const currentDay = weekDays[dayIndex];
-                            const prevDay = addDaysISO(currentDay, -1);
-                            setWeekAnchor(prevDay);
-                            const d = new Date(prevDay + "T12:00:00");
-                            const idx = (d.getDay() + 6) % 7;
-                            setDayIndex(idx);
+                            setWeekAnchor(addDaysISO(weekStart, -7));
                           }
                         }}
                         aria-label="Vorheriger Zeitraum"
                       >
                         ‹
                       </button>
-
                       <button className="todayBtn" onClick={goToToday}>
                         Heute
                       </button>
-
                       <button
                         className="navArrowBtn"
                         onClick={() => {
-                          if (viewMode === "week") {
-                            setWeekAnchor(addDaysISO(weekStart, 7));
+                          if (viewMode === "day") {
+                            const newIndex = (dayIndex + 1) % 7;
+                            setDayIndex(newIndex);
+                            setWeekAnchor(weekDays[newIndex]);
                           } else {
-                            const currentDay = weekDays[dayIndex];
-                            const nextDay = addDaysISO(currentDay, 1);
-                            setWeekAnchor(nextDay);
-                            const d = new Date(nextDay + "T12:00:00");
-                            const idx = (d.getDay() + 6) % 7;
-                            setDayIndex(idx);
+                            setWeekAnchor(addDaysISO(weekStart, 7));
                           }
                         }}
                         aria-label="Nächster Zeitraum"
@@ -1971,9 +1901,7 @@ export default function App() {
                       {viewMode === "day" && (
                         <select
                           value={dayIndex}
-                          onChange={(e) =>
-                            setDayIndex(Number(e.target.value))
-                          }
+                          onChange={(e) => setDayIndex(Number(e.target.value))}
                           style={{ marginLeft: 8 }}
                         >
                           {weekDays.map((d, idx) => (
@@ -1986,29 +1914,23 @@ export default function App() {
                     </div>
 
                     <span className="pill">
-                      Trainer gesamt:{" "}
-                      <strong>{trainers.length}</strong>
+                      Trainer gesamt: <strong>{trainers.length}</strong>
                     </span>
                   </div>
                 </div>
 
                 <div style={{ height: 12 }} />
 
-                <div
-                  className={`kgrid ${
-                    viewMode === "day" ? "kgridDay" : ""
-                  }`}
-                >
+                <div className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}>
                   <div className="kHead">
                     <div className="kHeadCell">Zeit</div>
-                    {(viewMode === "week"
-                      ? weekDays
-                      : [weekDays[dayIndex]]
-                    ).map((d) => (
-                      <div key={d} className="kHeadCell">
-                        {formatShort(d)}
-                      </div>
-                    ))}
+                    {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
+                      (d) => (
+                        <div key={d} className="kHeadCell">
+                          {formatShort(d)}
+                        </div>
+                      )
+                    )}
                   </div>
 
                   <div className="kBody">
@@ -2075,10 +1997,8 @@ export default function App() {
                               ? `${ta} | ${trainerName}`
                               : ta;
 
-                            const isDone =
-                              t.status === "durchgefuehrt";
-                            const isCancel =
-                              t.status === "abgesagt";
+                            const isDone = t.status === "durchgefuehrt";
+                            const isCancel = t.status === "abgesagt";
                             const isPulse = doneFlashId === t.id;
 
                             const bg = isDone
@@ -2103,9 +2023,7 @@ export default function App() {
                                   backgroundColor: bg,
                                   border: `1px solid ${border}`,
                                   opacity: isCancel ? 0.85 : 1,
-                                  transform: isPulse
-                                    ? "scale(1.06)"
-                                    : undefined,
+                                  transform: isPulse ? "scale(1.06)" : undefined,
                                   filter: isPulse
                                     ? "brightness(1.15)"
                                     : undefined,
@@ -2119,17 +2037,15 @@ export default function App() {
                                   padding: 8,
                                   gap: 6,
                                 }}
-                                onClick={() =>
-                                  handleCalendarEventClick(t)
-                                }
+                                onClick={() => handleCalendarEventClick(t)}
                                 onDoubleClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   handleCalendarEventDoubleClick(t);
                                 }}
-                                title={`Spieler: ${sp}\nZeit: ${
-                                  t.uhrzeitVon
-                                } bis ${t.uhrzeitBis}${
+                                title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
+                                  t.uhrzeitBis
+                                }${
                                   isTrainer ? "" : `\nTarif: ${ta}`
                                 }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
                                   t.status
@@ -2171,8 +2087,7 @@ export default function App() {
                                     border: "2px solid white",
                                     boxShadow:
                                       "0 0 0 1px rgba(15,23,42,0.15)",
-                                    backgroundColor:
-                                      statusDotColor(t.status),
+                                    backgroundColor: statusDotColor(t.status),
                                     flex: "0 0 auto",
                                   }}
                                 />
@@ -2187,20 +2102,18 @@ export default function App() {
 
                 <div style={{ height: 12 }} />
                 <div className="muted">
-                  Hinweis: Klick: Bearbeiten, Doppelklick:
-                  Abschließen.
+                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
                 </div>
               </div>
             )}
 
-            {/* Training */}
             {tab === "training" &&
               (isTrainer ? (
                 <div className="card">
                   <h2>Nur Lesen für Trainer</h2>
                   <p className="muted">
-                    Trainings können nur vom Hauptaccount angelegt
-                    oder bearbeitet werden.
+                    Trainings können nur vom Hauptaccount angelegt oder
+                    bearbeitet werden.
                   </p>
                 </div>
               ) : (
@@ -2241,9 +2154,7 @@ export default function App() {
                         <select
                           value={tTrainerId}
                           disabled={isTrainer}
-                          onChange={(e) =>
-                            setTTrainerId(e.target.value)
-                          }
+                          onChange={(e) => setTTrainerId(e.target.value)}
                         >
                           {trainerOptionsForSelect.map((tr) => (
                             <option key={tr.id} value={tr.id}>
@@ -2281,9 +2192,8 @@ export default function App() {
                           })}
                         </select>
                         <div className="muted">
-                          Entweder einen Tarif auswählen oder unten
-                          einen individuellen Preis pro Stunde
-                          eingeben.
+                          Entweder einen Tarif auswählen oder unten einen
+                          individuellen Preis pro Stunde eingeben.
                         </div>
                       </div>
 
@@ -2292,19 +2202,12 @@ export default function App() {
                         <select
                           value={tStatus}
                           onChange={(e) =>
-                            setTStatus(
-                              e.target
-                                .value as TrainingStatus
-                            )
+                            setTStatus(e.target.value as TrainingStatus)
                           }
                         >
                           <option value="geplant">Geplant</option>
-                          <option value="durchgefuehrt">
-                            Durchgeführt
-                          </option>
-                          <option value="abgesagt">
-                            Abgesagt
-                          </option>
+                          <option value="durchgefuehrt">Durchgeführt</option>
+                          <option value="abgesagt">Abgesagt</option>
                         </select>
                       </div>
                     </div>
@@ -2340,20 +2243,13 @@ export default function App() {
                           value={tCustomAbrechnung}
                           onChange={(e) =>
                             setTCustomAbrechnung(
-                              e.target
-                                .value as
-                                | "proTraining"
-                                | "proSpieler"
+                              e.target.value as "proTraining" | "proSpieler"
                             )
                           }
                           disabled={!!tTarifId}
                         >
-                          <option value="proTraining">
-                            Pro Training
-                          </option>
-                          <option value="proSpieler">
-                            Pro Spieler
-                          </option>
+                          <option value="proTraining">Pro Training</option>
+                          <option value="proSpieler">Pro Spieler</option>
                         </select>
                       </div>
                     </div>
@@ -2363,9 +2259,7 @@ export default function App() {
                         <label>Notiz</label>
                         <input
                           value={tNotiz}
-                          onChange={(e) =>
-                            setTNotiz(e.target.value)
-                          }
+                          onChange={(e) => setTNotiz(e.target.value)}
                           placeholder="optional"
                         />
                       </div>
@@ -2385,41 +2279,30 @@ export default function App() {
                               type="checkbox"
                               checked={repeatWeekly}
                               onChange={(e) =>
-                                setRepeatWeekly(
-                                  e.target.checked
-                                )
+                                setRepeatWeekly(e.target.checked)
                               }
                               style={{ marginRight: 8 }}
                             />
                             Wöchentlich wiederholen
                           </label>
-                          <div
-                            className="field"
-                            style={{ minWidth: 220 }}
-                          >
+                          <div className="field" style={{ minWidth: 220 }}>
                             <label>Bis Datum</label>
                             <input
                               type="date"
                               value={repeatUntil}
                               onChange={(e) =>
-                                setRepeatUntil(
-                                  e.target.value
-                                )
+                                setRepeatUntil(e.target.value)
                               }
                               disabled={!repeatWeekly}
                             />
                           </div>
                           <span className="pill">
-                            Trainer:{" "}
-                            <strong>
-                              {selectedTrainerName}
-                            </strong>
+                            Trainer: <strong>{selectedTrainerName}</strong>
                           </span>
                         </div>
                         <div className="muted">
-                          Wenn aktiv: Es werden alle Termine
-                          wöchentlich bis zum Bis Datum
-                          angelegt.
+                          Wenn aktiv: Es werden alle Termine wöchentlich bis zum
+                          Bis Datum angelegt.
                         </div>
                       </div>
                     )}
@@ -2435,15 +2318,12 @@ export default function App() {
                             <h2>Serie bearbeiten</h2>
                             <div className="row">
                               <div className="field">
-                                <label>
-                                  Änderungen anwenden
-                                </label>
+                                <label>Änderungen anwenden</label>
                                 <select
                                   value={applySerieScope}
                                   onChange={(e) =>
                                     setApplySerieScope(
-                                      e.target
-                                        .value as
+                                      e.target.value as
                                         | "nurDieses"
                                         | "abHeute"
                                     )
@@ -2453,27 +2333,20 @@ export default function App() {
                                     Nur diesen Termin
                                   </option>
                                   <option value="abHeute">
-                                    Alle Termine der Serie
-                                    ab diesem Datum
+                                    Alle Termine der Serie ab diesem Datum
                                   </option>
                                 </select>
                               </div>
                               <span className="pill">
                                 Serie:{" "}
-                                <strong>
-                                  {ex.serieId.slice(0, 8)}
-                                </strong>
+                                <strong>{ex.serieId.slice(0, 8)}</strong>
                               </span>
                             </div>
                             <div className="muted">
-                              Bei ab diesem Datum:
-                              Uhrzeiten, Spieler, Tarif,
-                              Status und Notiz werden
-                              für alle zukünftigen Termine
-                              übernommen. Beim Löschen
-                              mit dieser Option werden
-                              alle zukünftigen Termine der
-                              Serie entfernt.
+                              Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
+                              Status und Notiz werden für alle zukünftigen
+                              Termine übernommen. Beim Löschen mit dieser Option
+                              werden alle zukünftigen Termine der Serie entfernt.
                             </div>
                           </div>
                         );
@@ -2482,10 +2355,7 @@ export default function App() {
                     <div style={{ height: 10 }} />
 
                     <div className="row">
-                      <button
-                        className="btn"
-                        onClick={saveTraining}
-                      >
+                      <button className="btn" onClick={saveTraining}>
                         {selectedTrainingId
                           ? "Änderungen speichern"
                           : "Training speichern"}
@@ -2502,11 +2372,7 @@ export default function App() {
                       {selectedTrainingId && (
                         <button
                           className="btn btnWarn"
-                          onClick={() =>
-                            deleteTraining(
-                              selectedTrainingId
-                            )
-                          }
+                          onClick={() => deleteTraining(selectedTrainingId)}
                         >
                           Training löschen
                         </button>
@@ -2525,9 +2391,7 @@ export default function App() {
                         <label>Suche</label>
                         <input
                           value={spielerSuche}
-                          onChange={(e) =>
-                            setSpielerSuche(e.target.value)
-                          }
+                          onChange={(e) => setSpielerSuche(e.target.value)}
                           placeholder="Name oder Email"
                         />
                       </div>
@@ -2539,13 +2403,9 @@ export default function App() {
 
                     <ul className="list">
                       {filteredSpielerForPick.map((s) => {
-                        const checked =
-                          tSpielerIds.includes(s.id);
+                        const checked = tSpielerIds.includes(s.id);
                         return (
-                          <li
-                            key={s.id}
-                            className="listItem"
-                          >
+                          <li key={s.id} className="listItem">
                             <div>
                               <strong>{s.name}</strong>
                               <div className="muted">
@@ -2556,30 +2416,21 @@ export default function App() {
                               </div>
                               {s.rechnungsAdresse ? (
                                 <div className="muted">
-                                  Rechnungsadresse:{" "}
-                                  {s.rechnungsAdresse}
+                                  Rechnungsadresse: {s.rechnungsAdresse}
                                 </div>
                               ) : null}
                               {s.notizen ? (
-                                <div className="muted">
-                                  {s.notizen}
-                                </div>
+                                <div className="muted">{s.notizen}</div>
                               ) : null}
                             </div>
                             <div className="smallActions">
                               <button
                                 className={`btn micro ${
-                                  checked
-                                    ? ""
-                                    : "btnGhost"
+                                  checked ? "" : "btnGhost"
                                 }`}
-                                onClick={() =>
-                                  toggleSpielerPick(s.id)
-                                }
+                                onClick={() => toggleSpielerPick(s.id)}
                               >
-                                {checked
-                                  ? "Entfernen"
-                                  : "Hinzufügen"}
+                                {checked ? "Entfernen" : "Hinzufügen"}
                               </button>
                             </div>
                           </li>
@@ -2590,15 +2441,12 @@ export default function App() {
                 </div>
               ))}
 
-            {/* Verwaltung */}
             {tab === "verwaltung" && !isTrainer && (
               <>
                 <div className="subTabs">
                   <button
                     className={`tabBtn ${
-                      verwaltungTab === "trainer"
-                        ? "tabBtnActive"
-                        : ""
+                      verwaltungTab === "trainer" ? "tabBtnActive" : ""
                     }`}
                     onClick={() => setVerwaltungTab("trainer")}
                   >
@@ -2606,9 +2454,7 @@ export default function App() {
                   </button>
                   <button
                     className={`tabBtn ${
-                      verwaltungTab === "spieler"
-                        ? "tabBtnActive"
-                        : ""
+                      verwaltungTab === "spieler" ? "tabBtnActive" : ""
                     }`}
                     onClick={() => setVerwaltungTab("spieler")}
                   >
@@ -2616,9 +2462,7 @@ export default function App() {
                   </button>
                   <button
                     className={`tabBtn ${
-                      verwaltungTab === "tarife"
-                        ? "tabBtnActive"
-                        : ""
+                      verwaltungTab === "tarife" ? "tabBtnActive" : ""
                     }`}
                     onClick={() => setVerwaltungTab("tarife")}
                   >
@@ -2636,9 +2480,7 @@ export default function App() {
                         <label>Name</label>
                         <input
                           value={trainerName}
-                          onChange={(e) =>
-                            setTrainerName(e.target.value)
-                          }
+                          onChange={(e) => setTrainerName(e.target.value)}
                           placeholder="z.B. Jesper"
                         />
                       </div>
@@ -2646,16 +2488,12 @@ export default function App() {
                         <label>Email</label>
                         <input
                           value={trainerEmail}
-                          onChange={(e) =>
-                            setTrainerEmail(e.target.value)
-                          }
+                          onChange={(e) => setTrainerEmail(e.target.value)}
                           placeholder="z.B. trainer@example.com"
                         />
                       </div>
                       <div className="field">
-                        <label>
-                          Stundensatz Trainer Honorar
-                        </label>
+                        <label>Stundensatz Trainer Honorar</label>
                         <input
                           type="number"
                           value={
@@ -2670,9 +2508,7 @@ export default function App() {
                             } else {
                               const n = Number(v);
                               setTrainerStundensatz(
-                                Number.isFinite(n)
-                                  ? n
-                                  : ""
+                                Number.isFinite(n) ? n : ""
                               );
                             }
                           }}
@@ -2684,11 +2520,7 @@ export default function App() {
                     <div className="row">
                       <button
                         className="btn"
-                        onClick={
-                          editingTrainerId
-                            ? saveTrainer
-                            : addTrainer
-                        }
+                        onClick={editingTrainerId ? saveTrainer : addTrainer}
                       >
                         {editingTrainerId
                           ? "Trainer speichern"
@@ -2711,38 +2543,27 @@ export default function App() {
 
                     <ul className="list">
                       {trainers.map((t) => (
-                        <li
-                          key={t.id}
-                          className="listItem"
-                        >
+                        <li key={t.id} className="listItem">
                           <div>
                             <strong>{t.name}</strong>
                             {t.email && (
-                              <div className="muted">
-                                {t.email}
-                              </div>
+                              <div className="muted">{t.email}</div>
                             )}
                             <div className="muted">
-                              Honorar:{" "}
-                              {euro(t.stundensatz ?? 0)}{" "}
-                              pro Stunde
+                              Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
                             </div>
                           </div>
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() =>
-                                startEditTrainer(t)
-                              }
+                              onClick={() => startEditTrainer(t)}
                             >
                               Bearbeiten
                             </button>
                             {trainers.length > 1 && (
                               <button
                                 className="btn micro btnWarn"
-                                onClick={() =>
-                                  deleteTrainer(t.id)
-                                }
+                                onClick={() => deleteTrainer(t.id)}
                               >
                                 Löschen
                               </button>
@@ -2762,9 +2583,7 @@ export default function App() {
                         <label>Name</label>
                         <input
                           value={spielerName}
-                          onChange={(e) =>
-                            setSpielerName(e.target.value)
-                          }
+                          onChange={(e) => setSpielerName(e.target.value)}
                           placeholder="Name"
                         />
                       </div>
@@ -2772,9 +2591,7 @@ export default function App() {
                         <label>Email</label>
                         <input
                           value={spielerEmail}
-                          onChange={(e) =>
-                            setSpielerEmail(e.target.value)
-                          }
+                          onChange={(e) => setSpielerEmail(e.target.value)}
                           placeholder="Kontakt Email"
                         />
                       </div>
@@ -2782,45 +2599,29 @@ export default function App() {
                         <label>Telefon</label>
                         <input
                           value={spielerTelefon}
-                          onChange={(e) =>
-                            setSpielerTelefon(e.target.value)
-                          }
+                          onChange={(e) => setSpielerTelefon(e.target.value)}
                           placeholder="Telefon"
                         />
                       </div>
                     </div>
 
                     <div className="row">
-                      <div
-                        className="field"
-                        style={{ minWidth: 260 }}
-                      >
+                      <div className="field" style={{ minWidth: 260 }}>
                         <label>Rechnungsadresse</label>
                         <input
                           value={spielerRechnung}
-                          onChange={(e) =>
-                            setSpielerRechnung(
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => setSpielerRechnung(e.target.value)}
                           placeholder="optional"
                         />
                       </div>
                     </div>
 
                     <div className="row">
-                      <div
-                        className="field"
-                        style={{ minWidth: 260 }}
-                      >
+                      <div className="field" style={{ minWidth: 260 }}>
                         <label>Notizen</label>
                         <input
                           value={spielerNotizen}
-                          onChange={(e) =>
-                            setSpielerNotizen(
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => setSpielerNotizen(e.target.value)}
                           placeholder="optional"
                         />
                       </div>
@@ -2829,11 +2630,7 @@ export default function App() {
                     <div className="row">
                       <button
                         className="btn"
-                        onClick={
-                          editingSpielerId
-                            ? saveSpieler
-                            : addSpieler
-                        }
+                        onClick={editingSpielerId ? saveSpieler : addSpieler}
                       >
                         {editingSpielerId
                           ? "Spieler speichern"
@@ -2858,10 +2655,7 @@ export default function App() {
 
                     <ul className="list">
                       {spieler.map((s) => (
-                        <li
-                          key={s.id}
-                          className="listItem"
-                        >
+                        <li key={s.id} className="listItem">
                           <div>
                             <strong>{s.name}</strong>
                             <div className="muted">
@@ -2872,22 +2666,17 @@ export default function App() {
                             </div>
                             {s.rechnungsAdresse && (
                               <div className="muted">
-                                Rechnungsadresse:{" "}
-                                {s.rechnungsAdresse}
+                                Rechnungsadresse: {s.rechnungsAdresse}
                               </div>
                             )}
                             {s.notizen && (
-                              <div className="muted">
-                                {s.notizen}
-                              </div>
+                              <div className="muted">{s.notizen}</div>
                             )}
                           </div>
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() =>
-                                startEditSpieler(s)
-                              }
+                              onClick={() => startEditSpieler(s)}
                             >
                               Bearbeiten
                             </button>
@@ -2906,9 +2695,7 @@ export default function App() {
                         <label>Name</label>
                         <input
                           value={tarifName}
-                          onChange={(e) =>
-                            setTarifName(e.target.value)
-                          }
+                          onChange={(e) => setTarifName(e.target.value)}
                           placeholder="z.B. Gruppentraining"
                         />
                       </div>
@@ -2930,39 +2717,27 @@ export default function App() {
                           value={tarifAbrechnung}
                           onChange={(e) =>
                             setTarifAbrechnung(
-                              e.target
-                                .value as
+                              e.target.value as
                                 | "proTraining"
                                 | "proSpieler"
                                 | "monatlich"
                             )
                           }
                         >
-                          <option value="proTraining">
-                            Pro Training
-                          </option>
-                          <option value="proSpieler">
-                            Pro Spieler
-                          </option>
-                          <option value="monatlich">
-                            Monatlich
-                          </option>
+                          <option value="proTraining">Pro Training</option>
+                          <option value="proSpieler">Pro Spieler</option>
+                          <option value="monatlich">Monatlich</option>
                         </select>
                       </div>
                     </div>
 
                     <div className="row">
-                      <div
-                        className="field"
-                        style={{ minWidth: 260 }}
-                      >
+                      <div className="field" style={{ minWidth: 260 }}>
                         <label>Beschreibung</label>
                         <input
                           value={tarifBeschreibung}
                           onChange={(e) =>
-                            setTarifBeschreibung(
-                              e.target.value
-                            )
+                            setTarifBeschreibung(e.target.value)
                           }
                           placeholder="optional"
                         />
@@ -2972,9 +2747,7 @@ export default function App() {
                     <div className="row">
                       <button
                         className="btn"
-                        onClick={
-                          editingTarifId ? saveTarif : addTarif
-                        }
+                        onClick={editingTarifId ? saveTarif : addTarif}
                       >
                         {editingTarifId
                           ? "Tarif speichern"
@@ -2998,10 +2771,7 @@ export default function App() {
 
                     <ul className="list">
                       {tarife.map((t) => (
-                        <li
-                          key={t.id}
-                          className="listItem"
-                        >
+                        <li key={t.id} className="listItem">
                           <div>
                             <strong>{t.name}</strong>
                             <div className="muted">
@@ -3014,17 +2784,13 @@ export default function App() {
                                   }`}
                             </div>
                             {t.beschreibung && (
-                              <div className="muted">
-                                {t.beschreibung}
-                              </div>
+                              <div className="muted">{t.beschreibung}</div>
                             )}
                           </div>
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() =>
-                                startEditTarif(t)
-                              }
+                              onClick={() => startEditTarif(t)}
                             >
                               Bearbeiten
                             </button>
@@ -3041,13 +2807,11 @@ export default function App() {
               <div className="card">
                 <h2>Kein Zugriff</h2>
                 <p className="muted">
-                  Die Verwaltung ist nur für den Hauptaccount
-                  verfügbar.
+                  Die Verwaltung ist nur für den Hauptaccount verfügbar.
                 </p>
               </div>
             )}
 
-            {/* Abrechnung */}
             {tab === "abrechnung" && (
               <div className="card">
                 <h2>Abrechnung</h2>
@@ -3058,9 +2822,7 @@ export default function App() {
                     <input
                       type="month"
                       value={abrechnungMonat}
-                      onChange={(e) =>
-                        setAbrechnungMonat(e.target.value)
-                      }
+                      onChange={(e) => setAbrechnungMonat(e.target.value)}
                     />
                   </div>
                   <div className="field">
@@ -3076,6 +2838,7 @@ export default function App() {
                       <option value="alle">Alle</option>
                       <option value="bezahlt">Nur bezahlt</option>
                       <option value="offen">Nur offen</option>
+                      <option value="bar">Nur bar bezahlt</option>
                     </select>
                   </div>
                   {trainers.length > 1 && (
@@ -3085,15 +2848,11 @@ export default function App() {
                         value={abrechnungTrainerFilter}
                         disabled={isTrainer}
                         onChange={(e) =>
-                          setAbrechnungTrainerFilter(
-                            e.target.value
-                          )
+                          setAbrechnungTrainerFilter(e.target.value)
                         }
                       >
                         {!isTrainer && (
-                          <option value="alle">
-                            Alle Trainer
-                          </option>
+                          <option value="alle">Alle Trainer</option>
                         )}
                         {trainers.map((tr) => (
                           <option key={tr.id} value={tr.id}>
@@ -3109,9 +2868,7 @@ export default function App() {
                   <div className="subTabs">
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "spieler"
-                          ? "tabBtnActive"
-                          : ""
+                        abrechnungTab === "spieler" ? "tabBtnActive" : ""
                       }`}
                       onClick={() => setAbrechnungTab("spieler")}
                     >
@@ -3119,9 +2876,7 @@ export default function App() {
                     </button>
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "trainer"
-                          ? "tabBtnActive"
-                          : ""
+                        abrechnungTab === "trainer" ? "tabBtnActive" : ""
                       }`}
                       onClick={() => setAbrechnungTab("trainer")}
                     >
@@ -3130,7 +2885,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Spieler Abrechnung */}
                 {abrechnungTab === "spieler" && !isTrainer && (
                   <>
                     <div className="row" style={{ marginTop: 12 }}>
@@ -3138,28 +2892,33 @@ export default function App() {
                         Umsatz gesamt:{" "}
                         <strong>{euro(abrechnung.total)}</strong>
                       </span>
+
                       {abrechnung.barTotal > 0 && (
-                        <span className="pill">
-                          Bar bezahlt (dieser Monat):{" "}
-                          <strong>
-                            {euro(abrechnung.barTotal)}
-                          </strong>
-                        </span>
+                        <>
+                          <span className="pill">
+                            Bar bezahlt (Stunden):{" "}
+                            <strong>{euro(abrechnung.barTotal)}</strong>
+                          </span>
+                          <span className="pill">
+                            Umsatz inkl. Bar:{" "}
+                            <strong>{euro(abrechnung.totalMitBar)}</strong>
+                          </span>
+                        </>
                       )}
+
                       <span className="pill">
                         Bereits bezahlt:{" "}
                         <strong>{euro(sumBezahlt)}</strong>
                       </span>
                       <span className="pill">
-                        Offen:{" "}
-                        <strong>{euro(sumOffen)}</strong>
+                        Offen: <strong>{euro(sumOffen)}</strong>
                       </span>
                     </div>
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Der Status bezahlt gilt immer für
-                      einen Spieler im ausgewählten Monat.
+                      Hinweis: Der Status bezahlt gilt immer für einen Spieler im
+                      ausgewählten Monat.
                     </div>
 
                     <div style={{ height: 14 }} />
@@ -3183,17 +2942,33 @@ export default function App() {
                                 : r.breakdown
                                     .map(
                                       (b) =>
-                                        `${b.count} × ${euro(
-                                          b.amount
-                                        )}`
+                                        `${b.count} × ${euro(b.amount)}`
                                     )
                                     .join(" + ");
-                            const key = paymentKey(
-                              abrechnungMonat,
-                              r.id
+                            const key = paymentKey(abrechnungMonat, r.id);
+                            const paid = payments[key] ?? false;
+
+                            const hasBarForPlayer = trainingsInMonth.some(
+                              (t) =>
+                                t.barBezahlt &&
+                                t.spielerIds.includes(r.id)
                             );
-                            const paid =
-                              payments[key] ?? false;
+
+                            const buttonLabel =
+                              hasBarForPlayer && !paid
+                                ? "bar bezahlt"
+                                : paid
+                                ? "als offen markieren"
+                                : "als bezahlt markieren";
+
+                            const buttonStyle =
+                              hasBarForPlayer && !paid
+                                ? {
+                                    backgroundColor: "#dc2626",
+                                    borderColor: "#dc2626",
+                                  }
+                                : undefined;
+
                             return (
                               <tr key={r.id}>
                                 <td>{r.name}</td>
@@ -3202,19 +2977,16 @@ export default function App() {
                                 <td>
                                   <span
                                     className={
-                                      paid
-                                        ? "badge badgeOk"
-                                        : "badge"
+                                      paid ? "badge badgeOk" : "badge"
                                     }
                                   >
-                                    {paid
-                                      ? "bezahlt"
-                                      : "offen"}
+                                    {paid ? "bezahlt" : "offen"}
                                   </span>
                                 </td>
                                 <td>
                                   <button
                                     className="btn micro"
+                                    style={buttonStyle}
                                     onClick={() => {
                                       if (paid) {
                                         togglePaidForPlayer(
@@ -3231,9 +3003,7 @@ export default function App() {
                                       }
                                     }}
                                   >
-                                    {paid
-                                      ? "als offen markieren"
-                                      : "als bezahlt markieren"}
+                                    {buttonLabel}
                                   </button>
                                 </td>
                               </tr>
@@ -3245,53 +3015,36 @@ export default function App() {
                   </>
                 )}
 
-                {/* Trainer Abrechnung */}
                 {abrechnungTab === "trainer" && (
                   <>
-                    {!isTrainer && (
-                      <div className="row" style={{ marginTop: 12 }}>
-                        <span className="pill">
-                          Umsatz gesamt:{" "}
-                          <strong>
-                            {euro(abrechnungTrainer.total)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Trainer Honorar gesamt:{" "}
-                          <strong>
-                            {euro(trainerHonorarTotal)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Honorar bezahlt:{" "}
-                          <strong>
-                            {euro(
-                              trainerHonorarBezahltTotal
-                            )}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Honorar offen:{" "}
-                          <strong>
-                            {euro(trainerHonorarOffenTotal)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Rückzahlung Trainer gesamt:{" "}
-                          <strong>
-                            {euro(trainerRueckzahlungTotal)}
-                          </strong>
-                        </span>
-                      </div>
-                    )}
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <span className="pill">
+                        Umsatz gesamt:{" "}
+                        <strong>{euro(abrechnungTrainer.total)}</strong>
+                      </span>
+                      <span className="pill">
+                        Trainer Honorar gesamt:{" "}
+                        <strong>{euro(trainerHonorarTotal)}</strong>
+                      </span>
+                      <span className="pill">
+                        Honorar bezahlt:{" "}
+                        <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                      </span>
+                      <span className="pill">
+                        Honorar offen:{" "}
+                        <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                      </span>
+                      <span className="pill">
+                        Rückzahlung Trainer gesamt:{" "}
+                        <strong>{euro(trainerRueckzahlungTotal)}</strong>
+                      </span>
+                    </div>
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Das Trainerhonorar wird pro
-                      Training abgerechnet. Bei Barzahlung durch
-                      den Schüler muss der Trainer die Differenz
-                      aus Gesamtbetrag minus Honorar
-                      zurückzahlen.
+                      Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
+                      Bei Barzahlung durch den Schüler muss der Trainer die
+                      Differenz aus Schülerzahlung minus Honorar zurückzahlen.
                     </div>
 
                     {!isTrainer && trainers.length > 1 && (
@@ -3308,42 +3061,21 @@ export default function App() {
                                 <th>Trainer Honorar</th>
                                 <th>Honorar bezahlt</th>
                                 <th>Honorar offen</th>
-                                <th>
-                                  Rückzahlung
-                                  (Bar)
-                                </th>
+                                <th>Rückzahlung (Bar)</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {abrechnungTrainer.rows.map(
-                                (r) => (
-                                  <tr key={r.id}>
-                                    <td>{r.name}</td>
-                                    <td>{r.trainings}</td>
-                                    <td>
-                                      {euro(r.sum)}
-                                    </td>
-                                    <td>
-                                      {euro(r.honorar)}
-                                    </td>
-                                    <td>
-                                      {euro(
-                                        r.honorarBezahlt
-                                      )}
-                                    </td>
-                                    <td>
-                                      {euro(
-                                        r.honorarOffen
-                                      )}
-                                    </td>
-                                    <td>
-                                      {euro(
-                                        r.barDifferenz
-                                      )}
-                                    </td>
-                                  </tr>
-                                )
-                              )}
+                              {abrechnungTrainer.rows.map((r) => (
+                                <tr key={r.id}>
+                                  <td>{r.name}</td>
+                                  <td>{r.trainings}</td>
+                                  <td>{euro(r.sum)}</td>
+                                  <td>{euro(r.honorar)}</td>
+                                  <td>{euro(r.honorarBezahlt)}</td>
+                                  <td>{euro(r.honorarOffen)}</td>
+                                  <td>{euro(r.barDifferenz)}</td>
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>
@@ -3355,7 +3087,7 @@ export default function App() {
                 <div style={{ height: 14 }} />
                 <h2>Trainings im Monat</h2>
                 <ul className="list">
-                  {trainingsInMonth.map((t) => {
+                  {trainingsForAbrechnung.map((t) => {
                     const tarif = t.tarifId
                       ? tarifById.get(t.tarifId)
                       : undefined;
@@ -3367,85 +3099,53 @@ export default function App() {
                       ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
                       : "Tarif";
                     const sp = t.spielerIds
-                      .map(
-                        (id) =>
-                          spielerById.get(id)?.name ??
-                          "Spieler"
-                      )
+                      .map((id) => spielerById.get(id)?.name ?? "Spieler")
                       .join(", ");
                     const trainerName =
-                      trainerById.get(
-                        t.trainerId ?? defaultTrainerId
-                      )?.name ?? "Trainer";
-                    const betragGesamt = round2(
-                      trainingPreisGesamt(t)
-                    );
-                    const price = euro(betragGesamt);
-                    const honorar = trainerHonorarFuerTraining(t);
-                    const honorarBadge = euro(honorar);
-                    const isCash = !!studentCashPayments[t.id];
-                    const diffRückzahlung = round2(
-                      betragGesamt - honorar
-                    );
-                    const positiveDiff =
-                      diffRückzahlung > 0 ? diffRückzahlung : 0;
-                    const trainerPaidFlag =
-                      trainerPayments[t.id] ?? false;
-                    const trainerPaid =
-                      trainerPaidFlag || isCash;
+                      trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
+                      "Trainer";
+                    const priceNum = round2(trainingPreisGesamt(t));
+                    const price = euro(priceNum);
+                    const honorarNum = trainerHonorarFuerTraining(t);
+                    const honorarBadge = euro(honorarNum);
+                    const trainerPaid = trainerPayments[t.id] ?? false;
                     const showTrainerInfo =
-                      isTrainer ||
-                      abrechnungTab === "trainer";
-                    const canCash =
-                      !tarif ||
-                      tarif.abrechnung !== "monatlich";
+                      isTrainer || abrechnungTab === "trainer";
+                    const differenz = round2(priceNum - honorarNum);
 
                     return (
                       <li key={t.id} className="listItem">
                         <div>
                           <strong>
-                            {t.datum} {t.uhrzeitVon} bis{" "}
-                            {t.uhrzeitBis}
+                            {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
                           </strong>
                           <div className="muted">
                             {showTrainerInfo
                               ? `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
                               : `${sp}, ${ta}, ${trainerName}`}
                           </div>
-                          {t.notiz ? (
+                          {showTrainerInfo && (
                             <div className="muted">
-                              {t.notiz}
+                              Differenz (Schülerzahlung − Honorar):{" "}
+                              {euro(differenz)}
                             </div>
+                          )}
+                          {t.notiz ? (
+                            <div className="muted">{t.notiz}</div>
                           ) : null}
                           {t.serieId ? (
                             <div className="muted">
-                              Serie:{" "}
-                              {t.serieId.slice(0, 8)}
+                              Serie: {t.serieId.slice(0, 8)}
                             </div>
                           ) : null}
-                          {isCash &&
-                            canCash &&
-                            positiveDiff > 0 && (
-                              <div className="muted">
-                                Bar bezahlt durch
-                                Schüler ·
-                                Rückzahlung Trainer:{" "}
-                                <strong>
-                                  {euro(
-                                    positiveDiff
-                                  )}
-                                </strong>
-                              </div>
-                            )}
+                          {t.barBezahlt && (
+                            <div className="muted">Bar bezahlt</div>
+                          )}
                         </div>
                         <div className="smallActions">
-                          <span className="badge badgeOk">
-                            durchgeführt
-                          </span>
+                          <span className="badge badgeOk">durchgeführt</span>
                           {!isTrainer && (
-                            <span className="badge">
-                              {price}
-                            </span>
+                            <span className="badge">{price}</span>
                           )}
                           {showTrainerInfo && (
                             <>
@@ -3454,93 +3154,51 @@ export default function App() {
                               </span>
                               <span
                                 className={
-                                  trainerPaid
-                                    ? "badge badgeOk"
-                                    : "badge"
+                                  trainerPaid ? "badge badgeOk" : "badge"
                                 }
                               >
-                                {isCash
-                                  ? "Bar bezahlt (Schüler)"
-                                  : trainerPaid
+                                {trainerPaid
                                   ? "Honorar abgerechnet"
                                   : "Honorar offen"}
                               </span>
                             </>
                           )}
-
-                          {/* Spieler-Abrechnung: Bar bezahlt Button (rot) */}
-                          {!isTrainer &&
-                            abrechnungTab === "spieler" &&
-                            canCash && (
+                          {!isTrainer && (
+                            <>
                               <button
                                 className="btn micro"
                                 style={{
-                                  backgroundColor:
-                                    "#dc2626",
-                                  borderColor: "#b91c1c",
+                                  backgroundColor: "#8b5cf6",
+                                  borderColor: "#8b5cf6",
                                 }}
-                                onClick={() =>
-                                  toggleStudentCashPayment(
-                                    t.id
-                                  )
-                                }
+                                onClick={() => toggleBarBezahlt(t.id)}
                               >
-                                {isCash
-                                  ? "Barzahlung entfernen"
+                                {t.barBezahlt
+                                  ? "Barzahlung zurücknehmen"
                                   : "Bar bezahlt"}
                               </button>
-                            )}
-
-                          {/* Trainer-Abrechnung: Bar bezahlt Button (lila) und Honorar-Button */}
-                          {!isTrainer &&
-                            abrechnungTab === "trainer" && (
-                              <>
-                                {canCash && (
+                              {abrechnungTab === "trainer" && (
+                                <>
                                   <button
-                                    className="btn micro"
-                                    style={{
-                                      backgroundColor:
-                                        "#dc2626",
-                                      borderColor:
-                                        "#7c3aed",
-                                    }}
-                                    onClick={() =>
-                                      toggleStudentCashPayment(
-                                        t.id
-                                      )
-                                    }
+                                    className="btn micro btnGhost"
+                                    onClick={() => toggleTrainerPaid(t.id)}
                                   >
-                                    {isCash
-                                      ? "Barzahlung entfernen"
-                                      : "Bar bezahlt"}
-                                  </button>
-                                )}
-                                {!isCash && (
-                                  <button
-                                    className="btn micro"
-                                    onClick={() =>
-                                      toggleTrainerPaid(
-                                        t.id
-                                      )
-                                    }
-                                  >
-                                    {trainerPaidFlag
+                                    {trainerPaid
                                       ? "Honorar als offen markieren"
                                       : "Honorar als abgerechnet markieren"}
                                   </button>
-                                )}
-                                <button
-                                  className="btn micro btnGhost"
-                                  onClick={() =>
-                                    fillTrainingFromSelected(
-                                      t
-                                    )
-                                  }
-                                >
-                                  Bearbeiten
-                                </button>
-                              </>
-                            )}
+                                  <button
+                                    className="btn micro btnGhost"
+                                    onClick={() =>
+                                      fillTrainingFromSelected(t)
+                                    }
+                                  >
+                                    Bearbeiten
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}
                         </div>
                       </li>
                     );
@@ -3556,16 +3214,14 @@ export default function App() {
         <div className="modalOverlay">
           <div className="modalCard">
             <div className="modalHeader">
-              <div className="modalPill">
-                Zahlung bestätigen
-              </div>
+              <div className="modalPill">Zahlung bestätigen</div>
               <h3>
                 {payConfirm.spielerName} ·{" "}
                 {formatMonthLabel(payConfirm.monat)}
               </h3>
               <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du
-                kannst es später wieder auf offen stellen.
+                Dieser Betrag wird als bezahlt markiert, Du kannst es später
+                wieder auf offen stellen.
               </p>
             </div>
             <div className="modalSummary">
@@ -3573,10 +3229,7 @@ export default function App() {
               <strong>{euro(payConfirm.amount)}</strong>
             </div>
             <div className="modalActions">
-              <button
-                className="btn btnGhost"
-                onClick={closePayConfirm}
-              >
+              <button className="btn btnGhost" onClick={closePayConfirm}>
                 Abbrechen
               </button>
               <button className="btn" onClick={confirmPay}>
@@ -3589,3 +3242,4 @@ export default function App() {
     </>
   );
 }
+
