@@ -435,6 +435,7 @@ export default function App() {
   const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
     useState<string>("alle");
   const [abrechnungTab, setAbrechnungTab] = useState<AbrechnungTab>("spieler");  
+  const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -1619,10 +1620,33 @@ export default function App() {
   const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
 
-  return (
+    return (
     <>
       <div className="appShell">
-        <aside className="sideNav">
+        {/* Mobile Top Bar */}
+        <header className="mobileTopBar">
+          <button
+            className="iconButton"
+            onClick={() => setIsSideNavOpen((v) => !v)}
+            aria-label="Navigation öffnen"
+          >
+            <span className="iconBar" />
+            <span className="iconBar" />
+            <span className="iconBar" />
+          </button>
+
+          <div className="mobileTopTitle">
+            <div className="mobileTopMain">Tennistrainer Planung</div>
+            <div className="mobileTopSub">
+              {roleLabel} · {trainerFilterLabel}
+            </div>
+          </div>
+        </header>
+
+        {/* Seitennavigation, auf Desktop immer sichtbar, auf Mobile als Drawer */}
+        <aside
+          className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}
+        >
           <div className="sideNavHeader">
             <div className="sideTitle">Tennistrainer Planung</div>
             <div className="sideSubtitle">
@@ -1641,7 +1665,10 @@ export default function App() {
                 className={`tabBtn sideTabBtn ${
                   tab === t ? "tabBtnActive" : ""
                 }`}
-                onClick={() => setTab(t)}
+                onClick={() => {
+                  setTab(t);
+                  setIsSideNavOpen(false); // beim Tabwechsel auf Mobile schließen
+                }}
               >
                 {t === "kalender" && "Kalender"}
                 {t === "training" && "Training"}
@@ -1656,6 +1683,15 @@ export default function App() {
           </button>
         </aside>
 
+        {/* Dunkler Overlay, wenn Menü auf Mobile offen ist */}
+        {isSideNavOpen && (
+          <div
+            className="sideNavOverlay"
+            onClick={() => setIsSideNavOpen(false)}
+          />
+        )}
+
+        {/* Hauptinhalt */}
         <main className="mainArea">
           <div className="container">
             <div className="header">
@@ -1828,7 +1864,7 @@ export default function App() {
                                 ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
                                 : tarif.name
                               : t.customPreisProStunde
-                              ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                              ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`  
                               : "Tarif";
                             const sp = t.spielerIds
                               .map(
@@ -2726,354 +2762,357 @@ export default function App() {
             )}
 
             {/* Abrechnung */}
-                      {tab === "abrechnung" && (
-            <div className="card">
-              <h2>Abrechnung</h2>
+            {tab === "abrechnung" && (
+              <div className="card">
+                <h2>Abrechnung</h2>
 
-              <div className="row">
-                <div className="field">
-                  <label>Monat</label>
-                  <input
-                    type="month"
-                    value={abrechnungMonat}
-                    onChange={(e) => setAbrechnungMonat(e.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label>Filter</label>
-                  <select
-                    value={abrechnungFilter}
-                    onChange={(e) =>
-                      setAbrechnungFilter(e.target.value as AbrechnungFilter)
-                    }
-                  >
-                    <option value="alle">Alle</option>
-                    <option value="bezahlt">Nur bezahlt</option>
-                    <option value="offen">Nur offen</option>
-                  </select>
-                </div>
-                {trainers.length > 1 && (
+                <div className="row">
                   <div className="field">
-                    <label>Trainer</label>
+                    <label>Monat</label>
+                    <input
+                      type="month"
+                      value={abrechnungMonat}
+                      onChange={(e) => setAbrechnungMonat(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Filter</label>
                     <select
-                      value={abrechnungTrainerFilter}
-                      disabled={isTrainer}
+                      value={abrechnungFilter}
                       onChange={(e) =>
-                        setAbrechnungTrainerFilter(e.target.value)
+                        setAbrechnungFilter(e.target.value as AbrechnungFilter)
                       }
                     >
-                      {!isTrainer && <option value="alle">Alle Trainer</option>}
-                      {trainers.map((tr) => (
-                        <option key={tr.id} value={tr.id}>
-                          {tr.name}
-                        </option>
-                      ))}
+                      <option value="alle">Alle</option>
+                      <option value="bezahlt">Nur bezahlt</option>
+                      <option value="offen">Nur offen</option>
                     </select>
                   </div>
-                )}
-              </div>
-
-              {!isTrainer && (
-                <div className="subTabs">
-                  <button
-                    className={`tabBtn ${
-                      abrechnungTab === "spieler" ? "tabBtnActive" : ""
-                    }`}
-                    onClick={() => setAbrechnungTab("spieler")}
-                  >
-                    Spieler Abrechnung
-                  </button>
-                  <button
-                    className={`tabBtn ${
-                      abrechnungTab === "trainer" ? "tabBtnActive" : ""
-                    }`}
-                    onClick={() => setAbrechnungTab("trainer")}
-                  >
-                    Trainer Abrechnung
-                  </button>
+                  {trainers.length > 1 && (
+                    <div className="field">
+                      <label>Trainer</label>
+                      <select
+                        value={abrechnungTrainerFilter}
+                        disabled={isTrainer}
+                        onChange={(e) =>
+                          setAbrechnungTrainerFilter(e.target.value)
+                        }
+                      >
+                        {!isTrainer && <option value="alle">Alle Trainer</option>}
+                        {trainers.map((tr) => (
+                          <option key={tr.id} value={tr.id}>
+                            {tr.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Spieler Abrechnung Seite */}
-              {abrechnungTab === "spieler" && !isTrainer && (
-                <>
-                  <div className="row" style={{ marginTop: 12 }}>
-                    <span className="pill">
-                      Umsatz gesamt:{" "}
-                      <strong>{euro(abrechnung.total)}</strong>
-                    </span>
-                    <span className="pill">
-                      Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
-                    </span>
-                    <span className="pill">
-                      Offen: <strong>{euro(sumOffen)}</strong>
-                    </span>
+                {!isTrainer && (
+                  <div className="subTabs">
+                    <button
+                      className={`tabBtn ${
+                        abrechnungTab === "spieler" ? "tabBtnActive" : ""
+                      }`}
+                      onClick={() => setAbrechnungTab("spieler")}
+                    >
+                      Spieler Abrechnung
+                    </button>
+                    <button
+                      className={`tabBtn ${
+                        abrechnungTab === "trainer" ? "tabBtnActive" : ""
+                      }`}
+                      onClick={() => setAbrechnungTab("trainer")}
+                    >
+                      Trainer Abrechnung
+                    </button>
                   </div>
+                )}
 
-                  <div style={{ height: 10 }} />
-                  <div className="muted">
-                    Hinweis: Der Status bezahlt gilt immer für einen Spieler im
-                    ausgewählten Monat.
-                  </div>
-
-                  <div style={{ height: 14 }} />
-                  <div className="card cardInset">
-                    <h2>Summe pro Spieler</h2>
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Spieler</th>
-                          <th>Aufstellung</th>
-                          <th>Summe</th>
-                          <th>Status</th>
-                          <th>Aktion</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSpielerRowsForMonth.map((r) => {
-                          const breakdownText =
-                            r.breakdown.length === 0
-                              ? "-"
-                              : r.breakdown
-                                  .map(
-                                    (b) => `${b.count} × ${euro(b.amount)}`
-                                  )
-                                  .join(" + ");
-                          const key = paymentKey(abrechnungMonat, r.id);
-                          const paid = payments[key] ?? false;
-                          return (
-                            <tr key={r.id}>
-                              <td>{r.name}</td>
-                              <td>{breakdownText}</td>
-                              <td>{euro(r.sum)}</td>
-                              <td>
-                                <span
-                                  className={paid ? "badge badgeOk" : "badge"}
-                                >
-                                  {paid ? "bezahlt" : "offen"}
-                                </span>
-                              </td>
-                              <td>
-                                <button
-                                  className="btn micro"
-                                  onClick={() => {
-                                    if (paid) {
-                                      togglePaidForPlayer(
-                                        abrechnungMonat,
-                                        r.id
-                                      );
-                                    } else {
-                                      openPayConfirm(
-                                        abrechnungMonat,
-                                        r.id,
-                                        r.name,
-                                        r.sum
-                                      );
-                                    }
-                                  }}
-                                >
-                                  {paid
-                                    ? "als offen markieren"
-                                    : "als bezahlt markieren"}
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-
-              {/* Trainer Abrechnung Seite */}
-              {abrechnungTab === "trainer" && (
-                <>
-                  {!isTrainer && (
+                {/* Spieler Abrechnung Seite */}
+                {abrechnungTab === "spieler" && !isTrainer && (
+                  <>
                     <div className="row" style={{ marginTop: 12 }}>
                       <span className="pill">
                         Umsatz gesamt:{" "}
                         <strong>{euro(abrechnung.total)}</strong>
                       </span>
                       <span className="pill">
-                        Trainer Honorar gesamt:{" "}
-                        <strong>{euro(trainerHonorarTotal)}</strong>
+                        Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
                       </span>
                       <span className="pill">
-                        Honorar bezahlt:{" "}
-                        <strong>{euro(trainerHonorarBezahltTotal)}</strong>
-                      </span>
-                      <span className="pill">
-                        Honorar offen:{" "}
-                        <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                        Offen: <strong>{euro(sumOffen)}</strong>
                       </span>
                     </div>
-                  )}
 
-                  <div style={{ height: 10 }} />
-                  <div className="muted">
-                    Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
-                  </div>
+                    <div style={{ height: 10 }} />
+                    <div className="muted">
+                      Hinweis: Der Status bezahlt gilt immer für einen Spieler im
+                      ausgewählten Monat.
+                    </div>
 
-                  {!isTrainer && trainers.length > 1 && (
-                    <>
-                      <div style={{ height: 14 }} />
-                      <div className="card cardInset">
-                        <h2>Summe pro Trainer</h2>
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>Trainer</th>
-                              <th>Trainings</th>
-                              <th>Umsatz</th>
-                              <th>Trainer Honorar</th>
-                              <th>Honorar bezahlt</th>
-                              <th>Honorar offen</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {abrechnungTrainer.rows.map((r) => (
+                    <div style={{ height: 14 }} />
+                    <div className="card cardInset">
+                      <h2>Summe pro Spieler</h2>
+                      <table className="table">
+                        <thead>
+                          <tr>
+                            <th>Spieler</th>
+                            <th>Aufstellung</th>
+                            <th>Summe</th>
+                            <th>Status</th>
+                            <th>Aktion</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredSpielerRowsForMonth.map((r) => {
+                            const breakdownText =
+                              r.breakdown.length === 0
+                                ? "-"
+                                : r.breakdown
+                                    .map(
+                                      (b) =>
+                                        `${b.count} × ${euro(b.amount)}`
+                                    )
+                                    .join(" + ");
+                            const key = paymentKey(abrechnungMonat, r.id);
+                            const paid = payments[key] ?? false;
+                            return (
                               <tr key={r.id}>
                                 <td>{r.name}</td>
-                                <td>{r.trainings}</td>
+                                <td>{breakdownText}</td>
                                 <td>{euro(r.sum)}</td>
-                                <td>{euro(r.honorar)}</td>
-                                <td>{euro(r.honorarBezahlt)}</td>
-                                <td>{euro(r.honorarOffen)}</td>
+                                <td>
+                                  <span
+                                    className={
+                                      paid ? "badge badgeOk" : "badge"
+                                    }
+                                  >
+                                    {paid ? "bezahlt" : "offen"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <button
+                                    className="btn micro"
+                                    onClick={() => {
+                                      if (paid) {
+                                        togglePaidForPlayer(
+                                          abrechnungMonat,
+                                          r.id
+                                        );
+                                      } else {
+                                        openPayConfirm(
+                                          abrechnungMonat,
+                                          r.id,
+                                          r.name,
+                                          r.sum
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {paid
+                                      ? "als offen markieren"
+                                      : "als bezahlt markieren"}
+                                  </button>
+                                </td>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+
+                {/* Trainer Abrechnung Seite */}
+                {abrechnungTab === "trainer" && (
+                  <>
+                    {!isTrainer && (
+                      <div className="row" style={{ marginTop: 12 }}>
+                        <span className="pill">
+                          Umsatz gesamt:{" "}
+                          <strong>{euro(abrechnung.total)}</strong>
+                        </span>
+                        <span className="pill">
+                          Trainer Honorar gesamt:{" "}
+                          <strong>{euro(trainerHonorarTotal)}</strong>
+                        </span>
+                        <span className="pill">
+                          Honorar bezahlt:{" "}
+                          <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                        </span>
+                        <span className="pill">
+                          Honorar offen:{" "}
+                          <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                        </span>
                       </div>
-                    </>
-                  )}
-                </>
-              )}
+                    )}
 
-              <div style={{ height: 14 }} />
-              <h2>Trainings im Monat</h2>
-              <ul className="list">
-                {trainingsInMonth.map((t) => {
-                  const tarif = t.tarifId
-                    ? tarifById.get(t.tarifId)
-                    : undefined;
-                  const ta = tarif
-                    ? tarif.abrechnung === "monatlich"
-                      ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                      : tarif.name
-                    : t.customPreisProStunde
-                    ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                    : "Tarif";
-                  const sp = t.spielerIds
-                    .map((id) => spielerById.get(id)?.name ?? "Spieler")
-                    .join(", ");
-                  const trainerName =
-                    trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
-                    "Trainer";
-                  const price = euro(round2(trainingPreisGesamt(t)));
-                  const honorarBadge = euro(trainerHonorarFuerTraining(t));
-                  const trainerPaid = trainerPayments[t.id] ?? false;
-                  const showTrainerInfo =
-                    isTrainer || abrechnungTab === "trainer";
+                    <div style={{ height: 10 }} />
+                    <div className="muted">
+                      Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
+                    </div>
 
-                  return (
-                    <li key={t.id} className="listItem">
-                      <div>
-                        <strong>
-                          {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
-                        </strong>
-                        <div className="muted">
-                          {showTrainerInfo
-                            ? `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
-                            : `${sp}, ${ta}, ${trainerName}`}
+                    {!isTrainer && trainers.length > 1 && (
+                      <>
+                        <div style={{ height: 14 }} />
+                        <div className="card cardInset">
+                          <h2>Summe pro Trainer</h2>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Trainer</th>
+                                <th>Trainings</th>
+                                <th>Umsatz</th>
+                                <th>Trainer Honorar</th>
+                                <th>Honorar bezahlt</th>
+                                <th>Honorar offen</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {abrechnungTrainer.rows.map((r) => (
+                                <tr key={r.id}>
+                                  <td>{r.name}</td>
+                                  <td>{r.trainings}</td>
+                                  <td>{euro(r.sum)}</td>
+                                  <td>{euro(r.honorar)}</td>
+                                  <td>{euro(r.honorarBezahlt)}</td>
+                                  <td>{euro(r.honorarOffen)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                        {t.notiz ? (
-                          <div className="muted">{t.notiz}</div>
-                        ) : null}
-                        {t.serieId ? (
+                      </>
+                    )}
+                  </>
+                )}
+
+                <div style={{ height: 14 }} />
+                <h2>Trainings im Monat</h2>
+                <ul className="list">
+                  {trainingsInMonth.map((t) => {
+                    const tarif = t.tarifId
+                      ? tarifById.get(t.tarifId)
+                      : undefined;
+                    const ta = tarif
+                      ? tarif.abrechnung === "monatlich"
+                        ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
+                        : tarif.name
+                      : t.customPreisProStunde
+                      ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                      : "Tarif";
+                    const sp = t.spielerIds
+                      .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                      .join(", ");
+                    const trainerName =
+                      trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
+                      "Trainer";
+                    const price = euro(round2(trainingPreisGesamt(t)));
+                    const honorarBadge = euro(trainerHonorarFuerTraining(t));
+                    const trainerPaid = trainerPayments[t.id] ?? false;
+                    const showTrainerInfo =
+                      isTrainer || abrechnungTab === "trainer";
+
+                    return (
+                      <li key={t.id} className="listItem">
+                        <div>
+                          <strong>
+                            {t.datum} {t.uhrzeitVon} bis {t.uhrzeitBis}
+                          </strong>
                           <div className="muted">
-                            Serie: {t.serieId.slice(0, 8)}
+                            {showTrainerInfo
+                              ? `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
+                              : `${sp}, ${ta}, ${trainerName}`}
                           </div>
-                        ) : null}
-                      </div>
-                      <div className="smallActions">
-                        <span className="badge badgeOk">durchgeführt</span>
-                        {!isTrainer && <span className="badge">{price}</span>}
-                        {showTrainerInfo && (
-                          <>
-                            <span className="badge">
-                              Honorar: {honorarBadge}
-                            </span>
-                            <span
-                              className={
-                                trainerPaid ? "badge badgeOk" : "badge"
-                              }
-                            >
-                              {trainerPaid
-                                ? "Honorar abgerechnet"
-                                : "Honorar offen"}
-                            </span>
-                          </>
-                        )}
-                        {!isTrainer && abrechnungTab === "trainer" && (
-                          <>
-                            <button
-                              className="btn micro"
-                              onClick={() => toggleTrainerPaid(t.id)}
-                            >
-                              {trainerPaid
-                                ? "Honorar als offen markieren"
-                                : "Honorar als abgerechnet markieren"}
-                            </button>
-                            <button
-                              className="btn micro btnGhost"
-                              onClick={() => fillTrainingFromSelected(t)}
-                            >
-                              Bearbeiten
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-        </div>
-      </main>
-    </div>
-
-    {payConfirm && (
-      <div className="modalOverlay">
-        <div className="modalCard">
-          <div className="modalHeader">
-            <div className="modalPill">Zahlung bestätigen</div>
-            <h3>
-              {payConfirm.spielerName} ·{" "}
-              {formatMonthLabel(payConfirm.monat)}
-            </h3>
-            <p className="muted">
-              Dieser Betrag wird als bezahlt markiert, Du kannst es später
-              wieder auf offen stellen.
-            </p>
+                          {t.notiz ? (
+                            <div className="muted">{t.notiz}</div>
+                          ) : null}
+                          {t.serieId ? (
+                            <div className="muted">
+                              Serie: {t.serieId.slice(0, 8)}
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="smallActions">
+                          <span className="badge badgeOk">durchgeführt</span>
+                          {!isTrainer && <span className="badge">{price}</span>}
+                          {showTrainerInfo && (
+                            <>
+                              <span className="badge">
+                                Honorar: {honorarBadge}
+                              </span>
+                              <span
+                                className={
+                                  trainerPaid ? "badge badgeOk" : "badge"
+                                }
+                              >
+                                {trainerPaid
+                                  ? "Honorar abgerechnet"
+                                  : "Honorar offen"}
+                              </span>
+                            </>
+                          )}
+                          {!isTrainer && abrechnungTab === "trainer" && (
+                            <>
+                              <button
+                                className="btn micro"
+                                onClick={() => toggleTrainerPaid(t.id)}
+                              >
+                                {trainerPaid
+                                  ? "Honorar als offen markieren"
+                                  : "Honorar als abgerechnet markieren"}
+                              </button>
+                              <button
+                                className="btn micro btnGhost"
+                                onClick={() => fillTrainingFromSelected(t)}
+                              >
+                                Bearbeiten
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
-          <div className="modalSummary">
-            <span className="muted">Betrag</span>
-            <strong>{euro(payConfirm.amount)}</strong>
-          </div>
-          <div className="modalActions">
-            <button className="btn btnGhost" onClick={closePayConfirm}>
-              Abbrechen
-            </button>
-            <button className="btn" onClick={confirmPay}>
-              Ja, als bezahlt markieren
-            </button>
-          </div>
-        </div>
+        </main>
       </div>
-    )}
-  </>
-);
+
+      {payConfirm && (
+        <div className="modalOverlay">
+          <div className="modalCard">
+            <div className="modalHeader">
+              <div className="modalPill">Zahlung bestätigen</div>
+              <h3>
+                {payConfirm.spielerName} ·{" "}
+                {formatMonthLabel(payConfirm.monat)}
+              </h3>
+              <p className="muted">
+                Dieser Betrag wird als bezahlt markiert, Du kannst es später
+                wieder auf offen stellen.
+              </p>
+            </div>
+            <div className="modalSummary">
+              <span className="muted">Betrag</span>
+              <strong>{euro(payConfirm.amount)}</strong>
+            </div>
+            <div className="modalActions">
+              <button className="btn btnGhost" onClick={closePayConfirm}>
+                Abbrechen
+              </button>
+              <button className="btn" onClick={confirmPay}>
+                Ja, als bezahlt markieren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
+
