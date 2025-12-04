@@ -1425,15 +1425,33 @@ export default function App() {
     [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
   );
 
-  const trainingsForAbrechnung = useMemo(
-    () =>
-      abrechnungFilter === "bar"
-        ? trainingsInMonth.filter((t) => t.barBezahlt)
-        : trainingsInMonth,
-    [trainingsInMonth, abrechnungFilter]
-  );
+      const trainingsForAbrechnung = useMemo(() => {
+    // Für Trainer Abrechnung: Filter nach Honorarstatus oder Barzahlung
+    if (abrechnungTab === "trainer") {
+      if (abrechnungFilter === "bezahlt") {
+        // Nur Trainings, bei denen das Honorar bereits abgerechnet ist
+        return trainingsInMonth.filter((t) => !!trainerPayments[t.id]);
+      }
+      if (abrechnungFilter === "offen") {
+        // Nur Trainings, bei denen das Honorar noch offen ist
+        return trainingsInMonth.filter((t) => !trainerPayments[t.id]);
+      }
+      if (abrechnungFilter === "bar") {
+        // Nur bar bezahlte Stunden
+        return trainingsInMonth.filter((t) => t.barBezahlt);
+      }
+      // "alle"
+      return trainingsInMonth;
+    }
 
-   const abrechnung = useMemo(() => {
+    // Für Spieler Abrechnung: Filter wirkt nur auf bar, bezahlt / offen werden pro Spieler über payments abgebildet
+    if (abrechnungFilter === "bar") {
+      return trainingsInMonth.filter((t) => t.barBezahlt);
+    }
+    return trainingsInMonth;
+  }, [trainingsInMonth, abrechnungFilter, abrechnungTab, trainerPayments]);
+
+  const abrechnung = useMemo(() => {
     const perSpieler = new Map<
       string,
       { name: string; sum: number; counts: Map<number, number> }
@@ -1451,10 +1469,7 @@ export default function App() {
       entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
     };
 
-    // Rechnung: nur nicht-bar bezahlte Stunden
-    trainingsInMonth.forEach((t) => {
-      if (t.barBezahlt) return;
-
+    trainingsForAbrechnung.forEach((t) => {
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
 
@@ -1499,22 +1514,29 @@ export default function App() {
 
     const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
-    // Bar-Umsatz separat berechnen
+    // Gesamte Barzahlungen im Monat berechnen, unabhängig vom Filter,
+    // aber unter Berücksichtigung von Monat, Status und Trainerfilter
     let barTotal = 0;
     trainingsInMonth.forEach((t) => {
       if (!t.barBezahlt) return;
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
       if (cfg.abrechnung === "monatlich") return;
-
-      const amount = round2(trainingPreisGesamt(t));
-      barTotal = round2(barTotal + amount);
+      const preis = trainingPreisGesamt(t);
+      barTotal = round2(barTotal + preis);
     });
 
     const totalMitBar = round2(total + barTotal);
 
     return { total, spielerRows, barTotal, totalMitBar };
-  }, [trainingsInMonth, spielerById, priceFuerSpieler, tarifById]);
+  }, [
+    trainingsForAbrechnung,
+    trainingsInMonth,
+    spielerById,
+    priceFuerSpieler,
+    tarifById,
+    trainingPreisGesamt,
+  ]);
 
   const abrechnungTrainer = useMemo(() => {
     type TrainerAbrechnungSummary = {
@@ -1524,14 +1546,12 @@ export default function App() {
       honorar: number;
       honorarBezahlt: number;
       honorarOffen: number;
-      barDifferenz: number;
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
     const monthlySeen = new Map<string, Set<string>>();
 
-
-    trainingsInMonth.forEach((t) => {
+    trainingsForAbrechnung.forEach((t) => {
       const tid = t.trainerId || defaultTrainerId;
       const name = trainerById.get(tid)?.name ?? "Trainer";
       const cfg = getPreisConfig(t, tarifById);
@@ -1546,10 +1566,7 @@ export default function App() {
           honorar: 0,
           honorarBezahlt: 0,
           honorarOffen: 0,
-          barDifferenz: 0,
         };
-
-      let amount = 0;
 
       if (cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
@@ -1563,13 +1580,8 @@ export default function App() {
         });
         monthlySeen.set(tid, seen);
       } else {
-        amount = round2(trainingPreisGesamt(t));
+        const amount = round2(trainingPreisGesamt(t));
         entry.sum = round2(entry.sum + amount);
-      }
-
-      if (t.barBezahlt && cfg.abrechnung !== "monatlich") {
-        const diff = round2(amount - honorar);
-        entry.barDifferenz = round2(entry.barDifferenz + diff);
       }
 
       entry.trainings += 1;
@@ -1597,9 +1609,6 @@ export default function App() {
     const totalHonorarOffen = round2(
       rows.reduce((acc, r) => acc + r.honorarOffen, 0)
     );
-    const totalRueckzahlung = round2(
-      rows.reduce((acc, r) => acc + r.barDifferenz, 0)
-    );
 
     return {
       total,
@@ -1607,12 +1616,11 @@ export default function App() {
       totalHonorar,
       totalHonorarBezahlt,
       totalHonorarOffen,
-      totalRueckzahlung,
     };
   }, [
     defaultTrainerId,
     trainerById,
-    trainingsInMonth,
+    trainingsForAbrechnung,
     tarifById,
     trainerHonorarFuerTraining,
     trainerPayments,
@@ -1715,17 +1723,27 @@ export default function App() {
     const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
   const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
-  const trainerRueckzahlungTotal = abrechnungTrainer.totalRueckzahlung;
-  const ownTrainerRow = isTrainer
-    ? abrechnungTrainer.rows.find((r) => r.id === ownTrainerId) ?? null
-    : null;
 
-  function formatDateDE(dateISO: string) {
-    if (!dateISO) return "";
-    const [y, m, d] = dateISO.split("-");
-    if (!y || !m || !d) return dateISO;
-    return `${d}.${m}.${y}`;
-  }
+  const eigeneTrainerRow = abrechnungTrainer.rows.find(
+    (r) => r.id === ownTrainerId
+  );
+  const eigenerHonorarGesamt = eigeneTrainerRow?.honorar ?? 0;
+  const eigenerHonorarBezahlt = eigeneTrainerRow?.honorarBezahlt ?? 0;
+  const eigenerHonorarOffen = eigeneTrainerRow?.honorarOffen ?? 0;
+
+  const rueckzahlungTrainerOffen = round2(
+    trainingsForAbrechnung.reduce((acc, t) => {
+      const tid = t.trainerId || defaultTrainerId;
+      if (tid !== ownTrainerId) return acc;
+      if (!t.barBezahlt) return acc;
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg || cfg.abrechnung === "monatlich") return acc;
+      const priceNum = round2(trainingPreisGesamt(t));
+      const honorarNum = trainerHonorarFuerTraining(t);
+      const diff = round2(priceNum - honorarNum);
+      return diff > 0 ? acc + diff : acc;
+    }, 0)
+  );
 
   return (
     <>
@@ -1749,7 +1767,9 @@ export default function App() {
           </div>
         </header>
 
-        <aside className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}>
+        <aside
+          className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}
+        >
           <div className="sideNavHeader">
             <div className="sideTitle">Tennistrainer Planung</div>
             <div className="sideSubtitle">
@@ -2918,8 +2938,7 @@ export default function App() {
                       )}
 
                       <span className="pill">
-                        Bereits bezahlt:{" "}
-                        <strong>{euro(sumBezahlt)}</strong>
+                        Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
                       </span>
                       <span className="pill">
                         Offen: <strong>{euro(sumOffen)}</strong>
@@ -2928,8 +2947,8 @@ export default function App() {
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Der Status bezahlt gilt immer für einen Spieler im
-                      ausgewählten Monat.
+                      Hinweis: Der Status bezahlt gilt immer für einen Spieler
+                      im ausgewählten Monat.
                     </div>
 
                     <div style={{ height: 14 }} />
@@ -3028,79 +3047,53 @@ export default function App() {
 
                 {abrechnungTab === "trainer" && (
                   <>
-                    <div className="row" style={{ marginTop: 12 }}>
-                      {isTrainer ? (
-                        <>
-                          <span className="pill">
-                            Dein Umsatz gesamt:{" "}
-                            <strong>
-                              {euro(ownTrainerRow?.sum ?? 0)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Dein Honorar gesamt:{" "}
-                            <strong>
-                              {euro(ownTrainerRow?.honorar ?? 0)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Dein Honorar bezahlt:{" "}
-                            <strong>
-                              {euro(ownTrainerRow?.honorarBezahlt ?? 0)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Dein Honorar offen:{" "}
-                            <strong>
-                              {euro(ownTrainerRow?.honorarOffen ?? 0)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Deine Rückzahlung (Bar):{" "}
-                            <strong>
-                              {euro(ownTrainerRow?.barDifferenz ?? 0)}
-                            </strong>
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="pill">
-                            Umsatz gesamt:{" "}
-                            <strong>
-                              {euro(abrechnungTrainer.total)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Trainer Honorar gesamt:{" "}
-                            <strong>{euro(trainerHonorarTotal)}</strong>
-                          </span>
-                          <span className="pill">
-                            Honorar bezahlt:{" "}
-                            <strong>
-                              {euro(trainerHonorarBezahltTotal)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Honorar offen:{" "}
-                            <strong>
-                              {euro(trainerHonorarOffenTotal)}
-                            </strong>
-                          </span>
-                          <span className="pill">
-                            Rückzahlung Trainer gesamt:{" "}
-                            <strong>
-                              {euro(trainerRueckzahlungTotal)}
-                            </strong>
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    {!isTrainer && (
+                      <div className="row" style={{ marginTop: 12 }}>
+                        <span className="pill">
+                          Umsatz gesamt:{" "}
+                          <strong>{euro(abrechnung.total)}</strong>
+                        </span>
+                        <span className="pill">
+                          Trainer Honorar gesamt:{" "}
+                          <strong>{euro(trainerHonorarTotal)}</strong>
+                        </span>
+                        <span className="pill">
+                          Honorar bezahlt:{" "}
+                          <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                        </span>
+                        <span className="pill">
+                          Honorar offen:{" "}
+                          <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                        </span>
+                      </div>
+                    )}
+
+                    {isTrainer && (
+                      <div className="row" style={{ marginTop: 12 }}>
+                        <span className="pill">
+                          Dein Honorar gesamt:{" "}
+                          <strong>{euro(eigenerHonorarGesamt)}</strong>
+                        </span>
+                        <span className="pill">
+                          Bereits ausgezahlt:{" "}
+                          <strong>{euro(eigenerHonorarBezahlt)}</strong>
+                        </span>
+                        <span className="pill">
+                          Noch auszuzahlen:{" "}
+                          <strong>{euro(eigenerHonorarOffen)}</strong>
+                        </span>
+                        <span className="pill">
+                          Rückzahlung an Schule (bar):{" "}
+                          <strong>{euro(rueckzahlungTrainerOffen)}</strong>
+                        </span>
+                      </div>
+                    )}
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Das Trainerhonorar wird pro Training abgerechnet.
-                      Bei Barzahlung durch den Schüler wird die Differenz aus
-                      Schülerzahlung minus Honorar als Rückzahlung angezeigt.
+                      Hinweis: Das Trainerhonorar wird pro Training
+                      abgerechnet. Der Filter oben bezieht sich hier auf den
+                      Honorarstatus.
                     </div>
 
                     {!isTrainer && trainers.length > 1 && (
@@ -3117,7 +3110,6 @@ export default function App() {
                                 <th>Trainer Honorar</th>
                                 <th>Honorar bezahlt</th>
                                 <th>Honorar offen</th>
-                                <th>Rückzahlung (Bar)</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3129,7 +3121,6 @@ export default function App() {
                                   <td>{euro(r.honorar)}</td>
                                   <td>{euro(r.honorarBezahlt)}</td>
                                   <td>{euro(r.honorarOffen)}</td>
-                                  <td>{euro(r.barDifferenz)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -3169,16 +3160,21 @@ export default function App() {
                       isTrainer || abrechnungTab === "trainer";
                     const differenz = round2(priceNum - honorarNum);
 
+                    const [y, m, d] = t.datum.split("-");
+                    const germanDate =
+                      d && m && y ? `${d}.${m}.${y}` : t.datum;
+
                     return (
                       <li key={t.id} className="listItem">
                         <div>
                           <strong>
-                            {formatDateDE(t.datum)} {t.uhrzeitVon} bis{" "}
-                            {t.uhrzeitBis}
+                            {germanDate} {t.uhrzeitVon} bis {t.uhrzeitBis}
                           </strong>
                           <div className="muted">
                             {showTrainerInfo
-                              ? `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
+                              ? abrechnungTab === "trainer"
+                                ? `${sp}, ${trainerName}, Honorar: ${honorarBadge}`
+                                : `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
                               : `${sp}, ${ta}, ${trainerName}`}
                           </div>
                           {showTrainerInfo && (
@@ -3201,7 +3197,7 @@ export default function App() {
                         </div>
                         <div className="smallActions">
                           <span className="badge badgeOk">durchgeführt</span>
-                          {!isTrainer && (
+                          {!isTrainer && abrechnungTab === "spieler" && (
                             <span className="badge">{price}</span>
                           )}
                           {showTrainerInfo && (
@@ -3235,25 +3231,21 @@ export default function App() {
                                   : "Bar bezahlt"}
                               </button>
                               {abrechnungTab === "trainer" && (
-                                <>
-                                  <button
-                                    className="btn micro btnGhost"
-                                    onClick={() => toggleTrainerPaid(t.id)}
-                                  >
-                                    {trainerPaid
-                                      ? "Honorar als offen markieren"
-                                      : "Honorar als abgerechnet markieren"}
-                                  </button>
-                                  <button
-                                    className="btn micro btnGhost"
-                                    onClick={() =>
-                                      fillTrainingFromSelected(t)
-                                    }
-                                  >
-                                    Bearbeiten
-                                  </button>
-                                </>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => toggleTrainerPaid(t.id)}
+                                >
+                                  {trainerPaid
+                                    ? "Honorar als offen markieren"
+                                    : "Honorar als abgerechnet markieren"}
+                                </button>
                               )}
+                              <button
+                                className="btn micro btnGhost"
+                                onClick={() => fillTrainingFromSelected(t)}
+                              >
+                                Bearbeiten
+                              </button>
                             </>
                           )}
                         </div>
@@ -3299,6 +3291,11 @@ export default function App() {
     </>
   );
 }
+
+
+
+
+
 
 
 
