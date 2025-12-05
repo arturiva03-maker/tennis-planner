@@ -458,302 +458,313 @@ export default function App() {
     addDaysISO(todayISO(), 56)
   );
   const [applySerieScope, setApplySerieScope] =
-    useState<"nurDieses" | "abHeute">("nurDieses");
+useState<"nurDieses" | "abHeute">("nurDieses");
 
-  const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(
-    null
-  );
+const [selectedTrainingId, setSelectedTrainingId] = useState<string | null>(
+null
+);
+const [selectedTrainingIds, setSelectedTrainingIds] = useState<string[]>([]);
+const [batchTrainerId, setBatchTrainerId] = useState<string>("");
 
-  const [abrechnungMonat, setAbrechnungMonat] = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+const [abrechnungMonat, setAbrechnungMonat] = useState(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+});
+
+const [abrechnungFilter, setAbrechnungFilter] =
+useState<AbrechnungFilter>("alle");
+const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
+useState<string>("alle");
+const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
+const [isSideNavOpen, setIsSideNavOpen] = useState(false);
+
+const clickTimerRef = useRef<number | null>(null);
+const flashTimerRef = useRef<number | null>(null);
+const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
+
+const hasMountedRef = useRef(false);
+
+const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+const [authLoading, setAuthLoading] = useState(true);
+const [profileLoading, setProfileLoading] = useState(false);
+const [profileFinished, setProfileFinished] = useState(false);
+const [initialSynced, setInitialSynced] = useState(false);
+
+/* ::::: Local / Cloud Storage Migration ::::: */
+
+useEffect(() => {
+const usedKey = initial.usedKey;
+if (usedKey && usedKey !== STORAGE_KEY) {
+writeState(initial.state);
+for (const k of LEGACY_KEYS) {
+if (k !== STORAGE_KEY && localStorage.getItem(k))
+localStorage.removeItem(k);
+}
+}
+hasMountedRef.current = true;
+}, [initial.usedKey, initial.state]);
+
+useEffect(() => {
+if (!hasMountedRef.current) return;
+writeState({
+trainers,
+spieler,
+tarife,
+trainings,
+payments,
+trainerPayments,
+});
+}, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
+
+/* ::::: Auth State von Supabase lesen ::::: */
+
+useEffect(() => {
+supabase.auth.getSession().then((res) => {
+const session = res.data.session;
+setAuthUser(
+session
+? {
+id: session.user.id,
+email: session.user.email ?? null,
+role: "admin",
+accountId: null,
+trainerId: null,
+}
+: null
+);
+setAuthLoading(false);
+});
+
+const { data: sub } = supabase.auth.onAuthStateChange(
+  (_event: string, session: any) => {
+    setAuthUser(
+      session
+        ? {
+            id: session.user.id,
+            email: session.user.email ?? null,
+            role: "admin",
+            accountId: null,
+            trainerId: null,
+          }
+        : null
+    );
+    setInitialSynced(false);
+    setProfileFinished(false);
+  }
+);
+
+return () => {
+  sub.subscription.unsubscribe();
+};
+
+
+}, []);
+
+/* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
+
+useEffect(() => {
+if (!authUser?.id) {
+setProfileFinished(false);
+return;
+}
+
+let cancelled = false;
+setProfileLoading(true);
+setProfileFinished(false);
+
+(async () => {
+  try {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("role, account_id, trainer_id")
+      .eq("user_id", authUser.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Fehler beim Laden des Profils", error);
+    }
+
+    if (!cancelled && data) {
+      setAuthUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              role: (data.role as Role) || "admin",
+              accountId: data.account_id ?? prev.id,
+              trainerId: data.trainer_id ?? null,
+            }
+          : prev
+      );
+    }
+  } finally {
+    if (!cancelled) {
+      setProfileLoading(false);
+      setProfileFinished(true);
+    }
+  }
+})();
+
+return () => {
+  cancelled = true;
+};
+
+
+}, [authUser?.id]);
+
+/* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
+
+useEffect(() => {
+if (authLoading || profileLoading) return;
+if (initialSynced) return;
+
+async function loadState() {
+  if (!authUser) {
+    const local = readStateWithMeta();
+    setTrainers(local.state.trainers);
+    setSpieler(local.state.spieler);
+    setTarife(local.state.tarife);
+    setTrainings(local.state.trainings);
+    setPayments(local.state.payments ?? {});
+    setTrainerPayments(local.state.trainerPayments ?? {});
+    setInitialSynced(true);
+    return;
+  }
+
+  if (!profileFinished) {
+    return;
+  }
+
+  if (!authUser.accountId) {
+    const local = readStateWithMeta();
+    setTrainers(local.state.trainers);
+    setSpieler(local.state.spieler);
+    setTarife(local.state.tarife);
+    setTrainings(local.state.trainings);
+    setPayments(local.state.payments ?? {});
+    setTrainerPayments(local.state.trainerPayments ?? {});
+    setInitialSynced(true);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("account_state")
+    .select("data")
+    .eq("account_id", authUser.accountId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Fehler beim Laden des Zustands aus Supabase", error);
+  }
+
+  if (data && data.data) {
+    const cloud = normalizeState(data.data as Partial<AppState>);
+    setTrainers(cloud.trainers);
+    setSpieler(cloud.spieler);
+    setTarife(cloud.tarife);
+    setTrainings(cloud.trainings);
+    setPayments(cloud.payments ?? {});
+    setTrainerPayments(cloud.trainerPayments ?? {});
+  } else {
+    const local = readStateWithMeta();
+    setTrainers(local.state.trainers);
+    setSpieler(local.state.spieler);
+    setTarife(local.state.tarife);
+    setTrainings(local.state.trainings);
+    setPayments(local.state.payments ?? {});
+    setTrainerPayments(local.state.trainerPayments ?? {});
+  }
+
+  setInitialSynced(true);
+}
+
+loadState();
+
+
+}, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
+
+/* ::::: Zustand nach Supabase schreiben ::::: */
+
+useEffect(() => {
+if (!authUser) return;
+if (!authUser.accountId) return;
+if (!initialSynced) return;
+
+const payload: AppState = {
+  trainers,
+  spieler,
+  tarife,
+  trainings,
+  payments,
+  trainerPayments,
+};
+
+supabase
+  .from("account_state")
+  .upsert({
+    account_id: authUser.accountId,
+    data: payload,
+    updated_at: new Date().toISOString(),
+  })
+  .then(({ error }) => {
+    if (error) {
+      console.error("Fehler beim Speichern des Zustands in Supabase", error);
+    }
   });
 
-  const [abrechnungFilter, setAbrechnungFilter] =
-    useState<AbrechnungFilter>("alle");
-  const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
-    useState<string>("alle");
-  const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
-  const clickTimerRef = useRef<number | null>(null);
-  const flashTimerRef = useRef<number | null>(null);
-  const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
+}, [
+authUser,
+initialSynced,
+trainers,
+spieler,
+tarife,
+trainings,
+payments,
+trainerPayments,
+]);
 
-  const hasMountedRef = useRef(false);
+useEffect(() => {
+return () => {
+if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+};
+}, []);
 
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileFinished, setProfileFinished] = useState(false);
-  const [initialSynced, setInitialSynced] = useState(false);
+const trainerById = useMemo(
+() => new Map(trainers.map((t) => [t.id, t])),
+[trainers]
+);
 
-  /* ::::: Local / Cloud Storage Migration ::::: */
+const spielerById = useMemo(
+() => new Map(spieler.map((s) => [s.id, s])),
+[spieler]
+);
 
-  useEffect(() => {
-    const usedKey = initial.usedKey;
-    if (usedKey && usedKey !== STORAGE_KEY) {
-      writeState(initial.state);
-      for (const k of LEGACY_KEYS) {
-        if (k !== STORAGE_KEY && localStorage.getItem(k))
-          localStorage.removeItem(k);
-      }
-    }
-    hasMountedRef.current = true;
-  }, [initial.usedKey, initial.state]);
+const tarifById = useMemo(
+() => new Map(tarife.map((t) => [t.id, t])),
+[tarife]
+);
 
-  useEffect(() => {
-    if (!hasMountedRef.current) return;
-    writeState({
-      trainers,
-      spieler,
-      tarife,
-      trainings,
-      payments,
-      trainerPayments,
-    });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
+const isTrainer = authUser?.role === "trainer";
+const ownTrainerId =
+(authUser?.trainerId &&
+trainers.some((t) => t.id === authUser.trainerId) &&
+authUser.trainerId) ||
+trainers[0]?.id ||
+"";
+const defaultTrainerId = trainers[0]?.id ?? "";
+const selectedTrainerName =
+trainerById.get(tTrainerId)?.name ??
+trainerById.get(defaultTrainerId)?.name ??
+"Trainer";
+const trainerFilterLabel =
+abrechnungTrainerFilter === "alle"
+? trainers.length === 1
+? trainers[0]?.name ?? "Alle Trainer"
+: "Alle Trainer"
+: trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
 
-  /* ::::: Auth State von Supabase lesen ::::: */
-
-  useEffect(() => {
-    supabase.auth.getSession().then((res) => {
-      const session = res.data.session;
-      setAuthUser(
-        session
-          ? {
-              id: session.user.id,
-              email: session.user.email ?? null,
-              role: "admin",
-              accountId: null,
-              trainerId: null,
-            }
-          : null
-      );
-      setAuthLoading(false);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event: string, session: any) => {
-        setAuthUser(
-          session
-            ? {
-                id: session.user.id,
-                email: session.user.email ?? null,
-                role: "admin",
-                accountId: null,
-                trainerId: null,
-              }
-            : null
-        );
-        setInitialSynced(false);
-        setProfileFinished(false);
-      }
-    );
-
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, []);
-
-  /* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
-
-  useEffect(() => {
-    if (!authUser?.id) {
-      setProfileFinished(false);
-      return;
-    }
-
-    let cancelled = false;
-    setProfileLoading(true);
-    setProfileFinished(false);
-
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("user_profiles")
-          .select("role, account_id, trainer_id")
-          .eq("user_id", authUser.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error("Fehler beim Laden des Profils", error);
-        }
-
-        if (!cancelled && data) {
-          setAuthUser((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  role: (data.role as Role) || "admin",
-                  accountId: data.account_id ?? prev.id,
-                  trainerId: data.trainer_id ?? null,
-                }
-              : prev
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setProfileLoading(false);
-          setProfileFinished(true);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authUser?.id]);
-
-  /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
-
-  useEffect(() => {
-    if (authLoading || profileLoading) return;
-    if (initialSynced) return;
-
-    async function loadState() {
-      if (!authUser) {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-        setTrainerPayments(local.state.trainerPayments ?? {});
-        setInitialSynced(true);
-        return;
-      }
-
-      if (!profileFinished) {
-        return;
-      }
-
-      if (!authUser.accountId) {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-        setTrainerPayments(local.state.trainerPayments ?? {});
-        setInitialSynced(true);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("account_state")
-        .select("data")
-        .eq("account_id", authUser.accountId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Fehler beim Laden des Zustands aus Supabase", error);
-      }
-
-      if (data && data.data) {
-        const cloud = normalizeState(data.data as Partial<AppState>);
-        setTrainers(cloud.trainers);
-        setSpieler(cloud.spieler);
-        setTarife(cloud.tarife);
-        setTrainings(cloud.trainings);
-        setPayments(cloud.payments ?? {});
-        setTrainerPayments(cloud.trainerPayments ?? {});
-      } else {
-        const local = readStateWithMeta();
-        setTrainers(local.state.trainers);
-        setSpieler(local.state.spieler);
-        setTarife(local.state.tarife);
-        setTrainings(local.state.trainings);
-        setPayments(local.state.payments ?? {});
-        setTrainerPayments(local.state.trainerPayments ?? {});
-      }
-
-      setInitialSynced(true);
-    }
-
-    loadState();
-  }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
-
-  /* ::::: Zustand nach Supabase schreiben ::::: */
-
-  useEffect(() => {
-    if (!authUser) return;
-    if (!authUser.accountId) return;
-    if (!initialSynced) return;
-
-    const payload: AppState = {
-      trainers,
-      spieler,
-      tarife,
-      trainings,
-      payments,
-      trainerPayments,
-    };
-
-    supabase
-      .from("account_state")
-      .upsert({
-        account_id: authUser.accountId,
-        data: payload,
-        updated_at: new Date().toISOString(),
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error("Fehler beim Speichern des Zustands in Supabase", error);
-        }
-      });
-  }, [
-    authUser,
-    initialSynced,
-    trainers,
-    spieler,
-    tarife,
-    trainings,
-    payments,
-    trainerPayments,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
-      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
-    };
-  }, []);
-
-  const trainerById = useMemo(
-    () => new Map(trainers.map((t) => [t.id, t])),
-    [trainers]
-  );
-
-  const spielerById = useMemo(
-    () => new Map(spieler.map((s) => [s.id, s])),
-    [spieler]
-  );
-
-  const tarifById = useMemo(
-    () => new Map(tarife.map((t) => [t.id, t])),
-    [tarife]
-  );
-
-  const isTrainer = authUser?.role === "trainer";
-  const ownTrainerId =
-    (authUser?.trainerId &&
-      trainers.some((t) => t.id === authUser.trainerId) &&
-      authUser.trainerId) ||
-    trainers[0]?.id ||
-    "";
-  const defaultTrainerId = trainers[0]?.id ?? "";
-  const selectedTrainerName =
-    trainerById.get(tTrainerId)?.name ??
-    trainerById.get(defaultTrainerId)?.name ??
-    "Trainer";
-  const trainerFilterLabel =
-    abrechnungTrainerFilter === "alle"
-      ? trainers.length === 1
-        ? trainers[0]?.name ?? "Alle Trainer"
-        : "Alle Trainer"
-      : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
-
-  const visibleTabs: Tab[] = isTrainer
+const visibleTabs: Tab[] = isTrainer
 ? ["kalender", "abrechnung"]
 : ["kalender", "training", "verwaltung", "abrechnung"];
 
@@ -931,6 +942,44 @@ t.trainerId === id ? { ...t, trainerId: fallbackId } : t
 if (tTrainerId === id) setTTrainerId(fallbackId);
 if (abrechnungTrainerFilter === id) {
 setAbrechnungTrainerFilter("alle");
+}
+}
+
+function deleteSpieler(id: string) {
+setSpieler((prev) => prev.filter((s) => s.id !== id));
+setTrainings((prev) =>
+prev.map((t) => ({
+...t,
+spielerIds: t.spielerIds.filter((sid) => sid !== id),
+}))
+);
+if (editingSpielerId === id) {
+setEditingSpielerId(null);
+setSpielerName("");
+setSpielerEmail("");
+setSpielerTelefon("");
+setSpielerRechnung("");
+setSpielerNotizen("");
+}
+}
+
+function deleteTarif(id: string) {
+setTarife((prev) => prev.filter((t) => t.id !== id));
+setTrainings((prev) =>
+prev.map((t) => ({
+...t,
+tarifId: t.tarifId === id ? undefined : t.tarifId,
+}))
+);
+if (editingTarifId === id) {
+setEditingTarifId(null);
+setTarifName("");
+setTarifPreisProStunde(60);
+setTarifAbrechnung("proTraining");
+setTarifBeschreibung("");
+}
+if (tTarifId === id) {
+setTTarifId("");
 }
 }
 
@@ -1204,6 +1253,55 @@ if (selectedTrainingId === id) {
 
 }
 
+function toggleTrainingSelection(id: string) {
+setSelectedTrainingIds((prev) =>
+prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+);
+}
+
+function clearTrainingSelection() {
+setSelectedTrainingIds([]);
+}
+
+function batchUpdateStatusForSelected(newStatus: TrainingStatus) {
+if (isTrainer) return;
+if (selectedTrainingIds.length === 0) return;
+setTrainings((prev) =>
+prev.map((t) =>
+selectedTrainingIds.includes(t.id) ? { ...t, status: newStatus } : t
+)
+);
+if (newStatus === "durchgefuehrt") {
+selectedTrainingIds.forEach((id) => {
+triggerDonePulse(id);
+});
+}
+}
+
+function batchDeleteSelectedTrainings() {
+if (isTrainer) return;
+if (selectedTrainingIds.length === 0) return;
+setTrainings((prev) =>
+prev.filter((t) => !selectedTrainingIds.includes(t.id))
+);
+setSelectedTrainingId((prev) =>
+prev && selectedTrainingIds.includes(prev) ? null : prev
+);
+clearTrainingSelection();
+}
+
+function batchChangeTrainerForSelected() {
+if (isTrainer) return;
+if (selectedTrainingIds.length === 0) return;
+const tid = batchTrainerId || defaultTrainerId;
+if (!tid) return;
+setTrainings((prev) =>
+prev.map((t) =>
+selectedTrainingIds.includes(t.id) ? { ...t, trainerId: tid } : t
+)
+);
+}
+
 function triggerDonePulse(trainingId: string) {
 setDoneFlashId(trainingId);
 if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
@@ -1455,35 +1553,52 @@ return tid === abrechnungTrainerFilter;
 [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
 );
 
- const trainingsForAbrechnung = useMemo(() => {
-// Für Trainer Abrechnung: Filter nach Honorarstatus oder Barzahlung
+const trainingsForAbrechnung = useMemo(() => {
+let filtered = trainingsInMonth;
+
 if (abrechnungTab === "trainer") {
   if (abrechnungFilter === "bezahlt") {
-    // Nur Trainings, bei denen das Honorar bereits abgerechnet ist
-    return trainingsInMonth.filter(
+    filtered = filtered.filter(
       (t) => t.barBezahlt || !!trainerPayments[t.id]
     );
-  }
-  if (abrechnungFilter === "offen") {
-    // Nur Trainings, bei denen das Honorar noch offen ist
-    return trainingsInMonth.filter(
+  } else if (abrechnungFilter === "offen") {
+    filtered = filtered.filter(
       (t) => !(t.barBezahlt || !!trainerPayments[t.id])
     );
+  } else if (abrechnungFilter === "bar") {
+    filtered = filtered.filter((t) => t.barBezahlt);
   }
+} else {
   if (abrechnungFilter === "bar") {
-    // Nur bar bezahlte Stunden
-    return trainingsInMonth.filter((t) => t.barBezahlt);
+    filtered = filtered.filter((t) => t.barBezahlt);
   }
-  // "alle"
-  return trainingsInMonth;
 }
 
-// Für Spieler Abrechnung: Filter wirkt nur auf bar, bezahlt / offen werden pro Spieler über payments abgebildet
-if (abrechnungFilter === "bar") {
-  return trainingsInMonth.filter((t) => t.barBezahlt);
+if (abrechnungTab === "spieler" && abrechnungSpielerSuche.trim()) {
+  const q = abrechnungSpielerSuche.trim().toLowerCase();
+  filtered = filtered.filter((t) =>
+    t.spielerIds.some((sid) => {
+      const s = spielerById.get(sid);
+      return (
+        s &&
+        (s.name.toLowerCase().includes(q) ||
+          (s.kontaktEmail ?? "").toLowerCase().includes(q))
+      );
+    })
+  );
 }
-return trainingsInMonth;
-}, [trainingsInMonth, abrechnungFilter, abrechnungTab, trainerPayments]);
+
+return filtered;
+
+
+}, [
+trainingsInMonth,
+abrechnungFilter,
+abrechnungTab,
+trainerPayments,
+abrechnungSpielerSuche,
+spielerById,
+]);
 
 const abrechnung = useMemo(() => {
 const perSpieler = new Map<
@@ -1491,7 +1606,6 @@ string,
 { name: string; sum: number; counts: Map<number, number> }
 >();
 const monthlySeen = new Map<string, Set<string>>();
-
 
 const addShare = (pid: string, name: string, amount: number) => {
   const share = round2(amount);
@@ -1549,8 +1663,6 @@ const spielerRows = Array.from(perSpieler.entries())
 
 const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
-// Gesamte Barzahlungen im Monat berechnen, unabhängig vom Filter,
-// aber unter Berücksichtigung von Monat, Status und Trainerfilter
 let barTotal = 0;
 trainingsInMonth.forEach((t) => {
   if (!t.barBezahlt) return;
@@ -1564,6 +1676,8 @@ trainingsInMonth.forEach((t) => {
 const totalMitBar = round2(total + barTotal);
 
 return { total, spielerRows, barTotal, totalMitBar };
+
+
 }, [
 trainingsForAbrechnung,
 trainingsInMonth,
@@ -1582,7 +1696,6 @@ honorar: number;
 honorarBezahlt: number;
 honorarOffen: number;
 };
-
 
 const perTrainer = new Map<string, TrainerAbrechnungSummary>();
 const monthlySeen = new Map<string, Set<string>>();
@@ -1653,6 +1766,8 @@ return {
   totalHonorarBezahlt,
   totalHonorarOffen,
 };
+
+
 }, [
 defaultTrainerId,
 trainerById,
@@ -1733,12 +1848,13 @@ const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
 const key = paymentKey(abrechnungMonat, r.id);
 const paid = payments[key] ?? false;
 
-
 if (abrechnungFilter === "alle") return true;
 if (abrechnungFilter === "bezahlt") return paid;
 if (abrechnungFilter === "offen") return !paid;
 if (abrechnungFilter === "bar") return true;
 return true;
+
+
 });
 
 const sumBezahlt = round2(
@@ -1811,8 +1927,6 @@ aria-label="Navigation öffnen"
 <span className="iconBar" />
 <span className="iconBar" />
 </button>
-
-
 
       <div className="mobileTopTitle">
         <div className="mobileTopMain">Tennistrainer Planung</div>
@@ -2005,6 +2119,68 @@ aria-label="Navigation öffnen"
 
             <div style={{ height: 12 }} />
 
+            {!isTrainer && selectedTrainingIds.length > 0 && (
+              <div className="card cardInset" style={{ marginBottom: 12 }}>
+                <div
+                  className="row"
+                  style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}
+                >
+                  <span className="pill">
+                    Ausgewählte Trainings:{" "}
+                    <strong>{selectedTrainingIds.length}</strong>
+                  </span>
+                  <button
+                    className="btn micro"
+                    onClick={() =>
+                      batchUpdateStatusForSelected("durchgefuehrt")
+                    }
+                  >
+                    Alle durchgeführt
+                  </button>
+                  <button
+                    className="btn micro"
+                    onClick={() =>
+                      batchUpdateStatusForSelected("geplant")
+                    }
+                  >
+                    Alle geplant
+                  </button>
+                  <button
+                    className="btn micro btnWarn"
+                    onClick={batchDeleteSelectedTrainings}
+                  >
+                    Alle löschen
+                  </button>
+                  <div className="field" style={{ minWidth: 180 }}>
+                    <label>Trainer für Auswahl</label>
+                    <select
+                      value={batchTrainerId}
+                      onChange={(e) => setBatchTrainerId(e.target.value)}
+                    >
+                      <option value="">Standardtrainer</option>
+                      {trainers.map((tr) => (
+                        <option key={tr.id} value={tr.id}>
+                          {tr.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    className="btn micro"
+                    onClick={batchChangeTrainerForSelected}
+                  >
+                    Trainer übernehmen
+                  </button>
+                  <button
+                    className="btn micro btnGhost"
+                    onClick={clearTrainingSelection}
+                  >
+                    Auswahl aufheben
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}>
               <div className="kHead">
                 <div className="kHeadCell">Zeit</div>
@@ -2094,6 +2270,10 @@ aria-label="Navigation öffnen"
                             ? "rgba(239, 68, 68, 0.34)"
                             : "rgba(59, 130, 246, 0.30)";
 
+                          const isSelected = selectedTrainingIds.includes(
+                            t.id
+                          );
+
                           return (
                             <div
                               key={t.id}
@@ -2163,6 +2343,18 @@ aria-label="Navigation öffnen"
                                   {taLine}
                                 </div>
                               </div>
+                              {!isTrainer && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleTrainingSelection(t.id);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ marginRight: 6 }}
+                                />
+                              )}
                               <div
                                 style={{
                                   width: 14,
@@ -2765,6 +2957,12 @@ aria-label="Navigation öffnen"
                         >
                           Bearbeiten
                         </button>
+                        <button
+                          className="btn micro btnWarn"
+                          onClick={() => deleteSpieler(s.id)}
+                        >
+                          Löschen
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -2879,6 +3077,12 @@ aria-label="Navigation öffnen"
                         >
                           Bearbeiten
                         </button>
+                        <button
+                          className="btn micro btnWarn"
+                          onClick={() => deleteTarif(t.id)}
+                        >
+                          Löschen
+                        </button>
                       </div>
                     </li>
                   ))}
@@ -2945,6 +3149,18 @@ aria-label="Navigation öffnen"
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+              {!isTrainer && abrechnungTab === "spieler" && (
+                <div className="field">
+                  <label>Spieler Suche</label>
+                  <input
+                    value={abrechnungSpielerSuche}
+                    onChange={(e) =>
+                      setAbrechnungSpielerSuche(e.target.value)
+                    }
+                    placeholder="Name oder Email"
+                  />
                 </div>
               )}
             </div>
@@ -3119,6 +3335,10 @@ aria-label="Navigation öffnen"
                       Honorar offen:{" "}
                       <strong>{euro(trainerHonorarOffenTotal)}</strong>
                     </span>
+                    <span className="pill">
+                      Rückzahlung an Schule (bar):{" "}
+                      <strong>{euro(rueckzahlungTrainerOffen)}</strong>
+                    </span>
                   </div>
                 )}
 
@@ -3243,7 +3463,8 @@ aria-label="Navigation öffnen"
                       const price = euro(priceNum);
                       const honorarNum = trainerHonorarFuerTraining(t);
                       const honorarBadge = euro(honorarNum);
-                      const trainerPaid = trainerPayments[t.id] ?? false;
+                      const trainerPaid =
+                        t.barBezahlt || !!trainerPayments[t.id];
                       const showTrainerInfo =
                         isTrainer || abrechnungTab === "trainer";
                       const differenz = round2(priceNum - honorarNum);
@@ -3259,17 +3480,40 @@ aria-label="Navigation öffnen"
                               {germanDate} {t.uhrzeitVon} bis{" "}
                               {t.uhrzeitBis}
                             </strong>
+                            <div style={{ marginTop: 4 }}>
+                              <span className="badge badgeOk">
+                                durchgeführt
+                              </span>
+                            </div>
+                            <div
+                              className="muted"
+                              style={{ marginTop: 4 }}
+                            >
+                              Spieler: {sp}
+                            </div>
                             <div className="muted">
-                              {showTrainerInfo
-                                ? abrechnungTab === "trainer"
-                                  ? `${sp}, ${trainerName}, Honorar: ${honorarBadge}`
-                                  : `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
-                                : `${sp}, ${ta}, ${trainerName}`}
+                              Tarif: {ta}
                             </div>
                             {showTrainerInfo && (
+                              <>
+                                <div className="muted">
+                                  Trainer: {trainerName}, Honorar:{" "}
+                                  {honorarBadge}
+                                </div>
+                                <div className="muted">
+                                  Differenz (Schülerzahlung − Honorar):{" "}
+                                  {euro(differenz)}
+                                </div>
+                              </>
+                            )}
+                            {!showTrainerInfo && (
                               <div className="muted">
-                                Differenz (Schülerzahlung − Honorar):{" "}
-                                {euro(differenz)}
+                                Trainer: {trainerName}
+                              </div>
+                            )}
+                            {abrechnungTab === "spieler" && (
+                              <div className="muted">
+                                Preis: {price}
                               </div>
                             )}
                             {t.notiz ? (
@@ -3285,60 +3529,50 @@ aria-label="Navigation öffnen"
                             )}
                           </div>
                           <div className="smallActions">
-                            <span className="badge badgeOk">
-                              durchgeführt
-                            </span>
-                            {abrechnungTab === "spieler" && (
-                              <span className="badge">{price}</span>
-                            )}
-                            {showTrainerInfo && (
-                              <>
-                                <span className="badge">
-                                  Honorar: {honorarBadge}
-                                </span>
+                            {showTrainerInfo &&
+                              abrechnungTab === "trainer" && (
                                 <span
                                   className={
                                     trainerPaid
                                       ? "badge badgeOk"
                                       : "badge"
                                   }
+                                  style={{
+                                    cursor: "pointer",
+                                    backgroundColor: trainerPaid
+                                      ? "#22c55e1a"
+                                      : "#fee2e2",
+                                    color: trainerPaid
+                                      ? "#166534"
+                                      : "#991b1b",
+                                  }}
+                                  onClick={() =>
+                                    toggleTrainerPaid(t.id)
+                                  }
                                 >
                                   {trainerPaid
                                     ? "Honorar abgerechnet"
                                     : "Honorar offen"}
                                 </span>
-                              </>
-                            )}
-                            <>
-                              <button
-                                className="btn micro"
-                                style={{
-                                  backgroundColor: "#8b5cf6",
-                                  borderColor: "#8b5cf6",
-                                }}
-                                onClick={() => toggleBarBezahlt(t.id)}
-                              >
-                                {t.barBezahlt
-                                  ? "Barzahlung zurücknehmen"
-                                  : "Bar bezahlt"}
-                              </button>
-                              {abrechnungTab === "trainer" && (
-                                <button
-                                  className="btn micro btnGhost"
-                                  onClick={() => toggleTrainerPaid(t.id)}
-                                >
-                                  {trainerPaid
-                                    ? "Honorar als offen markieren"
-                                    : "Honorar als abgerechnet markieren"}
-                                </button>
                               )}
-                              <button
-                                className="btn micro btnGhost"
-                                onClick={() => fillTrainingFromSelected(t)}
-                              >
-                                Bearbeiten
-                              </button>
-                            </>
+                            <button
+                              className="btn micro"
+                              style={{
+                                backgroundColor: "#8b5cf6",
+                                borderColor: "#8b5cf6",
+                              }}
+                              onClick={() => toggleBarBezahlt(t.id)}
+                            >
+                              {t.barBezahlt
+                                ? "Barzahlung zurücknehmen"
+                                : "Bar bezahlt"}
+                            </button>
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => fillTrainingFromSelected(t)}
+                            >
+                              Bearbeiten
+                            </button>
                           </div>
                         </li>
                       );
@@ -3382,6 +3616,8 @@ aria-label="Navigation öffnen"
     </div>
   )}
 </>
+
+
 );
 }
 
