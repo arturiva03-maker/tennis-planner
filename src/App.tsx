@@ -454,9 +454,7 @@ export default function App() {
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
 
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-  const [repeatUntil, setRepeatUntil] = useState(() =>
-    addDaysISO(todayISO(), 56)
-  );
+  const [repeatUntil, setRepeatUntil] = useState("2026-03-28");
   const [applySerieScope, setApplySerieScope] =
 useState<"nurDieses" | "abHeute">("nurDieses");
 
@@ -1225,7 +1223,7 @@ setTNotiz("");
 setSpielerSuche("");
 setTSpielerIds([]);
 setRepeatWeekly(false);
-setRepeatUntil(addDaysISO(todayISO(), 56));
+setRepeatUntil("2026-03-28");
 setApplySerieScope("nurDieses");
 setTTarifId("");
 setTCustomPreisProStunde("");
