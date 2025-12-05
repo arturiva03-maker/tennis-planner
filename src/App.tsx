@@ -1455,23 +1455,27 @@ return tid === abrechnungTrainerFilter;
 [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
 );
 
-const trainingsForAbrechnung = useMemo(() => {
+ const trainingsForAbrechnung = useMemo(() => {
 // Für Trainer Abrechnung: Filter nach Honorarstatus oder Barzahlung
 if (abrechnungTab === "trainer") {
-if (abrechnungFilter === "bezahlt") {
-// Nur Trainings, bei denen das Honorar bereits abgerechnet ist
-return trainingsInMonth.filter((t) => !!trainerPayments[t.id]);
-}
-if (abrechnungFilter === "offen") {
-// Nur Trainings, bei denen das Honorar noch offen ist
-return trainingsInMonth.filter((t) => !trainerPayments[t.id]);
-}
-if (abrechnungFilter === "bar") {
-// Nur bar bezahlte Stunden
-return trainingsInMonth.filter((t) => t.barBezahlt);
-}
-// "alle"
-return trainingsInMonth;
+  if (abrechnungFilter === "bezahlt") {
+    // Nur Trainings, bei denen das Honorar bereits abgerechnet ist
+    return trainingsInMonth.filter(
+      (t) => t.barBezahlt || !!trainerPayments[t.id]
+    );
+  }
+  if (abrechnungFilter === "offen") {
+    // Nur Trainings, bei denen das Honorar noch offen ist
+    return trainingsInMonth.filter(
+      (t) => !(t.barBezahlt || !!trainerPayments[t.id])
+    );
+  }
+  if (abrechnungFilter === "bar") {
+    // Nur bar bezahlte Stunden
+    return trainingsInMonth.filter((t) => t.barBezahlt);
+  }
+  // "alle"
+  return trainingsInMonth;
 }
 
 // Für Spieler Abrechnung: Filter wirkt nur auf bar, bezahlt / offen werden pro Spieler über payments abgebildet
@@ -1479,8 +1483,6 @@ if (abrechnungFilter === "bar") {
   return trainingsInMonth.filter((t) => t.barBezahlt);
 }
 return trainingsInMonth;
-
-
 }, [trainingsInMonth, abrechnungFilter, abrechnungTab, trainerPayments]);
 
 const abrechnung = useMemo(() => {
@@ -1489,6 +1491,7 @@ string,
 { name: string; sum: number; counts: Map<number, number> }
 >();
 const monthlySeen = new Map<string, Set<string>>();
+
 
 const addShare = (pid: string, name: string, amount: number) => {
   const share = round2(amount);
@@ -1561,8 +1564,6 @@ trainingsInMonth.forEach((t) => {
 const totalMitBar = round2(total + barTotal);
 
 return { total, spielerRows, barTotal, totalMitBar };
-
-
 }, [
 trainingsForAbrechnung,
 trainingsInMonth,
@@ -1581,6 +1582,7 @@ honorar: number;
 honorarBezahlt: number;
 honorarOffen: number;
 };
+
 
 const perTrainer = new Map<string, TrainerAbrechnungSummary>();
 const monthlySeen = new Map<string, Set<string>>();
@@ -1621,7 +1623,7 @@ trainingsForAbrechnung.forEach((t) => {
   entry.trainings += 1;
   entry.honorar = round2(entry.honorar + honorar);
 
-  const paid = !!trainerPayments[t.id];
+  const paid = t.barBezahlt || !!trainerPayments[t.id];
   if (paid) {
     entry.honorarBezahlt = round2(entry.honorarBezahlt + honorar);
   } else {
@@ -1651,8 +1653,6 @@ return {
   totalHonorarBezahlt,
   totalHonorarOffen,
 };
-
-
 }, [
 defaultTrainerId,
 trainerById,
@@ -1708,34 +1708,6 @@ t.id === trainingId ? { ...t, barBezahlt: !t.barBezahlt } : t
 );
 }
 
-function toggleAllTrainerPaidForMonth() {
-if (!isTrainer) return;
-setTrainerPayments((prev) => {
-const next = { ...prev };
-
-  const eigeneTrainingsImMonat = trainings.filter((t) => {
-    if (t.status !== "durchgefuehrt") return false;
-    if (!t.datum.startsWith(abrechnungMonat)) return false;
-    const tid = t.trainerId || defaultTrainerId;
-    return tid === ownTrainerId;
-  });
-
-  const alleBezahlt =
-    eigeneTrainingsImMonat.length > 0 &&
-    eigeneTrainingsImMonat.every((t) => !!prev[t.id]);
-
-  const markPaid = !alleBezahlt;
-
-  eigeneTrainingsImMonat.forEach((t) => {
-    next[t.id] = markPaid;
-  });
-
-  return next;
-});
-
-
-}
-
 async function handleLogout() {
 await supabase.auth.signOut();
 setAuthUser(null);
@@ -1761,13 +1733,12 @@ const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
 const key = paymentKey(abrechnungMonat, r.id);
 const paid = payments[key] ?? false;
 
+
 if (abrechnungFilter === "alle") return true;
 if (abrechnungFilter === "bezahlt") return paid;
 if (abrechnungFilter === "offen") return !paid;
 if (abrechnungFilter === "bar") return true;
 return true;
-
-
 });
 
 const sumBezahlt = round2(
@@ -1840,6 +1811,8 @@ aria-label="Navigation öffnen"
 <span className="iconBar" />
 <span className="iconBar" />
 </button>
+
+
 
       <div className="mobileTopTitle">
         <div className="mobileTopMain">Tennistrainer Planung</div>
@@ -3409,8 +3382,6 @@ aria-label="Navigation öffnen"
     </div>
   )}
 </>
-
-
 );
 }
 
