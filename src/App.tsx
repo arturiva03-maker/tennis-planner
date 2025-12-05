@@ -518,7 +518,7 @@ export default function App() {
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
-  useEffect(() => {
+    useEffect(() => {
     supabase.auth.getSession().then((res) => {
       const session = res.data.session;
       setAuthUser(
@@ -527,7 +527,7 @@ export default function App() {
               id: session.user.id,
               email: session.user.email ?? null,
               role: "admin",
-              accountId: null,
+              accountId: session.user.id, // <--- wichtig: nicht mehr null
               trainerId: null,
             }
           : null
@@ -543,7 +543,7 @@ export default function App() {
                 id: session.user.id,
                 email: session.user.email ?? null,
                 role: "admin",
-                accountId: null,
+                accountId: session.user.id, // <--- hier auch
                 trainerId: null,
               }
             : null
@@ -558,9 +558,10 @@ export default function App() {
     };
   }, []);
 
+
   /* ::::: Profil aus user_profiles laden (Rolle, Account, Trainer) ::::: */
 
-  useEffect(() => {
+    useEffect(() => {
     if (!authUser?.id) {
       setProfileFinished(false);
       return;
@@ -582,7 +583,10 @@ export default function App() {
           console.error("Fehler beim Laden des Profils", error);
         }
 
-        if (!cancelled && data) {
+        if (cancelled) return;
+
+        if (data) {
+          // Profil gefunden: Werte aus user_profiles benutzen
           setAuthUser((prev) =>
             prev
               ? {
@@ -590,6 +594,16 @@ export default function App() {
                   role: (data.role as Role) || "admin",
                   accountId: data.account_id ?? prev.id,
                   trainerId: data.trainer_id ?? null,
+                }
+              : prev
+          );
+        } else {
+          // Kein Profil: mindestens accountId auf eigene user.id setzen
+          setAuthUser((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  accountId: prev.accountId ?? prev.id,
                 }
               : prev
           );
@@ -606,6 +620,7 @@ export default function App() {
       cancelled = true;
     };
   }, [authUser?.id]);
+
 
   /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
 
