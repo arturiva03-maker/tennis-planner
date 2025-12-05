@@ -2207,6 +2207,32 @@ aria-label="Navigation öffnen"
                     );
                     const startMin = 7 * 60;
 
+                    // Überlappende Trainings für parallele Darstellung gruppieren
+                    const groupedEvents: Training[][] = [];
+                    dayEvents.forEach((training) => {
+                      const startA = toMinutes(training.uhrzeitVon);
+                      const endA = toMinutes(training.uhrzeitBis);
+                      
+                      let placed = false;
+                      for (const group of groupedEvents) {
+                        const hasOverlap = group.some((t) => {
+                          const startB = toMinutes(t.uhrzeitVon);
+                          const endB = toMinutes(t.uhrzeitBis);
+                          return startA < endB && endA > startB;
+                        });
+                        
+                        if (hasOverlap) {
+                          group.push(training);
+                          placed = true;
+                          break;
+                        }
+                      }
+                      
+                      if (!placed) {
+                        groupedEvents.push([training]);
+                      }
+                    });
+
                     return (
                       <div key={day} className="kDayCol">
                         {hours.map((h) => (
@@ -2272,6 +2298,22 @@ aria-label="Navigation öffnen"
                             t.id
                           );
 
+                          // Position für überlappende Trainings berechnen
+                          let groupIndex = 0;
+                          let groupSize = 1;
+                          let indexInGroup = 0;
+                          
+                          for (const group of groupedEvents) {
+                            if (group.includes(t)) {
+                              groupSize = group.length;
+                              indexInGroup = group.indexOf(t);
+                              break;
+                            }
+                          }
+                          
+                          const widthPercent = groupSize > 1 ? 100 / groupSize : 100;
+                          const leftPercent = groupSize > 1 ? (indexInGroup * widthPercent) : 0;
+
                           return (
                             <div
                               key={t.id}
@@ -2280,6 +2322,8 @@ aria-label="Navigation öffnen"
                               style={{
                                 top,
                                 height,
+                                width: `${widthPercent}%`,
+                                left: `${leftPercent}%`,
                                 backgroundColor: bg,
                                 border: `1px solid ${border}`,
                                 opacity: isCancel ? 0.85 : 1,
@@ -3614,11 +3658,8 @@ aria-label="Navigation öffnen"
     </div>
   )}
 </>
-
-
 );
 }
-
 
 
 
