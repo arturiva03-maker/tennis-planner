@@ -1672,6 +1672,32 @@ export default function App() {
     );
   }
 
+    function toggleAllTrainerPaidForMonth() {
+    if (!isTrainer) return;
+    setTrainerPayments((prev) => {
+      const next = { ...prev };
+
+      const eigeneTrainingsImMonat = trainings.filter((t) => {
+        if (t.status !== "durchgefuehrt") return false;
+        if (!t.datum.startsWith(abrechnungMonat)) return false;
+        const tid = t.trainerId || defaultTrainerId;
+        return tid === ownTrainerId;
+      });
+
+      const alleBezahlt =
+        eigeneTrainingsImMonat.length > 0 &&
+        eigeneTrainingsImMonat.every((t) => !!prev[t.id]);
+
+      const markPaid = !alleBezahlt;
+
+      eigeneTrainingsImMonat.forEach((t) => {
+        next[t.id] = markPaid;
+      });
+
+      return next;
+    });
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -1720,7 +1746,7 @@ export default function App() {
     }, 0)
   );
 
-    const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
+  const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
   const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
 
@@ -1744,6 +1770,22 @@ export default function App() {
       return diff > 0 ? acc + diff : acc;
     }, 0)
   );
+
+  const eigeneTrainingsImMonat = trainings.filter((t) => {
+    if (t.status !== "durchgefuehrt") return false;
+    if (!t.datum.startsWith(abrechnungMonat)) return false;
+    const tid = t.trainerId || defaultTrainerId;
+    return tid === ownTrainerId;
+  });
+
+  const nichtBarTrainings = eigeneTrainingsImMonat.filter(
+    (t) => !t.barBezahlt
+  );
+  const barTrainings = eigeneTrainingsImMonat.filter((t) => t.barBezahlt);
+
+  const alleTrainerstundenBezahlt =
+    eigeneTrainingsImMonat.length > 0 &&
+    eigeneTrainingsImMonat.every((t) => !!trainerPayments[t.id]);
 
   return (
     <>
@@ -3089,6 +3131,43 @@ export default function App() {
                       </div>
                     )}
 
+                    {isTrainer && (
+                      <>
+                        <div style={{ height: 14 }} />
+                        <div className="card cardInset">
+                          <h2>Übersicht deine Stunden</h2>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Art</th>
+                                <th>Anzahl</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td>Nicht bar</td>
+                                <td>{nichtBarTrainings.length}</td>
+                              </tr>
+                              <tr>
+                                <td>Bar</td>
+                                <td>{barTrainings.length}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          <div className="row" style={{ marginTop: 10 }}>
+                            <button
+                              className="btn micro"
+                              onClick={toggleAllTrainerPaidForMonth}
+                            >
+                              {alleTrainerstundenBezahlt
+                                ? "Alle Stunden als offen markieren"
+                                : "Alle Stunden als abgerechnet markieren"}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
                     <div style={{ height: 10 }} />
                     <div className="muted">
                       Hinweis: Das Trainerhonorar wird pro Training
@@ -3131,33 +3210,38 @@ export default function App() {
                   </>
                 )}
 
-                <div style={{ height: 14 }} />
-                <h2>Trainings im Monat</h2>
-                <ul className="list">
-                  {trainingsForAbrechnung.map((t) => {
-                    const tarif = t.tarifId
-                      ? tarifById.get(t.tarifId)
-                      : undefined;
-                    const ta = tarif
-                      ? tarif.abrechnung === "monatlich"
-                        ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                        : tarif.name
-                      : t.customPreisProStunde
-                      ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
-                      : "Tarif";
-                    const sp = t.spielerIds
-                      .map((id) => spielerById.get(id)?.name ?? "Spieler")
-                      .join(", ");
-                    const trainerName =
-                      trainerById.get(t.trainerId ?? defaultTrainerId)?.name ??
-                      "Trainer";
-                    const priceNum = round2(trainingPreisGesamt(t));
-                    const price = euro(priceNum);
-                    const honorarNum = trainerHonorarFuerTraining(t);
-                    const honorarBadge = euro(honorarNum);
-                    const trainerPaid = trainerPayments[t.id] ?? false;
+                {abrechnungTab === "spieler" && (
+                  <>
+                    <div style={{ height: 14 }} />
+                    <h2>Trainings im Monat</h2>
+                    <ul className="list">
+                      {trainingsForAbrechnung.map((t) => {
+                        const tarif = t.tarifId
+                          ? tarifById.get(t.tarifId)
+                          : undefined;
+                        const ta = tarif
+                          ? tarif.abrechnung === "monatlich"
+                            ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
+                            : tarif.name
+                          : t.customPreisProStunde
+                          ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                          : "Tarif";
+                        const sp = t.spielerIds
+                          .map(
+                            (id) => spielerById.get(id)?.name ?? "Spieler"
+                          )
+                          .join(", ");
+                        const trainerName =
+                          trainerById.get(
+                            t.trainerId ?? defaultTrainerId
+                          )?.name ?? "Trainer";
+                        const priceNum = round2(trainingPreisGesamt(t));
+                        const price = euro(priceNum);
+                        const honorarNum = trainerHonorarFuerTraining(t);
+                        const honorarBadge = euro(honorarNum);
+                                            const trainerPaid = trainerPayments[t.id] ?? false;
                     const showTrainerInfo =
-                      isTrainer || abrechnungTab === "trainer";
+                      isTrainer || (abrechnungTab as string) === "trainer";
                     const differenz = round2(priceNum - honorarNum);
 
                     const [y, m, d] = t.datum.split("-");
@@ -3172,7 +3256,7 @@ export default function App() {
                           </strong>
                           <div className="muted">
                             {showTrainerInfo
-                              ? abrechnungTab === "trainer"
+                              ? (abrechnungTab as string) === "trainer"
                                 ? `${sp}, ${trainerName}, Honorar: ${honorarBadge}`
                                 : `${sp}, ${ta}, ${trainerName}, Honorar: ${honorarBadge}`
                               : `${sp}, ${ta}, ${trainerName}`}
@@ -3196,7 +3280,9 @@ export default function App() {
                           )}
                         </div>
                         <div className="smallActions">
-                          <span className="badge badgeOk">durchgeführt</span>
+                          <span className="badge badgeOk">
+                            durchgeführt
+                          </span>
                           {!isTrainer && abrechnungTab === "spieler" && (
                             <span className="badge">{price}</span>
                           )}
@@ -3230,7 +3316,7 @@ export default function App() {
                                   ? "Barzahlung zurücknehmen"
                                   : "Bar bezahlt"}
                               </button>
-                              {abrechnungTab === "trainer" && (
+                              {(abrechnungTab as string) === "trainer" && (
                                 <button
                                   className="btn micro btnGhost"
                                   onClick={() => toggleTrainerPaid(t.id)}
@@ -3253,44 +3339,48 @@ export default function App() {
                     );
                   })}
                 </ul>
-              </div>
+              </>
             )}
           </div>
-        </main>
+        )}
       </div>
+    </main>
+  </div>
 
-      {payConfirm && (
-        <div className="modalOverlay">
-          <div className="modalCard">
-            <div className="modalHeader">
-              <div className="modalPill">Zahlung bestätigen</div>
-              <h3>
-                {payConfirm.spielerName} ·{" "}
-                {formatMonthLabel(payConfirm.monat)}
-              </h3>
-              <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es später
-                wieder auf offen stellen.
-              </p>
-            </div>
-            <div className="modalSummary">
-              <span className="muted">Betrag</span>
-              <strong>{euro(payConfirm.amount)}</strong>
-            </div>
-            <div className="modalActions">
-              <button className="btn btnGhost" onClick={closePayConfirm}>
-                Abbrechen
-              </button>
-              <button className="btn" onClick={confirmPay}>
-                Ja, als bezahlt markieren
-              </button>
-            </div>
-          </div>
+  {payConfirm && (
+    <div className="modalOverlay">
+      <div className="modalCard">
+        <div className="modalHeader">
+          <div className="modalPill">Zahlung bestätigen</div>
+          <h3>
+            {payConfirm.spielerName} ·{" "}
+            {formatMonthLabel(payConfirm.monat)}
+          </h3>
+          <p className="muted">
+            Dieser Betrag wird als bezahlt markiert, Du kannst es später
+            wieder auf offen stellen.
+          </p>
         </div>
-      )}
-    </>
+        <div className="modalSummary">
+          <span className="muted">Betrag</span>
+          <strong>{euro(payConfirm.amount)}</strong>
+        </div>
+        <div className="modalActions">
+          <button className="btn btnGhost" onClick={closePayConfirm}>
+            Abbrechen
+          </button>
+          <button className="btn" onClick={confirmPay}>
+            Ja, als bezahlt markieren
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+</>
   );
 }
+
+
 
 
 
