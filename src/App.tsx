@@ -611,6 +611,8 @@ return () => {
 
 /* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
 
+/* ::::: Initialen Zustand laden: lokal oder Supabase ::::: */
+
 useEffect(() => {
 if (authLoading || profileLoading) return;
 if (initialSynced) return;
@@ -676,9 +678,45 @@ async function loadState() {
 }
 
 loadState();
-
-
 }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
+
+/* ::::: Realtime Sync ::::: */
+
+useEffect(() => {
+  if (!authUser?.accountId) return;
+  if (!initialSynced) return;
+
+  const channel = supabase
+    .channel(`account_state:${authUser.accountId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "account_state",
+        filter: `account_id=eq.${authUser.accountId}`,
+      },
+      (payload) => {
+        if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+          const newData = payload.new as any;
+          if (newData?.data) {
+            const cloud = normalizeState(newData.data as Partial<AppState>);
+            setTrainers(cloud.trainers);
+            setSpieler(cloud.spieler);
+            setTarife(cloud.tarife);
+            setTrainings(cloud.trainings);
+            setPayments(cloud.payments ?? {});
+            setTrainerPayments(cloud.trainerPayments ?? {});
+          }
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [authUser?.accountId, initialSynced]);
 
 /* ::::: Zustand nach Supabase schreiben ::::: */
 
@@ -708,8 +746,6 @@ supabase
       console.error("Fehler beim Speichern des Zustands in Supabase", error);
     }
   });
-
-
 }, [
 authUser,
 initialSynced,
@@ -888,8 +924,6 @@ setTrainerEmail("");
 setTrainerStundensatz(0);
 setEditingTrainerId(null);
 if (!tTrainerId) setTTrainerId(neu.id);
-
-
 }
 
 function startEditTrainer(t: Trainer) {
@@ -923,8 +957,6 @@ setEditingTrainerId(null);
 setTrainerName("");
 setTrainerEmail("");
 setTrainerStundensatz(0);
-
-
 }
 
 function deleteTrainer(id: string) {
@@ -1001,8 +1033,6 @@ setSpielerEmail("");
 setSpielerTelefon("");
 setSpielerRechnung("");
 setSpielerNotizen("");
-
-
 }
 
 function startEditSpieler(s: Spieler) {
@@ -1040,8 +1070,6 @@ setSpielerEmail("");
 setSpielerTelefon("");
 setSpielerRechnung("");
 setSpielerNotizen("");
-
-
 }
 
 function addTarif() {
@@ -1065,8 +1093,6 @@ setTarifAbrechnung("proTraining");
 setTarifBeschreibung("");
 setTTarifId((prev) => (prev ? prev : neu.id));
 setEditingTarifId(null);
-
-
 }
 
 function startEditTarif(t: Tarif) {
@@ -1103,8 +1129,6 @@ setTarifName("");
 setTarifPreisProStunde(60);
 setTarifAbrechnung("proTraining");
 setTarifBeschreibung("");
-
-
 }
 
 function toggleSpielerPick(id: string) {
@@ -1147,8 +1171,6 @@ if (
 }
 
 return null;
-
-
 }
 
 function trainingPreisGesamt(t: Training) {
@@ -1164,8 +1186,6 @@ if (cfg.abrechnung === "proSpieler") {
   return basis * t.spielerIds.length;
 }
 return basis;
-
-
 }
 
 function priceFuerSpieler(t: Training) {
@@ -1180,8 +1200,6 @@ const basis = cfg.preisProStunde * (mins / 60);
 if (cfg.abrechnung === "proSpieler") return basis;
 const n = Math.max(1, t.spielerIds.length);
 return basis / n;
-
-
 }
 
 function trainerHonorarFuerTraining(t: Training) {
@@ -1247,8 +1265,6 @@ if (existing && existing.serieId && applySerieScope === "abHeute") {
 if (selectedTrainingId === id) {
   resetTrainingForm();
 }
-
-
 }
 
 function toggleTrainingSelection(id: string) {
@@ -1320,8 +1336,6 @@ if (el) {
     { duration: 650, easing: "ease-out" }
   );
 }
-
-
 }
 
 function markTrainingDone(trainingId: string) {
@@ -1337,8 +1351,6 @@ setTrainings((prev) =>
 );
 
 if (changed) triggerDonePulse(trainingId);
-
-
 }
 
 function goToToday() {
@@ -1350,8 +1362,6 @@ if (viewMode === "day") {
   const idx = (d.getDay() + 6) % 7;
   setDayIndex(idx);
 }
-
-
 }
 
 function handleCalendarEventClick(t: Training) {
@@ -1486,8 +1496,6 @@ setTrainings((prev) => [
 
 resetTrainingForm();
 setTab("kalender");
-
-
 }
 
 const preisVorschau = useMemo(() => {
@@ -1518,8 +1526,6 @@ const fake: Training = {
 };
 
 return trainingPreisGesamt(fake);
-
-
 }, [
 tDatum,
 tVon,
@@ -1587,8 +1593,6 @@ if (abrechnungTab === "spieler" && abrechnungSpielerSuche.trim()) {
 }
 
 return filtered;
-
-
 }, [
 trainingsInMonth,
 abrechnungFilter,
@@ -1599,10 +1603,7 @@ spielerById,
 ]);
 
 const abrechnung = useMemo(() => {
-const perSpieler = new Map<
-string,
-{ name: string; sum: number; counts: Map<number, number> }
->();
+const perSpieler = new Map<string, { name: string; sum: number; counts: Map<number, number> }>();
 const monthlySeen = new Map<string, Set<string>>();
 
 const addShare = (pid: string, name: string, amount: number) => {
@@ -1674,8 +1675,6 @@ trainingsInMonth.forEach((t) => {
 const totalMitBar = round2(total + barTotal);
 
 return { total, spielerRows, barTotal, totalMitBar };
-
-
 }, [
 trainingsForAbrechnung,
 trainingsInMonth,
@@ -1764,8 +1763,6 @@ return {
   totalHonorarBezahlt,
   totalHonorarOffen,
 };
-
-
 }, [
 defaultTrainerId,
 trainerById,
@@ -1851,8 +1848,6 @@ if (abrechnungFilter === "bezahlt") return paid;
 if (abrechnungFilter === "offen") return !paid;
 if (abrechnungFilter === "bar") return true;
 return true;
-
-
 });
 
 const sumBezahlt = round2(
@@ -1907,10 +1902,6 @@ const nichtBarTrainings = eigeneTrainingsImMonat.filter(
 (t) => !t.barBezahlt
 );
 const barTrainings = eigeneTrainingsImMonat.filter((t) => t.barBezahlt);
-
-const alleTrainerstundenBezahlt =
-eigeneTrainingsImMonat.length > 0 &&
-eigeneTrainingsImMonat.every((t) => !!trainerPayments[t.id]);
 
 return (
 <>
@@ -2207,7 +2198,6 @@ aria-label="Navigation öffnen"
                     );
                     const startMin = 7 * 60;
 
-                    // Überlappende Trainings für parallele Darstellung gruppieren
                     const groupedEvents: Training[][] = [];
                     dayEvents.forEach((training) => {
                       const startA = toMinutes(training.uhrzeitVon);
@@ -2298,8 +2288,6 @@ aria-label="Navigation öffnen"
                             t.id
                           );
 
-                          // Position für überlappende Trainings berechnen
-                          let groupIndex = 0;
                           let groupSize = 1;
                           let indexInGroup = 0;
                           
@@ -3283,7 +3271,7 @@ aria-label="Navigation öffnen"
                             ? "-"
                             : r.breakdown
                                 .map(
-                                  (b) =>
+                                  (b: { amount: number; count: number; subtotal: number }) =>
                                     `${b.count} × ${euro(b.amount)}`
                                 )
                                 .join(" + ");
