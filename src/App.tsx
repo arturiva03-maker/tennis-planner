@@ -430,9 +430,18 @@ export default function App() {
   }
   const initial = initialRef.current;
 
+  // Aktuellen Wochentag berechnen (0 = Montag, 6 = Sonntag)
+  const getTodayDayIndex = () => {
+    const today = new Date();
+    return (today.getDay() + 6) % 7; // Umrechnung: Sonntag=0 -> 6, Montag=1 -> 0, etc.
+  };
+
+  // Mobile-Erkennung für initiale Ansicht
+  const isMobileInit = typeof window !== "undefined" && window.innerWidth <= 768;
+
   const [tab, setTab] = useState<Tab>("kalender");
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [dayIndex, setDayIndex] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<ViewMode>(isMobileInit ? "day" : "week");
+  const [dayIndex, setDayIndex] = useState<number>(getTodayDayIndex());
   const [kalenderTrainerFilter, setKalenderTrainerFilter] =
     useState<string>("alle");
 
@@ -1483,12 +1492,11 @@ export default function App() {
   function goToToday() {
     const t = todayISO();
     setWeekAnchor(t);
-
-    if (viewMode === "day") {
-      const d = new Date(t + "T12:00:00");
-      const idx = (d.getDay() + 6) % 7;
-      setDayIndex(idx);
-    }
+    
+    // Immer den aktuellen Wochentag setzen
+    const d = new Date(t + "T12:00:00");
+    const idx = (d.getDay() + 6) % 7;
+    setDayIndex(idx);
   }
 
   function handleCalendarEventClick(t: Training) {
@@ -2111,59 +2119,8 @@ export default function App() {
 
             {tab === "kalender" && (
               <div className="card">
-                <div className="split">
-                  <div className="row calendarNav">
-                    <span className="calendarWeekLabel">
-                      {formatWeekRange(weekStart)}
-                    </span>
-
-                    <div className="calendarNavControls">
-                      <button
-                        className="navArrowBtn"
-                        onClick={() => {
-                          if (viewMode === "day") {
-                            const newIndex = (dayIndex + 7 - 1) % 7;
-                            setDayIndex(newIndex);
-                            setWeekAnchor(weekDays[newIndex]);
-                          } else {
-                            setWeekAnchor(addDaysISO(weekStart, -7));
-                          }
-                        }}
-                        aria-label="Vorheriger Zeitraum"
-                      >
-                        ‹
-                      </button>
-                      <button className="todayBtn" onClick={goToToday}>
-                        Heute
-                      </button>
-                      <button
-                        className="navArrowBtn"
-                        onClick={() => {
-                          if (viewMode === "day") {
-                            const newIndex = (dayIndex + 1) % 7;
-                            setDayIndex(newIndex);
-                            setWeekAnchor(weekDays[newIndex]);
-                          } else {
-                            setWeekAnchor(addDaysISO(weekStart, 7));
-                          }
-                        }}
-                        aria-label="Nächster Zeitraum"
-                      >
-                        ›
-                      </button>
-
-                      <button
-                        className="btn"
-                        onClick={() => {
-                          resetTrainingForm();
-                          setTab("training");
-                        }}
-                      >
-                        Neues Training
-                      </button>
-                    </div>
-                  </div>
-
+                {/* Oberer Bereich: Einstellungen (collapsed auf Mobile) */}
+                <div className="calendarSettings">
                   <div className="row">
                     <div className="field" style={{ minWidth: 220 }}>
                       <label>Woche springen</label>
@@ -2196,48 +2153,25 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className="row">
-                      <button
-                        className={`tabBtn ${
-                          viewMode === "week" ? "tabBtnActive" : ""
-                        }`}
-                        onClick={() => setViewMode("week")}
-                      >
-                        Woche
-                      </button>
-                      <button
-                        className={`tabBtn ${
-                          viewMode === "day" ? "tabBtnActive" : ""
-                        }`}
-                        onClick={() => setViewMode("day")}
-                      >
-                        Tag
-                      </button>
-                      {viewMode === "day" && (
-                        <select
-                          value={dayIndex}
-                          onChange={(e) => setDayIndex(Number(e.target.value))}
-                          style={{ marginLeft: 8 }}
-                        >
-                          {weekDays.map((d, idx) => (
-                            <option key={d} value={idx}>
-                              {formatShort(d)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-
                     <span className="pill">
                       Trainer gesamt: <strong>{trainers.length}</strong>
                     </span>
+
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        resetTrainingForm();
+                        setTab("training");
+                      }}
+                    >
+                      Neues Training
+                    </button>
                   </div>
                 </div>
 
-                <div style={{ height: 12 }} />
-
+                {/* Batch-Aktionen für ausgewählte Trainings */}
                 {!isTrainer && selectedTrainingIds.length > 0 && (
-                  <div className="card cardInset" style={{ marginBottom: 12 }}>
+                  <div className="card cardInset" style={{ marginBottom: 12, marginTop: 12 }}>
                     <div
                       className="row"
                       style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}
@@ -2297,6 +2231,74 @@ export default function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Kalender-Navigation - direkt über dem Grid */}
+                <div className="calendarNavCompact">
+                  <div className="calendarNavRow">
+                    <button
+                      className="navArrowBtn"
+                      onClick={() => {
+                        if (viewMode === "day") {
+                          const newIndex = (dayIndex + 7 - 1) % 7;
+                          setDayIndex(newIndex);
+                          if (newIndex === 6) {
+                            setWeekAnchor(addDaysISO(weekStart, -7));
+                          }
+                        } else {
+                          setWeekAnchor(addDaysISO(weekStart, -7));
+                        }
+                      }}
+                      aria-label="Vorheriger Zeitraum"
+                    >
+                      ‹
+                    </button>
+                    
+                    <div className="calendarNavCenter">
+                      <span className="calendarWeekLabel">
+                        {viewMode === "day" 
+                          ? formatShort(weekDays[dayIndex]) + " " + weekDays[dayIndex].split("-")[0]
+                          : formatWeekRange(weekStart)
+                        }
+                      </span>
+                      <div className="viewModeToggle">
+                        <button
+                          className={`viewModeBtn ${viewMode === "week" ? "viewModeBtnActive" : ""}`}
+                          onClick={() => setViewMode("week")}
+                        >
+                          Woche
+                        </button>
+                        <button
+                          className={`viewModeBtn ${viewMode === "day" ? "viewModeBtnActive" : ""}`}
+                          onClick={() => setViewMode("day")}
+                        >
+                          Tag
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      className="navArrowBtn"
+                      onClick={() => {
+                        if (viewMode === "day") {
+                          const newIndex = (dayIndex + 1) % 7;
+                          setDayIndex(newIndex);
+                          if (newIndex === 0) {
+                            setWeekAnchor(addDaysISO(weekStart, 7));
+                          }
+                        } else {
+                          setWeekAnchor(addDaysISO(weekStart, 7));
+                        }
+                      }}
+                      aria-label="Nächster Zeitraum"
+                    >
+                      ›
+                    </button>
+                  </div>
+                  
+                  <button className="todayBtnCompact" onClick={goToToday}>
+                    Heute
+                  </button>
+                </div>
 
                 {/* Swipe-Hinweis für Mobile */}
                 <div className="swipeHint">
