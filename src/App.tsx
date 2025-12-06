@@ -482,7 +482,8 @@ export default function App() {
 
   const hasMountedRef = useRef(false);
 
-    const lastUpdatedAtRef = useRef<string | null>(null);
+  const lastUpdatedAtRef = useRef<string | null>(null);
+  const skipSaveRef = useRef(false);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -726,6 +727,7 @@ export default function App() {
 
             if (newRow?.data) {
               console.log("Syncing state from cloud:", newRow.data);
+              skipSaveRef.current = true;
               const cloud = normalizeState(newRow.data as Partial<AppState>);
               setTrainers(cloud.trainers);
               setSpieler(cloud.spieler);
@@ -756,6 +758,11 @@ export default function App() {
     if (!authUser) return;
     if (!authUser.accountId) return;
     if (!initialSynced) return;
+
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
+    }
 
     const payload: AppState = {
       trainers,
