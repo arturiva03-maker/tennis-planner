@@ -1867,15 +1867,16 @@ export default function App() {
     setProfileFinished(false);
   }
 
-  if (authLoading) {
+    if (authLoading || profileLoading || !initialSynced) {
     return (
       <div className="container">
         <div className="card" style={{ marginTop: 60 }}>
-          Lädt ...
+          Synchronisiere Daten mit der Cloud ...
         </div>
       </div>
     );
   }
+
 
   if (!authUser) {
     return <AuthScreen />;
