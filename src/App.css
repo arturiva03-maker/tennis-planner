@@ -534,6 +534,82 @@ input::placeholder {
    CALENDAR NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
 
+.calendarSettings {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.calendarNavCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.calendarNavRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calendarNavCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.viewModeToggle {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-inset);
+  border-radius: var(--radius-full);
+}
+
+.viewModeBtn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.viewModeBtn:hover {
+  color: var(--text-primary);
+}
+
+.viewModeBtnActive {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.todayBtnCompact {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-full);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.todayBtnCompact:hover {
+  background: var(--primary);
+  color: white;
+}
+
 .calendarNav {
   align-items: center;
   justify-content: space-between;
@@ -1059,15 +1135,53 @@ input::placeholder {
   }
 
   /* Calendar */
+  .calendarSettings {
+    display: none; /* Auf Mobile verstecken - nur Navigation zeigen */
+  }
+
+  .calendarNavCompact {
+    gap: 10px;
+  }
+
+  .calendarNavRow {
+    gap: 8px;
+  }
+
+  .calendarNavCenter {
+    gap: 4px;
+  }
+
+  .calendarWeekLabel {
+    font-size: 16px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .viewModeToggle {
+    padding: 2px;
+  }
+
+  .viewModeBtn {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+
+  .navArrowBtn {
+    min-height: 48px;
+    min-width: 48px;
+    width: 48px;
+    font-size: 22px;
+  }
+
+  .todayBtnCompact {
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+
   .calendarNav {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
-  }
-
-  .calendarWeekLabel {
-    font-size: 18px;
-    text-align: center;
   }
 
   .calendarNavControls {
@@ -1081,11 +1195,6 @@ input::placeholder {
     min-height: 44px;
   }
 
-  .navArrowBtn {
-    width: 44px;
-    font-size: 20px;
-  }
-
   .calendarNavControls .btn {
     width: auto;
     flex: 1;
@@ -1094,7 +1203,7 @@ input::placeholder {
 
   /* Calendar Grid - Mobile Optimized */
   .kgrid {
-    margin-top: 12px;
+    margin-top: 8px;
     border-radius: var(--radius-md);
     /* Touch-Swipe Unterstützung */
     touch-action: pan-y pinch-zoom;
