@@ -525,6 +525,11 @@ input::placeholder {
   z-index: 10;
 }
 
+/* Swipe-Hinweis - standardmäßig versteckt auf Desktop */
+.swipeHint {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CALENDAR NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
@@ -1091,6 +1096,10 @@ input::placeholder {
   .kgrid {
     margin-top: 12px;
     border-radius: var(--radius-md);
+    /* Touch-Swipe Unterstützung */
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .kHead {
@@ -1099,6 +1108,26 @@ input::placeholder {
 
   .kBody {
     grid-template-columns: 44px repeat(7, 1fr);
+  }
+
+  /* Swipe-Hinweis Anzeige */
+  .swipeHint {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-inset);
+    border-radius: var(--radius-full);
+  }
+
+  .swipeHint svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
   }
 
   .kHeadCell {

@@ -3,7 +3,9 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useCallback,
   FormEvent,
+  TouchEvent,
 } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
@@ -270,6 +272,56 @@ function readStateWithMeta(): { state: AppState; usedKey: string | null } {
 
 function writeState(state: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/* ::::: Swipe Hook für mobile Navigation ::::: */
+
+function useSwipe(
+  onSwipeLeft: () => void,
+  onSwipeRight: () => void,
+  threshold = 50
+) {
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
+
+  const onTouchStart = useCallback((e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchEndX.current = null;
+    touchEndY.current = null;
+  }, []);
+
+  const onTouchMove = useCallback((e: TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+    touchEndY.current = e.touches[0].clientY;
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    
+    const deltaX = touchEndX.current - touchStartX.current;
+    const deltaY = touchEndY.current !== null && touchStartY.current !== null
+      ? Math.abs(touchEndY.current - touchStartY.current)
+      : 0;
+    
+    // Nur horizontale Swipes erkennen (nicht bei vertikalem Scrollen)
+    if (Math.abs(deltaX) > threshold && Math.abs(deltaX) > deltaY) {
+      if (deltaX > 0) {
+        onSwipeRight();
+      } else {
+        onSwipeLeft();
+      }
+    }
+    
+    touchStartX.current = null;
+    touchStartY.current = null;
+    touchEndX.current = null;
+    touchEndY.current = null;
+  }, [onSwipeLeft, onSwipeRight, threshold]);
+
+  return { onTouchStart, onTouchMove, onTouchEnd };
 }
 
 /* ::::: Auth UI ::::: */
@@ -916,6 +968,39 @@ export default function App() {
     () => Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i)),
     [weekStart]
   );
+
+  // Swipe-Handler für mobile Kalender-Navigation
+  const handleSwipeLeft = useCallback(() => {
+    if (viewMode === "day") {
+      // Nächster Tag
+      const newIndex = (dayIndex + 1) % 7;
+      setDayIndex(newIndex);
+      if (newIndex === 0) {
+        // Nächste Woche wenn wir von Sonntag zu Montag wechseln
+        setWeekAnchor(addDaysISO(weekStart, 7));
+      }
+    } else {
+      // Nächste Woche
+      setWeekAnchor(addDaysISO(weekStart, 7));
+    }
+  }, [viewMode, dayIndex, weekStart]);
+
+  const handleSwipeRight = useCallback(() => {
+    if (viewMode === "day") {
+      // Vorheriger Tag
+      const newIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+      setDayIndex(newIndex);
+      if (dayIndex === 0) {
+        // Vorherige Woche wenn wir von Montag zu Sonntag wechseln
+        setWeekAnchor(addDaysISO(weekStart, -7));
+      }
+    } else {
+      // Vorherige Woche
+      setWeekAnchor(addDaysISO(weekStart, -7));
+    }
+  }, [viewMode, dayIndex, weekStart]);
+
+  const calendarSwipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, 50);
 
   const hours = useMemo(() => {
     const startHour = 7;
@@ -2213,7 +2298,17 @@ export default function App() {
                   </div>
                 )}
 
-                <div className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}>
+                {/* Swipe-Hinweis für Mobile */}
+                <div className="swipeHint">
+                  <span>← Wischen für Navigation →</span>
+                </div>
+
+                <div 
+                  className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}
+                  onTouchStart={calendarSwipeHandlers.onTouchStart}
+                  onTouchMove={calendarSwipeHandlers.onTouchMove}
+                  onTouchEnd={calendarSwipeHandlers.onTouchEnd}
+                >
                   <div className="kHead">
                     <div className="kHeadCell">Zeit</div>
                     {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
