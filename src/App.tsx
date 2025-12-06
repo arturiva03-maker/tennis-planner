@@ -482,7 +482,6 @@ export default function App() {
 
   const hasMountedRef = useRef(false);
 
-  const lastUpdatedAtRef = useRef<string | null>(null);
   const skipSaveRef = useRef(false);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -676,9 +675,6 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
-        if (data.updated_at) {
-          lastUpdatedAtRef.current = data.updated_at as string;
-        }
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -697,11 +693,16 @@ export default function App() {
 
   /* ::::: Realtime Sync ::::: */
 
+    /* ::::: Realtime Sync ::::: */
+
   useEffect(() => {
     if (!authUser?.accountId) return;
     if (!initialSynced) return;
 
-    console.log("Setting up realtime subscription for account:", authUser.accountId);
+    console.log(
+      "Setting up realtime subscription for account:",
+      authUser.accountId
+    );
 
     const channel = supabase
       .channel(`account_state:${authUser.accountId}`)
@@ -718,16 +719,12 @@ export default function App() {
 
           if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
             const newRow = payload.new as any;
-            const newUpdatedAt = newRow?.updated_at as string | null;
-
-            if (newUpdatedAt && newUpdatedAt === lastUpdatedAtRef.current) {
-              console.log("Ignoring realtime event from same client");
-              return;
-            }
 
             if (newRow?.data) {
               console.log("Syncing state from cloud:", newRow.data);
+              // wichtig: verhindern, dass wir direkt wieder zurückschreiben
               skipSaveRef.current = true;
+
               const cloud = normalizeState(newRow.data as Partial<AppState>);
               setTrainers(cloud.trainers);
               setSpieler(cloud.spieler);
@@ -735,9 +732,6 @@ export default function App() {
               setTrainings(cloud.trainings);
               setPayments(cloud.payments ?? {});
               setTrainerPayments(cloud.trainerPayments ?? {});
-              if (newUpdatedAt) {
-                lastUpdatedAtRef.current = newUpdatedAt;
-              }
             }
           }
         }
@@ -750,9 +744,12 @@ export default function App() {
       console.log("Removing realtime channel");
       supabase.removeChannel(channel);
     };
-  }, [authUser?.accountId, initialSynced, lastUpdatedAtRef]);
+  }, [authUser?.accountId, initialSynced]);
+
 
   /* ::::: Zustand nach Supabase schreiben ::::: */
+
+    /* ::::: Zustand nach Supabase schreiben ::::: */
 
   useEffect(() => {
     if (!authUser) return;
@@ -774,7 +771,6 @@ export default function App() {
     };
 
     const updatedAt = new Date().toISOString();
-    lastUpdatedAtRef.current = updatedAt;
 
     supabase
       .from("account_state")
@@ -785,7 +781,10 @@ export default function App() {
       })
       .then(({ error }) => {
         if (error) {
-          console.error("Fehler beim Speichern des Zustands in Supabase", error);
+          console.error(
+            "Fehler beim Speichern des Zustands in Supabase",
+            error
+          );
         }
       });
   }, [
@@ -798,6 +797,7 @@ export default function App() {
     payments,
     trainerPayments,
   ]);
+
 
   useEffect(() => {
     return () => {
