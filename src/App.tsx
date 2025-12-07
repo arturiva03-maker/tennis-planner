@@ -2317,11 +2317,6 @@ export default function App() {
     }, 0)
   );
 
-    const saschaTrainer = trainers.find((t) =>
-    t.name.trim().toLowerCase().startsWith("sascha")
-  );
-  const saschaTrainerId = saschaTrainer?.id ?? null;
-
   const eigeneTrainingsImMonat = trainings.filter((t) => {
     if (t.status !== "durchgefuehrt") return false;
     if (!t.datum.startsWith(abrechnungMonat)) return false;
@@ -2333,33 +2328,6 @@ export default function App() {
     (t) => !t.barBezahlt
   );
   const barTrainings = eigeneTrainingsImMonat.filter((t) => t.barBezahlt);
-
-  const saschaTrainingsImMonat =
-    saschaTrainerId !== null
-      ? trainings.filter((t) => {
-          if (t.status !== "durchgefuehrt") return false;
-          if (!t.datum.startsWith(abrechnungMonat)) return false;
-          const tid = t.trainerId || defaultTrainerId;
-          return tid === saschaTrainerId;
-        })
-      : [];
-
-  const saschaNichtBarTrainings = saschaTrainingsImMonat.filter(
-    (t) => !t.barBezahlt
-  );
-  const saschaBarTrainings = saschaTrainingsImMonat.filter(
-    (t) => t.barBezahlt
-  );
-
-  const isSaschaTrainer = isTrainer && saschaTrainerId === ownTrainerId;
-
-  const trainingsForAbrechnungList =
-    !isTrainer && saschaTrainerId
-      ? trainingsForAbrechnung.filter((t) => {
-          const tid = t.trainerId || defaultTrainerId;
-          return tid !== saschaTrainerId;
-        })
-      : trainingsForAbrechnung;
 
   return (
     <>
@@ -2494,17 +2462,10 @@ export default function App() {
 
                 {/* Batch-Aktionen für ausgewählte Trainings */}
                 {!isTrainer && selectedTrainingIds.length > 0 && (
-                  <div
-                    className="card cardInset"
-                    style={{ marginBottom: 12, marginTop: 12 }}
-                  >
+                  <div className="card cardInset" style={{ marginBottom: 12, marginTop: 12 }}>
                     <div
                       className="row"
-                      style={{
-                        flexWrap: "wrap",
-                        gap: 8,
-                        alignItems: "center",
-                      }}
+                      style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}
                     >
                       <span className="pill">
                         Ausgewählte Trainings:{" "}
@@ -2582,28 +2543,23 @@ export default function App() {
                     >
                       ‹
                     </button>
-
+                    
                     <div className="calendarNavCenter">
                       <span className="calendarWeekLabel">
-                        {viewMode === "day"
-                          ? formatShort(weekDays[dayIndex]) +
-                            " " +
-                            weekDays[dayIndex].split("-")[0]
-                          : formatWeekRange(weekStart)}
+                        {viewMode === "day" 
+                          ? formatShort(weekDays[dayIndex]) + " " + weekDays[dayIndex].split("-")[0]
+                          : formatWeekRange(weekStart)
+                        }
                       </span>
                       <div className="viewModeToggle">
                         <button
-                          className={`viewModeBtn ${
-                            viewMode === "week" ? "viewModeBtnActive" : ""
-                          }`}
+                          className={`viewModeBtn ${viewMode === "week" ? "viewModeBtnActive" : ""}`}
                           onClick={() => setViewMode("week")}
                         >
                           Woche
                         </button>
                         <button
-                          className={`viewModeBtn ${
-                            viewMode === "day" ? "viewModeBtnActive" : ""
-                          }`}
+                          className={`viewModeBtn ${viewMode === "day" ? "viewModeBtnActive" : ""}`}
                           onClick={() => setViewMode("day")}
                         >
                           Tag
@@ -2629,7 +2585,7 @@ export default function App() {
                       ›
                     </button>
                   </div>
-
+                  
                   <button className="todayBtnCompact" onClick={goToToday}>
                     Heute
                   </button>
@@ -2640,7 +2596,7 @@ export default function App() {
                   <span>← Wischen für Navigation →</span>
                 </div>
 
-                <div
+                <div 
                   className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}
                   onTouchStart={calendarSwipeHandlers.onTouchStart}
                   onTouchMove={calendarSwipeHandlers.onTouchMove}
@@ -2753,6 +2709,7 @@ export default function App() {
                                 t.id
                               );
 
+                              // Ausgewählte Trainings haben eine violette Hintergrundfarbe
                               const bg = isSelected
                                 ? "rgba(139, 92, 246, 0.35)"
                                 : isDone
@@ -2768,6 +2725,7 @@ export default function App() {
                                 ? "rgba(239, 68, 68, 0.34)"
                                 : "rgba(59, 130, 246, 0.30)";
 
+                              // Position für überlappende Trainings berechnen
                               let groupSize = 1;
                               let indexInGroup = 0;
 
@@ -2813,22 +2771,16 @@ export default function App() {
                                     padding: 8,
                                     gap: 6,
                                   }}
-                                  onClick={(e) =>
-                                    handleCalendarEventClick(t, e)
-                                  }
+                                  onClick={(e) => handleCalendarEventClick(t, e)}
                                   onDoubleClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleCalendarEventDoubleClick(t);
                                   }}
-                                  onTouchStart={() =>
-                                    handleCalendarEventTouchStart(t)
-                                  }
+                                  onTouchStart={() => handleCalendarEventTouchStart(t)}
                                   onTouchEnd={handleCalendarEventTouchEnd}
                                   onTouchMove={handleCalendarEventTouchMove}
-                                  title={`Spieler: ${sp}\nZeit: ${
-                                    t.uhrzeitVon
-                                  } bis ${
+                                  title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
                                     t.uhrzeitBis
                                   }${
                                     isTrainer ? "" : `\nTarif: ${ta}`
@@ -2888,9 +2840,7 @@ export default function App() {
 
                 <div style={{ height: 12 }} />
                 <div className="muted">
-                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
-                  Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten
-                  (Handy).
+                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen. Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten (Handy).
                 </div>
               </div>
             )}
@@ -2960,7 +2910,9 @@ export default function App() {
                           value={tTarifId}
                           onChange={(e) => setTTarifId(e.target.value)}
                         >
-                          <option value="">Kein Tarif ausgewählt</option>
+                          <option value="">
+                            Kein Tarif ausgewählt
+                          </option>
                           {tarife.map((t) => {
                             const beschreibung =
                               t.abrechnung === "monatlich"
@@ -3029,9 +2981,7 @@ export default function App() {
                           value={tCustomAbrechnung}
                           onChange={(e) =>
                             setTCustomAbrechnung(
-                              e.target.value as
-                                | "proTraining"
-                                | "proSpieler"
+                              e.target.value as "proTraining" | "proSpieler"
                             )
                           }
                           disabled={!!tTarifId}
@@ -3189,74 +3139,58 @@ export default function App() {
                       </span>
                     </div>
 
+                    {/* Dropdown-Liste nur wenn Suche aktiv */}
                     {spielerSuche.trim() && (
-                      <div
-                        style={{
-                          maxHeight: 200,
-                          overflowY: "auto",
-                          border: "1px solid var(--border)",
-                          borderRadius: "var(--radius-md)",
-                          marginTop: 8,
-                          background: "var(--bg-card)",
-                        }}
-                      >
+                      <div style={{ 
+                        maxHeight: 200, 
+                        overflowY: "auto", 
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                        marginTop: 8,
+                        background: "var(--bg-card)"
+                      }}>
                         {filteredSpielerForPick
                           .filter((s) => !tSpielerIds.includes(s.id))
                           .slice()
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((s) => (
-                            <div
-                              key={s.id}
-                              style={{
-                                padding: "10px 14px",
-                                cursor: "pointer",
-                                borderBottom:
-                                  "1px solid var(--border-light)",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                              onClick={() => {
-                                toggleSpielerPick(s.id);
-                                setSpielerSuche("");
-                              }}
-                            >
-                              <div>
-                                <strong>{s.name}</strong>
-                                {s.kontaktEmail && (
-                                  <span
-                                    className="muted"
-                                    style={{ marginLeft: 8 }}
-                                  >
-                                    {s.kontaktEmail}
-                                  </span>
-                                )}
-                              </div>
-                              <span
-                                style={{
-                                  color: "var(--primary)",
-                                  fontSize: 12,
-                                }}
-                              >
-                                + Hinzufügen
-                              </span>
-                            </div>
-                          ))}
-                        {filteredSpielerForPick.filter(
-                          (s) => !tSpielerIds.includes(s.id)
-                        ).length === 0 && (
                           <div
+                            key={s.id}
                             style={{
                               padding: "10px 14px",
-                              color: "var(--text-muted)",
+                              cursor: "pointer",
+                              borderBottom: "1px solid var(--border-light)",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}
+                            onClick={() => {
+                              toggleSpielerPick(s.id);
+                              setSpielerSuche("");
                             }}
                           >
+                            <div>
+                              <strong>{s.name}</strong>
+                              {s.kontaktEmail && (
+                                <span className="muted" style={{ marginLeft: 8 }}>
+                                  {s.kontaktEmail}
+                                </span>
+                              )}
+                            </div>
+                            <span style={{ color: "var(--primary)", fontSize: 12 }}>
+                              + Hinzufügen
+                            </span>
+                          </div>
+                        ))}
+                        {filteredSpielerForPick.filter((s) => !tSpielerIds.includes(s.id)).length === 0 && (
+                          <div style={{ padding: "10px 14px", color: "var(--text-muted)" }}>
                             Keine Spieler gefunden
                           </div>
                         )}
                       </div>
                     )}
 
+                    {/* Dropdown ohne Suche - alle verfügbaren Spieler */}
                     {!spielerSuche.trim() && (
                       <div className="field" style={{ marginTop: 8 }}>
                         <select
@@ -3274,32 +3208,19 @@ export default function App() {
                             .slice()
                             .sort((a, b) => a.name.localeCompare(b.name))
                             .map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name}
-                                {s.kontaktEmail
-                                  ? ` (${s.kontaktEmail})`
-                                  : ""}
-                              </option>
-                            ))}
+                            <option key={s.id} value={s.id}>
+                              {s.name}{s.kontaktEmail ? ` (${s.kontaktEmail})` : ""}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     )}
 
+                    {/* Ausgewählte Spieler anzeigen */}
                     {tSpielerIds.length > 0 && (
                       <div style={{ marginTop: 12 }}>
-                        <div
-                          className="muted"
-                          style={{ marginBottom: 8 }}
-                        >
-                          Ausgewählte Spieler:
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 8,
-                          }}
-                        >
+                        <div className="muted" style={{ marginBottom: 8 }}>Ausgewählte Spieler:</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                           {tSpielerIds.map((id) => {
                             const s = spielerById.get(id);
                             if (!s) return null;
@@ -3307,21 +3228,18 @@ export default function App() {
                               <span
                                 key={id}
                                 className="pill"
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
+                                style={{ 
+                                  display: "inline-flex", 
+                                  alignItems: "center", 
                                   gap: 6,
-                                  background:
-                                    "rgba(34, 197, 94, 0.15)",
-                                  color: "#15803d",
+                                  background: "rgba(34, 197, 94, 0.15)",
+                                  color: "#15803d"
                                 }}
                               >
                                 {s.name}
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    toggleSpielerPick(id)
-                                  }
+                                  onClick={() => toggleSpielerPick(id)}
                                   style={{
                                     background: "none",
                                     border: "none",
@@ -3329,7 +3247,7 @@ export default function App() {
                                     padding: 0,
                                     fontSize: 14,
                                     lineHeight: 1,
-                                    color: "#991b1b",
+                                    color: "#991b1b"
                                   }}
                                 >
                                   ×
@@ -3378,7 +3296,7 @@ export default function App() {
                 {verwaltungTab === "trainer" && (
                   <div className="card">
                     <h2>Trainer verwalten</h2>
-
+                    
                     <ul className="list">
                       {trainers.map((t) => (
                         <li key={t.id} className="listItem">
@@ -3388,8 +3306,7 @@ export default function App() {
                               <div className="muted">{t.email}</div>
                             )}
                             <div className="muted">
-                              Honorar: {euro(t.stundensatz ?? 0)} pro
-                              Stunde
+                              Honorar: {euro(t.stundensatz ?? 0)} pro Stunde
                             </div>
                           </div>
                           <div className="smallActions">
@@ -3427,23 +3344,14 @@ export default function App() {
                     )}
 
                     {(showTrainerForm || editingTrainerId) && (
-                      <div
-                        className="card cardInset"
-                        style={{ marginTop: 16 }}
-                      >
-                        <h3>
-                          {editingTrainerId
-                            ? "Trainer bearbeiten"
-                            : "Neuen Trainer hinzufügen"}
-                        </h3>
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingTrainerId ? "Trainer bearbeiten" : "Neuen Trainer hinzufügen"}</h3>
                         <div className="row">
                           <div className="field">
                             <label>Name</label>
                             <input
                               value={trainerName}
-                              onChange={(e) =>
-                                setTrainerName(e.target.value)
-                              }
+                              onChange={(e) => setTrainerName(e.target.value)}
                               placeholder="z.B. Jesper"
                             />
                           </div>
@@ -3451,16 +3359,12 @@ export default function App() {
                             <label>Email</label>
                             <input
                               value={trainerEmail}
-                              onChange={(e) =>
-                                setTrainerEmail(e.target.value)
-                              }
+                              onChange={(e) => setTrainerEmail(e.target.value)}
                               placeholder="z.B. trainer@example.com"
                             />
                           </div>
                           <div className="field">
-                            <label>
-                              Stundensatz Trainer Honorar
-                            </label>
+                            <label>Stundensatz Trainer Honorar</label>
                             <input
                               type="number"
                               value={
@@ -3522,17 +3426,12 @@ export default function App() {
                   <div className="card">
                     <h2>Spieler verwalten</h2>
 
-                    <div
-                      className="row"
-                      style={{ marginBottom: 12 }}
-                    >
+                    <div className="row" style={{ marginBottom: 12 }}>
                       <div className="field" style={{ flex: 1 }}>
                         <label>Suche</label>
                         <input
                           value={verwaltungSpielerSuche}
-                          onChange={(e) =>
-                            setVerwaltungSpielerSuche(e.target.value)
-                          }
+                          onChange={(e) => setVerwaltungSpielerSuche(e.target.value)}
                           placeholder="Name oder Email suchen..."
                         />
                       </div>
@@ -3545,67 +3444,53 @@ export default function App() {
                       {spieler
                         .slice()
                         .filter((s) => {
-                          const q =
-                            verwaltungSpielerSuche
-                              .trim()
-                              .toLowerCase();
+                          const q = verwaltungSpielerSuche.trim().toLowerCase();
                           if (!q) return true;
                           return (
                             s.name.toLowerCase().includes(q) ||
-                            (s.kontaktEmail ?? "")
-                              .toLowerCase()
-                              .includes(q) ||
-                            (s.kontaktTelefon ?? "")
-                              .toLowerCase()
-                              .includes(q)
+                            (s.kontaktEmail ?? "").toLowerCase().includes(q) ||
+                            (s.kontaktTelefon ?? "").toLowerCase().includes(q)
                           );
                         })
-                        .sort((a, b) =>
-                          a.name.localeCompare(b.name)
-                        )
+                        .sort((a, b) => a.name.localeCompare(b.name))
                         .map((s) => (
-                          <li key={s.id} className="listItem">
-                            <div>
-                              <strong>{s.name}</strong>
+                        <li key={s.id} className="listItem">
+                          <div>
+                            <strong>{s.name}</strong>
+                            <div className="muted">
+                              {s.kontaktEmail ?? ""}
+                              {s.kontaktTelefon
+                                ? `, ${s.kontaktTelefon}`
+                                : ""}
+                            </div>
+                            {s.rechnungsAdresse && (
                               <div className="muted">
-                                {s.kontaktEmail ?? ""}
-                                {s.kontaktTelefon
-                                  ? `, ${s.kontaktTelefon}`
-                                  : ""}
+                                Rechnungsadresse: {s.rechnungsAdresse}
                               </div>
-                              {s.rechnungsAdresse && (
-                                <div className="muted">
-                                  Rechnungsadresse:{" "}
-                                  {s.rechnungsAdresse}
-                                </div>
-                              )}
-                              {s.notizen && (
-                                <div className="muted">
-                                  {s.notizen}
-                                </div>
-                              )}
-                            </div>
-                            <div className="smallActions">
-                              <button
-                                className="btn micro btnGhost"
-                                onClick={() => {
-                                  startEditSpieler(s);
-                                  setShowSpielerForm(true);
-                                }}
-                              >
-                                Bearbeiten
-                              </button>
-                              <button
-                                className="btn micro btnWarn"
-                                onClick={() =>
-                                  deleteSpieler(s.id)
-                                }
-                              >
-                                Löschen
-                              </button>
-                            </div>
-                          </li>
-                        ))}
+                            )}
+                            {s.notizen && (
+                              <div className="muted">{s.notizen}</div>
+                            )}
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => {
+                                startEditSpieler(s);
+                                setShowSpielerForm(true);
+                              }}
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              className="btn micro btnWarn"
+                              onClick={() => deleteSpieler(s.id)}
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </li>
+                      ))}
                     </ul>
 
                     {!showSpielerForm && !editingSpielerId && (
@@ -3620,23 +3505,14 @@ export default function App() {
                     )}
 
                     {(showSpielerForm || editingSpielerId) && (
-                      <div
-                        className="card cardInset"
-                        style={{ marginTop: 16 }}
-                      >
-                        <h3>
-                          {editingSpielerId
-                            ? "Spieler bearbeiten"
-                            : "Neuen Spieler hinzufügen"}
-                        </h3>
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingSpielerId ? "Spieler bearbeiten" : "Neuen Spieler hinzufügen"}</h3>
                         <div className="row">
                           <div className="field">
                             <label>Name</label>
                             <input
                               value={spielerName}
-                              onChange={(e) =>
-                                setSpielerName(e.target.value)
-                              }
+                              onChange={(e) => setSpielerName(e.target.value)}
                               placeholder="Name"
                             />
                           </div>
@@ -3644,9 +3520,7 @@ export default function App() {
                             <label>Email</label>
                             <input
                               value={spielerEmail}
-                              onChange={(e) =>
-                                setSpielerEmail(e.target.value)
-                              }
+                              onChange={(e) => setSpielerEmail(e.target.value)}
                               placeholder="Kontakt Email"
                             />
                           </div>
@@ -3654,41 +3528,29 @@ export default function App() {
                             <label>Telefon</label>
                             <input
                               value={spielerTelefon}
-                              onChange={(e) =>
-                                setSpielerTelefon(e.target.value)
-                              }
+                              onChange={(e) => setSpielerTelefon(e.target.value)}
                               placeholder="Telefon"
                             />
                           </div>
                         </div>
 
                         <div className="row">
-                          <div
-                            className="field"
-                            style={{ minWidth: 260 }}
-                          >
+                          <div className="field" style={{ minWidth: 260 }}>
                             <label>Rechnungsadresse</label>
                             <input
                               value={spielerRechnung}
-                              onChange={(e) =>
-                                setSpielerRechnung(e.target.value)
-                              }
+                              onChange={(e) => setSpielerRechnung(e.target.value)}
                               placeholder="optional"
                             />
                           </div>
                         </div>
 
                         <div className="row">
-                          <div
-                            className="field"
-                            style={{ minWidth: 260 }}
-                          >
+                          <div className="field" style={{ minWidth: 260 }}>
                             <label>Notizen</label>
                             <input
                               value={spielerNotizen}
-                              onChange={(e) =>
-                                setSpielerNotizen(e.target.value)
-                              }
+                              onChange={(e) => setSpielerNotizen(e.target.value)}
                               placeholder="optional"
                             />
                           </div>
@@ -3749,9 +3611,7 @@ export default function App() {
                                   }`}
                             </div>
                             {t.beschreibung && (
-                              <div className="muted">
-                                {t.beschreibung}
-                              </div>
+                              <div className="muted">{t.beschreibung}</div>
                             )}
                           </div>
                           <div className="smallActions">
@@ -3787,23 +3647,14 @@ export default function App() {
                     )}
 
                     {(showTarifForm || editingTarifId) && (
-                      <div
-                        className="card cardInset"
-                        style={{ marginTop: 16 }}
-                      >
-                        <h3>
-                          {editingTarifId
-                            ? "Tarif bearbeiten"
-                            : "Neuen Tarif hinzufügen"}
-                        </h3>
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingTarifId ? "Tarif bearbeiten" : "Neuen Tarif hinzufügen"}</h3>
                         <div className="row">
                           <div className="field">
                             <label>Name</label>
                             <input
                               value={tarifName}
-                              onChange={(e) =>
-                                setTarifName(e.target.value)
-                              }
+                              onChange={(e) => setTarifName(e.target.value)}
                               placeholder="z.B. Gruppentraining"
                             />
                           </div>
@@ -3832,24 +3683,15 @@ export default function App() {
                                 )
                               }
                             >
-                              <option value="proTraining">
-                                Pro Training
-                              </option>
-                              <option value="proSpieler">
-                                Pro Spieler
-                              </option>
-                              <option value="monatlich">
-                                Monatlich
-                              </option>
+                              <option value="proTraining">Pro Training</option>
+                              <option value="proSpieler">Pro Spieler</option>
+                              <option value="monatlich">Monatlich</option>
                             </select>
                           </div>
                         </div>
 
                         <div className="row">
-                          <div
-                            className="field"
-                            style={{ minWidth: 260 }}
-                          >
+                          <div className="field" style={{ minWidth: 260 }}>
                             <label>Beschreibung</label>
                             <input
                               value={tarifBeschreibung}
@@ -3975,9 +3817,7 @@ export default function App() {
                   <div className="subTabs">
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "spieler"
-                          ? "tabBtnActive"
-                          : ""
+                        abrechnungTab === "spieler" ? "tabBtnActive" : ""
                       }`}
                       onClick={() => setAbrechnungTab("spieler")}
                     >
@@ -3985,9 +3825,7 @@ export default function App() {
                     </button>
                     <button
                       className={`tabBtn ${
-                        abrechnungTab === "trainer"
-                          ? "tabBtnActive"
-                          : ""
+                        abrechnungTab === "trainer" ? "tabBtnActive" : ""
                       }`}
                       onClick={() => setAbrechnungTab("trainer")}
                     >
@@ -4012,16 +3850,13 @@ export default function App() {
                           </span>
                           <span className="pill">
                             Umsatz inkl. Bar:{" "}
-                            <strong>
-                              {euro(abrechnung.totalMitBar)}
-                            </strong>
+                            <strong>{euro(abrechnung.totalMitBar)}</strong>
                           </span>
                         </>
                       )}
 
                       <span className="pill">
-                        Bereits bezahlt:{" "}
-                        <strong>{euro(sumBezahlt)}</strong>
+                        Bereits bezahlt: <strong>{euro(sumBezahlt)}</strong>
                       </span>
                       <span className="pill">
                         Offen: <strong>{euro(sumOffen)}</strong>
@@ -4030,8 +3865,8 @@ export default function App() {
 
                     <div style={{ height: 10 }} />
                     <div className="muted">
-                      Hinweis: Der Status bezahlt gilt immer für einen
-                      Spieler im ausgewählten Monat.
+                      Hinweis: Der Status bezahlt gilt immer für einen Spieler
+                      im ausgewählten Monat.
                     </div>
 
                     <div style={{ height: 14 }} />
@@ -4058,18 +3893,14 @@ export default function App() {
                                         `${b.count} × ${euro(b.amount)}`
                                     )
                                     .join(" + ");
-                            const key = paymentKey(
-                              abrechnungMonat,
-                              r.id
-                            );
+                            const key = paymentKey(abrechnungMonat, r.id);
                             const paid = payments[key] ?? false;
 
-                            const hasBarForPlayer =
-                              trainingsInMonth.some(
-                                (t) =>
-                                  t.barBezahlt &&
-                                  t.spielerIds.includes(r.id)
-                              );
+                            const hasBarForPlayer = trainingsInMonth.some(
+                              (t) =>
+                                t.barBezahlt &&
+                                t.spielerIds.includes(r.id)
+                            );
 
                             const buttonLabel =
                               hasBarForPlayer && !paid
@@ -4094,14 +3925,10 @@ export default function App() {
                                 <td>
                                   <span
                                     className={
-                                      paid
-                                        ? "badge badgeOk"
-                                        : "badge"
+                                      paid ? "badge badgeOk" : "badge"
                                     }
                                   >
-                                    {paid
-                                      ? "bezahlt"
-                                      : "offen"}
+                                    {paid ? "bezahlt" : "offen"}
                                   </span>
                                 </td>
                                 <td>
@@ -4136,76 +3963,70 @@ export default function App() {
                   </>
                 )}
 
-                {abrechnungTab === "trainer" && (
+                                {abrechnungTab === "trainer" && (
                   <>
-                    {!isTrainer && (
-                      <div className="row" style={{ marginTop: 12 }}>
-                        <span className="pill">
-                          Umsatz gesamt:{" "}
-                          <strong>{euro(abrechnung.total)}</strong>
-                        </span>
-                        <span className="pill">
-                          Trainer Honorar gesamt:{" "}
-                          <strong>{euro(trainerHonorarTotal)}</strong>
-                        </span>
-                        <span className="pill">
-                          Honorar bezahlt:{" "}
-                          <strong>
-                            {euro(trainerHonorarBezahltTotal)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Honorar offen:{" "}
-                          <strong>
-                            {euro(trainerHonorarOffenTotal)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Rückzahlung an Schule (bar):{" "}
-                          <strong>
-                            {euro(rueckzahlungTrainerOffen)}
-                          </strong>
-                        </span>
-                      </div>
-                    )}
+                    {!isTrainer &&
+                      !(
+                        abrechnungTrainerFilter !== "alle" &&
+                        (trainerById.get(abrechnungTrainerFilter)?.name ?? "")
+                          .trim()
+                          .toLowerCase() === "sascha"
+                      ) && (
+                        <div className="row" style={{ marginTop: 12 }}>
+                          <span className="pill">
+                            Umsatz gesamt:{" "}
+                            <strong>{euro(abrechnung.total)}</strong>
+                          </span>
+                          <span className="pill">
+                            Trainer Honorar gesamt:{" "}
+                            <strong>{euro(trainerHonorarTotal)}</strong>
+                          </span>
+                          <span className="pill">
+                            Honorar bezahlt:{" "}
+                            <strong>{euro(trainerHonorarBezahltTotal)}</strong>
+                          </span>
+                          <span className="pill">
+                            Honorar offen:{" "}
+                            <strong>{euro(trainerHonorarOffenTotal)}</strong>
+                          </span>
+                          <span className="pill">
+                            Rückzahlung an Schule (bar):{" "}
+                            <strong>{euro(rueckzahlungTrainerOffen)}</strong>
+                          </span>
+                        </div>
+                      )}
 
-                    {isTrainer && !isSaschaTrainer && (
-                      <div className="row" style={{ marginTop: 12 }}>
-                        <span className="pill">
-                          Dein Honorar gesamt:{" "}
-                          <strong>
-                            {euro(eigenerHonorarGesamt)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Bereits ausgezahlt:{" "}
-                          <strong>
-                            {euro(eigenerHonorarBezahlt)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Noch auszuzahlen:{" "}
-                          <strong>
-                            {euro(eigenerHonorarOffen)}
-                          </strong>
-                        </span>
-                        <span className="pill">
-                          Rückzahlung an Schule (bar):{" "}
-                          <strong>
-                            {euro(rueckzahlungTrainerOffen)}
-                          </strong>
-                        </span>
-                      </div>
-                    )}
+                    {isTrainer &&
+                      !(
+                        (trainerById.get(ownTrainerId)?.name ?? "")
+                          .trim()
+                          .toLowerCase() === "sascha"
+                      ) && (
+                        <div className="row" style={{ marginTop: 12 }}>
+                          <span className="pill">
+                            Dein Honorar gesamt:{" "}
+                            <strong>{euro(eigenerHonorarGesamt)}</strong>
+                          </span>
+                          <span className="pill">
+                            Bereits ausgezahlt:{" "}
+                            <strong>{euro(eigenerHonorarBezahlt)}</strong>
+                          </span>
+                          <span className="pill">
+                            Noch auszuzahlen:{" "}
+                            <strong>{euro(eigenerHonorarOffen)}</strong>
+                          </span>
+                          <span className="pill">
+                            Rückzahlung an Schule (bar):{" "}
+                            <strong>{euro(rueckzahlungTrainerOffen)}</strong>
+                          </span>
+                        </div>
+                      )}
 
                     {isTrainer && (
                       <>
                         <div style={{ height: 14 }} />
                         <div className="card cardInset">
-                          <h2>
-                            Übersicht deine Stunden
-                            {isSaschaTrainer ? " (nur Anzahl)" : ""}
-                          </h2>
+                          <h2>Übersicht deine Stunden</h2>
                           <table className="table">
                             <thead>
                               <tr>
@@ -4228,47 +4049,11 @@ export default function App() {
                       </>
                     )}
 
-                    {!isTrainer &&
-                      saschaTrainer &&
-                      saschaTrainerId && (
-                        <>
-                          <div style={{ height: 14 }} />
-                          <div className="card cardInset">
-                            <h2>
-                              Trainer {saschaTrainer.name}: Übersicht
-                              Barstunden
-                            </h2>
-                            <table className="table">
-                              <thead>
-                                <tr>
-                                  <th>Art</th>
-                                  <th>Anzahl</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>Nicht bar</td>
-                                  <td>
-                                    {saschaNichtBarTrainings.length}
-                                  </td>
-                                </tr>
-                                <tr>
-                                  <td>Bar</td>
-                                  <td>
-                                    {saschaBarTrainings.length}
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </>
-                      )}
-
                     <div style={{ height: 10 }} />
                     <div className="muted">
                       Hinweis: Das Trainerhonorar wird pro Training
-                      abgerechnet. Der Filter oben bezieht sich hier auf
-                      den Honorarstatus.
+                      abgerechnet. Der Filter oben bezieht sich hier auf den
+                      Honorarstatus.
                     </div>
 
                     {!isTrainer && trainers.length > 1 && (
@@ -4288,26 +4073,16 @@ export default function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {abrechnungTrainer.rows
-                                .filter(
-                                  (r) =>
-                                    !saschaTrainerId ||
-                                    r.id !== saschaTrainerId
-                                )
-                                .map((r) => (
-                                  <tr key={r.id}>
-                                    <td>{r.name}</td>
-                                    <td>{r.trainings}</td>
-                                    <td>{euro(r.sum)}</td>
-                                    <td>{euro(r.honorar)}</td>
-                                    <td>
-                                      {euro(r.honorarBezahlt)}
-                                    </td>
-                                    <td>
-                                      {euro(r.honorarOffen)}
-                                    </td>
-                                  </tr>
-                                ))}
+                              {abrechnungTrainer.rows.map((r) => (
+                                <tr key={r.id}>
+                                  <td>{r.name}</td>
+                                  <td>{r.trainings}</td>
+                                  <td>{euro(r.sum)}</td>
+                                  <td>{euro(r.honorar)}</td>
+                                  <td>{euro(r.honorarBezahlt)}</td>
+                                  <td>{euro(r.honorarOffen)}</td>
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>
@@ -4316,6 +4091,7 @@ export default function App() {
                   </>
                 )}
 
+
                 {!isTrainer &&
                   (abrechnungTab === "spieler" ||
                     abrechnungTab === "trainer") && (
@@ -4323,7 +4099,7 @@ export default function App() {
                       <div style={{ height: 14 }} />
                       <h2>Trainings im Monat</h2>
                       <ul className="list">
-                        {trainingsForAbrechnungList.map((t) => {
+                        {trainingsForAbrechnung.map((t) => {
                           const tarif = t.tarifId
                             ? tarifById.get(t.tarifId)
                             : undefined;
@@ -4334,72 +4110,50 @@ export default function App() {
                             : t.customPreisProStunde
                             ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
                             : "Tarif";
-
-                          const searchQ =
-                            abrechnungSpielerSuche
-                              .trim()
-                              .toLowerCase();
+                          
+                          // Bei aktiver Spielersuche nur gesuchte Spieler anzeigen
+                          const searchQ = abrechnungSpielerSuche.trim().toLowerCase();
                           const filteredSpielerIds = searchQ
                             ? t.spielerIds.filter((sid) => {
                                 const s = spielerById.get(sid);
-                                return (
-                                  s &&
-                                  (s.name
-                                    .toLowerCase()
-                                    .includes(searchQ) ||
-                                    (s.kontaktEmail ?? "")
-                                      .toLowerCase()
-                                      .includes(searchQ))
+                                return s && (
+                                  s.name.toLowerCase().includes(searchQ) ||
+                                  (s.kontaktEmail ?? "").toLowerCase().includes(searchQ)
                                 );
                               })
                             : t.spielerIds;
-
+                          
                           const sp = filteredSpielerIds
                             .map(
-                              (id) =>
-                                spielerById.get(id)?.name ??
-                                "Spieler"
+                              (id) => spielerById.get(id)?.name ?? "Spieler"
                             )
                             .join(", ");
                           const trainerName =
                             trainerById.get(
                               t.trainerId ?? defaultTrainerId
                             )?.name ?? "Trainer";
-                          const priceNum = round2(
-                            trainingPreisGesamt(t)
-                          );
+                          const priceNum = round2(trainingPreisGesamt(t));
                           const price = euro(priceNum);
-                          const honorarNum =
-                            trainerHonorarFuerTraining(t);
+                          const honorarNum = trainerHonorarFuerTraining(t);
                           const honorarBadge = euro(honorarNum);
                           const trainerPaid =
                             t.barBezahlt || !!trainerPayments[t.id];
                           const showTrainerInfo =
-                            isTrainer ||
-                            abrechnungTab === "trainer";
-                          const differenz = round2(
-                            priceNum - honorarNum
-                          );
+                            isTrainer || abrechnungTab === "trainer";
+                          const differenz = round2(priceNum - honorarNum);
 
                           const [y, m, d] = t.datum.split("-");
                           const germanDate =
-                            d && m && y
-                              ? `${d}.${m}.${y}`
-                              : t.datum;
+                            d && m && y ? `${d}.${m}.${y}` : t.datum;
 
                           return (
-                            <li
-                              key={t.id}
-                              className="listItem"
-                            >
+                            <li key={t.id} className="listItem">
                               <div>
                                 <strong>
                                   {germanDate} {t.uhrzeitVon} bis{" "}
                                   {t.uhrzeitBis}
                                 </strong>
-                                <div
-                                  style={{ marginTop: 4 }}
-                                >
+                                <div style={{ marginTop: 4 }}>
                                   <span className="badge badgeOk">
                                     durchgeführt
                                   </span>
@@ -4416,13 +4170,11 @@ export default function App() {
                                 {showTrainerInfo && (
                                   <>
                                     <div className="muted">
-                                      Trainer: {trainerName},
-                                      Honorar: {honorarBadge}
+                                      Trainer: {trainerName}, Honorar:{" "}
+                                      {honorarBadge}
                                     </div>
                                     <div className="muted">
-                                      Differenz
-                                      (Schülerzahlung −
-                                      Honorar):{" "}
+                                      Differenz (Schülerzahlung − Honorar):{" "}
                                       {euro(differenz)}
                                     </div>
                                   </>
@@ -4432,33 +4184,26 @@ export default function App() {
                                     Trainer: {trainerName}
                                   </div>
                                 )}
-                                {abrechnungTab ===
-                                  "spieler" && (
+                                {abrechnungTab === "spieler" && (
                                   <div className="muted">
                                     Preis: {price}
                                   </div>
                                 )}
                                 {t.notiz ? (
-                                  <div className="muted">
-                                    {t.notiz}
-                                  </div>
+                                  <div className="muted">{t.notiz}</div>
                                 ) : null}
                                 {t.serieId ? (
                                   <div className="muted">
-                                    Serie:{" "}
-                                    {t.serieId.slice(0, 8)}
+                                    Serie: {t.serieId.slice(0, 8)}
                                   </div>
                                 ) : null}
                                 {t.barBezahlt && (
-                                  <div className="muted">
-                                    Bar bezahlt
-                                  </div>
+                                  <div className="muted">Bar bezahlt</div>
                                 )}
                               </div>
                               <div className="smallActions">
                                 {showTrainerInfo &&
-                                  abrechnungTab ===
-                                    "trainer" && (
+                                  abrechnungTab === "trainer" && (
                                     <span
                                       className={
                                         trainerPaid
@@ -4467,18 +4212,15 @@ export default function App() {
                                       }
                                       style={{
                                         cursor: "pointer",
-                                        backgroundColor:
-                                          trainerPaid
-                                            ? "#22c55e1a"
-                                            : "#fee2e2",
+                                        backgroundColor: trainerPaid
+                                          ? "#22c55e1a"
+                                          : "#fee2e2",
                                         color: trainerPaid
                                           ? "#166534"
                                           : "#991b1b",
                                       }}
                                       onClick={() =>
-                                        toggleTrainerPaid(
-                                          t.id
-                                        )
+                                        toggleTrainerPaid(t.id)
                                       }
                                     >
                                       {trainerPaid
@@ -4489,14 +4231,10 @@ export default function App() {
                                 <button
                                   className="btn micro"
                                   style={{
-                                    backgroundColor:
-                                      "#8b5cf6",
-                                    borderColor:
-                                      "#8b5cf6",
+                                    backgroundColor: "#8b5cf6",
+                                    borderColor: "#8b5cf6",
                                   }}
-                                  onClick={() =>
-                                    toggleBarBezahlt(t.id)
-                                  }
+                                  onClick={() => toggleBarBezahlt(t.id)}
                                 >
                                   {t.barBezahlt
                                     ? "Barzahlung zurücknehmen"
@@ -4504,11 +4242,7 @@ export default function App() {
                                 </button>
                                 <button
                                   className="btn micro btnGhost"
-                                  onClick={() =>
-                                    fillTrainingFromSelected(
-                                      t
-                                    )
-                                  }
+                                  onClick={() => fillTrainingFromSelected(t)}
                                 >
                                   Bearbeiten
                                 </button>
@@ -4525,96 +4259,51 @@ export default function App() {
             {tab === "weiteres" && !isTrainer && (
               <div className="card">
                 <h2>Weiteres</h2>
-                <p
-                  className="muted"
-                  style={{ marginBottom: 16 }}
-                >
-                  Hier kannst du allgemeine Notizen speichern, z.B.
-                  Urlaubstage von Trainern, wichtige Termine oder
-                  sonstige Informationen.
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  Hier kannst du allgemeine Notizen speichern, z.B. Urlaubstage von Trainern, wichtige Termine oder sonstige Informationen.
                 </p>
 
                 <ul className="list">
                   {notizen.map((n) => {
-                    const erstelltDate = new Date(
-                      n.erstelltAm
-                    );
-                    const aktualisiertDate = new Date(
-                      n.aktualisiertAm
-                    );
-                    const erstelltFormatted = `${pad2(
-                      erstelltDate.getDate()
-                    )}.${pad2(
-                      erstelltDate.getMonth() + 1
-                    )}.${erstelltDate.getFullYear()}`;
-                    const aktualisiertFormatted = `${pad2(
-                      aktualisiertDate.getDate()
-                    )}.${pad2(
-                      aktualisiertDate.getMonth() + 1
-                    )}.${aktualisiertDate.getFullYear()}`;
-
+                    const erstelltDate = new Date(n.erstelltAm);
+                    const aktualisiertDate = new Date(n.aktualisiertAm);
+                    const erstelltFormatted = `${pad2(erstelltDate.getDate())}.${pad2(erstelltDate.getMonth() + 1)}.${erstelltDate.getFullYear()}`;
+                    const aktualisiertFormatted = `${pad2(aktualisiertDate.getDate())}.${pad2(aktualisiertDate.getMonth() + 1)}.${aktualisiertDate.getFullYear()}`;
+                    
                     return (
-                      <li
-                        key={n.id}
-                        className="listItem"
-                        style={{
-                          flexDirection: "column",
-                          alignItems: "stretch",
-                          gap: 8,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent:
-                              "space-between",
-                            alignItems: "flex-start",
-                          }}
-                        >
+                      <li key={n.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div>
                             <strong>{n.titel}</strong>
-                            <div
-                              className="muted"
-                              style={{ fontSize: 11 }}
-                            >
+                            <div className="muted" style={{ fontSize: 11 }}>
                               Erstellt: {erstelltFormatted}
-                              {n.erstelltAm !==
-                                n.aktualisiertAm &&
-                                ` · Bearbeitet: ${aktualisiertFormatted}`}
+                              {n.erstelltAm !== n.aktualisiertAm && ` · Bearbeitet: ${aktualisiertFormatted}`}
                             </div>
                           </div>
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() =>
-                                startEditNotiz(n)
-                              }
+                              onClick={() => startEditNotiz(n)}
                             >
                               Bearbeiten
                             </button>
                             <button
                               className="btn micro btnWarn"
-                              onClick={() =>
-                                deleteNotiz(n.id)
-                              }
+                              onClick={() => deleteNotiz(n.id)}
                             >
                               Löschen
                             </button>
                           </div>
                         </div>
                         {n.inhalt && (
-                          <div
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              background:
-                                "var(--bg-inset)",
-                              padding: 12,
-                              borderRadius:
-                                "var(--radius-md)",
-                              fontSize: 14,
-                              lineHeight: 1.5,
-                            }}
-                          >
+                          <div style={{ 
+                            whiteSpace: "pre-wrap", 
+                            background: "var(--bg-inset)", 
+                            padding: 12, 
+                            borderRadius: "var(--radius-md)",
+                            fontSize: 14,
+                            lineHeight: 1.5
+                          }}>
                             {n.inhalt}
                           </div>
                         )}
@@ -4624,13 +4313,7 @@ export default function App() {
                 </ul>
 
                 {notizen.length === 0 && !showNotizForm && (
-                  <div
-                    className="muted"
-                    style={{
-                      textAlign: "center",
-                      padding: 20,
-                    }}
-                  >
+                  <div className="muted" style={{ textAlign: "center", padding: 20 }}>
                     Noch keine Notizen vorhanden.
                   </div>
                 )}
@@ -4647,35 +4330,21 @@ export default function App() {
                 )}
 
                 {(showNotizForm || editingNotizId) && (
-                  <div
-                    className="card cardInset"
-                    style={{ marginTop: 16 }}
-                  >
-                    <h3>
-                      {editingNotizId
-                        ? "Notiz bearbeiten"
-                        : "Neue Notiz hinzufügen"}
-                    </h3>
+                  <div className="card cardInset" style={{ marginTop: 16 }}>
+                    <h3>{editingNotizId ? "Notiz bearbeiten" : "Neue Notiz hinzufügen"}</h3>
                     <div className="field">
                       <label>Titel</label>
                       <input
                         value={notizTitel}
-                        onChange={(e) =>
-                          setNotizTitel(e.target.value)
-                        }
+                        onChange={(e) => setNotizTitel(e.target.value)}
                         placeholder="z.B. Urlaubstage Trainer Max"
                       />
                     </div>
-                    <div
-                      className="field"
-                      style={{ marginTop: 12 }}
-                    >
+                    <div className="field" style={{ marginTop: 12 }}>
                       <label>Inhalt</label>
                       <textarea
                         value={notizInhalt}
-                        onChange={(e) =>
-                          setNotizInhalt(e.target.value)
-                        }
+                        onChange={(e) => setNotizInhalt(e.target.value)}
                         placeholder="Details hier eingeben..."
                         rows={6}
                         style={{
@@ -4684,18 +4353,14 @@ export default function App() {
                           fontSize: 15,
                           padding: "10px 14px",
                           borderRadius: "var(--radius-md)",
-                          border:
-                            "1px solid var(--border)",
+                          border: "1px solid var(--border)",
                           background: "var(--bg-card)",
                           resize: "vertical",
-                          minHeight: 120,
+                          minHeight: 120
                         }}
                       />
                     </div>
-                    <div
-                      className="row"
-                      style={{ marginTop: 12 }}
-                    >
+                    <div className="row" style={{ marginTop: 12 }}>
                       <button
                         className="btn"
                         onClick={() => {
@@ -4706,9 +4371,7 @@ export default function App() {
                           }
                         }}
                       >
-                        {editingNotizId
-                          ? "Notiz speichern"
-                          : "Notiz hinzufügen"}
+                        {editingNotizId ? "Notiz speichern" : "Notiz hinzufügen"}
                       </button>
                       <button
                         className="btn btnGhost"
@@ -4740,8 +4403,8 @@ export default function App() {
                 {formatMonthLabel(payConfirm.monat)}
               </h3>
               <p className="muted">
-                Dieser Betrag wird als bezahlt markiert, Du kannst es
-                später wieder auf offen stellen.
+                Dieser Betrag wird als bezahlt markiert, Du kannst es später
+                wieder auf offen stellen.
               </p>
             </div>
             <div className="modalSummary">
