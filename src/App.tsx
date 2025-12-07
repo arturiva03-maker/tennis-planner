@@ -539,7 +539,9 @@ export default function App() {
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
   const [doneFlashId, setDoneFlashId] = useState<string | null>(null);
+  const [longPressTriggered, setLongPressTriggered] = useState(false);
 
   const hasMountedRef = useRef(false);
 
@@ -579,6 +581,35 @@ export default function App() {
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
+  // Verhindere das "Synchronisiere" bei Tab-Wechsel
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Wenn der Tab wieder sichtbar wird und wir bereits synchronisiert waren,
+      // müssen wir nichts zurücksetzen
+      if (document.visibilityState === "visible" && initialSynced) {
+        // Session prüfen ohne States zurückzusetzen
+        supabase.auth.getSession().then((res) => {
+          const session = res.data.session;
+          if (session && authUser?.id === session.user.id) {
+            // Gleicher User, alles gut - nichts tun
+            return;
+          }
+          // Anderer User oder ausgeloggt - dann müssen wir wirklich neu laden
+          if (!session && authUser) {
+            setAuthUser(null);
+            setInitialSynced(false);
+            setProfileFinished(false);
+          }
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [initialSynced, authUser]);
+
     useEffect(() => {
     supabase.auth.getSession().then((res) => {
       const session = res.data.session;
@@ -597,7 +628,25 @@ export default function App() {
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event: string, session: any) => {
+      (event: string, session: any) => {
+        // Nur bei echten Auth-Events den Sync zurücksetzen, nicht bei INITIAL_SESSION
+        if (event === "INITIAL_SESSION") {
+          // Beim initialen Laden nur den User setzen wenn er sich unterscheidet
+          if (session) {
+            setAuthUser((prev) => {
+              if (prev?.id === session.user.id) return prev;
+              return {
+                id: session.user.id,
+                email: session.user.email ?? null,
+                role: "admin",
+                accountId: session.user.id,
+                trainerId: null,
+              };
+            });
+          }
+          return;
+        }
+        
         setAuthUser(
           session
             ? {
@@ -864,6 +913,7 @@ export default function App() {
     return () => {
       if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
       if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+      if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
     };
   }, []);
 
@@ -1499,12 +1549,57 @@ export default function App() {
     setDayIndex(idx);
   }
 
-  function handleCalendarEventClick(t: Training) {
+  function handleCalendarEventClick(t: Training, e: React.MouseEvent) {
+    // Wenn Long-Press gerade ausgelöst wurde, nicht auch noch den Klick verarbeiten
+    if (longPressTriggered) {
+      setLongPressTriggered(false);
+      return;
+    }
+    
+    // Strg+Klick (Windows/Linux) oder Cmd+Klick (Mac) für Mehrfachauswahl
+    if ((e.ctrlKey || e.metaKey) && !isTrainer) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleTrainingSelection(t.id);
+      return;
+    }
+    
     if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = window.setTimeout(() => {
       fillTrainingFromSelected(t);
       clickTimerRef.current = null;
     }, 220);
+  }
+  
+  function handleCalendarEventTouchStart(t: Training) {
+    if (isTrainer) return;
+    
+    // Long-Press Timer starten (500ms)
+    setLongPressTriggered(false);
+    longPressTimerRef.current = window.setTimeout(() => {
+      setLongPressTriggered(true);
+      toggleTrainingSelection(t.id);
+      // Vibration für haptisches Feedback (falls unterstützt)
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  }
+  
+  function handleCalendarEventTouchEnd() {
+    // Long-Press Timer abbrechen wenn Touch endet vor Ablauf
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
+  
+  function handleCalendarEventTouchMove() {
+    // Long-Press abbrechen bei Bewegung
+    if (longPressTimerRef.current) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   }
 
   function handleCalendarEventDoubleClick(t: Training) {
@@ -2414,20 +2509,25 @@ export default function App() {
                               const isCancel = t.status === "abgesagt";
                               const isPulse = doneFlashId === t.id;
 
-                              const bg = isDone
+                              const isSelected = selectedTrainingIds.includes(
+                                t.id
+                              );
+
+                              // Ausgewählte Trainings haben eine violette Hintergrundfarbe
+                              const bg = isSelected
+                                ? "rgba(139, 92, 246, 0.35)"
+                                : isDone
                                 ? "rgba(34, 197, 94, 0.22)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.14)"
                                 : "rgba(59, 130, 246, 0.18)";
-                              const border = isDone
+                              const border = isSelected
+                                ? "rgba(139, 92, 246, 0.6)"
+                                : isDone
                                 ? "rgba(34, 197, 94, 0.45)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.34)"
                                 : "rgba(59, 130, 246, 0.30)";
-
-                              const isSelected = selectedTrainingIds.includes(
-                                t.id
-                              );
 
                               // Position für überlappende Trainings berechnen
                               let groupSize = 1;
@@ -2475,12 +2575,15 @@ export default function App() {
                                     padding: 8,
                                     gap: 6,
                                   }}
-                                  onClick={() => handleCalendarEventClick(t)}
+                                  onClick={(e) => handleCalendarEventClick(t, e)}
                                   onDoubleClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     handleCalendarEventDoubleClick(t);
                                   }}
+                                  onTouchStart={() => handleCalendarEventTouchStart(t)}
+                                  onTouchEnd={handleCalendarEventTouchEnd}
+                                  onTouchMove={handleCalendarEventTouchMove}
                                   title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
                                     t.uhrzeitBis
                                   }${
@@ -2517,18 +2620,6 @@ export default function App() {
                                       {taLine}
                                     </div>
                                   </div>
-                                  {!isTrainer && (
-                                    <input
-                                      type="checkbox"
-                                      checked={isSelected}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        toggleTrainingSelection(t.id);
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                      style={{ marginRight: 6 }}
-                                    />
-                                  )}
                                   <div
                                     style={{
                                       width: 14,
@@ -2553,7 +2644,7 @@ export default function App() {
 
                 <div style={{ height: 12 }} />
                 <div className="muted">
-                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen.
+                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen. Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten (Handy).
                 </div>
               </div>
             )}
