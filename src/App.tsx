@@ -2911,7 +2911,7 @@ export default function App() {
                           onChange={(e) => setTTarifId(e.target.value)}
                         >
                           <option value="">
-                            Kein Tarif, individuellen Preis verwenden
+                            Abo, 60 EUR monatlich
                           </option>
                           {tarife.map((t) => {
                             const beschreibung =
