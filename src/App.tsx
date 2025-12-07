@@ -1538,6 +1538,7 @@ export default function App() {
         triggerDonePulse(id);
       });
     }
+    clearTrainingSelection();
   }
 
   function batchDeleteSelectedTrainings() {
@@ -1562,6 +1563,7 @@ export default function App() {
         selectedTrainingIds.includes(t.id) ? { ...t, trainerId: tid } : t
       )
     );
+    clearTrainingSelection();
   }
 
   function triggerDonePulse(trainingId: string) {
@@ -1896,7 +1898,20 @@ export default function App() {
 
   const abrechnung = useMemo(() => {
     const perSpieler = new Map<string, { name: string; sum: number; counts: Map<number, number> }>();
-    const monthlySeen = new Map<string, Set<string>>();
+    // Für monatliche Tarife: Zähle die Anzahl verschiedener Wochentage pro Spieler+Tarif
+    const monthlyWeekdayCounts = new Map<string, Set<number>>(); // key: `${pid}__${tarifKey}`, value: Set von Wochentagen (0-6)
+
+    // Ermittle die gesuchten Spieler-IDs bei aktiver Suche
+    const searchQuery = abrechnungSpielerSuche.trim().toLowerCase();
+    const searchedSpielerIds = searchQuery
+      ? spieler
+          .filter(
+            (s) =>
+              s.name.toLowerCase().includes(searchQuery) ||
+              (s.kontaktEmail ?? "").toLowerCase().includes(searchQuery)
+          )
+          .map((s) => s.id)
+      : null; // null bedeutet keine Filterung
 
     const addShare = (pid: string, name: string, amount: number) => {
       const share = round2(amount);
@@ -1909,6 +1924,31 @@ export default function App() {
       entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
     };
 
+    // Erst alle monatlichen Trainings sammeln um Wochentage zu zählen
+    trainingsForAbrechnung.forEach((t) => {
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg) return;
+
+      if (cfg.abrechnung === "monatlich") {
+        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+        const trainingDate = new Date(t.datum + "T12:00:00");
+        const weekday = trainingDate.getDay(); // 0 = Sonntag, 1 = Montag, etc.
+        
+        t.spielerIds.forEach((pid) => {
+          // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
+          if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+          
+          const key = `${pid}__${tarifKey}`;
+          const weekdays = monthlyWeekdayCounts.get(key) ?? new Set<number>();
+          weekdays.add(weekday);
+          monthlyWeekdayCounts.set(key, weekdays);
+        });
+      }
+    });
+
+    // Jetzt die Abrechnung durchführen
+    const monthlyProcessed = new Set<string>(); // Um doppelte Verarbeitung zu vermeiden
+
     trainingsForAbrechnung.forEach((t) => {
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
@@ -1916,18 +1956,26 @@ export default function App() {
       if (cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
         t.spielerIds.forEach((pid) => {
+          // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
+          if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+          
+          const processKey = `${pid}__${tarifKey}`;
+          if (monthlyProcessed.has(processKey)) return;
+          monthlyProcessed.add(processKey);
+          
           const name = spielerById.get(pid)?.name ?? "Unbekannt";
-          const seen = monthlySeen.get(pid) ?? new Set<string>();
-          if (seen.has(tarifKey)) return;
-          seen.add(tarifKey);
-          monthlySeen.set(pid, seen);
-          addShare(pid, name, cfg.preisProStunde);
+          const weekdayCount = monthlyWeekdayCounts.get(processKey)?.size ?? 1;
+          const totalAmount = cfg.preisProStunde * weekdayCount;
+          addShare(pid, name, totalAmount);
         });
         return;
       }
 
       const share = priceFuerSpieler(t);
       t.spielerIds.forEach((pid) => {
+        // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
+        if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+        
         const name = spielerById.get(pid)?.name ?? "Unbekannt";
         addShare(pid, name, share);
       });
@@ -1971,9 +2019,11 @@ export default function App() {
     trainingsForAbrechnung,
     trainingsInMonth,
     spielerById,
+    spieler,
     priceFuerSpieler,
     tarifById,
     trainingPreisGesamt,
+    abrechnungSpielerSuche,
   ]);
 
   const abrechnungTrainer = useMemo(() => {
@@ -1987,7 +2037,28 @@ export default function App() {
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
-    const monthlySeen = new Map<string, Set<string>>();
+    // Für monatliche Tarife: Zähle die Anzahl verschiedener Wochentage pro Trainer+Spieler+Tarif
+    const monthlyTrainerWeekdays = new Map<string, Set<number>>(); // key: `${tid}__${pid}__${tarifKey}`
+
+    // Erst alle monatlichen Trainings sammeln um Wochentage zu zählen
+    trainingsForAbrechnung.forEach((t) => {
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg || cfg.abrechnung !== "monatlich") return;
+      
+      const tid = t.trainerId || defaultTrainerId;
+      const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+      const trainingDate = new Date(t.datum + "T12:00:00");
+      const weekday = trainingDate.getDay();
+      
+      t.spielerIds.forEach((pid) => {
+        const key = `${tid}__${pid}__${tarifKey}`;
+        const weekdays = monthlyTrainerWeekdays.get(key) ?? new Set<number>();
+        weekdays.add(weekday);
+        monthlyTrainerWeekdays.set(key, weekdays);
+      });
+    });
+
+    const monthlyTrainerProcessed = new Set<string>();
 
     trainingsForAbrechnung.forEach((t) => {
       const tid = t.trainerId || defaultTrainerId;
@@ -2008,15 +2079,14 @@ export default function App() {
 
       if (cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-        const seen = monthlySeen.get(tid) ?? new Set<string>();
         t.spielerIds.forEach((pid) => {
-          const key = `${tarifKey}__${pid}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            entry.sum = round2(entry.sum + cfg.preisProStunde);
-          }
+          const processKey = `${tid}__${pid}__${tarifKey}`;
+          if (monthlyTrainerProcessed.has(processKey)) return;
+          monthlyTrainerProcessed.add(processKey);
+          
+          const weekdayCount = monthlyTrainerWeekdays.get(processKey)?.size ?? 1;
+          entry.sum = round2(entry.sum + cfg.preisProStunde * weekdayCount);
         });
-        monthlySeen.set(tid, seen);
       } else {
         const amount = round2(trainingPreisGesamt(t));
         entry.sum = round2(entry.sum + amount);
@@ -4027,7 +4097,20 @@ export default function App() {
                             : t.customPreisProStunde
                             ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
                             : "Tarif";
-                          const sp = t.spielerIds
+                          
+                          // Bei aktiver Spielersuche nur gesuchte Spieler anzeigen
+                          const searchQ = abrechnungSpielerSuche.trim().toLowerCase();
+                          const filteredSpielerIds = searchQ
+                            ? t.spielerIds.filter((sid) => {
+                                const s = spielerById.get(sid);
+                                return s && (
+                                  s.name.toLowerCase().includes(searchQ) ||
+                                  (s.kontaktEmail ?? "").toLowerCase().includes(searchQ)
+                                );
+                              })
+                            : t.spielerIds;
+                          
+                          const sp = filteredSpielerIds
                             .map(
                               (id) => spielerById.get(id)?.name ?? "Spieler"
                             )
