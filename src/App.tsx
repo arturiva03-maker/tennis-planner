@@ -2305,7 +2305,8 @@ export default function App() {
   const rueckzahlungTrainerOffen = round2(
     trainingsForAbrechnung.reduce((acc, t) => {
       const tid = t.trainerId || defaultTrainerId;
-      if (tid !== ownTrainerId) return acc;
+      // Berücksichtige den Trainerfilter: wenn "alle" gewählt ist, alle Trainer einbeziehen
+      if (abrechnungTrainerFilter !== "alle" && tid !== abrechnungTrainerFilter) return acc;
       if (!t.barBezahlt) return acc;
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg || cfg.abrechnung === "monatlich") return acc;
