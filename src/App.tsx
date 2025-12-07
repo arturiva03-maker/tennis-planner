@@ -537,6 +537,12 @@ export default function App() {
   const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
+  // States für Formular-Sichtbarkeit in der Verwaltung
+  const [showTrainerForm, setShowTrainerForm] = useState(false);
+  const [showSpielerForm, setShowSpielerForm] = useState(false);
+  const [showTarifForm, setShowTarifForm] = useState(false);
+  const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
+
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
@@ -629,8 +635,8 @@ export default function App() {
 
     const { data: sub } = supabase.auth.onAuthStateChange(
       (event: string, session: any) => {
-        // Nur bei echten Auth-Events den Sync zurücksetzen, nicht bei INITIAL_SESSION
-        if (event === "INITIAL_SESSION") {
+        // Bei Token-Refresh oder Initial-Session nichts zurücksetzen
+        if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
           // Beim initialen Laden nur den User setzen wenn er sich unterscheidet
           if (session) {
             setAuthUser((prev) => {
@@ -647,19 +653,48 @@ export default function App() {
           return;
         }
         
-        setAuthUser(
-          session
-            ? {
-                id: session.user.id,
-                email: session.user.email ?? null,
-                role: "admin",
-                accountId: session.user.id, // <--- hier auch
-                trainerId: null,
-              }
-            : null
-        );
-        setInitialSynced(false);
-        setProfileFinished(false);
+        // Nur bei echten Auth-Änderungen (SIGNED_IN, SIGNED_OUT) den Sync zurücksetzen
+        if (event === "SIGNED_OUT") {
+          setAuthUser(null);
+          setInitialSynced(false);
+          setProfileFinished(false);
+          return;
+        }
+        
+        if (event === "SIGNED_IN" && session) {
+          // Nur zurücksetzen wenn es wirklich ein anderer User ist
+          setAuthUser((prev) => {
+            if (prev?.id === session.user.id) {
+              // Gleicher User, kein Reset nötig
+              return prev;
+            }
+            // Anderer User, Reset nötig
+            setInitialSynced(false);
+            setProfileFinished(false);
+            return {
+              id: session.user.id,
+              email: session.user.email ?? null,
+              role: "admin",
+              accountId: session.user.id,
+              trainerId: null,
+            };
+          });
+          return;
+        }
+        
+        // Fallback für andere Events
+        if (session) {
+          setAuthUser((prev) => {
+            if (prev?.id === session.user.id) return prev;
+            return {
+              id: session.user.id,
+              email: session.user.email ?? null,
+              role: "admin",
+              accountId: session.user.id,
+              trainerId: null,
+            };
+          });
+        }
       }
     );
 
@@ -2929,12 +2964,12 @@ export default function App() {
                   <div className="card">
                     <h2>Spieler auswählen</h2>
                     <div className="row">
-                      <div className="field">
-                        <label>Suche</label>
+                      <div className="field" style={{ flex: 1 }}>
+                        <label>Spieler hinzufügen</label>
                         <input
                           value={spielerSuche}
                           onChange={(e) => setSpielerSuche(e.target.value)}
-                          placeholder="Name oder Email"
+                          placeholder="Suche nach Name oder Email..."
                         />
                       </div>
                       <span className="pill">
@@ -2943,42 +2978,125 @@ export default function App() {
                       </span>
                     </div>
 
-                    <ul className="list">
-                      {filteredSpielerForPick.map((s) => {
-                        const checked = tSpielerIds.includes(s.id);
-                        return (
-                          <li key={s.id} className="listItem">
+                    {/* Dropdown-Liste nur wenn Suche aktiv */}
+                    {spielerSuche.trim() && (
+                      <div style={{ 
+                        maxHeight: 200, 
+                        overflowY: "auto", 
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                        marginTop: 8,
+                        background: "var(--bg-card)"
+                      }}>
+                        {filteredSpielerForPick
+                          .filter((s) => !tSpielerIds.includes(s.id))
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((s) => (
+                          <div
+                            key={s.id}
+                            style={{
+                              padding: "10px 14px",
+                              cursor: "pointer",
+                              borderBottom: "1px solid var(--border-light)",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center"
+                            }}
+                            onClick={() => {
+                              toggleSpielerPick(s.id);
+                              setSpielerSuche("");
+                            }}
+                          >
                             <div>
                               <strong>{s.name}</strong>
-                              <div className="muted">
-                                {s.kontaktEmail ?? ""}
-                                {s.kontaktTelefon
-                                  ? `, ${s.kontaktTelefon}`
-                                  : ""}
-                              </div>
-                              {s.rechnungsAdresse ? (
-                                <div className="muted">
-                                  Rechnungsadresse: {s.rechnungsAdresse}
-                                </div>
-                              ) : null}
-                              {s.notizen ? (
-                                <div className="muted">{s.notizen}</div>
-                              ) : null}
+                              {s.kontaktEmail && (
+                                <span className="muted" style={{ marginLeft: 8 }}>
+                                  {s.kontaktEmail}
+                                </span>
+                              )}
                             </div>
-                            <div className="smallActions">
-                              <button
-                                className={`btn micro ${
-                                  checked ? "" : "btnGhost"
-                                }`}
-                                onClick={() => toggleSpielerPick(s.id)}
+                            <span style={{ color: "var(--primary)", fontSize: 12 }}>
+                              + Hinzufügen
+                            </span>
+                          </div>
+                        ))}
+                        {filteredSpielerForPick.filter((s) => !tSpielerIds.includes(s.id)).length === 0 && (
+                          <div style={{ padding: "10px 14px", color: "var(--text-muted)" }}>
+                            Keine Spieler gefunden
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Dropdown ohne Suche - alle verfügbaren Spieler */}
+                    {!spielerSuche.trim() && (
+                      <div className="field" style={{ marginTop: 8 }}>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              toggleSpielerPick(e.target.value);
+                            }
+                          }}
+                          style={{ width: "100%" }}
+                        >
+                          <option value="">Spieler auswählen...</option>
+                          {spieler
+                            .filter((s) => !tSpielerIds.includes(s.id))
+                            .slice()
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}{s.kontaktEmail ? ` (${s.kontaktEmail})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Ausgewählte Spieler anzeigen */}
+                    {tSpielerIds.length > 0 && (
+                      <div style={{ marginTop: 12 }}>
+                        <div className="muted" style={{ marginBottom: 8 }}>Ausgewählte Spieler:</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          {tSpielerIds.map((id) => {
+                            const s = spielerById.get(id);
+                            if (!s) return null;
+                            return (
+                              <span
+                                key={id}
+                                className="pill"
+                                style={{ 
+                                  display: "inline-flex", 
+                                  alignItems: "center", 
+                                  gap: 6,
+                                  background: "rgba(34, 197, 94, 0.15)",
+                                  color: "#15803d"
+                                }}
                               >
-                                {checked ? "Entfernen" : "Hinzufügen"}
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                                {s.name}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSpielerPick(id)}
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: 14,
+                                    lineHeight: 1,
+                                    color: "#991b1b"
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -3017,72 +3135,7 @@ export default function App() {
                 {verwaltungTab === "trainer" && (
                   <div className="card">
                     <h2>Trainer verwalten</h2>
-                    <div className="row">
-                      <div className="field">
-                        <label>Name</label>
-                        <input
-                          value={trainerName}
-                          onChange={(e) => setTrainerName(e.target.value)}
-                          placeholder="z.B. Jesper"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Email</label>
-                        <input
-                          value={trainerEmail}
-                          onChange={(e) => setTrainerEmail(e.target.value)}
-                          placeholder="z.B. trainer@example.com"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Stundensatz Trainer Honorar</label>
-                        <input
-                          type="number"
-                          value={
-                            trainerStundensatz === ""
-                              ? ""
-                              : trainerStundensatz
-                          }
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v === "") {
-                              setTrainerStundensatz("");
-                            } else {
-                              const n = Number(v);
-                              setTrainerStundensatz(
-                                Number.isFinite(n) ? n : ""
-                              );
-                            }
-                          }}
-                          placeholder="z.B. 20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <button
-                        className="btn"
-                        onClick={editingTrainerId ? saveTrainer : addTrainer}
-                      >
-                        {editingTrainerId
-                          ? "Trainer speichern"
-                          : "Trainer hinzufügen"}
-                      </button>
-                      {editingTrainerId && (
-                        <button
-                          className="btn btnGhost"
-                          onClick={() => {
-                            setEditingTrainerId(null);
-                            setTrainerName("");
-                            setTrainerEmail("");
-                            setTrainerStundensatz(0);
-                          }}
-                        >
-                          Abbrechen
-                        </button>
-                      )}
-                    </div>
-
+                    
                     <ul className="list">
                       {trainers.map((t) => (
                         <li key={t.id} className="listItem">
@@ -3098,7 +3151,10 @@ export default function App() {
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() => startEditTrainer(t)}
+                              onClick={() => {
+                                startEditTrainer(t);
+                                setShowTrainerForm(true);
+                              }}
                             >
                               Bearbeiten
                             </button>
@@ -3114,89 +3170,129 @@ export default function App() {
                         </li>
                       ))}
                     </ul>
+
+                    {!showTrainerForm && !editingTrainerId && (
+                      <div style={{ marginTop: 16 }}>
+                        <button
+                          className="btn"
+                          onClick={() => setShowTrainerForm(true)}
+                        >
+                          Neuen Trainer hinzufügen
+                        </button>
+                      </div>
+                    )}
+
+                    {(showTrainerForm || editingTrainerId) && (
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingTrainerId ? "Trainer bearbeiten" : "Neuen Trainer hinzufügen"}</h3>
+                        <div className="row">
+                          <div className="field">
+                            <label>Name</label>
+                            <input
+                              value={trainerName}
+                              onChange={(e) => setTrainerName(e.target.value)}
+                              placeholder="z.B. Jesper"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Email</label>
+                            <input
+                              value={trainerEmail}
+                              onChange={(e) => setTrainerEmail(e.target.value)}
+                              placeholder="z.B. trainer@example.com"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Stundensatz Trainer Honorar</label>
+                            <input
+                              type="number"
+                              value={
+                                trainerStundensatz === ""
+                                  ? ""
+                                  : trainerStundensatz
+                              }
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === "") {
+                                  setTrainerStundensatz("");
+                                } else {
+                                  const n = Number(v);
+                                  setTrainerStundensatz(
+                                    Number.isFinite(n) ? n : ""
+                                  );
+                                }
+                              }}
+                              placeholder="z.B. 20"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              if (editingTrainerId) {
+                                saveTrainer();
+                              } else {
+                                addTrainer();
+                              }
+                              setShowTrainerForm(false);
+                            }}
+                          >
+                            {editingTrainerId
+                              ? "Trainer speichern"
+                              : "Trainer hinzufügen"}
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setEditingTrainerId(null);
+                              setTrainerName("");
+                              setTrainerEmail("");
+                              setTrainerStundensatz(0);
+                              setShowTrainerForm(false);
+                            }}
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {verwaltungTab === "spieler" && (
                   <div className="card">
                     <h2>Spieler verwalten</h2>
-                    <div className="row">
-                      <div className="field">
-                        <label>Name</label>
-                        <input
-                          value={spielerName}
-                          onChange={(e) => setSpielerName(e.target.value)}
-                          placeholder="Name"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Email</label>
-                        <input
-                          value={spielerEmail}
-                          onChange={(e) => setSpielerEmail(e.target.value)}
-                          placeholder="Kontakt Email"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Telefon</label>
-                        <input
-                          value={spielerTelefon}
-                          onChange={(e) => setSpielerTelefon(e.target.value)}
-                          placeholder="Telefon"
-                        />
-                      </div>
-                    </div>
 
-                    <div className="row">
-                      <div className="field" style={{ minWidth: 260 }}>
-                        <label>Rechnungsadresse</label>
+                    <div className="row" style={{ marginBottom: 12 }}>
+                      <div className="field" style={{ flex: 1 }}>
+                        <label>Suche</label>
                         <input
-                          value={spielerRechnung}
-                          onChange={(e) => setSpielerRechnung(e.target.value)}
-                          placeholder="optional"
+                          value={verwaltungSpielerSuche}
+                          onChange={(e) => setVerwaltungSpielerSuche(e.target.value)}
+                          placeholder="Name oder Email suchen..."
                         />
                       </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="field" style={{ minWidth: 260 }}>
-                        <label>Notizen</label>
-                        <input
-                          value={spielerNotizen}
-                          onChange={(e) => setSpielerNotizen(e.target.value)}
-                          placeholder="optional"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <button
-                        className="btn"
-                        onClick={editingSpielerId ? saveSpieler : addSpieler}
-                      >
-                        {editingSpielerId
-                          ? "Spieler speichern"
-                          : "Spieler hinzufügen"}
-                      </button>
-                      {editingSpielerId && (
-                        <button
-                          className="btn btnGhost"
-                          onClick={() => {
-                            setEditingSpielerId(null);
-                            setSpielerName("");
-                            setSpielerEmail("");
-                            setSpielerTelefon("");
-                            setSpielerRechnung("");
-                            setSpielerNotizen("");
-                          }}
-                        >
-                          Abbrechen
-                        </button>
-                      )}
+                      <span className="pill">
+                        Gesamt: <strong>{spieler.length}</strong>
+                      </span>
                     </div>
 
                     <ul className="list">
-                      {spieler.map((s) => (
+                      {spieler
+                        .slice()
+                        .filter((s) => {
+                          const q = verwaltungSpielerSuche.trim().toLowerCase();
+                          if (!q) return true;
+                          return (
+                            s.name.toLowerCase().includes(q) ||
+                            (s.kontaktEmail ?? "").toLowerCase().includes(q) ||
+                            (s.kontaktTelefon ?? "").toLowerCase().includes(q)
+                          );
+                        })
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((s) => (
                         <li key={s.id} className="listItem">
                           <div>
                             <strong>{s.name}</strong>
@@ -3218,7 +3314,10 @@ export default function App() {
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() => startEditSpieler(s)}
+                              onClick={() => {
+                                startEditSpieler(s);
+                                setShowSpielerForm(true);
+                              }}
                             >
                               Bearbeiten
                             </button>
@@ -3232,90 +3331,109 @@ export default function App() {
                         </li>
                       ))}
                     </ul>
+
+                    {!showSpielerForm && !editingSpielerId && (
+                      <div style={{ marginTop: 16 }}>
+                        <button
+                          className="btn"
+                          onClick={() => setShowSpielerForm(true)}
+                        >
+                          Neuen Spieler hinzufügen
+                        </button>
+                      </div>
+                    )}
+
+                    {(showSpielerForm || editingSpielerId) && (
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingSpielerId ? "Spieler bearbeiten" : "Neuen Spieler hinzufügen"}</h3>
+                        <div className="row">
+                          <div className="field">
+                            <label>Name</label>
+                            <input
+                              value={spielerName}
+                              onChange={(e) => setSpielerName(e.target.value)}
+                              placeholder="Name"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Email</label>
+                            <input
+                              value={spielerEmail}
+                              onChange={(e) => setSpielerEmail(e.target.value)}
+                              placeholder="Kontakt Email"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Telefon</label>
+                            <input
+                              value={spielerTelefon}
+                              onChange={(e) => setSpielerTelefon(e.target.value)}
+                              placeholder="Telefon"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <div className="field" style={{ minWidth: 260 }}>
+                            <label>Rechnungsadresse</label>
+                            <input
+                              value={spielerRechnung}
+                              onChange={(e) => setSpielerRechnung(e.target.value)}
+                              placeholder="optional"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <div className="field" style={{ minWidth: 260 }}>
+                            <label>Notizen</label>
+                            <input
+                              value={spielerNotizen}
+                              onChange={(e) => setSpielerNotizen(e.target.value)}
+                              placeholder="optional"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              if (editingSpielerId) {
+                                saveSpieler();
+                              } else {
+                                addSpieler();
+                              }
+                              setShowSpielerForm(false);
+                            }}
+                          >
+                            {editingSpielerId
+                              ? "Spieler speichern"
+                              : "Spieler hinzufügen"}
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setEditingSpielerId(null);
+                              setSpielerName("");
+                              setSpielerEmail("");
+                              setSpielerTelefon("");
+                              setSpielerRechnung("");
+                              setSpielerNotizen("");
+                              setShowSpielerForm(false);
+                            }}
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {verwaltungTab === "tarife" && (
                   <div className="card">
                     <h2>Tarife verwalten</h2>
-                    <div className="row">
-                      <div className="field">
-                        <label>Name</label>
-                        <input
-                          value={tarifName}
-                          onChange={(e) => setTarifName(e.target.value)}
-                          placeholder="z.B. Gruppentraining"
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Preis pro Stunde</label>
-                        <input
-                          type="number"
-                          value={tarifPreisProStunde}
-                          onChange={(e) =>
-                            setTarifPreisProStunde(
-                              Number(e.target.value) || 0
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Abrechnung</label>
-                        <select
-                          value={tarifAbrechnung}
-                          onChange={(e) =>
-                            setTarifAbrechnung(
-                              e.target.value as
-                                | "proTraining"
-                                | "proSpieler"
-                                | "monatlich"
-                            )
-                          }
-                        >
-                          <option value="proTraining">Pro Training</option>
-                          <option value="proSpieler">Pro Spieler</option>
-                          <option value="monatlich">Monatlich</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="field" style={{ minWidth: 260 }}>
-                        <label>Beschreibung</label>
-                        <input
-                          value={tarifBeschreibung}
-                          onChange={(e) =>
-                            setTarifBeschreibung(e.target.value)
-                          }
-                          placeholder="optional"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <button
-                        className="btn"
-                        onClick={editingTarifId ? saveTarif : addTarif}
-                      >
-                        {editingTarifId
-                          ? "Tarif speichern"
-                          : "Tarif hinzufügen"}
-                      </button>
-                      {editingTarifId && (
-                        <button
-                          className="btn btnGhost"
-                          onClick={() => {
-                            setEditingTarifId(null);
-                            setTarifName("");
-                            setTarifPreisProStunde(60);
-                            setTarifAbrechnung("proTraining");
-                            setTarifBeschreibung("");
-                          }}
-                        >
-                          Abbrechen
-                        </button>
-                      )}
-                    </div>
 
                     <ul className="list">
                       {tarife.map((t) => (
@@ -3338,7 +3456,10 @@ export default function App() {
                           <div className="smallActions">
                             <button
                               className="btn micro btnGhost"
-                              onClick={() => startEditTarif(t)}
+                              onClick={() => {
+                                startEditTarif(t);
+                                setShowTarifForm(true);
+                              }}
                             >
                               Bearbeiten
                             </button>
@@ -3352,6 +3473,107 @@ export default function App() {
                         </li>
                       ))}
                     </ul>
+
+                    {!showTarifForm && !editingTarifId && (
+                      <div style={{ marginTop: 16 }}>
+                        <button
+                          className="btn"
+                          onClick={() => setShowTarifForm(true)}
+                        >
+                          Neuen Tarif hinzufügen
+                        </button>
+                      </div>
+                    )}
+
+                    {(showTarifForm || editingTarifId) && (
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingTarifId ? "Tarif bearbeiten" : "Neuen Tarif hinzufügen"}</h3>
+                        <div className="row">
+                          <div className="field">
+                            <label>Name</label>
+                            <input
+                              value={tarifName}
+                              onChange={(e) => setTarifName(e.target.value)}
+                              placeholder="z.B. Gruppentraining"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Preis pro Stunde</label>
+                            <input
+                              type="number"
+                              value={tarifPreisProStunde}
+                              onChange={(e) =>
+                                setTarifPreisProStunde(
+                                  Number(e.target.value) || 0
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Abrechnung</label>
+                            <select
+                              value={tarifAbrechnung}
+                              onChange={(e) =>
+                                setTarifAbrechnung(
+                                  e.target.value as
+                                    | "proTraining"
+                                    | "proSpieler"
+                                    | "monatlich"
+                                )
+                              }
+                            >
+                              <option value="proTraining">Pro Training</option>
+                              <option value="proSpieler">Pro Spieler</option>
+                              <option value="monatlich">Monatlich</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <div className="field" style={{ minWidth: 260 }}>
+                            <label>Beschreibung</label>
+                            <input
+                              value={tarifBeschreibung}
+                              onChange={(e) =>
+                                setTarifBeschreibung(e.target.value)
+                              }
+                              placeholder="optional"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="row">
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              if (editingTarifId) {
+                                saveTarif();
+                              } else {
+                                addTarif();
+                              }
+                              setShowTarifForm(false);
+                            }}
+                          >
+                            {editingTarifId
+                              ? "Tarif speichern"
+                              : "Tarif hinzufügen"}
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setEditingTarifId(null);
+                              setTarifName("");
+                              setTarifPreisProStunde(60);
+                              setTarifAbrechnung("proTraining");
+                              setTarifBeschreibung("");
+                              setShowTarifForm(false);
+                            }}
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
