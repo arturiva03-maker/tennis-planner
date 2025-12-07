@@ -58,6 +58,14 @@ type Training = {
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
 
+type Notiz = {
+  id: string;
+  titel: string;
+  inhalt: string;
+  erstelltAm: string;
+  aktualisiertAm: string;
+};
+
 type AppState = {
   trainers: Trainer[];
   spieler: Spieler[];
@@ -65,9 +73,10 @@ type AppState = {
   trainings: Training[];
   payments: PaymentsMap;
   trainerPayments: TrainerPaymentsMap;
+  notizen?: Notiz[];
 };
 
-type Tab = "kalender" | "training" | "verwaltung" | "abrechnung";
+type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres";
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -242,6 +251,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     })),
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
+    notizen: parsed?.notizen ?? [],
   };
 }
 
@@ -461,6 +471,9 @@ export default function App() {
   );
   const [trainerPayments, setTrainerPayments] =
     useState<TrainerPaymentsMap>(initial.state.trainerPayments ?? {});
+  const [notizen, setNotizen] = useState<Notiz[]>(
+    initial.state.notizen ?? []
+  );
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -543,6 +556,12 @@ export default function App() {
   const [showTarifForm, setShowTarifForm] = useState(false);
   const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
 
+  // States für Notizen (Weiteres)
+  const [showNotizForm, setShowNotizForm] = useState(false);
+  const [editingNotizId, setEditingNotizId] = useState<string | null>(null);
+  const [notizTitel, setNotizTitel] = useState("");
+  const [notizInhalt, setNotizInhalt] = useState("");
+
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
@@ -582,8 +601,9 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
+      notizen,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, notizen]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -782,6 +802,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setNotizen(local.state.notizen ?? []);
         setInitialSynced(true);
         return;
       }
@@ -798,6 +819,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setNotizen(local.state.notizen ?? []);
         setInitialSynced(true);
         return;
       }
@@ -820,6 +842,7 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
+        setNotizen(cloud.notizen ?? []);
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -828,6 +851,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setNotizen(local.state.notizen ?? []);
       }
 
       setInitialSynced(true);
@@ -877,6 +901,7 @@ export default function App() {
               setTrainings(cloud.trainings);
               setPayments(cloud.payments ?? {});
               setTrainerPayments(cloud.trainerPayments ?? {});
+              setNotizen(cloud.notizen ?? []);
             }
           }
         }
@@ -913,6 +938,7 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
+      notizen,
     };
 
     const updatedAt = new Date().toISOString();
@@ -941,6 +967,7 @@ export default function App() {
     trainings,
     payments,
     trainerPayments,
+    notizen,
   ]);
 
 
@@ -988,7 +1015,7 @@ export default function App() {
 
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
-    : ["kalender", "training", "verwaltung", "abrechnung"];
+    : ["kalender", "training", "verwaltung", "abrechnung", "weiteres"];
 
   const roleLabel = isTrainer ? "Trainer" : "Admin";
 
@@ -2083,6 +2110,68 @@ export default function App() {
     );
   }
 
+  /* ::::: Notiz-Funktionen ::::: */
+
+  function addNotiz() {
+    const titel = notizTitel.trim();
+    if (!titel) return;
+
+    const now = new Date().toISOString();
+    const neu: Notiz = {
+      id: uid(),
+      titel,
+      inhalt: notizInhalt.trim(),
+      erstelltAm: now,
+      aktualisiertAm: now,
+    };
+
+    setNotizen((prev) => [neu, ...prev]);
+    setNotizTitel("");
+    setNotizInhalt("");
+    setShowNotizForm(false);
+  }
+
+  function startEditNotiz(n: Notiz) {
+    setEditingNotizId(n.id);
+    setNotizTitel(n.titel);
+    setNotizInhalt(n.inhalt);
+    setShowNotizForm(true);
+  }
+
+  function saveNotiz() {
+    if (!editingNotizId) return;
+    const titel = notizTitel.trim();
+    if (!titel) return;
+
+    setNotizen((prev) =>
+      prev.map((n) =>
+        n.id === editingNotizId
+          ? {
+              ...n,
+              titel,
+              inhalt: notizInhalt.trim(),
+              aktualisiertAm: new Date().toISOString(),
+            }
+          : n
+      )
+    );
+
+    setEditingNotizId(null);
+    setNotizTitel("");
+    setNotizInhalt("");
+    setShowNotizForm(false);
+  }
+
+  function deleteNotiz(id: string) {
+    setNotizen((prev) => prev.filter((n) => n.id !== id));
+    if (editingNotizId === id) {
+      setEditingNotizId(null);
+      setNotizTitel("");
+      setNotizInhalt("");
+      setShowNotizForm(false);
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -2219,6 +2308,7 @@ export default function App() {
                 {t === "training" && "Training"}
                 {t === "verwaltung" && "Verwaltung"}
                 {t === "abrechnung" && "Abrechnung"}
+                {t === "weiteres" && "Weiteres"}
               </button>
             ))}
           </nav>
@@ -4067,6 +4157,140 @@ export default function App() {
                       </ul>
                     </>
                   )}
+              </div>
+            )}
+
+            {tab === "weiteres" && !isTrainer && (
+              <div className="card">
+                <h2>Weiteres</h2>
+                <p className="muted" style={{ marginBottom: 16 }}>
+                  Hier kannst du allgemeine Notizen speichern, z.B. Urlaubstage von Trainern, wichtige Termine oder sonstige Informationen.
+                </p>
+
+                <ul className="list">
+                  {notizen.map((n) => {
+                    const erstelltDate = new Date(n.erstelltAm);
+                    const aktualisiertDate = new Date(n.aktualisiertAm);
+                    const erstelltFormatted = `${pad2(erstelltDate.getDate())}.${pad2(erstelltDate.getMonth() + 1)}.${erstelltDate.getFullYear()}`;
+                    const aktualisiertFormatted = `${pad2(aktualisiertDate.getDate())}.${pad2(aktualisiertDate.getMonth() + 1)}.${aktualisiertDate.getFullYear()}`;
+                    
+                    return (
+                      <li key={n.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div>
+                            <strong>{n.titel}</strong>
+                            <div className="muted" style={{ fontSize: 11 }}>
+                              Erstellt: {erstelltFormatted}
+                              {n.erstelltAm !== n.aktualisiertAm && ` · Bearbeitet: ${aktualisiertFormatted}`}
+                            </div>
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => startEditNotiz(n)}
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              className="btn micro btnWarn"
+                              onClick={() => deleteNotiz(n.id)}
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </div>
+                        {n.inhalt && (
+                          <div style={{ 
+                            whiteSpace: "pre-wrap", 
+                            background: "var(--bg-inset)", 
+                            padding: 12, 
+                            borderRadius: "var(--radius-md)",
+                            fontSize: 14,
+                            lineHeight: 1.5
+                          }}>
+                            {n.inhalt}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {notizen.length === 0 && !showNotizForm && (
+                  <div className="muted" style={{ textAlign: "center", padding: 20 }}>
+                    Noch keine Notizen vorhanden.
+                  </div>
+                )}
+
+                {!showNotizForm && !editingNotizId && (
+                  <div style={{ marginTop: 16 }}>
+                    <button
+                      className="btn"
+                      onClick={() => setShowNotizForm(true)}
+                    >
+                      Neue Notiz hinzufügen
+                    </button>
+                  </div>
+                )}
+
+                {(showNotizForm || editingNotizId) && (
+                  <div className="card cardInset" style={{ marginTop: 16 }}>
+                    <h3>{editingNotizId ? "Notiz bearbeiten" : "Neue Notiz hinzufügen"}</h3>
+                    <div className="field">
+                      <label>Titel</label>
+                      <input
+                        value={notizTitel}
+                        onChange={(e) => setNotizTitel(e.target.value)}
+                        placeholder="z.B. Urlaubstage Trainer Max"
+                      />
+                    </div>
+                    <div className="field" style={{ marginTop: 12 }}>
+                      <label>Inhalt</label>
+                      <textarea
+                        value={notizInhalt}
+                        onChange={(e) => setNotizInhalt(e.target.value)}
+                        placeholder="Details hier eingeben..."
+                        rows={6}
+                        style={{
+                          width: "100%",
+                          font: "inherit",
+                          fontSize: 15,
+                          padding: "10px 14px",
+                          borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--border)",
+                          background: "var(--bg-card)",
+                          resize: "vertical",
+                          minHeight: 120
+                        }}
+                      />
+                    </div>
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <button
+                        className="btn"
+                        onClick={() => {
+                          if (editingNotizId) {
+                            saveNotiz();
+                          } else {
+                            addNotiz();
+                          }
+                        }}
+                      >
+                        {editingNotizId ? "Notiz speichern" : "Notiz hinzufügen"}
+                      </button>
+                      <button
+                        className="btn btnGhost"
+                        onClick={() => {
+                          setEditingNotizId(null);
+                          setNotizTitel("");
+                          setNotizInhalt("");
+                          setShowNotizForm(false);
+                        }}
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
