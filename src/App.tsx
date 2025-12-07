@@ -555,6 +555,7 @@ export default function App() {
   const [showSpielerForm, setShowSpielerForm] = useState(false);
   const [showTarifForm, setShowTarifForm] = useState(false);
   const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
+  const [spielerError, setSpielerError] = useState<string | null>(null);
 
   // States für Notizen (Weiteres)
   const [showNotizForm, setShowNotizForm] = useState(false);
@@ -1265,6 +1266,26 @@ export default function App() {
     const name = spielerName.trim();
     if (!name) return;
 
+    // Duplikatscheck: Name oder Email bereits vorhanden?
+    const nameLower = name.toLowerCase();
+    const emailLower = spielerEmail.trim().toLowerCase();
+    
+    const duplicate = spieler.find((s) => {
+      const existingNameLower = s.name.trim().toLowerCase();
+      const existingEmailLower = (s.kontaktEmail ?? "").trim().toLowerCase();
+      
+      if (existingNameLower === nameLower) return true;
+      if (emailLower && existingEmailLower && existingEmailLower === emailLower) return true;
+      return false;
+    });
+
+    if (duplicate) {
+      setSpielerError("Es existiert bereits ein Spieler mit gleichem Namen oder gleicher Email.");
+      return;
+    }
+
+    setSpielerError(null);
+
     const neu: Spieler = {
       id: uid(),
       name,
@@ -1281,6 +1302,7 @@ export default function App() {
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
+    setShowSpielerForm(false);
   }
 
   function startEditSpieler(s: Spieler) {
@@ -1296,6 +1318,29 @@ export default function App() {
     if (!editingSpielerId) return;
     const name = spielerName.trim();
     if (!name) return;
+
+    // Duplikatscheck: Name oder Email bereits bei anderem Spieler vorhanden?
+    const nameLower = name.toLowerCase();
+    const emailLower = spielerEmail.trim().toLowerCase();
+    
+    const duplicate = spieler.find((s) => {
+      // Nicht mit sich selbst vergleichen
+      if (s.id === editingSpielerId) return false;
+      
+      const existingNameLower = s.name.trim().toLowerCase();
+      const existingEmailLower = (s.kontaktEmail ?? "").trim().toLowerCase();
+      
+      if (existingNameLower === nameLower) return true;
+      if (emailLower && existingEmailLower && existingEmailLower === emailLower) return true;
+      return false;
+    });
+
+    if (duplicate) {
+      setSpielerError("Es existiert bereits ein Spieler mit gleichem Namen oder gleicher Email.");
+      return;
+    }
+
+    setSpielerError(null);
 
     setSpieler((prev) =>
       prev.map((s) =>
@@ -1318,6 +1363,7 @@ export default function App() {
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
+    setShowSpielerForm(false);
   }
 
   function addTarif() {
@@ -1541,6 +1587,22 @@ export default function App() {
     clearTrainingSelection();
   }
 
+  function batchSetDurchgefuehrtUndBarBezahlt() {
+    if (isTrainer) return;
+    if (selectedTrainingIds.length === 0) return;
+    setTrainings((prev) =>
+      prev.map((t) =>
+        selectedTrainingIds.includes(t.id)
+          ? { ...t, status: "durchgefuehrt", barBezahlt: true }
+          : t
+      )
+    );
+    selectedTrainingIds.forEach((id) => {
+      triggerDonePulse(id);
+    });
+    clearTrainingSelection();
+  }
+
   function batchDeleteSelectedTrainings() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
@@ -1597,6 +1659,22 @@ export default function App() {
         if (t.status !== "geplant") return t;
         changed = true;
         return { ...t, status: "durchgefuehrt" };
+      })
+    );
+
+    if (changed) triggerDonePulse(trainingId);
+  }
+
+  function markTrainingDoneAndBarBezahlt(trainingId: string) {
+    if (isTrainer) return;
+    let changed = false;
+
+    setTrainings((prev) =>
+      prev.map((t) => {
+        if (t.id !== trainingId) return t;
+        if (t.status !== "geplant") return t;
+        changed = true;
+        return { ...t, status: "durchgefuehrt", barBezahlt: true };
       })
     );
 
@@ -2249,6 +2327,27 @@ export default function App() {
     setProfileFinished(false);
   }
 
+  // Hilfsfunktion: Prüft ob ein Spieler bar bezahlte Trainings im Monat hat
+  const hasBarForSpielerInMonth = useCallback(
+    (spielerId: string) => {
+      return trainingsInMonth.some(
+        (t) => t.barBezahlt && t.spielerIds.includes(spielerId)
+      );
+    },
+    [trainingsInMonth]
+  );
+
+  // Kombinierte Paid-Logik: manuell bezahlt markiert ODER bar bezahlt
+  const isPaidForSpieler = useCallback(
+    (spielerId: string) => {
+      const key = paymentKey(abrechnungMonat, spielerId);
+      const paidFromToggle = payments[key] ?? false;
+      const paidFromCash = hasBarForSpielerInMonth(spielerId);
+      return paidFromToggle || paidFromCash;
+    },
+    [abrechnungMonat, payments, hasBarForSpielerInMonth]
+  );
+
     if (authLoading || profileLoading || !initialSynced) {
     return (
       <div className="container">
@@ -2265,8 +2364,7 @@ export default function App() {
   }
 
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
-    const key = paymentKey(abrechnungMonat, r.id);
-    const paid = payments[key] ?? false;
+    const paid = isPaidForSpieler(r.id);
 
     if (abrechnungFilter === "alle") return true;
     if (abrechnungFilter === "bezahlt") return paid;
@@ -2277,16 +2375,14 @@ export default function App() {
 
   const sumBezahlt = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const key = paymentKey(abrechnungMonat, r.id);
-      const paid = payments[key] ?? false;
+      const paid = isPaidForSpieler(r.id);
       return acc + (paid ? r.sum : 0);
     }, 0)
   );
 
   const sumOffen = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const key = paymentKey(abrechnungMonat, r.id);
-      const paid = payments[key] ?? false;
+      const paid = isPaidForSpieler(r.id);
       return acc + (!paid ? r.sum : 0);
     }, 0)
   );
@@ -2478,6 +2574,16 @@ export default function App() {
                         }
                       >
                         Alle durchgeführt
+                      </button>
+                      <button
+                        className="btn micro"
+                        style={{
+                          backgroundColor: "#8b5cf6",
+                          borderColor: "#8b5cf6",
+                        }}
+                        onClick={batchSetDurchgefuehrtUndBarBezahlt}
+                      >
+                        Alle durchgeführt + bar
                       </button>
                       <button
                         className="btn micro"
@@ -2876,7 +2982,16 @@ export default function App() {
                         <input
                           type="time"
                           value={tVon}
-                          onChange={(e) => setTVon(e.target.value)}
+                          onChange={(e) => {
+                            const newVon = e.target.value;
+                            setTVon(newVon);
+                            // Automatisch Endzeit auf +60 Minuten setzen
+                            const vonMinutes = toMinutes(newVon);
+                            const bisMinutes = vonMinutes + 60;
+                            const bisH = Math.floor(bisMinutes / 60);
+                            const bisM = bisMinutes % 60;
+                            setTBis(`${pad2(bisH)}:${pad2(bisM)}`);
+                          }}
                         />
                       </div>
                       <div className="field">
@@ -3113,6 +3228,22 @@ export default function App() {
                           onClick={() => deleteTraining(selectedTrainingId)}
                         >
                           Training löschen
+                        </button>
+                      )}
+                      {selectedTrainingId && tStatus === "geplant" && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#8b5cf6",
+                            borderColor: "#8b5cf6",
+                          }}
+                          onClick={() => {
+                            markTrainingDoneAndBarBezahlt(selectedTrainingId);
+                            resetTrainingForm();
+                            setTab("kalender");
+                          }}
+                        >
+                          Durchgeführt + bar
                         </button>
                       )}
                       <span className="pill">
@@ -3438,81 +3569,46 @@ export default function App() {
                       <span className="pill">
                         Gesamt: <strong>{spieler.length}</strong>
                       </span>
-                    </div>
-
-                    <ul className="list">
-                      {spieler
-                        .slice()
-                        .filter((s) => {
-                          const q = verwaltungSpielerSuche.trim().toLowerCase();
-                          if (!q) return true;
-                          return (
-                            s.name.toLowerCase().includes(q) ||
-                            (s.kontaktEmail ?? "").toLowerCase().includes(q) ||
-                            (s.kontaktTelefon ?? "").toLowerCase().includes(q)
-                          );
-                        })
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map((s) => (
-                        <li key={s.id} className="listItem">
-                          <div>
-                            <strong>{s.name}</strong>
-                            <div className="muted">
-                              {s.kontaktEmail ?? ""}
-                              {s.kontaktTelefon
-                                ? `, ${s.kontaktTelefon}`
-                                : ""}
-                            </div>
-                            {s.rechnungsAdresse && (
-                              <div className="muted">
-                                Rechnungsadresse: {s.rechnungsAdresse}
-                              </div>
-                            )}
-                            {s.notizen && (
-                              <div className="muted">{s.notizen}</div>
-                            )}
-                          </div>
-                          <div className="smallActions">
-                            <button
-                              className="btn micro btnGhost"
-                              onClick={() => {
-                                startEditSpieler(s);
-                                setShowSpielerForm(true);
-                              }}
-                            >
-                              Bearbeiten
-                            </button>
-                            <button
-                              className="btn micro btnWarn"
-                              onClick={() => deleteSpieler(s.id)}
-                            >
-                              Löschen
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {!showSpielerForm && !editingSpielerId && (
-                      <div style={{ marginTop: 16 }}>
+                      {!showSpielerForm && !editingSpielerId && (
                         <button
                           className="btn"
-                          onClick={() => setShowSpielerForm(true)}
+                          onClick={() => {
+                            setSpielerError(null);
+                            setShowSpielerForm(true);
+                          }}
                         >
                           Neuen Spieler hinzufügen
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {(showSpielerForm || editingSpielerId) && (
-                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                      <div className="card cardInset" style={{ marginBottom: 16 }}>
                         <h3>{editingSpielerId ? "Spieler bearbeiten" : "Neuen Spieler hinzufügen"}</h3>
+                        
+                        {spielerError && (
+                          <div style={{
+                            backgroundColor: "#fee2e2",
+                            border: "1px solid #dc2626",
+                            borderRadius: "var(--radius-md)",
+                            padding: "12px 16px",
+                            marginBottom: 12,
+                            color: "#991b1b",
+                            fontWeight: 500
+                          }}>
+                            {spielerError}
+                          </div>
+                        )}
+                        
                         <div className="row">
                           <div className="field">
                             <label>Name</label>
                             <input
                               value={spielerName}
-                              onChange={(e) => setSpielerName(e.target.value)}
+                              onChange={(e) => {
+                                setSpielerName(e.target.value);
+                                setSpielerError(null);
+                              }}
                               placeholder="Name"
                             />
                           </div>
@@ -3520,7 +3616,10 @@ export default function App() {
                             <label>Email</label>
                             <input
                               value={spielerEmail}
-                              onChange={(e) => setSpielerEmail(e.target.value)}
+                              onChange={(e) => {
+                                setSpielerEmail(e.target.value);
+                                setSpielerError(null);
+                              }}
                               placeholder="Kontakt Email"
                             />
                           </div>
@@ -3565,7 +3664,6 @@ export default function App() {
                               } else {
                                 addSpieler();
                               }
-                              setShowSpielerForm(false);
                             }}
                           >
                             {editingSpielerId
@@ -3581,6 +3679,7 @@ export default function App() {
                               setSpielerTelefon("");
                               setSpielerRechnung("");
                               setSpielerNotizen("");
+                              setSpielerError(null);
                               setShowSpielerForm(false);
                             }}
                           >
@@ -3589,6 +3688,60 @@ export default function App() {
                         </div>
                       </div>
                     )}
+
+                    <ul className="list">
+                      {spieler
+                        .slice()
+                        .filter((s) => {
+                          const q = verwaltungSpielerSuche.trim().toLowerCase();
+                          if (!q) return true;
+                          return (
+                            s.name.toLowerCase().includes(q) ||
+                            (s.kontaktEmail ?? "").toLowerCase().includes(q) ||
+                            (s.kontaktTelefon ?? "").toLowerCase().includes(q)
+                          );
+                        })
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((s) => (
+                        <li key={s.id} className="listItem">
+                          <div>
+                            <strong>{s.name}</strong>
+                            <div className="muted">
+                              {s.kontaktEmail ?? ""}
+                              {s.kontaktTelefon
+                                ? `, ${s.kontaktTelefon}`
+                                : ""}
+                            </div>
+                            {s.rechnungsAdresse && (
+                              <div className="muted">
+                                Rechnungsadresse: {s.rechnungsAdresse}
+                              </div>
+                            )}
+                            {s.notizen && (
+                              <div className="muted">{s.notizen}</div>
+                            )}
+                          </div>
+                          <div className="smallActions">
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => {
+                                startEditSpieler(s);
+                                setSpielerError(null);
+                                setShowSpielerForm(true);
+                              }}
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              className="btn micro btnWarn"
+                              onClick={() => deleteSpieler(s.id)}
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
@@ -3894,23 +4047,21 @@ export default function App() {
                                     )
                                     .join(" + ");
                             const key = paymentKey(abrechnungMonat, r.id);
-                            const paid = payments[key] ?? false;
+                            const paidFromToggle = payments[key] ?? false;
+                            const paidFromCash = hasBarForSpielerInMonth(r.id);
+                            const paid = paidFromToggle || paidFromCash;
 
-                            const hasBarForPlayer = trainingsInMonth.some(
-                              (t) =>
-                                t.barBezahlt &&
-                                t.spielerIds.includes(r.id)
-                            );
+                            const hasBarForPlayer = paidFromCash;
 
                             const buttonLabel =
-                              hasBarForPlayer && !paid
+                              hasBarForPlayer && !paidFromToggle
                                 ? "bar bezahlt"
-                                : paid
+                                : paidFromToggle
                                 ? "als offen markieren"
                                 : "als bezahlt markieren";
 
                             const buttonStyle =
-                              hasBarForPlayer && !paid
+                              hasBarForPlayer && !paidFromToggle
                                 ? {
                                     backgroundColor: "#dc2626",
                                     borderColor: "#dc2626",
@@ -3936,7 +4087,7 @@ export default function App() {
                                     className="btn micro"
                                     style={buttonStyle}
                                     onClick={() => {
-                                      if (paid) {
+                                      if (paidFromToggle) {
                                         togglePaidForPlayer(
                                           abrechnungMonat,
                                           r.id
@@ -4073,16 +4224,46 @@ export default function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {abrechnungTrainer.rows.map((r) => (
-                                <tr key={r.id}>
-                                  <td>{r.name}</td>
-                                  <td>{r.trainings}</td>
-                                  <td>{euro(r.sum)}</td>
-                                  <td>{euro(r.honorar)}</td>
-                                  <td>{euro(r.honorarBezahlt)}</td>
-                                  <td>{euro(r.honorarOffen)}</td>
-                                </tr>
-                              ))}
+                              {abrechnungTrainer.rows.map((r) => {
+                                const isSascha = r.name.trim().toLowerCase() === "sascha";
+                                
+                                if (isSascha) {
+                                  // Für Sascha: Bar/Nicht-Bar Stunden zählen
+                                  const saschaTrainings = trainingsForAbrechnung.filter(
+                                    (t) => (t.trainerId || defaultTrainerId) === r.id
+                                  );
+                                  const nichtBarCount = saschaTrainings.filter(
+                                    (t) => !t.barBezahlt
+                                  ).length;
+                                  const barCount = saschaTrainings.filter(
+                                    (t) => t.barBezahlt
+                                  ).length;
+                                  
+                                  return (
+                                    <tr key={r.id}>
+                                      <td>{r.name}</td>
+                                      <td>{r.trainings}</td>
+                                      <td colSpan={2} style={{ textAlign: "center" }}>
+                                        Nicht bar: {nichtBarCount}
+                                      </td>
+                                      <td colSpan={2} style={{ textAlign: "center" }}>
+                                        Bar: {barCount}
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+                                
+                                return (
+                                  <tr key={r.id}>
+                                    <td>{r.name}</td>
+                                    <td>{r.trainings}</td>
+                                    <td>{euro(r.sum)}</td>
+                                    <td>{euro(r.honorar)}</td>
+                                    <td>{euro(r.honorarBezahlt)}</td>
+                                    <td>{euro(r.honorarOffen)}</td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
