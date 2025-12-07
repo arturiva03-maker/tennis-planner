@@ -1591,11 +1591,6 @@ export default function App() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
     
-    // Sammle alle betroffenen Trainings für das payments-Update
-    const affectedTrainings = trainings.filter((t) => 
-      selectedTrainingIds.includes(t.id)
-    );
-    
     setTrainings((prev) =>
       prev.map((t) =>
         selectedTrainingIds.includes(t.id)
@@ -1603,19 +1598,7 @@ export default function App() {
           : t
       )
     );
-    
-    // 5b: Setze payments für alle Spieler der betroffenen Trainings
-    setPayments((prev) => {
-      const updated = { ...prev };
-      affectedTrainings.forEach((training) => {
-        const monatsString = training.datum.slice(0, 7);
-        training.spielerIds.forEach((pid) => {
-          const key = paymentKey(monatsString, pid);
-          updated[key] = true;
-        });
-      });
-      return updated;
-    });
+    // Kein automatisches Setzen von payments - der Status wird über das Dropdown gesteuert
     
     selectedTrainingIds.forEach((id) => {
       triggerDonePulse(id);
@@ -1698,17 +1681,7 @@ export default function App() {
         return { ...t, status: "durchgefuehrt", barBezahlt: true };
       })
     );
-
-    // 5b: Setze payments für alle Spieler des Trainings
-    const monatsString = training.datum.slice(0, 7);
-    setPayments((prev) => {
-      const updated = { ...prev };
-      training.spielerIds.forEach((pid) => {
-        const key = paymentKey(monatsString, pid);
-        updated[key] = true;
-      });
-      return updated;
-    });
+    // Kein automatisches Setzen von payments - der Status wird über das Dropdown gesteuert
 
     triggerDonePulse(trainingId);
   }
@@ -2350,20 +2323,7 @@ export default function App() {
         t.id === trainingId ? { ...t, barBezahlt: newBarBezahlt } : t
       )
     );
-    
-    // 5b: Wenn barBezahlt auf true gesetzt wird, setze payments für alle beteiligten Spieler
-    if (newBarBezahlt) {
-      const monatsString = training.datum.slice(0, 7); // "2025-12" Format
-      setPayments((prev) => {
-        const updated = { ...prev };
-        training.spielerIds.forEach((pid) => {
-          const key = paymentKey(monatsString, pid);
-          updated[key] = true;
-        });
-        return updated;
-      });
-    }
-    // Bei Zurücknahme (false) wird payments NICHT automatisch zurückgesetzt (5b)
+    // Kein automatisches Setzen von payments - der Status wird über das Dropdown gesteuert
   }
 
   /* ::::: Notiz-Funktionen ::::: */
@@ -2435,25 +2395,51 @@ export default function App() {
     setProfileFinished(false);
   }
 
-  // Hilfsfunktion: Prüft ob ein Spieler bar bezahlte Trainings im Monat hat
-  const hasBarForSpielerInMonth = useCallback(
+  // Hilfsfunktion: Berechnet die Bar-Summe für einen Spieler im Monat
+  const getSumBarForSpieler = useCallback(
     (spielerId: string) => {
-      return trainingsInMonth.some(
-        (t) => t.barBezahlt && t.spielerIds.includes(spielerId)
-      );
+      let sumBar = 0;
+      
+      // Für monatliche Tarife: Tracke ob ein monatlicher Betrag bereits gezählt wurde
+      const monthlyProcessedForBar = new Set<string>();
+      
+      trainingsInMonth.forEach((t) => {
+        if (!t.barBezahlt) return;
+        if (!t.spielerIds.includes(spielerId)) return;
+        
+        const cfg = getPreisConfig(t, tarifById);
+        if (!cfg) return;
+        
+        if (cfg.abrechnung === "monatlich") {
+          // Bei monatlichen Tarifen: Nur einmal pro Tarif+Spieler zählen
+          const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+          const processKey = `${spielerId}__${tarifKey}`;
+          if (monthlyProcessedForBar.has(processKey)) return;
+          monthlyProcessedForBar.add(processKey);
+          
+          // Für monatliche Tarife: Anzahl verschiedener Wochentage ermitteln
+          const weekdays = new Set<number>();
+          trainingsInMonth.forEach((t2) => {
+            if (!t2.spielerIds.includes(spielerId)) return;
+            const cfg2 = getPreisConfig(t2, tarifById);
+            if (!cfg2 || cfg2.abrechnung !== "monatlich") return;
+            const tarifKey2 = t2.tarifId || `custom-${cfg2.preisProStunde}`;
+            if (tarifKey2 !== tarifKey) return;
+            const trainingDate = new Date(t2.datum + "T12:00:00");
+            weekdays.add(trainingDate.getDay());
+          });
+          
+          sumBar = round2(sumBar + cfg.preisProStunde * weekdays.size);
+        } else {
+          // Für normale Tarife: Anteil pro Spieler berechnen
+          const share = priceFuerSpieler(t);
+          sumBar = round2(sumBar + share);
+        }
+      });
+      
+      return sumBar;
     },
-    [trainingsInMonth]
-  );
-
-  // Kombinierte Paid-Logik: manuell bezahlt markiert ODER bar bezahlt
-  const isPaidForSpieler = useCallback(
-    (spielerId: string) => {
-      const key = paymentKey(abrechnungMonat, spielerId);
-      const paidFromToggle = payments[key] ?? false;
-      const paidFromCash = hasBarForSpielerInMonth(spielerId);
-      return paidFromToggle || paidFromCash;
-    },
-    [abrechnungMonat, payments, hasBarForSpielerInMonth]
+    [trainingsInMonth, tarifById]
   );
 
     if (authLoading || profileLoading || !initialSynced) {
@@ -2471,27 +2457,45 @@ export default function App() {
     return <AuthScreen />;
   }
 
+  // Hilfsfunktion: Ermittle Status für einen Spieler
+  const getSpielerStatus = (spielerId: string, sum: number): "komplett_bar" | "teilweise_bar" | "komplett_abgerechnet" | "offen" | "keine_trainings" => {
+    const key = paymentKey(abrechnungMonat, spielerId);
+    const paymentsFlag = payments[key] ?? false;
+    const sumBarSpieler = getSumBarForSpieler(spielerId);
+    const sumTotalSpieler = sum;
+    
+    if (sumTotalSpieler === 0) return "keine_trainings";
+    if (sumBarSpieler === sumTotalSpieler) return "komplett_bar";
+    if (sumBarSpieler > 0 && sumBarSpieler < sumTotalSpieler) {
+      return paymentsFlag ? "komplett_abgerechnet" : "teilweise_bar";
+    }
+    return paymentsFlag ? "komplett_abgerechnet" : "offen";
+  };
+
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
-    const paid = isPaidForSpieler(r.id);
+    const status = getSpielerStatus(r.id, r.sum);
+    const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
 
     if (abrechnungFilter === "alle") return true;
-    if (abrechnungFilter === "bezahlt") return paid;
-    if (abrechnungFilter === "offen") return !paid;
-    if (abrechnungFilter === "bar") return true;
+    if (abrechnungFilter === "bezahlt") return isBezahlt;
+    if (abrechnungFilter === "offen") return !isBezahlt;
+    if (abrechnungFilter === "bar") return status === "komplett_bar" || status === "teilweise_bar";
     return true;
   });
 
   const sumBezahlt = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const paid = isPaidForSpieler(r.id);
-      return acc + (paid ? r.sum : 0);
+      const status = getSpielerStatus(r.id, r.sum);
+      const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
+      return acc + (isBezahlt ? r.sum : 0);
     }, 0)
   );
 
   const sumOffen = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const paid = isPaidForSpieler(r.id);
-      return acc + (!paid ? r.sum : 0);
+      const status = getSpielerStatus(r.id, r.sum);
+      const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
+      return acc + (!isBezahlt ? r.sum : 0);
     }, 0)
   );
 
@@ -4166,63 +4170,154 @@ export default function App() {
                             }
 
                             const key = paymentKey(abrechnungMonat, r.id);
-                            const paidFromToggle = payments[key] ?? false;
-                            const paidFromCash = hasBarForSpielerInMonth(r.id);
-                            const paid = paidFromToggle || paidFromCash;
+                            const paymentsFlag = payments[key] ?? false;
+                            
+                            // Berechne Bar-Summen
+                            const sumBarSpieler = getSumBarForSpieler(r.id);
+                            const sumTotalSpieler = r.sum;
+                            const restOffen = round2(sumTotalSpieler - sumBarSpieler);
+                            
+                            // Status-Logik gemäß Spezifikation:
+                            // 1. "komplett bar": sumBarSpieler === sumTotalSpieler && sumTotalSpieler > 0
+                            // 2. "teilweise bar bezahlt": 0 < sumBarSpieler < sumTotalSpieler
+                            // 3. "komplett abgerechnet": paymentsFlag === true && sumTotalSpieler > sumBarSpieler
+                            // 4. "offen": paymentsFlag === false && sumTotalSpieler > sumBarSpieler
+                            
+                            type SpielerStatus = "komplett_bar" | "teilweise_bar" | "komplett_abgerechnet" | "offen" | "keine_trainings";
+                            
+                            let status: SpielerStatus;
+                            if (sumTotalSpieler === 0) {
+                              status = "keine_trainings";
+                            } else if (sumBarSpieler === sumTotalSpieler) {
+                              status = "komplett_bar";
+                            } else if (sumBarSpieler > 0 && sumBarSpieler < sumTotalSpieler) {
+                              // Teilweise bar - prüfe ob Rest abgerechnet wurde
+                              if (paymentsFlag) {
+                                status = "komplett_abgerechnet";
+                              } else {
+                                status = "teilweise_bar";
+                              }
+                            } else {
+                              // Keine Bar-Zahlungen
+                              if (paymentsFlag) {
+                                status = "komplett_abgerechnet";
+                              } else {
+                                status = "offen";
+                              }
+                            }
+                            
+                            // Status-Badge Konfiguration
+                            let statusLabel: string;
+                            let statusClass: string;
+                            let statusStyle: React.CSSProperties = {};
+                            
+                            switch (status) {
+                              case "komplett_bar":
+                                statusLabel = "komplett bar";
+                                statusClass = "badge";
+                                statusStyle = { backgroundColor: "#dc2626", color: "white" };
+                                break;
+                              case "teilweise_bar":
+                                statusLabel = `teilw. bar (${euro(sumBarSpieler)})`;
+                                statusClass = "badge";
+                                statusStyle = { backgroundColor: "#f59e0b", color: "white" };
+                                break;
+                              case "komplett_abgerechnet":
+                                statusLabel = "abgerechnet";
+                                statusClass = "badge badgeOk";
+                                break;
+                              case "offen":
+                                statusLabel = "offen";
+                                statusClass = "badge";
+                                break;
+                              case "keine_trainings":
+                                statusLabel = "keine Trainings";
+                                statusClass = "badge";
+                                statusStyle = { backgroundColor: "#9ca3af", color: "white" };
+                                break;
+                            }
+                            
+                            // Dropdown-Styling
+                            let selectStyle: React.CSSProperties = {
+                              padding: "4px 8px",
+                              borderRadius: 6,
+                              border: "1px solid #d1d5db",
+                              fontSize: 13,
+                              cursor: "pointer",
+                              minWidth: 180,
+                            };
+                            
+                            if (status === "komplett_bar") {
+                              selectStyle = {
+                                ...selectStyle,
+                                backgroundColor: "#dc2626",
+                                color: "white",
+                                borderColor: "#dc2626",
+                              };
+                            } else if (status === "teilweise_bar") {
+                              selectStyle = {
+                                ...selectStyle,
+                                backgroundColor: "#f59e0b",
+                                color: "white",
+                                borderColor: "#f59e0b",
+                              };
+                            } else if (status === "komplett_abgerechnet") {
+                              selectStyle = {
+                                ...selectStyle,
+                                backgroundColor: "#16a34a",
+                                color: "white",
+                                borderColor: "#16a34a",
+                              };
+                            }
 
-                            const hasBarForPlayer = paidFromCash;
-
-                            const buttonLabel =
-                              hasBarForPlayer && !paidFromToggle
-                                ? "bar bezahlt"
-                                : paidFromToggle
-                                ? "als offen markieren"
-                                : "als bezahlt markieren";
-
-                            const buttonStyle =
-                              hasBarForPlayer && !paidFromToggle
-                                ? {
-                                    backgroundColor: "#dc2626",
-                                    borderColor: "#dc2626",
-                                  }
-                                : undefined;
+                            // Dropdown-Wert
+                            const dropdownValue = status === "komplett_abgerechnet" ? "abgerechnet" : status;
 
                             return (
                               <tr key={r.id}>
                                 <td>{r.name}</td>
                                 <td>{breakdownText}</td>
-                                <td>{euro(r.sum)}</td>
                                 <td>
-                                  <span
-                                    className={
-                                      paid ? "badge badgeOk" : "badge"
-                                    }
-                                  >
-                                    {paid ? "bezahlt" : "offen"}
+                                  {euro(sumTotalSpieler)}
+                                  {status === "teilweise_bar" && (
+                                    <div style={{ fontSize: 11, color: "#f59e0b" }}>
+                                      (Rest: {euro(restOffen)})
+                                    </div>
+                                  )}
+                                </td>
+                                <td>
+                                  <span className={statusClass} style={statusStyle}>
+                                    {statusLabel}
                                   </span>
                                 </td>
                                 <td>
-                                  <button
-                                    className="btn micro"
-                                    style={buttonStyle}
-                                    onClick={() => {
-                                      if (paidFromToggle) {
-                                        togglePaidForPlayer(
-                                          abrechnungMonat,
-                                          r.id
-                                        );
-                                      } else {
-                                        openPayConfirm(
-                                          abrechnungMonat,
-                                          r.id,
-                                          r.name,
-                                          r.sum
-                                        );
+                                  <select
+                                    style={selectStyle}
+                                    value={dropdownValue}
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      if (newVal === "abgerechnet") {
+                                        if (!paymentsFlag) {
+                                          togglePaidForPlayer(abrechnungMonat, r.id);
+                                        }
+                                      } else if (newVal === "offen" || newVal === "teilweise_bar") {
+                                        if (paymentsFlag) {
+                                          togglePaidForPlayer(abrechnungMonat, r.id);
+                                        }
                                       }
                                     }}
                                   >
-                                    {buttonLabel}
-                                  </button>
+                                    {status === "komplett_bar" && (
+                                      <option value="komplett_bar">✓ Komplett bar bezahlt</option>
+                                    )}
+                                    {(status === "teilweise_bar") && (
+                                      <option value="teilweise_bar">⚠ Teilweise bar ({euro(sumBarSpieler)})</option>
+                                    )}
+                                    <option value="abgerechnet">
+                                      ✓ Komplett abgerechnet
+                                    </option>
+                                    <option value="offen">○ Offen</option>
+                                  </select>
                                 </td>
                               </tr>
                             );
