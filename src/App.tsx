@@ -1590,6 +1590,12 @@ export default function App() {
   function batchSetDurchgefuehrtUndBarBezahlt() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
+    
+    // Sammle alle betroffenen Trainings für das payments-Update
+    const affectedTrainings = trainings.filter((t) => 
+      selectedTrainingIds.includes(t.id)
+    );
+    
     setTrainings((prev) =>
       prev.map((t) =>
         selectedTrainingIds.includes(t.id)
@@ -1597,6 +1603,20 @@ export default function App() {
           : t
       )
     );
+    
+    // 5b: Setze payments für alle Spieler der betroffenen Trainings
+    setPayments((prev) => {
+      const updated = { ...prev };
+      affectedTrainings.forEach((training) => {
+        const monatsString = training.datum.slice(0, 7);
+        training.spielerIds.forEach((pid) => {
+          const key = paymentKey(monatsString, pid);
+          updated[key] = true;
+        });
+      });
+      return updated;
+    });
+    
     selectedTrainingIds.forEach((id) => {
       triggerDonePulse(id);
     });
@@ -1667,18 +1687,30 @@ export default function App() {
 
   function markTrainingDoneAndBarBezahlt(trainingId: string) {
     if (isTrainer) return;
-    let changed = false;
-
+    
+    const training = trainings.find((t) => t.id === trainingId);
+    if (!training || training.status !== "geplant") return;
+    
     setTrainings((prev) =>
       prev.map((t) => {
         if (t.id !== trainingId) return t;
         if (t.status !== "geplant") return t;
-        changed = true;
         return { ...t, status: "durchgefuehrt", barBezahlt: true };
       })
     );
 
-    if (changed) triggerDonePulse(trainingId);
+    // 5b: Setze payments für alle Spieler des Trainings
+    const monatsString = training.datum.slice(0, 7);
+    setPayments((prev) => {
+      const updated = { ...prev };
+      training.spielerIds.forEach((pid) => {
+        const key = paymentKey(monatsString, pid);
+        updated[key] = true;
+      });
+      return updated;
+    });
+
+    triggerDonePulse(trainingId);
   }
 
   function goToToday() {
@@ -1975,9 +2007,17 @@ export default function App() {
   ]);
 
   const abrechnung = useMemo(() => {
-    const perSpieler = new Map<string, { name: string; sum: number; counts: Map<number, number> }>();
+    // 5c: Erweiterte Struktur für Bar/Nicht-Bar Unterscheidung
+    const perSpieler = new Map<string, { 
+      name: string; 
+      sum: number; 
+      countsBar: Map<number, number>;      // Beträge für bar bezahlte Trainings
+      countsNichtBar: Map<number, number>; // Beträge für nicht bar bezahlte Trainings
+    }>();
     // Für monatliche Tarife: Zähle die Anzahl verschiedener Wochentage pro Spieler+Tarif
     const monthlyWeekdayCounts = new Map<string, Set<number>>(); // key: `${pid}__${tarifKey}`, value: Set von Wochentagen (0-6)
+    // Für monatliche Tarife: Tracke ob es Bar-Trainings gibt
+    const monthlyHasBar = new Map<string, boolean>(); // key: `${pid}__${tarifKey}`
 
     // Ermittle die gesuchten Spieler-IDs bei aktiver Suche
     const searchQuery = abrechnungSpielerSuche.trim().toLowerCase();
@@ -1991,15 +2031,26 @@ export default function App() {
           .map((s) => s.id)
       : null; // null bedeutet keine Filterung
 
-    const addShare = (pid: string, name: string, amount: number) => {
+    const addShare = (pid: string, name: string, amount: number, isBar: boolean) => {
       const share = round2(amount);
       let entry = perSpieler.get(pid);
       if (!entry) {
-        entry = { name, sum: 0, counts: new Map<number, number>() };
+        entry = { 
+          name, 
+          sum: 0, 
+          countsBar: new Map<number, number>(),
+          countsNichtBar: new Map<number, number>()
+        };
         perSpieler.set(pid, entry);
       }
       entry.sum = round2(entry.sum + share);
-      entry.counts.set(share, (entry.counts.get(share) ?? 0) + 1);
+      
+      // 5c: Getrennte Zählung für Bar/Nicht-Bar
+      if (isBar) {
+        entry.countsBar.set(share, (entry.countsBar.get(share) ?? 0) + 1);
+      } else {
+        entry.countsNichtBar.set(share, (entry.countsNichtBar.get(share) ?? 0) + 1);
+      }
     };
 
     // Erst alle monatlichen Trainings sammeln um Wochentage zu zählen
@@ -2020,6 +2071,11 @@ export default function App() {
           const weekdays = monthlyWeekdayCounts.get(key) ?? new Set<number>();
           weekdays.add(weekday);
           monthlyWeekdayCounts.set(key, weekdays);
+          
+          // Tracke ob mindestens ein monatliches Training bar ist
+          if (t.barBezahlt) {
+            monthlyHasBar.set(key, true);
+          }
         });
       }
     });
@@ -2044,24 +2100,53 @@ export default function App() {
           const name = spielerById.get(pid)?.name ?? "Unbekannt";
           const weekdayCount = monthlyWeekdayCounts.get(processKey)?.size ?? 1;
           const totalAmount = cfg.preisProStunde * weekdayCount;
-          addShare(pid, name, totalAmount);
+          const isBar = monthlyHasBar.get(processKey) ?? false;
+          addShare(pid, name, totalAmount, isBar);
         });
         return;
       }
 
       const share = priceFuerSpieler(t);
+      const isBar = t.barBezahlt === true;
       t.spielerIds.forEach((pid) => {
         // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
         if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
         
         const name = spielerById.get(pid)?.name ?? "Unbekannt";
-        addShare(pid, name, share);
+        addShare(pid, name, share, isBar);
       });
     });
 
     const spielerRows = Array.from(perSpieler.entries())
       .map(([id, v]) => {
-        const breakdown = Array.from(v.counts.entries())
+        // 5c: Getrennte Breakdowns für Bar und Nicht-Bar
+        const breakdownBar = Array.from(v.countsBar.entries())
+          .map(([amount, count]) => ({
+            amount,
+            count,
+            subtotal: round2(amount * count),
+            isBar: true,
+          }))
+          .sort((a, b) => b.amount - a.amount);
+
+        const breakdownNichtBar = Array.from(v.countsNichtBar.entries())
+          .map(([amount, count]) => ({
+            amount,
+            count,
+            subtotal: round2(amount * count),
+            isBar: false,
+          }))
+          .sort((a, b) => b.amount - a.amount);
+
+        // Kombiniertes Breakdown für Kompatibilität (ohne isBar Info)
+        const allCounts = new Map<number, number>();
+        v.countsBar.forEach((count, amount) => {
+          allCounts.set(amount, (allCounts.get(amount) ?? 0) + count);
+        });
+        v.countsNichtBar.forEach((count, amount) => {
+          allCounts.set(amount, (allCounts.get(amount) ?? 0) + count);
+        });
+        const breakdown = Array.from(allCounts.entries())
           .map(([amount, count]) => ({
             amount,
             count,
@@ -2074,6 +2159,8 @@ export default function App() {
           name: v.name,
           sum: round2(v.sum),
           breakdown,
+          breakdownBar,
+          breakdownNichtBar,
         };
       })
       .sort((a, b) => b.sum - a.sum);
@@ -2251,11 +2338,32 @@ export default function App() {
 
   function toggleBarBezahlt(trainingId: string) {
     if (isTrainer) return;
+    
+    // Finde das Training um zu prüfen ob wir auf true oder false setzen
+    const training = trainings.find((t) => t.id === trainingId);
+    if (!training) return;
+    
+    const newBarBezahlt = !training.barBezahlt;
+    
     setTrainings((prev) =>
       prev.map((t) =>
-        t.id === trainingId ? { ...t, barBezahlt: !t.barBezahlt } : t
+        t.id === trainingId ? { ...t, barBezahlt: newBarBezahlt } : t
       )
     );
+    
+    // 5b: Wenn barBezahlt auf true gesetzt wird, setze payments für alle beteiligten Spieler
+    if (newBarBezahlt) {
+      const monatsString = training.datum.slice(0, 7); // "2025-12" Format
+      setPayments((prev) => {
+        const updated = { ...prev };
+        training.spielerIds.forEach((pid) => {
+          const key = paymentKey(monatsString, pid);
+          updated[key] = true;
+        });
+        return updated;
+      });
+    }
+    // Bei Zurücknahme (false) wird payments NICHT automatisch zurückgesetzt (5b)
   }
 
   /* ::::: Notiz-Funktionen ::::: */
@@ -4037,15 +4145,26 @@ export default function App() {
                         </thead>
                         <tbody>
                           {filteredSpielerRowsForMonth.map((r) => {
-                            const breakdownText =
-                              r.breakdown.length === 0
-                                ? "-"
-                                : r.breakdown
-                                    .map(
-                                      (b) =>
-                                        `${b.count} × ${euro(b.amount)}`
-                                    )
-                                    .join(" + ");
+                            // 5c: Getrennte Aufstellung für Bar und Nicht-Bar
+                            const barParts = r.breakdownBar
+                              .map((b) => `${b.count} × ${euro(b.amount)} bar`)
+                              .join(" + ");
+                            const nichtBarParts = r.breakdownNichtBar
+                              .map((b) => `${b.count} × ${euro(b.amount)}`)
+                              .join(" + ");
+                            
+                            let breakdownText = "-";
+                            if (barParts && nichtBarParts) {
+                              // Gemischter Fall: beide Teile anzeigen
+                              breakdownText = `${barParts} + ${nichtBarParts}`;
+                            } else if (barParts) {
+                              // Nur Bar
+                              breakdownText = barParts;
+                            } else if (nichtBarParts) {
+                              // Nur Nicht-Bar
+                              breakdownText = nichtBarParts;
+                            }
+
                             const key = paymentKey(abrechnungMonat, r.id);
                             const paidFromToggle = payments[key] ?? false;
                             const paidFromCash = hasBarForSpielerInMonth(r.id);
