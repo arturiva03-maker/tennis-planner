@@ -59,6 +59,7 @@ type Training = {
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
 type TrainerMonthSettledMap = Record<string, boolean>; // key: `${monat}__${trainerId}`
+type MonthlyAdjustments = Record<string, number>; // key: `${monat}__${spielerId}`, value: Anpassungsbetrag in EUR
 
 type Notiz = {
   id: string;
@@ -77,6 +78,7 @@ type AppState = {
   trainerPayments: TrainerPaymentsMap;
   trainerMonthSettled?: TrainerMonthSettledMap;
   notizen?: Notiz[];
+  monthlyAdjustments?: MonthlyAdjustments;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung";
@@ -299,6 +301,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     trainerPayments: parsed?.trainerPayments ?? {},
     trainerMonthSettled: parsed?.trainerMonthSettled ?? {},
     notizen: parsed?.notizen ?? [],
+    monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
   };
 }
 
@@ -650,6 +653,13 @@ export default function App() {
   const [notizen, setNotizen] = useState<Notiz[]>(
     initial.state.notizen ?? []
   );
+  const [monthlyAdjustments, setMonthlyAdjustments] = useState<MonthlyAdjustments>(
+    initial.state.monthlyAdjustments ?? {}
+  );
+  const [editingAdjustment, setEditingAdjustment] = useState<{
+    spielerId: string;
+    value: string;
+  } | null>(null);
   const [planungState, setPlanungState] = useState<PlanungState>(readPlanungState);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
   const [editingSheetName, setEditingSheetName] = useState("");
@@ -799,8 +809,9 @@ export default function App() {
       trainerPayments,
       trainerMonthSettled,
       notizen,
+      monthlyAdjustments,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen, monthlyAdjustments]);
 
   useEffect(() => {
     writePlanungState(planungState);
@@ -1046,6 +1057,7 @@ export default function App() {
         setTrainerPayments(cloud.trainerPayments ?? {});
         setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
         setNotizen(cloud.notizen ?? []);
+        setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1056,6 +1068,7 @@ export default function App() {
         setTrainerPayments(local.state.trainerPayments ?? {});
         setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
         setNotizen(local.state.notizen ?? []);
+        setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
       }
 
       setInitialSynced(true);
@@ -1097,6 +1110,7 @@ export default function App() {
               setTrainerPayments(cloud.trainerPayments ?? {});
               setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
               setNotizen(cloud.notizen ?? []);
+              setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
             }
           }
         }
@@ -1136,6 +1150,7 @@ export default function App() {
         trainerPayments,
         trainerMonthSettled,
         notizen,
+        monthlyAdjustments,
       };
 
       const updatedAt = new Date().toISOString();
@@ -1173,6 +1188,7 @@ export default function App() {
     trainerPayments,
     trainerMonthSettled,
     notizen,
+    monthlyAdjustments,
   ]);
 
 
@@ -2682,8 +2698,17 @@ export default function App() {
     return paymentsFlag ? "komplett_abgerechnet" : "offen";
   };
 
+  // Hilfsfunktion für angepasste Summe eines Spielers (überschreibt die berechnete Summe)
+  const getAdjustedSum = (spielerId: string, baseSum: number): number => {
+    const adjustmentKey = `${abrechnungMonat}__${spielerId}`;
+    const override = monthlyAdjustments[adjustmentKey];
+    // Wenn ein Override existiert, verwende diesen, sonst die berechnete Summe
+    return override !== undefined ? override : baseSum;
+  };
+
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
-    const status = getSpielerStatus(r.id, r.sum);
+    const adjustedSum = getAdjustedSum(r.id, r.sum);
+    const status = getSpielerStatus(r.id, adjustedSum);
     const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
 
     if (abrechnungFilter === "alle") return true;
@@ -2695,17 +2720,19 @@ export default function App() {
 
   const sumBezahlt = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const status = getSpielerStatus(r.id, r.sum);
+      const adjustedSum = getAdjustedSum(r.id, r.sum);
+      const status = getSpielerStatus(r.id, adjustedSum);
       const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
-      return acc + (isBezahlt ? r.sum : 0);
+      return acc + (isBezahlt ? adjustedSum : 0);
     }, 0)
   );
 
   const sumOffen = round2(
     abrechnung.spielerRows.reduce((acc, r) => {
-      const status = getSpielerStatus(r.id, r.sum);
+      const adjustedSum = getAdjustedSum(r.id, r.sum);
+      const status = getSpielerStatus(r.id, adjustedSum);
       const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
-      return acc + (!isBezahlt ? r.sum : 0);
+      return acc + (!isBezahlt ? adjustedSum : 0);
     }, 0)
   );
 
@@ -4409,7 +4436,7 @@ export default function App() {
                             const nichtBarParts = r.breakdownNichtBar
                               .map((b) => `${b.count} × ${euro(b.amount)}`)
                               .join(" + ");
-                            
+
                             let breakdownText = "-";
                             if (barParts && nichtBarParts) {
                               // Gemischter Fall: beide Teile anzeigen
@@ -4424,26 +4451,31 @@ export default function App() {
 
                             const key = paymentKey(abrechnungMonat, r.id);
                             const paymentsFlag = payments[key] ?? false;
-                            
+
+                            // Anpassung für diesen Spieler/Monat
+                            const adjustmentKey = `${abrechnungMonat}__${r.id}`;
+                            const hasAdjustment = monthlyAdjustments[adjustmentKey] !== undefined;
+
                             // Berechne Bar-Summen
                             const sumBarSpieler = getSumBarForSpieler(r.id);
                             const sumTotalSpieler = r.sum;
-                            const restOffen = round2(sumTotalSpieler - sumBarSpieler);
+                            const adjustedSum = getAdjustedSum(r.id, sumTotalSpieler);
+                            const restOffen = round2(adjustedSum - sumBarSpieler);
                             
-                            // Status-Logik gemäß Spezifikation:
-                            // 1. "komplett bar": sumBarSpieler === sumTotalSpieler && sumTotalSpieler > 0
-                            // 2. "teilweise bar bezahlt": 0 < sumBarSpieler < sumTotalSpieler
-                            // 3. "komplett abgerechnet": paymentsFlag === true && sumTotalSpieler > sumBarSpieler
-                            // 4. "offen": paymentsFlag === false && sumTotalSpieler > sumBarSpieler
-                            
+                            // Status-Logik gemäß Spezifikation (mit angepasster Summe):
+                            // 1. "komplett bar": sumBarSpieler === adjustedSum && adjustedSum > 0
+                            // 2. "teilweise bar bezahlt": 0 < sumBarSpieler < adjustedSum
+                            // 3. "komplett abgerechnet": paymentsFlag === true && adjustedSum > sumBarSpieler
+                            // 4. "offen": paymentsFlag === false && adjustedSum > sumBarSpieler
+
                             type SpielerStatus = "komplett_bar" | "teilweise_bar" | "komplett_abgerechnet" | "offen" | "keine_trainings";
-                            
+
                             let status: SpielerStatus;
-                            if (sumTotalSpieler === 0) {
+                            if (adjustedSum === 0) {
                               status = "keine_trainings";
-                            } else if (sumBarSpieler === sumTotalSpieler) {
+                            } else if (sumBarSpieler >= adjustedSum && adjustedSum > 0) {
                               status = "komplett_bar";
-                            } else if (sumBarSpieler > 0 && sumBarSpieler < sumTotalSpieler) {
+                            } else if (sumBarSpieler > 0 && sumBarSpieler < adjustedSum) {
                               // Teilweise bar - prüfe ob Rest abgerechnet wurde
                               if (paymentsFlag) {
                                 status = "komplett_abgerechnet";
@@ -4526,12 +4558,110 @@ export default function App() {
                             // Dropdown-Wert
                             const dropdownValue = status === "komplett_abgerechnet" ? "abgerechnet" : status;
 
+                            const isEditingThis = editingAdjustment?.spielerId === r.id;
+
                             return (
                               <tr key={r.id}>
                                 <td>{r.name}</td>
                                 <td>{breakdownText}</td>
                                 <td>
-                                  {euro(sumTotalSpieler)}
+                                  {isEditingThis ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                      <input
+                                        type="text"
+                                        style={{
+                                          width: 80,
+                                          padding: "4px 6px",
+                                          fontSize: 13,
+                                          border: "1px solid var(--primary)",
+                                          borderRadius: 4,
+                                        }}
+                                        value={editingAdjustment.value}
+                                        onChange={(e) => setEditingAdjustment({
+                                          ...editingAdjustment,
+                                          value: e.target.value,
+                                        })}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            const parsed = parseFloat(editingAdjustment.value.replace(",", "."));
+                                            if (!isNaN(parsed)) {
+                                              setMonthlyAdjustments((prev) => ({
+                                                ...prev,
+                                                [adjustmentKey]: parsed,
+                                              }));
+                                            }
+                                            setEditingAdjustment(null);
+                                          }
+                                          if (e.key === "Escape") {
+                                            setEditingAdjustment(null);
+                                          }
+                                        }}
+                                        onBlur={() => {
+                                          const parsed = parseFloat(editingAdjustment.value.replace(",", "."));
+                                          if (!isNaN(parsed)) {
+                                            setMonthlyAdjustments((prev) => ({
+                                              ...prev,
+                                              [adjustmentKey]: parsed,
+                                            }));
+                                          }
+                                          setEditingAdjustment(null);
+                                        }}
+                                        autoFocus
+                                        placeholder={euro(sumTotalSpieler)}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6,
+                                      }}
+                                    >
+                                      <span style={{ fontWeight: hasAdjustment ? 600 : 400 }}>
+                                        {euro(adjustedSum)}
+                                      </span>
+                                      {hasAdjustment && (
+                                        <button
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            padding: 2,
+                                            fontSize: 12,
+                                            color: "#9ca3af",
+                                          }}
+                                          onClick={() => {
+                                            setMonthlyAdjustments((prev) => {
+                                              const next = { ...prev };
+                                              delete next[adjustmentKey];
+                                              return next;
+                                            });
+                                          }}
+                                          title="Zurücksetzen auf berechnet"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                      <button
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          cursor: "pointer",
+                                          padding: 2,
+                                          fontSize: 12,
+                                          color: hasAdjustment ? "var(--primary)" : "#9ca3af",
+                                        }}
+                                        onClick={() => setEditingAdjustment({
+                                          spielerId: r.id,
+                                          value: String(adjustedSum),
+                                        })}
+                                        title="Summe anpassen"
+                                      >
+                                        ✎
+                                      </button>
+                                    </div>
+                                  )}
                                   {status === "teilweise_bar" && (
                                     <div style={{ fontSize: 11, color: "#f59e0b" }}>
                                       (Rest: {euro(restOffen)})
