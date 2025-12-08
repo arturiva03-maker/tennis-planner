@@ -77,7 +77,7 @@ type AppState = {
   notizen?: Notiz[];
 };
 
-type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres";
+type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung";
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -91,7 +91,43 @@ type AuthUser = {
 type ViewMode = "week" | "day";
 type AbrechnungFilter = "alle" | "bezahlt" | "offen" | "bar";
 
+type PlanungZelle = {
+  text: string;
+};
+
+type PlanungTag = "mo" | "di" | "mi" | "do" | "fr" | "sa" | "so";
+
+type PlanungZeile = {
+  zeit: string;
+  slotNotiz: string;
+  mo: PlanungZelle[];
+  di: PlanungZelle[];
+  mi: PlanungZelle[];
+  do: PlanungZelle[];
+  fr: PlanungZelle[];
+  sa: PlanungZelle[];
+  so: PlanungZelle[];
+};
+
+type PlanungDayConfig = {
+  tag: PlanungTag;
+  spalten: number;
+};
+
+type PlanungSheet = {
+  id: string;
+  name: string;
+  rows: PlanungZeile[];
+  dayConfigs: PlanungDayConfig[];
+};
+
+type PlanungState = {
+  sheets: PlanungSheet[];
+  activeSheetId: string;
+};
+
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
+const PLANUNG_STORAGE_KEY = "tennis_planner_mutterplan_v4";
 const LEGACY_KEYS = [
   "tennis_planner_single_trainer",
   "tennis_planner_single_trainer_v5",
@@ -287,6 +323,133 @@ function writeState(state: AppState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+const PLANUNG_TAGE: PlanungTag[] = ["mo", "di", "mi", "do", "fr", "sa", "so"];
+const PLANUNG_TAG_LABELS: Record<PlanungTag, string> = {
+  mo: "Mo", di: "Di", mi: "Mi", do: "Do", fr: "Fr", sa: "Sa", so: "So"
+};
+
+function createDefaultDayConfigs(): PlanungDayConfig[] {
+  return PLANUNG_TAGE.map((tag) => ({ tag, spalten: 1 }));
+}
+
+function createEmptyPlanungZeile(dayConfigs: PlanungDayConfig[]): PlanungZeile {
+  const row: PlanungZeile = {
+    zeit: "",
+    slotNotiz: "",
+    mo: [], di: [], mi: [], do: [], fr: [], sa: [], so: [],
+  };
+  for (const cfg of dayConfigs) {
+    row[cfg.tag] = Array.from({ length: cfg.spalten }, () => ({ text: "" }));
+  }
+  return row;
+}
+
+function createEmptyPlanungSheet(id: string, name: string): PlanungSheet {
+  const dayConfigs = createDefaultDayConfigs();
+  return {
+    id,
+    name,
+    rows: Array.from({ length: 10 }, () => createEmptyPlanungZeile(dayConfigs)),
+    dayConfigs,
+  };
+}
+
+function migrateLegacyRowToNew(row: any, dayConfigs: PlanungDayConfig[]): PlanungZeile {
+  const oldDayMap: Record<string, PlanungTag> = {
+    montag: "mo", dienstag: "di", mittwoch: "mi", donnerstag: "do",
+    freitag: "fr", samstag: "sa", sonntag: "so",
+    mo: "mo", di: "di", mi: "mi", do: "do", fr: "fr", sa: "sa", so: "so",
+  };
+
+  const migrateCell = (cell: any): string => {
+    if (typeof cell === "string") return cell;
+    if (cell && typeof cell === "object") {
+      return cell.text ?? "";
+    }
+    return "";
+  };
+
+  const newRow: PlanungZeile = {
+    zeit: row.zeit ?? "",
+    slotNotiz: row.slotNotiz ?? "",
+    mo: [], di: [], mi: [], do: [], fr: [], sa: [], so: [],
+  };
+
+  for (const cfg of dayConfigs) {
+    const oldKeys = Object.keys(oldDayMap).filter((k) => oldDayMap[k] === cfg.tag);
+    let cellData: PlanungZelle[] = [];
+
+    for (const oldKey of oldKeys) {
+      if (row[oldKey] !== undefined) {
+        const oldVal = row[oldKey];
+        if (Array.isArray(oldVal)) {
+          cellData = oldVal.map((c: any) => ({ text: migrateCell(c) }));
+        } else {
+          cellData = [{ text: migrateCell(oldVal) }];
+        }
+        break;
+      }
+    }
+
+    while (cellData.length < cfg.spalten) {
+      cellData.push({ text: "" });
+    }
+    if (cellData.length > cfg.spalten) {
+      cellData = cellData.slice(0, cfg.spalten);
+    }
+    newRow[cfg.tag] = cellData;
+  }
+
+  return newRow;
+}
+
+function migrateLegacyToSheets(legacyRows: any[]): PlanungSheet {
+  const dayConfigs = createDefaultDayConfigs();
+  const rows = legacyRows.map((r) => migrateLegacyRowToNew(r, dayConfigs));
+  return {
+    id: uid(),
+    name: "Plan 1",
+    rows,
+    dayConfigs,
+  };
+}
+
+function readPlanungState(): PlanungState {
+  const LEGACY_KEYS_PLANUNG = [
+    "tennis_planner_mutterplan_v3",
+    "tennis_planner_mutterplan_v2",
+    "tennis_planner_mutterplan_v1",
+  ];
+
+  try {
+    const raw = localStorage.getItem(PLANUNG_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.sheets && Array.isArray(parsed.sheets)) {
+        return parsed as PlanungState;
+      }
+    }
+
+    for (const key of LEGACY_KEYS_PLANUNG) {
+      const legacyRaw = localStorage.getItem(key);
+      if (legacyRaw) {
+        const legacyParsed = JSON.parse(legacyRaw);
+        if (Array.isArray(legacyParsed)) {
+          const sheet = migrateLegacyToSheets(legacyParsed);
+          return { sheets: [sheet], activeSheetId: sheet.id };
+        }
+      }
+    }
+  } catch {}
+
+  const defaultSheet = createEmptyPlanungSheet(uid(), "Plan 1");
+  return { sheets: [defaultSheet], activeSheetId: defaultSheet.id };
+}
+
+function writePlanungState(state: PlanungState) {
+  localStorage.setItem(PLANUNG_STORAGE_KEY, JSON.stringify(state));
+}
+
 /* ::::: Swipe Hook für mobile Navigation ::::: */
 
 function useSwipe(
@@ -477,6 +640,11 @@ export default function App() {
   const [notizen, setNotizen] = useState<Notiz[]>(
     initial.state.notizen ?? []
   );
+  const [planungState, setPlanungState] = useState<PlanungState>(readPlanungState);
+  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
+  const [editingSheetName, setEditingSheetName] = useState("");
+  const [showImportWeekDialog, setShowImportWeekDialog] = useState(false);
+  const [importWeekDate, setImportWeekDate] = useState(todayISO());
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -610,6 +778,10 @@ export default function App() {
       notizen,
     });
   }, [trainers, spieler, tarife, trainings, payments, trainerPayments, notizen]);
+
+  useEffect(() => {
+    writePlanungState(planungState);
+  }, [planungState]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -1020,7 +1192,7 @@ export default function App() {
 
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
-    : ["kalender", "training", "verwaltung", "abrechnung", "weiteres"];
+    : ["kalender", "training", "verwaltung", "abrechnung", "weiteres", "planung"];
 
   const roleLabel = isTrainer ? "Trainer" : "Admin";
 
@@ -2606,6 +2778,7 @@ export default function App() {
                 {t === "verwaltung" && "Verwaltung"}
                 {t === "abrechnung" && "Abrechnung"}
                 {t === "weiteres" && "Weiteres"}
+                {t === "planung" && "Planung"}
               </button>
             ))}
           </nav>
@@ -4812,6 +4985,392 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {tab === "planung" && !isTrainer && (() => {
+              const activeSheet = planungState.sheets.find((s) => s.id === planungState.activeSheetId) || planungState.sheets[0];
+              if (!activeSheet) return null;
+
+              const updateSheet = (updater: (sheet: PlanungSheet) => PlanungSheet) => {
+                setPlanungState((prev) => ({
+                  ...prev,
+                  sheets: prev.sheets.map((s) => s.id === activeSheet.id ? updater(s) : s),
+                }));
+              };
+
+              const toggleDaySpalten = (tag: PlanungTag) => {
+                updateSheet((sheet) => {
+                  const cfg = sheet.dayConfigs.find((c) => c.tag === tag);
+                  if (!cfg) return sheet;
+                  const newSpalten = cfg.spalten === 1 ? 2 : 1;
+                  const newDayConfigs = sheet.dayConfigs.map((c) =>
+                    c.tag === tag ? { ...c, spalten: newSpalten } : c
+                  );
+                  const newRows = sheet.rows.map((row) => {
+                    const cells = [...row[tag]];
+                    if (newSpalten === 2 && cells.length < 2) {
+                      cells.push({ text: "" });
+                    } else if (newSpalten === 1 && cells.length > 1) {
+                      const merged = cells[0].text + (cells[1].text ? "; " + cells[1].text : "");
+                      return { ...row, [tag]: [{ text: merged }] };
+                    }
+                    return { ...row, [tag]: cells.slice(0, newSpalten) };
+                  });
+                  return { ...sheet, dayConfigs: newDayConfigs, rows: newRows };
+                });
+              };
+
+              const totalCols = activeSheet.dayConfigs.reduce((sum, c) => sum + c.spalten, 0);
+
+              const importCalendarWeek = () => {
+                const weekStart = startOfWeekISO(importWeekDate);
+                const weekDates: Record<PlanungTag, string> = {
+                  mo: weekStart,
+                  di: addDaysISO(weekStart, 1),
+                  mi: addDaysISO(weekStart, 2),
+                  do: addDaysISO(weekStart, 3),
+                  fr: addDaysISO(weekStart, 4),
+                  sa: addDaysISO(weekStart, 5),
+                  so: addDaysISO(weekStart, 6),
+                };
+
+                // Group trainings by day and time slot
+                type SlotData = { trainings: Training[] };
+                const slotsByDayAndTime: Record<PlanungTag, Record<string, SlotData>> = {
+                  mo: {}, di: {}, mi: {}, do: {}, fr: {}, sa: {}, so: {},
+                };
+
+                for (const tr of trainings) {
+                  if (tr.status === "abgesagt") continue;
+                  const tag = PLANUNG_TAGE.find((t) => weekDates[t] === tr.datum);
+                  if (!tag) continue;
+                  const timeKey = tr.uhrzeitVon;
+                  if (!slotsByDayAndTime[tag][timeKey]) {
+                    slotsByDayAndTime[tag][timeKey] = { trainings: [] };
+                  }
+                  slotsByDayAndTime[tag][timeKey].trainings.push(tr);
+                }
+
+                // Collect all unique time slots
+                const allTimeSlots = new Set<string>();
+                for (const tag of PLANUNG_TAGE) {
+                  for (const timeKey of Object.keys(slotsByDayAndTime[tag])) {
+                    allTimeSlots.add(timeKey);
+                  }
+                }
+                const sortedTimeSlots = Array.from(allTimeSlots).sort();
+
+                if (sortedTimeSlots.length === 0) {
+                  alert("Keine Trainings in dieser Woche gefunden.");
+                  setShowImportWeekDialog(false);
+                  return;
+                }
+
+                // Build cell text: "TrainerName: Spieler1, Spieler2"
+                const buildCellText = (tr: Training): string => {
+                  const trainer = trainers.find((t) => t.id === tr.trainerId);
+                  const trainerName = trainer?.name || "Unbekannt";
+                  const spielerNames = tr.spielerIds
+                    .map((sid) => spieler.find((s) => s.id === sid)?.name || "?")
+                    .join(", ");
+                  return spielerNames ? `${trainerName}: ${spielerNames}` : trainerName;
+                };
+
+                // Determine if any day needs 2 columns (parallel trainings at same time)
+                const newDayConfigs: PlanungDayConfig[] = PLANUNG_TAGE.map((tag) => {
+                  let maxParallel = 1;
+                  for (const timeKey of Object.keys(slotsByDayAndTime[tag])) {
+                    const count = slotsByDayAndTime[tag][timeKey].trainings.length;
+                    if (count > maxParallel) maxParallel = count;
+                  }
+                  return { tag, spalten: Math.min(maxParallel, 2) };
+                });
+
+                // Build rows
+                const newRows: PlanungZeile[] = sortedTimeSlots.map((timeKey) => {
+                  const row: PlanungZeile = {
+                    zeit: timeKey,
+                    slotNotiz: "",
+                    mo: [], di: [], mi: [], do: [], fr: [], sa: [], so: [],
+                  };
+                  for (const cfg of newDayConfigs) {
+                    const slot = slotsByDayAndTime[cfg.tag][timeKey];
+                    const cells: PlanungZelle[] = [];
+                    if (slot) {
+                      for (let i = 0; i < cfg.spalten; i++) {
+                        const tr = slot.trainings[i];
+                        cells.push({ text: tr ? buildCellText(tr) : "" });
+                      }
+                    } else {
+                      for (let i = 0; i < cfg.spalten; i++) {
+                        cells.push({ text: "" });
+                      }
+                    }
+                    row[cfg.tag] = cells;
+                  }
+                  return row;
+                });
+
+                // Update sheet with imported data
+                updateSheet(() => ({
+                  ...activeSheet,
+                  dayConfigs: newDayConfigs,
+                  rows: newRows,
+                }));
+
+                setShowImportWeekDialog(false);
+              };
+
+              return (
+                <div className="card">
+                  <h2>Mutterplan / Wochenplanung</h2>
+                  <p className="muted" style={{ marginBottom: 12 }}>
+                    Interne Planungsübersicht. Nur lokal gespeichert, keine Verbindung zu Kalender oder Abrechnung.
+                  </p>
+
+                  {/* Sheet Tabs */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                    {planungState.sheets.map((sheet) => (
+                      <div key={sheet.id} style={{ display: "flex", alignItems: "center" }}>
+                        {editingSheetId === sheet.id ? (
+                          <input
+                            type="text"
+                            value={editingSheetName}
+                            onChange={(e) => setEditingSheetName(e.target.value)}
+                            onBlur={() => {
+                              if (editingSheetName.trim()) {
+                                setPlanungState((prev) => ({
+                                  ...prev,
+                                  sheets: prev.sheets.map((s) =>
+                                    s.id === sheet.id ? { ...s, name: editingSheetName.trim() } : s
+                                  ),
+                                }));
+                              }
+                              setEditingSheetId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                (e.target as HTMLInputElement).blur();
+                              }
+                            }}
+                            autoFocus
+                            style={{ padding: "4px 8px", fontSize: 12, border: "1px solid var(--primary)", borderRadius: 4 }}
+                          />
+                        ) : (
+                          <button
+                            className={`btn ${sheet.id === planungState.activeSheetId ? "" : "btnGhost"}`}
+                            style={{ fontSize: 12, padding: "4px 10px" }}
+                            onClick={() => setPlanungState((prev) => ({ ...prev, activeSheetId: sheet.id }))}
+                            onDoubleClick={() => {
+                              setEditingSheetId(sheet.id);
+                              setEditingSheetName(sheet.name);
+                            }}
+                          >
+                            {sheet.name}
+                          </button>
+                        )}
+                        {planungState.sheets.length > 1 && sheet.id === planungState.activeSheetId && (
+                          <button
+                            className="btn btnWarn"
+                            style={{ fontSize: 10, padding: "2px 6px", marginLeft: 2 }}
+                            onClick={() => {
+                              const remaining = planungState.sheets.filter((s) => s.id !== sheet.id);
+                              setPlanungState({
+                                sheets: remaining,
+                                activeSheetId: remaining[0]?.id || "",
+                              });
+                            }}
+                            title="Plan löschen"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      className="btn btnGhost"
+                      style={{ fontSize: 12, padding: "4px 10px" }}
+                      onClick={() => {
+                        const newSheet = createEmptyPlanungSheet(uid(), `Plan ${planungState.sheets.length + 1}`);
+                        setPlanungState((prev) => ({
+                          sheets: [...prev.sheets, newSheet],
+                          activeSheetId: newSheet.id,
+                        }));
+                      }}
+                    >
+                      + Neuer Plan
+                    </button>
+                  </div>
+
+                  {/* Tabelle */}
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 + totalCols * 80 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding: 6, borderBottom: "2px solid var(--border)", textAlign: "left", minWidth: 120 }}>Zeit / Notiz</th>
+                          {activeSheet.dayConfigs.map((cfg) => (
+                            <th
+                              key={cfg.tag}
+                              colSpan={cfg.spalten}
+                              style={{ padding: 6, borderBottom: "2px solid var(--border)", textAlign: "center", minWidth: cfg.spalten * 100 }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                                <span>{PLANUNG_TAG_LABELS[cfg.tag]}</span>
+                                <button
+                                  className="btn btnGhost"
+                                  style={{ fontSize: 10, padding: "1px 4px", minWidth: 20 }}
+                                  onClick={() => toggleDaySpalten(cfg.tag)}
+                                  title={cfg.spalten === 1 ? "Spalte teilen" : "Spalten zusammenführen"}
+                                >
+                                  {cfg.spalten === 1 ? "+" : "−"}
+                                </button>
+                              </div>
+                              {cfg.spalten === 2 && (
+                                <div style={{ display: "flex", fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>
+                                  <span style={{ flex: 1, textAlign: "center" }}>A</span>
+                                  <span style={{ flex: 1, textAlign: "center" }}>B</span>
+                                </div>
+                              )}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeSheet.rows.map((zeile, rowIdx) => (
+                          <tr key={rowIdx}>
+                            <td style={{ padding: 4, borderBottom: "1px solid var(--border)", verticalAlign: "top", background: "var(--bg-body)" }}>
+                              <input
+                                type="text"
+                                value={zeile.zeit}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateSheet((s) => ({
+                                    ...s,
+                                    rows: s.rows.map((r, i) => i === rowIdx ? { ...r, zeit: val } : r),
+                                  }));
+                                }}
+                                style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 11, fontWeight: 600, background: "var(--bg-card)", color: "var(--text)", marginBottom: 4 }}
+                                placeholder=""
+                              />
+                              <textarea
+                                rows={2}
+                                value={zeile.slotNotiz}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  updateSheet((s) => ({
+                                    ...s,
+                                    rows: s.rows.map((r, i) => i === rowIdx ? { ...r, slotNotiz: val } : r),
+                                  }));
+                                }}
+                                style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, resize: "vertical", minHeight: 36, background: "var(--bg-card)", color: "var(--text)" }}
+                                placeholder=""
+                              />
+                            </td>
+                            {activeSheet.dayConfigs.map((cfg) =>
+                              zeile[cfg.tag].map((cell, cellIdx) => (
+                                <td
+                                  key={`${cfg.tag}-${cellIdx}`}
+                                  style={{ padding: 2, borderBottom: "1px solid var(--border)", borderLeft: cellIdx > 0 ? "1px dashed var(--border)" : undefined, verticalAlign: "top", minWidth: 90 }}
+                                >
+                                  <textarea
+                                    rows={3}
+                                    value={cell.text}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      updateSheet((s) => ({
+                                        ...s,
+                                        rows: s.rows.map((r, rIdx) => {
+                                          if (rIdx !== rowIdx) return r;
+                                          const newCells = [...r[cfg.tag]];
+                                          newCells[cellIdx] = { text: val };
+                                          return { ...r, [cfg.tag]: newCells };
+                                        }),
+                                      }));
+                                    }}
+                                    style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, resize: "vertical", minHeight: 50, background: "var(--bg-card)", color: "var(--text)" }}
+                                    placeholder=""
+                                  />
+                                </td>
+                              ))
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="row" style={{ marginTop: 16, gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => updateSheet((s) => ({
+                        ...s,
+                        rows: [...s.rows, createEmptyPlanungZeile(s.dayConfigs)],
+                      }))}
+                    >
+                      Zeile hinzufügen
+                    </button>
+                    {activeSheet.rows.length > 1 && (
+                      <button
+                        className="btn btnWarn"
+                        onClick={() => updateSheet((s) => ({
+                          ...s,
+                          rows: s.rows.slice(0, -1),
+                        }))}
+                      >
+                        Letzte Zeile entfernen
+                      </button>
+                    )}
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        setImportWeekDate(todayISO());
+                        setShowImportWeekDialog(true);
+                      }}
+                    >
+                      Kalender Woche in Plan übernehmen
+                    </button>
+                  </div>
+
+                  {/* Import Week Dialog */}
+                  {showImportWeekDialog && (
+                    <div className="modalOverlay">
+                      <div className="modalCard">
+                        <div className="modalHeader">
+                          <div className="modalPill">Import</div>
+                          <h3>Kalenderwoche importieren</h3>
+                          <p className="muted">
+                            Wähle ein Datum aus der gewünschten Woche. Alle Trainings dieser Woche (Mo–So) werden in den aktuellen Plan übernommen.
+                          </p>
+                        </div>
+                        <div style={{ padding: "16px 0" }}>
+                          <label className="lbl">Datum in der Woche</label>
+                          <input
+                            type="date"
+                            value={importWeekDate}
+                            onChange={(e) => setImportWeekDate(e.target.value)}
+                            style={{ width: "100%", padding: 8, border: "1px solid var(--border)", borderRadius: 4, background: "var(--bg-card)", color: "var(--text)" }}
+                          />
+                          <p className="muted" style={{ marginTop: 8, fontSize: 11 }}>
+                            Woche: {formatWeekRange(startOfWeekISO(importWeekDate))}
+                          </p>
+                          <p className="muted" style={{ marginTop: 8, fontSize: 11, color: "var(--warn)" }}>
+                            Hinweis: Der bestehende Inhalt des Plans wird ersetzt.
+                          </p>
+                        </div>
+                        <div className="modalActions">
+                          <button className="btn btnGhost" onClick={() => setShowImportWeekDialog(false)}>
+                            Abbrechen
+                          </button>
+                          <button className="btn" onClick={importCalendarWeek}>
+                            Importieren
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </main>
       </div>
