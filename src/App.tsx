@@ -114,6 +114,7 @@ type PlanungZeile = {
 type PlanungDayConfig = {
   tag: PlanungTag;
   spalten: number;
+  trainerNames?: string[]; // Trainernamen pro Spalte (aus Import)
 };
 
 type PlanungSheet = {
@@ -660,6 +661,11 @@ export default function App() {
     cellIndex: number;
     text: string;
   } | null>(null);
+  const [editingTrainerHeader, setEditingTrainerHeader] = useState<{
+    tag: PlanungTag;
+    columnIndex: number;
+    text: string;
+  } | null>(null);
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -735,6 +741,7 @@ export default function App() {
   const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
     useState<string>("alle");
   const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
+  const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar">("none");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
   // States für Formular-Sichtbarkeit in der Verwaltung
@@ -4679,6 +4686,7 @@ export default function App() {
                         <div style={{ height: 14 }} />
                         <div className="card cardInset">
                           <h2>Übersicht deine Stunden</h2>
+                          <p className="muted" style={{ marginBottom: 8 }}>Klicke auf eine Zeile, um die Details anzuzeigen.</p>
                           <table className="table">
                             <thead>
                               <tr>
@@ -4687,17 +4695,75 @@ export default function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              <tr>
+                              <tr
+                                onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "nichtBar" ? "none" : "nichtBar")}
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: selectedTrainerPaymentView === "nichtBar" ? "var(--surface-hover)" : undefined
+                                }}
+                              >
                                 <td>Nicht bar</td>
                                 <td>{nichtBarTrainings.length}</td>
                               </tr>
-                              <tr>
+                              <tr
+                                onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "bar" ? "none" : "bar")}
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: selectedTrainerPaymentView === "bar" ? "var(--surface-hover)" : undefined
+                                }}
+                              >
                                 <td>Bar</td>
                                 <td>{barTrainings.length}</td>
                               </tr>
                             </tbody>
                           </table>
                         </div>
+
+                        {/* Detailansicht der Trainerstunden */}
+                        {selectedTrainerPaymentView !== "none" && (
+                          <div className="card cardInset" style={{ marginTop: 14 }}>
+                            <h2>
+                              {selectedTrainerPaymentView === "bar"
+                                ? "Bar bezahlte Stunden"
+                                : "Nicht bar bezahlte Stunden"}
+                            </h2>
+                            {(selectedTrainerPaymentView === "bar" ? barTrainings : nichtBarTrainings).length === 0 ? (
+                              <p className="muted">
+                                {selectedTrainerPaymentView === "bar"
+                                  ? "Keine bar bezahlten Stunden im ausgewählten Zeitraum."
+                                  : "Keine nicht bar bezahlten Stunden im ausgewählten Zeitraum."}
+                              </p>
+                            ) : (
+                              <table className="table">
+                                <thead>
+                                  <tr>
+                                    <th>Datum</th>
+                                    <th>Zeit</th>
+                                    <th>Spieler</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(selectedTrainerPaymentView === "bar" ? barTrainings : nichtBarTrainings)
+                                    .sort((a, b) => a.datum.localeCompare(b.datum) || a.uhrzeitVon.localeCompare(b.uhrzeitVon))
+                                    .map((t) => {
+                                      const [y, m, d] = t.datum.split("-");
+                                      const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
+                                      const spielerNamen = t.spielerIds
+                                        .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                        .join(", ");
+                                      return (
+                                        <tr key={t.id}>
+                                          <td>{germanDate}</td>
+                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>{spielerNamen}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -5125,11 +5191,21 @@ export default function App() {
                   mo: {}, di: {}, mi: {}, do: {}, fr: {}, sa: {}, so: {},
                 };
 
+                // Hilfsfunktion für Zero-Padding der Zeit
+                const formatTimeRange = (von: string, bis: string): string => {
+                  const padTime = (t: string) => {
+                    const [h, m] = t.split(":");
+                    return `${h.padStart(2, "0")}:${(m || "00").padStart(2, "0")}`;
+                  };
+                  return `${padTime(von)}–${padTime(bis)}`;
+                };
+
                 for (const tr of trainings) {
                   if (tr.status === "abgesagt") continue;
                   const tag = PLANUNG_TAGE.find((t) => weekDates[t] === tr.datum);
                   if (!tag) continue;
-                  const timeKey = tr.uhrzeitVon;
+                  // Zeitschlüssel als "von–bis" Format
+                  const timeKey = formatTimeRange(tr.uhrzeitVon, tr.uhrzeitBis);
                   if (!slotsByDayAndTime[tag][timeKey]) {
                     slotsByDayAndTime[tag][timeKey] = { trainings: [] };
                   }
@@ -5151,27 +5227,94 @@ export default function App() {
                   return;
                 }
 
-                // Build cell text: "TrainerName: Spieler1, Spieler2"
+                // Build cell text: Spielernamen mit Bullets (ein Name pro Zeile, max 5)
                 const buildCellText = (tr: Training): string => {
-                  const trainer = trainers.find((t) => t.id === tr.trainerId);
-                  const trainerName = trainer?.name || "Unbekannt";
                   const spielerNames = tr.spielerIds
                     .map((sid) => spieler.find((s) => s.id === sid)?.name || "?")
-                    .join(", ");
-                  return spielerNames ? `${trainerName}: ${spielerNames}` : trainerName;
+                    .slice(0, 5) // Max 5 Spieler
+                    .map((name) => `• ${name}`);
+                  return spielerNames.join("\n");
                 };
 
+                // Ermittle alle Trainer pro Tag
+                const trainersPerDay: Record<PlanungTag, string[]> = {
+                  mo: [], di: [], mi: [], do: [], fr: [], sa: [], so: [],
+                };
+                for (const tag of PLANUNG_TAGE) {
+                  const trainerIdsSet = new Set<string>();
+                  for (const timeKey of Object.keys(slotsByDayAndTime[tag])) {
+                    for (const tr of slotsByDayAndTime[tag][timeKey].trainings) {
+                      if (tr.trainerId) trainerIdsSet.add(tr.trainerId);
+                    }
+                  }
+                  // Sortiere Trainer nach Name für konsistente Reihenfolge
+                  const trainerIds = Array.from(trainerIdsSet);
+                  const sortedTrainers = trainerIds
+                    .map((tid) => trainers.find((t) => t.id === tid))
+                    .filter((t): t is Trainer => !!t)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  trainersPerDay[tag] = sortedTrainers.map((t) => t.name);
+                }
+
                 // Determine if any day needs 2 columns (parallel trainings at same time)
+                // und weise Trainernamen den Spalten zu
                 const newDayConfigs: PlanungDayConfig[] = PLANUNG_TAGE.map((tag) => {
                   let maxParallel = 1;
                   for (const timeKey of Object.keys(slotsByDayAndTime[tag])) {
                     const count = slotsByDayAndTime[tag][timeKey].trainings.length;
                     if (count > maxParallel) maxParallel = count;
                   }
-                  return { tag, spalten: Math.min(maxParallel, 2) };
+                  const spalten = Math.min(maxParallel, 2);
+
+                  // Trainernamen für die Spalten
+                  const dayTrainers = trainersPerDay[tag];
+                  let trainerNames: string[] = [];
+                  if (spalten === 1) {
+                    // Alle Trainer in einer Spalte (ggf. mit " / " getrennt)
+                    trainerNames = dayTrainers.length > 0 ? [dayTrainers.join(" / ")] : [""];
+                  } else {
+                    // 2 Spalten: ersten beiden Trainer zuweisen, Rest ggf. zusammenfassen
+                    if (dayTrainers.length <= 2) {
+                      trainerNames = dayTrainers.length === 0 ? ["", ""] :
+                                     dayTrainers.length === 1 ? [dayTrainers[0], ""] :
+                                     [dayTrainers[0], dayTrainers[1]];
+                    } else {
+                      // Mehr als 2 Trainer: erste Spalte erster Trainer, zweite Spalte Rest
+                      trainerNames = [dayTrainers[0], dayTrainers.slice(1).join(" / ")];
+                    }
+                  }
+
+                  return { tag, spalten, trainerNames };
                 });
 
-                // Build rows
+                // Erstelle Mapping: TrainerId -> Spaltenindex pro Tag
+                const trainerToColumnMap: Record<PlanungTag, Map<string, number>> = {
+                  mo: new Map(), di: new Map(), mi: new Map(), do: new Map(),
+                  fr: new Map(), sa: new Map(), so: new Map(),
+                };
+                for (const tag of PLANUNG_TAGE) {
+                  const cfg = newDayConfigs.find((c) => c.tag === tag)!;
+                  const dayTrainerIds: string[] = [];
+                  for (const timeKey of Object.keys(slotsByDayAndTime[tag])) {
+                    for (const tr of slotsByDayAndTime[tag][timeKey].trainings) {
+                      if (tr.trainerId && !dayTrainerIds.includes(tr.trainerId)) {
+                        dayTrainerIds.push(tr.trainerId);
+                      }
+                    }
+                  }
+                  // Sortiere nach Trainername für konsistente Zuordnung
+                  dayTrainerIds.sort((a, b) => {
+                    const nameA = trainers.find((t) => t.id === a)?.name || "";
+                    const nameB = trainers.find((t) => t.id === b)?.name || "";
+                    return nameA.localeCompare(nameB);
+                  });
+                  // Weise jedem Trainer eine Spalte zu (max 2 Spalten)
+                  dayTrainerIds.forEach((tid, idx) => {
+                    trainerToColumnMap[tag].set(tid, Math.min(idx, cfg.spalten - 1));
+                  });
+                }
+
+                // Build rows - ordne Trainings nach Trainer-Spalten zu
                 const newRows: PlanungZeile[] = sortedTimeSlots.map((timeKey) => {
                   const row: PlanungZeile = {
                     zeit: timeKey,
@@ -5180,17 +5323,27 @@ export default function App() {
                   };
                   for (const cfg of newDayConfigs) {
                     const slot = slotsByDayAndTime[cfg.tag][timeKey];
-                    const cells: PlanungZelle[] = [];
+                    // Initialisiere leere Zellen pro Spalte
+                    const cellTexts: string[][] = Array.from({ length: cfg.spalten }, () => []);
+
                     if (slot) {
-                      for (let i = 0; i < cfg.spalten; i++) {
-                        const tr = slot.trainings[i];
-                        cells.push({ text: tr ? buildCellText(tr) : "" });
-                      }
-                    } else {
-                      for (let i = 0; i < cfg.spalten; i++) {
-                        cells.push({ text: "" });
+                      // Ordne jedes Training der richtigen Spalte zu (basierend auf Trainer)
+                      for (const tr of slot.trainings) {
+                        const columnIdx = trainerToColumnMap[cfg.tag].get(tr.trainerId || "") ?? 0;
+                        const text = buildCellText(tr);
+                        if (text) {
+                          cellTexts[columnIdx].push(text);
+                        }
                       }
                     }
+
+                    // Erstelle Zellen mit kombinierten Spielernamen pro Spalte (mit Zeilenumbruch, max 5 Zeilen)
+                    const cells: PlanungZelle[] = cellTexts.map((texts) => {
+                      // Kombiniere alle Texte und begrenze auf 5 Zeilen
+                      const combined = texts.join("\n");
+                      const lines = combined.split("\n").filter(l => l.trim()).slice(0, 5);
+                      return { text: lines.join("\n") };
+                    });
                     row[cfg.tag] = cells;
                   }
                   return row;
@@ -5309,8 +5462,52 @@ export default function App() {
                                 </div>
                                 {cfg.spalten === 2 && (
                                   <div className="planningDayHeaderSplit">
-                                    <span className="planningDayHeaderSplitLabel">A</span>
-                                    <span className="planningDayHeaderSplitLabel">B</span>
+                                    <span
+                                      className="planningDayHeaderSplitLabel planningDayHeaderSplitLabelClickable"
+                                      title={`${cfg.trainerNames?.[0] || "A"} (klicken zum Bearbeiten)`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTrainerHeader({
+                                          tag: cfg.tag,
+                                          columnIndex: 0,
+                                          text: cfg.trainerNames?.[0] || "",
+                                        });
+                                      }}
+                                    >
+                                      {cfg.trainerNames?.[0] || "A"}
+                                    </span>
+                                    <span
+                                      className="planningDayHeaderSplitLabel planningDayHeaderSplitLabelClickable"
+                                      title={`${cfg.trainerNames?.[1] || "B"} (klicken zum Bearbeiten)`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTrainerHeader({
+                                          tag: cfg.tag,
+                                          columnIndex: 1,
+                                          text: cfg.trainerNames?.[1] || "",
+                                        });
+                                      }}
+                                    >
+                                      {cfg.trainerNames?.[1] || "B"}
+                                    </span>
+                                  </div>
+                                )}
+                                {cfg.spalten === 1 && (
+                                  <div className="planningDayHeaderSplit">
+                                    <span
+                                      className="planningDayHeaderSplitLabel planningDayHeaderSplitLabelClickable"
+                                      title={`${cfg.trainerNames?.[0] || "–"} (klicken zum Bearbeiten)`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTrainerHeader({
+                                          tag: cfg.tag,
+                                          columnIndex: 0,
+                                          text: cfg.trainerNames?.[0] || "",
+                                        });
+                                      }}
+                                    >
+                                      {cfg.trainerNames?.[0] || "–"}
+                                    </span>
                                   </div>
                                 )}
                               </th>
@@ -5445,7 +5642,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Cell Edit Popup */}
+                  {/* Cell Edit Popup mit Auto-Bullets */}
                   {editingPlanungCell && (
                     <div
                       className="modalOverlay"
@@ -5468,15 +5665,54 @@ export default function App() {
                             ×
                           </button>
                         </div>
+                        <p className="muted" style={{ padding: "0 16px", fontSize: 11, marginBottom: 4 }}>
+                          Ein Name pro Zeile (max. 5). Enter fügt neue Zeile mit • hinzu.
+                        </p>
                         <textarea
                           className="planningCellEditorTextarea"
                           value={editingPlanungCell.text}
-                          onChange={(e) => setEditingPlanungCell({ ...editingPlanungCell, text: e.target.value })}
+                          onChange={(e) => {
+                            // Begrenze auf 5 Zeilen
+                            const lines = e.target.value.split("\n");
+                            if (lines.length <= 5) {
+                              setEditingPlanungCell({ ...editingPlanungCell, text: e.target.value });
+                            }
+                          }}
                           autoFocus
-                          placeholder="Text eingeben..."
+                          placeholder="• Name eingeben..."
                           onKeyDown={(e) => {
                             if (e.key === "Escape") {
                               setEditingPlanungCell(null);
+                              return;
+                            }
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const textarea = e.currentTarget;
+                              const { selectionStart, selectionEnd, value } = textarea;
+                              const lines = value.split("\n");
+
+                              // Max 5 Zeilen
+                              if (lines.length >= 5) {
+                                return;
+                              }
+
+                              // Füge Zeilenumbruch + Bullet ein
+                              const newValue =
+                                value.substring(0, selectionStart) +
+                                "\n• " +
+                                value.substring(selectionEnd);
+                              setEditingPlanungCell({ ...editingPlanungCell, text: newValue });
+
+                              // Setze Cursor nach dem Bullet
+                              setTimeout(() => {
+                                textarea.selectionStart = textarea.selectionEnd = selectionStart + 3;
+                              }, 0);
+                            }
+                          }}
+                          onFocus={(e) => {
+                            // Wenn leer, füge ersten Bullet hinzu
+                            if (!editingPlanungCell.text.trim()) {
+                              setEditingPlanungCell({ ...editingPlanungCell, text: "• " });
                             }
                           }}
                         />
@@ -5500,6 +5736,103 @@ export default function App() {
                                 }),
                               }));
                               setEditingPlanungCell(null);
+                            }}
+                          >
+                            Speichern
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Trainer Header Edit Popup */}
+                  {editingTrainerHeader && (
+                    <div
+                      className="modalOverlay"
+                      onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                          setEditingTrainerHeader(null);
+                        }
+                      }}
+                    >
+                      <div className="planningCellEditorModal" style={{ maxWidth: 350 }}>
+                        <div className="planningCellEditorHeader">
+                          <span className="planningCellEditorTitle">
+                            Trainer für {PLANUNG_TAG_LABELS[editingTrainerHeader.tag]}
+                            {activeSheet.dayConfigs.find(c => c.tag === editingTrainerHeader.tag)?.spalten === 2
+                              ? ` (Spalte ${editingTrainerHeader.columnIndex === 0 ? "A" : "B"})`
+                              : ""}
+                          </span>
+                          <button
+                            className="planningCellEditorClose"
+                            onClick={() => setEditingTrainerHeader(null)}
+                            title="Schließen (Esc)"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          style={{
+                            width: "100%",
+                            padding: "12px 16px",
+                            border: "none",
+                            borderBottom: "1px solid var(--border)",
+                            background: "var(--bg-card)",
+                            color: "var(--text)",
+                            fontSize: 14,
+                            outline: "none",
+                          }}
+                          value={editingTrainerHeader.text}
+                          onChange={(e) => setEditingTrainerHeader({ ...editingTrainerHeader, text: e.target.value })}
+                          autoFocus
+                          placeholder="Trainername..."
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingTrainerHeader(null);
+                            }
+                            if (e.key === "Enter") {
+                              // Speichern
+                              updateSheet((s) => ({
+                                ...s,
+                                dayConfigs: s.dayConfigs.map((cfg) => {
+                                  if (cfg.tag !== editingTrainerHeader.tag) return cfg;
+                                  const newTrainerNames = [...(cfg.trainerNames || [])];
+                                  // Stelle sicher, dass das Array groß genug ist
+                                  while (newTrainerNames.length <= editingTrainerHeader.columnIndex) {
+                                    newTrainerNames.push("");
+                                  }
+                                  newTrainerNames[editingTrainerHeader.columnIndex] = editingTrainerHeader.text;
+                                  return { ...cfg, trainerNames: newTrainerNames };
+                                }),
+                              }));
+                              setEditingTrainerHeader(null);
+                            }
+                          }}
+                        />
+                        <div className="planningCellEditorActions">
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => setEditingTrainerHeader(null)}
+                          >
+                            Abbrechen
+                          </button>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              updateSheet((s) => ({
+                                ...s,
+                                dayConfigs: s.dayConfigs.map((cfg) => {
+                                  if (cfg.tag !== editingTrainerHeader.tag) return cfg;
+                                  const newTrainerNames = [...(cfg.trainerNames || [])];
+                                  while (newTrainerNames.length <= editingTrainerHeader.columnIndex) {
+                                    newTrainerNames.push("");
+                                  }
+                                  newTrainerNames[editingTrainerHeader.columnIndex] = editingTrainerHeader.text;
+                                  return { ...cfg, trainerNames: newTrainerNames };
+                                }),
+                              }));
+                              setEditingTrainerHeader(null);
                             }}
                           >
                             Speichern
