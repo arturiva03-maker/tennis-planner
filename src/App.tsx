@@ -654,6 +654,12 @@ export default function App() {
   const [editingSheetName, setEditingSheetName] = useState("");
   const [showImportWeekDialog, setShowImportWeekDialog] = useState(false);
   const [importWeekDate, setImportWeekDate] = useState(todayISO());
+  const [editingPlanungCell, setEditingPlanungCell] = useState<{
+    rowIndex: number;
+    tag: PlanungTag;
+    cellIndex: number;
+    text: string;
+  } | null>(null);
   const [payConfirm, setPayConfirm] = useState<{
     monat: string;
     spielerId: string;
@@ -5101,8 +5107,6 @@ export default function App() {
                 });
               };
 
-              const totalCols = activeSheet.dayConfigs.reduce((sum, c) => sum + c.spalten, 0);
-
               const importCalendarWeek = () => {
                 const weekStart = startOfWeekISO(importWeekDate);
                 const weekDates: Record<PlanungTag, string> = {
@@ -5210,12 +5214,13 @@ export default function App() {
                   </p>
 
                   {/* Sheet Tabs */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                  <div className="planningSheetTabs">
                     {planungState.sheets.map((sheet) => (
-                      <div key={sheet.id} style={{ display: "flex", alignItems: "center" }}>
+                      <div key={sheet.id} className="planningSheetTab">
                         {editingSheetId === sheet.id ? (
                           <input
                             type="text"
+                            className="planningSheetTabInput"
                             value={editingSheetName}
                             onChange={(e) => setEditingSheetName(e.target.value)}
                             onBlur={() => {
@@ -5235,12 +5240,10 @@ export default function App() {
                               }
                             }}
                             autoFocus
-                            style={{ padding: "4px 8px", fontSize: 12, border: "1px solid var(--primary)", borderRadius: 4 }}
                           />
                         ) : (
                           <button
-                            className={`btn ${sheet.id === planungState.activeSheetId ? "" : "btnGhost"}`}
-                            style={{ fontSize: 12, padding: "4px 10px" }}
+                            className={`planningSheetTabBtn ${sheet.id === planungState.activeSheetId ? "active" : ""}`}
                             onClick={() => setPlanungState((prev) => ({ ...prev, activeSheetId: sheet.id }))}
                             onDoubleClick={() => {
                               setEditingSheetId(sheet.id);
@@ -5252,8 +5255,7 @@ export default function App() {
                         )}
                         {planungState.sheets.length > 1 && sheet.id === planungState.activeSheetId && (
                           <button
-                            className="btn btnWarn"
-                            style={{ fontSize: 10, padding: "2px 6px", marginLeft: 2 }}
+                            className="planningSheetDeleteBtn"
                             onClick={() => {
                               const remaining = planungState.sheets.filter((s) => s.id !== sheet.id);
                               setPlanungState({
@@ -5269,8 +5271,7 @@ export default function App() {
                       </div>
                     ))}
                     <button
-                      className="btn btnGhost"
-                      style={{ fontSize: 12, padding: "4px 10px" }}
+                      className="planningSheetAddBtn"
                       onClick={() => {
                         const newSheet = createEmptyPlanungSheet(uid(), `Plan ${planungState.sheets.length + 1}`);
                         setPlanungState((prev) => ({
@@ -5284,104 +5285,97 @@ export default function App() {
                   </div>
 
                   {/* Tabelle */}
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 + totalCols * 80 }}>
-                      <thead>
-                        <tr>
-                          <th style={{ padding: 6, borderBottom: "2px solid var(--border)", textAlign: "left", minWidth: 120 }}>Zeit / Notiz</th>
-                          {activeSheet.dayConfigs.map((cfg) => (
-                            <th
-                              key={cfg.tag}
-                              colSpan={cfg.spalten}
-                              style={{ padding: 6, borderBottom: "2px solid var(--border)", textAlign: "center", minWidth: cfg.spalten * 100 }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                                <span>{PLANUNG_TAG_LABELS[cfg.tag]}</span>
-                                <button
-                                  className="btn btnGhost"
-                                  style={{ fontSize: 10, padding: "1px 4px", minWidth: 20 }}
-                                  onClick={() => toggleDaySpalten(cfg.tag)}
-                                  title={cfg.spalten === 1 ? "Spalte teilen" : "Spalten zusammenführen"}
-                                >
-                                  {cfg.spalten === 1 ? "+" : "−"}
-                                </button>
-                              </div>
-                              {cfg.spalten === 2 && (
-                                <div style={{ display: "flex", fontSize: 9, color: "var(--text-muted)", marginTop: 2 }}>
-                                  <span style={{ flex: 1, textAlign: "center" }}>A</span>
-                                  <span style={{ flex: 1, textAlign: "center" }}>B</span>
+                  <div className="planningBoard">
+                    <div className="planningBoardScroll">
+                      <table className="planningTable">
+                        <thead>
+                          <tr>
+                            <th className="planningTimeHeader">Zeit</th>
+                            {activeSheet.dayConfigs.map((cfg) => (
+                              <th
+                                key={cfg.tag}
+                                colSpan={cfg.spalten}
+                                className="planningDayHeader"
+                              >
+                                <div className="planningDayHeaderContent">
+                                  <span>{PLANUNG_TAG_LABELS[cfg.tag]}</span>
+                                  <button
+                                    className="planningToggleBtn"
+                                    onClick={() => toggleDaySpalten(cfg.tag)}
+                                    title={cfg.spalten === 1 ? "Spalte teilen" : "Spalten zusammenführen"}
+                                  >
+                                    {cfg.spalten === 1 ? "+" : "−"}
+                                  </button>
                                 </div>
-                              )}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activeSheet.rows.map((zeile, rowIdx) => (
-                          <tr key={rowIdx}>
-                            <td style={{ padding: 4, borderBottom: "1px solid var(--border)", verticalAlign: "top", background: "var(--bg-body)" }}>
-                              <input
-                                type="text"
-                                value={zeile.zeit}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  updateSheet((s) => ({
-                                    ...s,
-                                    rows: s.rows.map((r, i) => i === rowIdx ? { ...r, zeit: val } : r),
-                                  }));
-                                }}
-                                style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 11, fontWeight: 600, background: "var(--bg-card)", color: "var(--text)", marginBottom: 4 }}
-                                placeholder=""
-                              />
-                              <textarea
-                                rows={2}
-                                value={zeile.slotNotiz}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  updateSheet((s) => ({
-                                    ...s,
-                                    rows: s.rows.map((r, i) => i === rowIdx ? { ...r, slotNotiz: val } : r),
-                                  }));
-                                }}
-                                style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, resize: "vertical", minHeight: 36, background: "var(--bg-card)", color: "var(--text)" }}
-                                placeholder=""
-                              />
-                            </td>
-                            {activeSheet.dayConfigs.map((cfg) =>
-                              zeile[cfg.tag].map((cell, cellIdx) => (
-                                <td
-                                  key={`${cfg.tag}-${cellIdx}`}
-                                  style={{ padding: 2, borderBottom: "1px solid var(--border)", borderLeft: cellIdx > 0 ? "1px dashed var(--border)" : undefined, verticalAlign: "top", minWidth: 90 }}
-                                >
-                                  <textarea
-                                    rows={3}
-                                    value={cell.text}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      updateSheet((s) => ({
-                                        ...s,
-                                        rows: s.rows.map((r, rIdx) => {
-                                          if (rIdx !== rowIdx) return r;
-                                          const newCells = [...r[cfg.tag]];
-                                          newCells[cellIdx] = { text: val };
-                                          return { ...r, [cfg.tag]: newCells };
-                                        }),
-                                      }));
-                                    }}
-                                    style={{ width: "100%", padding: 3, border: "1px solid var(--border)", borderRadius: 4, fontSize: 10, resize: "vertical", minHeight: 50, background: "var(--bg-card)", color: "var(--text)" }}
-                                    placeholder=""
-                                  />
-                                </td>
-                              ))
-                            )}
+                                {cfg.spalten === 2 && (
+                                  <div className="planningDayHeaderSplit">
+                                    <span className="planningDayHeaderSplitLabel">A</span>
+                                    <span className="planningDayHeaderSplitLabel">B</span>
+                                  </div>
+                                )}
+                              </th>
+                            ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {activeSheet.rows.map((zeile, rowIdx) => (
+                            <tr key={rowIdx} className="planningRow">
+                              <td className="planningTimeCell">
+                                <input
+                                  type="text"
+                                  className="planningTimeInput"
+                                  value={zeile.zeit}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    updateSheet((s) => ({
+                                      ...s,
+                                      rows: s.rows.map((r, i) => i === rowIdx ? { ...r, zeit: val } : r),
+                                    }));
+                                  }}
+                                  placeholder="00:00"
+                                />
+                                <textarea
+                                  className="planningSlotNotiz"
+                                  value={zeile.slotNotiz}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    updateSheet((s) => ({
+                                      ...s,
+                                      rows: s.rows.map((r, i) => i === rowIdx ? { ...r, slotNotiz: val } : r),
+                                    }));
+                                  }}
+                                  placeholder="Notiz..."
+                                />
+                              </td>
+                              {activeSheet.dayConfigs.map((cfg) =>
+                                zeile[cfg.tag].map((cell, cellIdx) => (
+                                  <td
+                                    key={`${cfg.tag}-${cellIdx}`}
+                                    className={`planningCell ${cellIdx > 0 ? "splitCell" : ""}`}
+                                    onClick={() => {
+                                      setEditingPlanungCell({
+                                        rowIndex: rowIdx,
+                                        tag: cfg.tag,
+                                        cellIndex: cellIdx,
+                                        text: cell.text,
+                                      });
+                                    }}
+                                  >
+                                    <div className="planningCellPreview">
+                                      {cell.text || <span className="planningCellEmpty">—</span>}
+                                    </div>
+                                  </td>
+                                ))
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* Buttons */}
-                  <div className="row" style={{ marginTop: 16, gap: 8, flexWrap: "wrap" }}>
+                  <div className="planningActions">
                     <button
                       className="btn btnGhost"
                       onClick={() => updateSheet((s) => ({
@@ -5445,6 +5439,70 @@ export default function App() {
                           </button>
                           <button className="btn" onClick={importCalendarWeek}>
                             Importieren
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cell Edit Popup */}
+                  {editingPlanungCell && (
+                    <div
+                      className="modalOverlay"
+                      onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                          setEditingPlanungCell(null);
+                        }
+                      }}
+                    >
+                      <div className="planningCellEditorModal">
+                        <div className="planningCellEditorHeader">
+                          <span className="planningCellEditorTitle">
+                            {PLANUNG_TAG_LABELS[editingPlanungCell.tag]} · Zeile {editingPlanungCell.rowIndex + 1}
+                          </span>
+                          <button
+                            className="planningCellEditorClose"
+                            onClick={() => setEditingPlanungCell(null)}
+                            title="Schließen (Esc)"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <textarea
+                          className="planningCellEditorTextarea"
+                          value={editingPlanungCell.text}
+                          onChange={(e) => setEditingPlanungCell({ ...editingPlanungCell, text: e.target.value })}
+                          autoFocus
+                          placeholder="Text eingeben..."
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingPlanungCell(null);
+                            }
+                          }}
+                        />
+                        <div className="planningCellEditorActions">
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => setEditingPlanungCell(null)}
+                          >
+                            Abbrechen
+                          </button>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              updateSheet((s) => ({
+                                ...s,
+                                rows: s.rows.map((r, rIdx) => {
+                                  if (rIdx !== editingPlanungCell.rowIndex) return r;
+                                  const newCells = [...r[editingPlanungCell.tag]];
+                                  newCells[editingPlanungCell.cellIndex] = { text: editingPlanungCell.text };
+                                  return { ...r, [editingPlanungCell.tag]: newCells };
+                                }),
+                              }));
+                              setEditingPlanungCell(null);
+                            }}
+                          >
+                            Speichern
                           </button>
                         </div>
                       </div>

@@ -1511,6 +1511,470 @@ select:focus:not(:focus-visible) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   MUTTERPLAN / PLANNING BOARD
+   ═══════════════════════════════════════════════════════════════ */
+
+.planningBoard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.planningBoardScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.planningTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 900px;
+}
+
+/* Header Row */
+.planningTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.planningDayHeader {
+  background: var(--bg-inset);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+.planningDayHeader:first-child {
+  border-left: none;
+}
+
+.planningDayHeaderContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.planningDayHeaderSplit {
+  display: flex;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+}
+
+.planningDayHeaderSplitLabel {
+  flex: 1;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.planningToggleBtn {
+  padding: 2px 6px;
+  font-size: 11px;
+  min-height: 20px;
+  min-width: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planningToggleBtn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Time Column Header */
+.planningTimeHeader {
+  background: var(--bg-inset);
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border);
+  width: 100px;
+  min-width: 100px;
+}
+
+/* Body Rows */
+.planningRow {
+  transition: background var(--transition-fast);
+}
+
+.planningRow:hover {
+  background: rgba(37, 99, 235, 0.02);
+}
+
+.planningRow:nth-child(even) {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.planningRow:nth-child(even):hover {
+  background: rgba(37, 99, 235, 0.03);
+}
+
+/* Time Cell */
+.planningTimeCell {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--bg-inset);
+  vertical-align: top;
+  width: 100px;
+  min-width: 100px;
+}
+
+.planningTimeInput {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  transition: all var(--transition-fast);
+}
+
+.planningTimeInput:hover {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+.planningTimeInput:focus {
+  background: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.planningSlotNotiz {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  resize: none;
+  margin-top: 2px;
+  min-height: 24px;
+  line-height: 1.3;
+  transition: all var(--transition-fast);
+}
+
+.planningSlotNotiz:hover {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+.planningSlotNotiz:focus {
+  background: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  outline: none;
+  min-height: 48px;
+}
+
+/* Content Cells */
+.planningCell {
+  padding: 3px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  vertical-align: top;
+  min-width: 100px;
+}
+
+.planningCell.splitCell {
+  border-left: 1px dashed var(--border);
+}
+
+.planningCell {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.planningCell:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+/* Cell Preview (compact, no scroll/resize) */
+.planningCellPreview {
+  padding: 4px 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  min-height: 24px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.planningCellEmpty {
+  color: var(--text-muted);
+  opacity: 0.4;
+  font-style: italic;
+}
+
+/* Cell Editor Modal */
+.planningCellEditorModal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-xl);
+  animation: slideUp var(--transition-normal) ease-out;
+  overflow: hidden;
+}
+
+.planningCellEditorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--border);
+}
+
+.planningCellEditorTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.planningCellEditorClose {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.planningCellEditorClose:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.planningCellEditorTextarea {
+  width: 100%;
+  min-height: 150px;
+  max-height: 300px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  border: none;
+  background: var(--bg-card);
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+
+.planningCellEditorTextarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.planningCellEditorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-inset);
+  border-top: 1px solid var(--border);
+}
+
+.planningCellEditorActions .btn {
+  min-height: 36px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Sheet Tabs */
+.planningSheetTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+}
+
+.planningSheetTab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.planningSheetTabBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 32px;
+}
+
+.planningSheetTabBtn:hover {
+  background: var(--bg-inset);
+  border-color: var(--text-muted);
+}
+
+.planningSheetTabBtn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.planningSheetTabInput {
+  padding: 5px 10px;
+  font-size: 12px;
+  border: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  min-height: 32px;
+  width: 100px;
+}
+
+.planningSheetTabInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.planningSheetDeleteBtn {
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--danger);
+  color: white;
+  cursor: pointer;
+  min-height: 24px;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.planningSheetDeleteBtn:hover {
+  background: #b91c1c;
+  transform: scale(1.05);
+}
+
+.planningSheetAddBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 32px;
+}
+
+.planningSheetAddBtn:hover {
+  background: var(--bg-inset);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Actions Bar */
+.planningActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.planningActions .btn {
+  min-height: 36px;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .planningTable {
+    min-width: 700px;
+  }
+
+  .planningTimeHeader,
+  .planningTimeCell {
+    width: 80px;
+    min-width: 80px;
+  }
+
+  .planningDayHeader {
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+
+  .planningTimeInput {
+    font-size: 11px;
+    padding: 3px 4px;
+  }
+
+  .planningCellTextarea {
+    font-size: 10px;
+    padding: 4px;
+    min-height: 28px;
+  }
+
+  .planningSheetTabBtn,
+  .planningSheetAddBtn {
+    padding: 5px 10px;
+    font-size: 11px;
+    min-height: 28px;
+  }
+
+  .planningActions .btn {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    PRINT STYLES
    ═══════════════════════════════════════════════════════════════ */
 
