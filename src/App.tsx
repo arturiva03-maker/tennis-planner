@@ -3039,6 +3039,23 @@ export default function App() {
                   <span>← Wischen für Navigation →</span>
                 </div>
 
+                {/* Trainer-Filter für Mobile (nur Hauptaccount) */}
+                {!isTrainer && trainers.length > 1 && (
+                  <div className="mobileTrainerFilter">
+                    <select
+                      value={kalenderTrainerFilter}
+                      onChange={(e) => setKalenderTrainerFilter(e.target.value)}
+                    >
+                      <option value="alle">Alle Trainer</option>
+                      {trainers.map((tr) => (
+                        <option key={tr.id} value={tr.id}>
+                          {tr.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div 
                   className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}
                   onTouchStart={calendarSwipeHandlers.onTouchStart}
@@ -5391,20 +5408,38 @@ export default function App() {
                               if (e.key === "Enter") {
                                 (e.target as HTMLInputElement).blur();
                               }
+                              if (e.key === "Escape") {
+                                setEditingSheetId(null);
+                              }
                             }}
                             autoFocus
                           />
                         ) : (
-                          <button
-                            className={`planningSheetTabBtn ${sheet.id === planungState.activeSheetId ? "active" : ""}`}
-                            onClick={() => setPlanungState((prev) => ({ ...prev, activeSheetId: sheet.id }))}
-                            onDoubleClick={() => {
-                              setEditingSheetId(sheet.id);
-                              setEditingSheetName(sheet.name);
-                            }}
-                          >
-                            {sheet.name}
-                          </button>
+                          <>
+                            <button
+                              className={`planningSheetTabBtn ${sheet.id === planungState.activeSheetId ? "active" : ""}`}
+                              onClick={() => setPlanungState((prev) => ({ ...prev, activeSheetId: sheet.id }))}
+                              onDoubleClick={() => {
+                                setEditingSheetId(sheet.id);
+                                setEditingSheetName(sheet.name);
+                              }}
+                              title="Doppelklick zum Umbenennen"
+                            >
+                              {sheet.name}
+                            </button>
+                            {sheet.id === planungState.activeSheetId && (
+                              <button
+                                className="planningSheetEditBtn"
+                                onClick={() => {
+                                  setEditingSheetId(sheet.id);
+                                  setEditingSheetName(sheet.name);
+                                }}
+                                title="Umbenennen"
+                              >
+                                ✎
+                              </button>
+                            )}
+                          </>
                         )}
                         {planungState.sheets.length > 1 && sheet.id === planungState.activeSheetId && (
                           <button

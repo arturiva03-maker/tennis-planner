@@ -530,6 +530,11 @@ input::placeholder {
   display: none;
 }
 
+/* Mobile Trainer-Filter - standardmäßig versteckt auf Desktop */
+.mobileTrainerFilter {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CALENDAR NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
@@ -1239,6 +1244,23 @@ input::placeholder {
     opacity: 0.6;
   }
 
+  /* Mobile Trainer-Filter */
+  .mobileTrainerFilter {
+    display: block;
+    margin-bottom: 12px;
+    padding: 0 4px;
+  }
+
+  .mobileTrainerFilter select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    color: var(--text);
+  }
+
   .kHeadCell {
     padding: 10px 4px;
     font-size: 10px;
@@ -1886,6 +1908,28 @@ select:focus:not(:focus-visible) {
 .planningSheetTabInput:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.planningSheetEditBtn {
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  min-height: 24px;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  margin-left: -4px;
+}
+
+.planningSheetEditBtn:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
 }
 
 .planningSheetDeleteBtn {
