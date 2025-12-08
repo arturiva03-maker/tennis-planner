@@ -15,6 +15,7 @@ type Trainer = {
   name: string;
   email?: string;
   stundensatz?: number;
+  notiz?: string;
 };
 
 type Spieler = {
@@ -219,6 +220,7 @@ function ensureTrainerList(
         typeof (t as any).stundensatz === "number"
           ? (t as any).stundensatz
           : Number((t as any).stundensatz) || 0,
+      notiz: (t as any).notiz?.trim() || undefined,
     }));
 
   if (normalized.length > 0) return normalized;
@@ -229,6 +231,7 @@ function ensureTrainerList(
       id: "trainer-1",
       name: single?.name?.trim() || "Trainer",
       email: single?.email?.trim() || undefined,
+      notiz: single?.notiz?.trim() || undefined,
     },
   ];
 }
@@ -492,6 +495,7 @@ export default function App() {
   const [trainerStundensatz, setTrainerStundensatz] = useState<number | "">(
     initial.state.trainers[0]?.stundensatz ?? 0
   );
+  const [trainerNotiz, setTrainerNotiz] = useState("");
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
@@ -572,6 +576,7 @@ export default function App() {
   const hasMountedRef = useRef(false);
 
   const skipSaveRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -861,38 +866,28 @@ export default function App() {
     loadState();
   }, [authLoading, profileLoading, authUser, initialSynced, profileFinished]);
 
-  /* ::::: Realtime Sync ::::: */
-
-    /* ::::: Realtime Sync ::::: */
+  /* ::::: Realtime Sync (nur für Admin) ::::: */
 
   useEffect(() => {
     if (!authUser?.accountId) return;
     if (!initialSynced) return;
-
-    console.log(
-      "Setting up realtime subscription for account:",
-      authUser.accountId
-    );
+    if (authUser.role === "trainer") return; // Trainer brauchen kein Realtime
 
     const channel = supabase
       .channel(`account_state:${authUser.accountId}`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "account_state",
           filter: `account_id=eq.${authUser.accountId}`,
         },
         (payload) => {
-          console.log("Realtime event received:", payload);
-
-          if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+          if (payload.eventType === "UPDATE") {
             const newRow = payload.new as any;
 
             if (newRow?.data) {
-              console.log("Syncing state from cloud:", newRow.data);
-              // wichtig: verhindern, dass wir direkt wieder zurückschreiben
               skipSaveRef.current = true;
 
               const cloud = normalizeState(newRow.data as Partial<AppState>);
@@ -907,58 +902,66 @@ export default function App() {
           }
         }
       )
-      .subscribe((status) => {
-        console.log("Realtime subscription status:", status);
-      });
+      .subscribe();
 
     return () => {
-      console.log("Removing realtime channel");
       supabase.removeChannel(channel);
     };
-  }, [authUser?.accountId, initialSynced]);
+  }, [authUser?.accountId, authUser?.role, initialSynced]);
 
 
-  /* ::::: Zustand nach Supabase schreiben ::::: */
-
-    /* ::::: Zustand nach Supabase schreiben ::::: */
+  /* ::::: Zustand nach Supabase schreiben (debounced) ::::: */
 
   useEffect(() => {
     if (!authUser) return;
     if (!authUser.accountId) return;
     if (!initialSynced) return;
+    if (authUser.role === "trainer") return; // Trainer schreiben nicht
 
     if (skipSaveRef.current) {
       skipSaveRef.current = false;
       return;
     }
 
-    const payload: AppState = {
-      trainers,
-      spieler,
-      tarife,
-      trainings,
-      payments,
-      trainerPayments,
-      notizen,
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = window.setTimeout(() => {
+      const payload: AppState = {
+        trainers,
+        spieler,
+        tarife,
+        trainings,
+        payments,
+        trainerPayments,
+        notizen,
+      };
+
+      const updatedAt = new Date().toISOString();
+
+      supabase
+        .from("account_state")
+        .upsert({
+          account_id: authUser.accountId,
+          data: payload,
+          updated_at: updatedAt,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error(
+              "Fehler beim Speichern des Zustands in Supabase",
+              error
+            );
+          }
+        });
+    }, 1000);
+
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+      }
     };
-
-    const updatedAt = new Date().toISOString();
-
-    supabase
-      .from("account_state")
-      .upsert({
-        account_id: authUser.accountId,
-        data: payload,
-        updated_at: updatedAt,
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error(
-            "Fehler beim Speichern des Zustands in Supabase",
-            error
-          );
-        }
-      });
   }, [
     authUser,
     initialSynced,
@@ -977,6 +980,7 @@ export default function App() {
       if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
       if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
       if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     };
   }, []);
 
@@ -1165,12 +1169,14 @@ export default function App() {
       name,
       email: trainerEmail.trim() || undefined,
       stundensatz: rate,
+      notiz: trainerNotiz.trim() || undefined,
     };
 
     setTrainers((prev) => [...prev, neu]);
     setTrainerName("");
     setTrainerEmail("");
     setTrainerStundensatz(0);
+    setTrainerNotiz("");
     setEditingTrainerId(null);
     if (!tTrainerId) setTTrainerId(neu.id);
   }
@@ -1180,6 +1186,7 @@ export default function App() {
     setTrainerName(t.name);
     setTrainerEmail(t.email ?? "");
     setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
+    setTrainerNotiz(t.notiz ?? "");
   }
 
   function saveTrainer() {
@@ -1197,6 +1204,7 @@ export default function App() {
               name,
               email: trainerEmail.trim() || undefined,
               stundensatz: rate,
+              notiz: trainerNotiz.trim() || undefined,
             }
           : t
       )
@@ -1206,6 +1214,7 @@ export default function App() {
     setTrainerName("");
     setTrainerEmail("");
     setTrainerStundensatz(0);
+    setTrainerNotiz("");
   }
 
   function deleteTrainer(id: string) {
@@ -2571,6 +2580,15 @@ export default function App() {
             Rolle: <strong>{roleLabel}</strong>
           </span>
 
+          {isTrainer && ownTrainerId && trainerById.get(ownTrainerId)?.notiz && (
+            <div className="card cardInset" style={{ margin: "12px 0", padding: 12 }}>
+              <strong>Notiz vom Hauptaccount:</strong>
+              <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>
+                {trainerById.get(ownTrainerId)?.notiz}
+              </div>
+            </div>
+          )}
+
           <nav className="sideTabs">
             {visibleTabs.map((t) => (
               <button
@@ -3630,6 +3648,15 @@ export default function App() {
                             />
                           </div>
                         </div>
+                        <div className="field" style={{ marginTop: 8 }}>
+                          <label>Notiz für Trainer</label>
+                          <textarea
+                            rows={3}
+                            value={trainerNotiz}
+                            onChange={(e) => setTrainerNotiz(e.target.value)}
+                            placeholder="Interne Notiz für diesen Trainer..."
+                          />
+                        </div>
 
                         <div className="row">
                           <button
@@ -3654,6 +3681,7 @@ export default function App() {
                               setTrainerName("");
                               setTrainerEmail("");
                               setTrainerStundensatz(0);
+                              setTrainerNotiz("");
                               setShowTrainerForm(false);
                             }}
                           >
