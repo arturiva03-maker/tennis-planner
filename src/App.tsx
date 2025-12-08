@@ -58,6 +58,7 @@ type Training = {
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
+type TrainerMonthSettledMap = Record<string, boolean>; // key: `${monat}__${trainerId}`
 
 type Notiz = {
   id: string;
@@ -74,6 +75,7 @@ type AppState = {
   trainings: Training[];
   payments: PaymentsMap;
   trainerPayments: TrainerPaymentsMap;
+  trainerMonthSettled?: TrainerMonthSettledMap;
   notizen?: Notiz[];
 };
 
@@ -240,6 +242,10 @@ function paymentKey(monat: string, spielerId: string) {
   return `${monat}__${spielerId}`;
 }
 
+function trainerMonthSettledKey(monat: string, trainerId: string) {
+  return `${monat}__${trainerId}`;
+}
+
 function ensureTrainerList(
   parsed: Partial<AppState> & {
     trainer?: Trainer | { name: string; email?: string };
@@ -290,6 +296,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     })),
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
+    trainerMonthSettled: parsed?.trainerMonthSettled ?? {},
     notizen: parsed?.notizen ?? [],
   };
 }
@@ -637,6 +644,8 @@ export default function App() {
   );
   const [trainerPayments, setTrainerPayments] =
     useState<TrainerPaymentsMap>(initial.state.trainerPayments ?? {});
+  const [trainerMonthSettled, setTrainerMonthSettled] =
+    useState<TrainerMonthSettledMap>(initial.state.trainerMonthSettled ?? {});
   const [notizen, setNotizen] = useState<Notiz[]>(
     initial.state.notizen ?? []
   );
@@ -775,9 +784,10 @@ export default function App() {
       trainings,
       payments,
       trainerPayments,
+      trainerMonthSettled,
       notizen,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, notizen]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen]);
 
   useEffect(() => {
     writePlanungState(planungState);
@@ -997,6 +1007,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
         setNotizen(local.state.notizen ?? []);
         setInitialSynced(true);
         return;
@@ -1020,6 +1031,7 @@ export default function App() {
         setTrainings(cloud.trainings);
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
+        setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
         setNotizen(cloud.notizen ?? []);
       } else {
         const local = readStateWithMeta();
@@ -1029,6 +1041,7 @@ export default function App() {
         setTrainings(local.state.trainings);
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
+        setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
         setNotizen(local.state.notizen ?? []);
       }
 
@@ -1069,6 +1082,7 @@ export default function App() {
               setTrainings(cloud.trainings);
               setPayments(cloud.payments ?? {});
               setTrainerPayments(cloud.trainerPayments ?? {});
+              setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
               setNotizen(cloud.notizen ?? []);
             }
           }
@@ -1107,6 +1121,7 @@ export default function App() {
         trainings,
         payments,
         trainerPayments,
+        trainerMonthSettled,
         notizen,
       };
 
@@ -1143,6 +1158,7 @@ export default function App() {
     trainings,
     payments,
     trainerPayments,
+    trainerMonthSettled,
     notizen,
   ]);
 
@@ -2743,9 +2759,11 @@ export default function App() {
         <aside className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}>
           <div className="sideNavHeader">
             <div className="sideTitle">Tennistrainer Planung</div>
-            <div className="sideSubtitle">
-              Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde.
-            </div>
+            {!isTrainer && (
+              <div className="sideSubtitle">
+                Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde.
+              </div>
+            )}
           </div>
 
           <span className="pill sideRolePill">
@@ -2754,7 +2772,7 @@ export default function App() {
 
           {isTrainer && ownTrainerId && trainerById.get(ownTrainerId)?.notiz && (
             <div className="card cardInset" style={{ margin: "12px 0", padding: 12 }}>
-              <strong>Notiz vom Hauptaccount:</strong>
+              <strong>Notiz:</strong>
               <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>
                 {trainerById.get(ownTrainerId)?.notiz}
               </div>
@@ -2800,10 +2818,12 @@ export default function App() {
             <div className="header">
               <div className="hTitle">
                 <h1>Tennistrainer Planung</h1>
-                <p>
-                  Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
-                  pro Benutzer gespeichert.
-                </p>
+                {!isTrainer && (
+                  <p>
+                    Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
+                    pro Benutzer gespeichert.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -2821,19 +2841,16 @@ export default function App() {
                       />
                     </div>
 
-                    {trainers.length > 1 && (
+                    {!isTrainer && trainers.length > 1 && (
                       <div className="field" style={{ minWidth: 200 }}>
                         <label>Trainer Filter</label>
                         <select
                           value={kalenderTrainerFilter}
-                          disabled={isTrainer}
                           onChange={(e) =>
                             setKalenderTrainerFilter(e.target.value)
                           }
                         >
-                          {!isTrainer && (
-                            <option value="alle">Alle Trainer</option>
-                          )}
+                          <option value="alle">Alle Trainer</option>
                           {trainers.map((tr) => (
                             <option key={tr.id} value={tr.id}>
                               {tr.name}
@@ -2843,19 +2860,23 @@ export default function App() {
                       </div>
                     )}
 
-                    <span className="pill">
-                      Trainer gesamt: <strong>{trainers.length}</strong>
-                    </span>
+                    {!isTrainer && (
+                      <span className="pill">
+                        Trainer gesamt: <strong>{trainers.length}</strong>
+                      </span>
+                    )}
 
-                    <button
-                      className="btn"
-                      onClick={() => {
-                        resetTrainingForm();
-                        setTab("training");
-                      }}
-                    >
-                      Neues Training
-                    </button>
+                    {!isTrainer && (
+                      <button
+                        className="btn"
+                        onClick={() => {
+                          resetTrainingForm();
+                          setTab("training");
+                        }}
+                      >
+                        Neues Training
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3248,9 +3269,11 @@ export default function App() {
                 </div>
 
                 <div style={{ height: 12 }} />
-                <div className="muted">
-                  Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen. Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten (Handy).
-                </div>
+                {!isTrainer && (
+                  <div className="muted">
+                    Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen. Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten (Handy).
+                  </div>
+                )}
               </div>
             )}
 
@@ -4228,35 +4251,34 @@ export default function App() {
                       onChange={(e) => setAbrechnungMonat(e.target.value)}
                     />
                   </div>
-                  <div className="field">
-                    <label>Filter</label>
-                    <select
-                      value={abrechnungFilter}
-                      onChange={(e) =>
-                        setAbrechnungFilter(
-                          e.target.value as AbrechnungFilter
-                        )
-                      }
-                    >
-                      <option value="alle">Alle</option>
-                      <option value="bezahlt">Nur bezahlt</option>
-                      <option value="offen">Nur offen</option>
-                      <option value="bar">Nur bar bezahlt</option>
-                    </select>
-                  </div>
-                  {trainers.length > 1 && (
+                  {!isTrainer && (
+                    <div className="field">
+                      <label>Filter</label>
+                      <select
+                        value={abrechnungFilter}
+                        onChange={(e) =>
+                          setAbrechnungFilter(
+                            e.target.value as AbrechnungFilter
+                          )
+                        }
+                      >
+                        <option value="alle">Alle</option>
+                        <option value="bezahlt">Nur bezahlt</option>
+                        <option value="offen">Nur offen</option>
+                        <option value="bar">Nur bar bezahlt</option>
+                      </select>
+                    </div>
+                  )}
+                  {!isTrainer && trainers.length > 1 && (
                     <div className="field">
                       <label>Trainer</label>
                       <select
                         value={abrechnungTrainerFilter}
-                        disabled={isTrainer}
                         onChange={(e) =>
                           setAbrechnungTrainerFilter(e.target.value)
                         }
                       >
-                        {!isTrainer && (
-                          <option value="alle">Alle Trainer</option>
-                        )}
+                        <option value="alle">Alle Trainer</option>
                         {trainers.map((tr) => (
                           <option key={tr.id} value={tr.id}>
                             {tr.name}
@@ -4562,6 +4584,49 @@ export default function App() {
                         </div>
                       )}
 
+                    {/* Abrechnungsstatus für Admin - mit Toggle */}
+                    {!isTrainer && abrechnungTrainerFilter !== "alle" && (
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 12 }}>
+                        {trainerMonthSettled[trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter)] ? (
+                          <>
+                            <span style={{ color: "#22c55e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 18 }}>✓</span> Abgerechnet
+                            </span>
+                            <button
+                              className="btn btnGhost"
+                              style={{ fontSize: 12, padding: "4px 10px" }}
+                              onClick={() => {
+                                const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                setTrainerMonthSettled((prev) => {
+                                  const next = { ...prev };
+                                  delete next[key];
+                                  return next;
+                                });
+                              }}
+                            >
+                              Markierung entfernen
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                              <span style={{ fontSize: 18 }}>○</span> Nicht abgerechnet
+                            </span>
+                            <button
+                              className="btn"
+                              style={{ fontSize: 12, padding: "4px 10px" }}
+                              onClick={() => {
+                                const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                setTrainerMonthSettled((prev) => ({ ...prev, [key]: true }));
+                              }}
+                            >
+                              Als abgerechnet markieren
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     {isTrainer &&
                       !(
                         (trainerById.get(ownTrainerId)?.name ?? "")
@@ -4587,6 +4652,21 @@ export default function App() {
                           </span>
                         </div>
                       )}
+
+                    {/* Abrechnungsstatus für Trainer - nur lesen */}
+                    {isTrainer && ownTrainerId && (
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                        {trainerMonthSettled[trainerMonthSettledKey(abrechnungMonat, ownTrainerId)] ? (
+                          <span style={{ color: "#22c55e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ fontSize: 18 }}>✓</span> Abgerechnet
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                            <span style={{ fontSize: 18 }}>○</span> Nicht abgerechnet
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {isTrainer && (
                       <>
@@ -4616,11 +4696,13 @@ export default function App() {
                     )}
 
                     <div style={{ height: 10 }} />
-                    <div className="muted">
-                      Hinweis: Das Trainerhonorar wird pro Training
-                      abgerechnet. Der Filter oben bezieht sich hier auf den
-                      Honorarstatus.
-                    </div>
+                    {!isTrainer && (
+                      <div className="muted">
+                        Hinweis: Das Trainerhonorar wird pro Training
+                        abgerechnet. Der Filter oben bezieht sich hier auf den
+                        Honorarstatus.
+                      </div>
+                    )}
 
                     {!isTrainer && trainers.length > 1 && (
                       <>
