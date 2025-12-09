@@ -13,6 +13,7 @@ import { supabase } from "./supabaseClient";
 type Trainer = {
   id: string;
   name: string;
+  nachname?: string;
   email?: string;
   stundensatz?: number;
   notiz?: string;
@@ -532,6 +533,305 @@ function generateInvoiceHTML(data: {
 </html>`;
 }
 
+function generateFinalInvoiceHTML(data: {
+  rechnungssteller: string;
+  adresse: string;
+  ustIdNr: string;
+  rechnungsnummer: string;
+  rechnungsdatum: string;
+  leistungszeitraum: string;
+  positionBeschreibung: string;
+  stundenAnzahl: number;
+  preisProStunde: number;
+  iban: string;
+  kleinunternehmer: boolean;
+  useCustomTotal?: boolean;
+  customGesamtbetrag?: number;
+}): string {
+  const {
+    rechnungssteller,
+    adresse,
+    ustIdNr,
+    rechnungsnummer,
+    rechnungsdatum,
+    leistungszeitraum,
+    positionBeschreibung,
+    stundenAnzahl,
+    preisProStunde,
+    iban,
+    kleinunternehmer,
+    useCustomTotal,
+    customGesamtbetrag,
+  } = data;
+
+  const zwischensumme = stundenAnzahl * preisProStunde;
+  // Bei manuellem Gesamtbetrag: Korrektur berechnen (Differenz zwischen gewünschtem und berechnetem Betrag)
+  const korrektur = useCustomTotal && customGesamtbetrag !== undefined
+    ? customGesamtbetrag - zwischensumme * (kleinunternehmer ? 1 : 1.19)
+    : 0;
+  const zwischensummeMitKorrektur = zwischensumme + korrektur;
+  const mwst = kleinunternehmer ? 0 : zwischensummeMitKorrektur * 0.19;
+  const gesamtbetrag = zwischensummeMitKorrektur + mwst;
+
+  const formatEuro = (amount: number) => amount.toFixed(2).replace('.', ',') + ' €';
+  const adresseHtml = adresse.split('\n').map(line => `${line}`).join('<br>');
+
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rechnung ${rechnungsnummer}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #333;
+      padding: 2cm;
+      max-width: 21cm;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 2cm;
+    }
+    .title {
+      font-size: 24pt;
+      font-weight: bold;
+      margin-bottom: 1.5cm;
+      color: #1a1a1a;
+    }
+    .addresses {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1cm;
+    }
+    .address-block {
+      width: 45%;
+    }
+    .address-label {
+      font-size: 10pt;
+      color: #666;
+      margin-bottom: 0.3cm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .address-content {
+      font-size: 11pt;
+    }
+    .meta-info {
+      margin-top: 1cm;
+      margin-bottom: 1cm;
+      padding: 0.5cm;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+    }
+    .meta-row {
+      display: flex;
+      margin-bottom: 0.2cm;
+    }
+    .meta-label {
+      width: 160px;
+      font-weight: bold;
+    }
+    .content {
+      margin-top: 1cm;
+      margin-bottom: 1cm;
+    }
+    .intro {
+      margin-bottom: 1cm;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1cm 0;
+    }
+    th, td {
+      padding: 0.3cm 0.5cm;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .summary-table {
+      width: 50%;
+      margin-left: auto;
+      margin-top: 0.5cm;
+    }
+    .summary-table td {
+      border-bottom: none;
+      padding: 0.2cm 0.5cm;
+    }
+    .summary-table .total-row td {
+      border-top: 2px solid #333;
+      font-weight: bold;
+      font-size: 14pt;
+      padding-top: 0.4cm;
+    }
+    .kleinunternehmer-note {
+      margin-top: 0.5cm;
+      font-size: 10pt;
+      color: #666;
+      font-style: italic;
+    }
+    .payment-info {
+      margin-top: 1.5cm;
+      padding: 0.5cm;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+    }
+    .payment-info strong {
+      display: block;
+      margin-bottom: 0.3cm;
+    }
+    .footer {
+      margin-top: 2cm;
+    }
+    .signature {
+      margin-top: 1.5cm;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      @page {
+        margin: 2cm;
+        size: A4;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">RECHNUNG</div>
+
+    <div class="addresses">
+      <div class="address-block">
+        <div class="address-label">Rechnungssteller</div>
+        <div class="address-content">
+          <strong>${rechnungssteller}</strong><br>
+          ${adresseHtml}
+          ${ustIdNr ? `<br>USt-IdNr: ${ustIdNr}` : ''}
+        </div>
+      </div>
+      <div class="address-block">
+        <div class="address-label">Rechnungsempfänger</div>
+        <div class="address-content">
+          <strong>Tennisschule Zlatan Palazov und<br>Artur Ivanenko GbR</strong><br>
+          Ricarda-Huch-Straße 40<br>
+          14480 Potsdam
+        </div>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      <div class="meta-row">
+        <span class="meta-label">Rechnungsnummer:</span>
+        <span>${rechnungsnummer}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Rechnungsdatum:</span>
+        <span>${rechnungsdatum}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Leistungszeitraum:</span>
+        <span>${leistungszeitraum}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="intro">
+      <p>Sehr geehrte Damen und Herren,</p>
+      <p>für die im Leistungszeitraum erbrachten Trainerstunden erlaube ich mir, folgende Rechnung zu stellen:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th class="text-right">Anzahl</th>
+          <th class="text-right">Preis</th>
+          <th class="text-right">Gesamt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${positionBeschreibung}</td>
+          <td class="text-right">${stundenAnzahl}</td>
+          <td class="text-right">${formatEuro(preisProStunde)}</td>
+          <td class="text-right">${formatEuro(zwischensumme)}</td>
+        </tr>
+        ${useCustomTotal && korrektur !== 0 ? `
+        <tr>
+          <td>Korrektur</td>
+          <td class="text-right"></td>
+          <td class="text-right"></td>
+          <td class="text-right">${formatEuro(korrektur)}</td>
+        </tr>
+        ` : ''}
+      </tbody>
+    </table>
+
+    <table class="summary-table">
+      <tbody>
+        <tr>
+          <td>Zwischensumme:</td>
+          <td class="text-right">${formatEuro(zwischensummeMitKorrektur)}</td>
+        </tr>
+        ${!kleinunternehmer ? `
+        <tr>
+          <td>MwSt. 19%:</td>
+          <td class="text-right">${formatEuro(mwst)}</td>
+        </tr>
+        ` : ''}
+        <tr class="total-row">
+          <td>Gesamtbetrag:</td>
+          <td class="text-right">${formatEuro(gesamtbetrag)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    ${kleinunternehmer ? `
+    <div class="kleinunternehmer-note">
+      Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
+    </div>
+    ` : ''}
+
+    <div class="payment-info">
+      <strong>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</strong>
+      <div class="meta-row">
+        <span class="meta-label">IBAN:</span>
+        <span>${iban}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Kontoinhaber:</span>
+        <span>${rechnungssteller}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Vielen Dank für die Zusammenarbeit.</p>
+    <div class="signature">
+      <p>Mit freundlichen Grüßen</p>
+      <p><strong>${rechnungssteller}</strong></p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 function ensureTrainerList(
   parsed: Partial<AppState> & {
     trainer?: Trainer | { name: string; email?: string };
@@ -543,12 +843,17 @@ function ensureTrainerList(
     .map((t, idx) => ({
       id: t.id || `trainer-${idx + 1}`,
       name: t.name?.trim() || `Trainer ${idx + 1}`,
+      nachname: (t as any).nachname?.trim() || undefined,
       email: t.email?.trim() || undefined,
       stundensatz:
         typeof (t as any).stundensatz === "number"
           ? (t as any).stundensatz
           : Number((t as any).stundensatz) || 0,
       notiz: (t as any).notiz?.trim() || undefined,
+      adresse: (t as any).adresse?.trim() || undefined,
+      iban: (t as any).iban?.trim() || undefined,
+      ustIdNr: (t as any).ustIdNr?.trim() || undefined,
+      kleinunternehmer: (t as any).kleinunternehmer ?? false,
     }));
 
   if (normalized.length > 0) return normalized;
@@ -979,6 +1284,21 @@ export default function App() {
     kleinunternehmer: boolean;
   } | null>(null);
   const [invoiceError, setInvoiceError] = useState<string>("");
+  const [invoicePreview, setInvoicePreview] = useState<{
+    rechnungssteller: string;
+    adresse: string;
+    ustIdNr: string;
+    rechnungsnummer: string;
+    rechnungsdatum: string;
+    leistungszeitraum: string;
+    positionBeschreibung: string;
+    stundenAnzahl: number;
+    preisProStunde: number;
+    iban: string;
+    kleinunternehmer: boolean;
+    useCustomTotal: boolean;
+    customGesamtbetrag: number;
+  } | null>(null);
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
@@ -992,7 +1312,11 @@ export default function App() {
     initial.state.trainers[0]?.stundensatz ?? 0
   );
   const [trainerNotiz, setTrainerNotiz] = useState("");
+  const [trainerNachname, setTrainerNachname] = useState("");
   const [trainerAdresse, setTrainerAdresse] = useState("");
+  const [trainerIban, setTrainerIban] = useState("");
+  const [trainerUstIdNr, setTrainerUstIdNr] = useState("");
+  const [trainerKleinunternehmer, setTrainerKleinunternehmer] = useState(false);
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
@@ -1682,18 +2006,26 @@ export default function App() {
     const neu: Trainer = {
       id: uid(),
       name,
+      nachname: trainerNachname.trim() || undefined,
       email: trainerEmail.trim() || undefined,
       stundensatz: rate,
       notiz: trainerNotiz.trim() || undefined,
       adresse: trainerAdresse.trim() || undefined,
+      iban: trainerIban.trim() || undefined,
+      ustIdNr: trainerUstIdNr.trim() || undefined,
+      kleinunternehmer: trainerKleinunternehmer,
     };
 
     setTrainers((prev) => [...prev, neu]);
     setTrainerName("");
+    setTrainerNachname("");
     setTrainerEmail("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
     setTrainerAdresse("");
+    setTrainerIban("");
+    setTrainerUstIdNr("");
+    setTrainerKleinunternehmer(false);
     setEditingTrainerId(null);
     if (!tTrainerId) setTTrainerId(neu.id);
   }
@@ -1701,10 +2033,14 @@ export default function App() {
   function startEditTrainer(t: Trainer) {
     setEditingTrainerId(t.id);
     setTrainerName(t.name);
+    setTrainerNachname(t.nachname ?? "");
     setTrainerEmail(t.email ?? "");
     setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
     setTrainerNotiz(t.notiz ?? "");
     setTrainerAdresse(t.adresse ?? "");
+    setTrainerIban(t.iban ?? "");
+    setTrainerUstIdNr(t.ustIdNr ?? "");
+    setTrainerKleinunternehmer(t.kleinunternehmer ?? false);
   }
 
   function saveTrainer() {
@@ -1720,10 +2056,14 @@ export default function App() {
           ? {
               ...t,
               name,
+              nachname: trainerNachname.trim() || undefined,
               email: trainerEmail.trim() || undefined,
               stundensatz: rate,
               notiz: trainerNotiz.trim() || undefined,
               adresse: trainerAdresse.trim() || undefined,
+              iban: trainerIban.trim() || undefined,
+              ustIdNr: trainerUstIdNr.trim() || undefined,
+              kleinunternehmer: trainerKleinunternehmer,
             }
           : t
       )
@@ -1731,10 +2071,14 @@ export default function App() {
 
     setEditingTrainerId(null);
     setTrainerName("");
+    setTrainerNachname("");
     setTrainerEmail("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
     setTrainerAdresse("");
+    setTrainerIban("");
+    setTrainerUstIdNr("");
+    setTrainerKleinunternehmer(false);
   }
 
   function deleteTrainer(id: string) {
@@ -4341,6 +4685,14 @@ export default function App() {
                             />
                           </div>
                           <div className="field">
+                            <label>Nachname</label>
+                            <input
+                              value={trainerNachname}
+                              onChange={(e) => setTrainerNachname(e.target.value)}
+                              placeholder="Mustermann"
+                            />
+                          </div>
+                          <div className="field">
                             <label>Email</label>
                             <input
                               value={trainerEmail}
@@ -4390,8 +4742,36 @@ export default function App() {
                             placeholder="Max Mustermann&#10;Musterstraße 123&#10;12345 Berlin"
                           />
                         </div>
+                        <div className="row" style={{ marginTop: 8 }}>
+                          <div className="field">
+                            <label>IBAN</label>
+                            <input
+                              value={trainerIban}
+                              onChange={(e) => setTrainerIban(e.target.value)}
+                              placeholder="DE89 3704 0044 0532 0130 00"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>USt-IdNr</label>
+                            <input
+                              value={trainerUstIdNr}
+                              onChange={(e) => setTrainerUstIdNr(e.target.value)}
+                              placeholder="DE123456789"
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 8 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={trainerKleinunternehmer}
+                              onChange={(e) => setTrainerKleinunternehmer(e.target.checked)}
+                            />
+                            <span>Kleinunternehmerregelung (keine MwSt.)</span>
+                          </label>
+                        </div>
 
-                        <div className="row">
+                        <div className="row" style={{ marginTop: 12 }}>
                           <button
                             className="btn"
                             onClick={() => {
@@ -4412,10 +4792,14 @@ export default function App() {
                             onClick={() => {
                               setEditingTrainerId(null);
                               setTrainerName("");
+                              setTrainerNachname("");
                               setTrainerEmail("");
                               setTrainerStundensatz(0);
                               setTrainerNotiz("");
                               setTrainerAdresse("");
+                              setTrainerIban("");
+                              setTrainerUstIdNr("");
+                              setTrainerKleinunternehmer(false);
                               setShowTrainerForm(false);
                             }}
                           >
@@ -5332,16 +5716,17 @@ export default function App() {
                         <button
                           className="btn"
                           onClick={() => {
-                            // Lade gespeicherte Invoice-Einstellungen
+                            // Lade gespeicherte Invoice-Einstellungen (als Fallback)
                             const savedSettings = localStorage.getItem(TRAINER_INVOICE_SETTINGS_KEY);
                             const parsed = savedSettings ? JSON.parse(savedSettings) : {};
                             const trainerData = trainerById.get(ownTrainerId);
+                            // Trainer-Profil hat Priorität, localStorage ist Fallback
                             setInvoiceDialog({
                               stundenAnzahl: nichtBarTrainings.length,
-                              iban: parsed.iban ?? "",
+                              iban: trainerData?.iban ?? parsed.iban ?? "",
                               adresse: trainerData?.adresse ?? "",
-                              ustIdNr: parsed.ustIdNr ?? "",
-                              kleinunternehmer: parsed.kleinunternehmer ?? false,
+                              ustIdNr: trainerData?.ustIdNr ?? parsed.ustIdNr ?? "",
+                              kleinunternehmer: trainerData?.kleinunternehmer ?? parsed.kleinunternehmer ?? false,
                             });
                             setInvoiceError("");
                           }}
@@ -6784,41 +7169,305 @@ export default function App() {
                     return;
                   }
 
-                  // Speichere Einstellungen in localStorage
-                  localStorage.setItem(TRAINER_INVOICE_SETTINGS_KEY, JSON.stringify({
-                    iban: invoiceDialog.iban,
-                    ustIdNr: invoiceDialog.ustIdNr,
-                    kleinunternehmer: invoiceDialog.kleinunternehmer,
-                  }));
-
-                  // Generiere und zeige Rechnung
+                  // Öffne Vorschau-Dialog
                   const trainerData = trainerById.get(ownTrainerId);
                   const stundensatz = trainerData?.stundensatz ?? 0;
-                  const trainerName = trainerData?.name ?? "Trainer";
+                  const fullName = trainerData?.name + (trainerData?.nachname ? ' ' + trainerData.nachname : '');
+                  const now = new Date();
+                  const rechnungsnummer = `RG-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
 
-                  const invoiceHTML = generateInvoiceHTML({
-                    trainerName,
-                    trainerAdresse: invoiceDialog.adresse,
+                  const berechneterBetrag = invoiceDialog.stundenAnzahl * stundensatz * (invoiceDialog.kleinunternehmer ? 1 : 1.19);
+                  setInvoicePreview({
+                    rechnungssteller: fullName,
+                    adresse: invoiceDialog.adresse,
                     ustIdNr: invoiceDialog.ustIdNr,
-                    stundenAnzahl: invoiceDialog.stundenAnzahl,
-                    stundensatz,
-                    kleinunternehmer: invoiceDialog.kleinunternehmer,
-                    iban: invoiceDialog.iban,
+                    rechnungsnummer,
+                    rechnungsdatum: now.toLocaleDateString('de-DE'),
                     leistungszeitraum: `${abrechnungMonat.slice(5, 7)}/${abrechnungMonat.slice(0, 4)}`,
+                    positionBeschreibung: "Trainerstunden",
+                    stundenAnzahl: invoiceDialog.stundenAnzahl,
+                    preisProStunde: stundensatz,
+                    iban: invoiceDialog.iban,
+                    kleinunternehmer: invoiceDialog.kleinunternehmer,
+                    useCustomTotal: false,
+                    customGesamtbetrag: berechneterBetrag,
                   });
-
-                  const win = window.open('', '_blank');
-                  if (win) {
-                    win.document.write(invoiceHTML);
-                    win.document.close();
-                    setTimeout(() => win.print(), 100);
-                  }
 
                   setInvoiceDialog(null);
                   setInvoiceError("");
                 }}
               >
-                Rechnung generieren
+                Rechnung erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Preview Dialog für Trainer */}
+      {invoicePreview && isTrainer && ownTrainerId && (
+        <div className="modalOverlay">
+          <div className="modalCard" style={{ maxWidth: 800, maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modalHeader">
+              <div className="modalPill">Rechnungsvorschau</div>
+              <h3>Rechnungsvorschau - Anpassungen vornehmen</h3>
+              <p className="muted">
+                Bearbeiten Sie die Rechnung vor der Erstellung
+              </p>
+            </div>
+
+            <div style={{ padding: "0 20px", marginBottom: 16 }}>
+              {/* Rechnungssteller */}
+              <div style={{ marginBottom: 20, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: 14, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rechnungssteller</h4>
+                <div className="field" style={{ marginBottom: 8 }}>
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    value={invoicePreview.rechnungssteller}
+                    onChange={(e) => setInvoicePreview({ ...invoicePreview, rechnungssteller: e.target.value })}
+                    style={{ backgroundColor: '#fff' }}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 8 }}>
+                  <label>Adresse</label>
+                  <textarea
+                    rows={3}
+                    value={invoicePreview.adresse}
+                    onChange={(e) => setInvoicePreview({ ...invoicePreview, adresse: e.target.value })}
+                    style={{ backgroundColor: '#fff' }}
+                  />
+                </div>
+                <div className="field">
+                  <label>USt-IdNr (optional)</label>
+                  <input
+                    type="text"
+                    value={invoicePreview.ustIdNr}
+                    onChange={(e) => setInvoicePreview({ ...invoicePreview, ustIdNr: e.target.value })}
+                    placeholder="DE123456789"
+                    style={{ backgroundColor: '#fff' }}
+                  />
+                </div>
+              </div>
+
+              {/* Rechnungsdaten */}
+              <div style={{ marginBottom: 20, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: 14, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rechnungsdaten</h4>
+                <div className="row">
+                  <div className="field">
+                    <label>Rechnungsnummer</label>
+                    <input
+                      type="text"
+                      value={invoicePreview.rechnungsnummer}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, rechnungsnummer: e.target.value })}
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Rechnungsdatum</label>
+                    <input
+                      type="text"
+                      value={invoicePreview.rechnungsdatum}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, rechnungsdatum: e.target.value })}
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Leistungszeitraum</label>
+                    <input
+                      type="text"
+                      value={invoicePreview.leistungszeitraum}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, leistungszeitraum: e.target.value })}
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Position */}
+              <div style={{ marginBottom: 20, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: 14, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Position</h4>
+                <div className="row">
+                  <div className="field" style={{ flex: 2 }}>
+                    <label>Beschreibung</label>
+                    <input
+                      type="text"
+                      value={invoicePreview.positionBeschreibung}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, positionBeschreibung: e.target.value })}
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Anzahl</label>
+                    <input
+                      type="number"
+                      value={invoicePreview.stundenAnzahl}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, stundenAnzahl: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Preis pro Stunde (€)</label>
+                    <input
+                      type="number"
+                      value={invoicePreview.preisProStunde}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, preisProStunde: parseFloat(e.target.value) || 0 })}
+                      min="0"
+                      step="0.01"
+                      style={{ backgroundColor: '#fff' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Berechnete Beträge */}
+              <div style={{ marginBottom: 20, padding: 16, backgroundColor: '#e8f4fd', borderRadius: 8 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: 14, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Beträge</h4>
+
+                {/* Checkbox für manuellen Gesamtbetrag */}
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={invoicePreview.useCustomTotal}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, useCustomTotal: e.target.checked })}
+                    />
+                    <span>Manuellen Gesamtbetrag verwenden</span>
+                  </label>
+                </div>
+
+                {invoicePreview.useCustomTotal && (
+                  /* Eingabefeld für manuellen Gesamtbetrag */
+                  <div className="field" style={{ marginBottom: 16 }}>
+                    <label>Gewünschter Gesamtbetrag (€)</label>
+                    <input
+                      type="number"
+                      value={invoicePreview.customGesamtbetrag}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, customGesamtbetrag: parseFloat(e.target.value) || 0 })}
+                      min="0"
+                      step="0.01"
+                      style={{ backgroundColor: '#fff', fontSize: 18, fontWeight: 'bold' }}
+                    />
+                  </div>
+                )}
+
+                {/* Beträge-Tabelle */}
+                {(() => {
+                  const positionSumme = invoicePreview.stundenAnzahl * invoicePreview.preisProStunde;
+                  const berechneterBetrag = positionSumme * (invoicePreview.kleinunternehmer ? 1 : 1.19);
+                  const korrektur = invoicePreview.useCustomTotal
+                    ? invoicePreview.customGesamtbetrag - berechneterBetrag
+                    : 0;
+                  const zwischensummeMitKorrektur = positionSumme + korrektur;
+                  const mwstBetrag = invoicePreview.kleinunternehmer ? 0 : zwischensummeMitKorrektur * 0.19;
+                  const endBetrag = zwischensummeMitKorrektur + mwstBetrag;
+
+                  return (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: '8px 0' }}>Gesamt Position:</td>
+                          <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                            {invoicePreview.stundenAnzahl} × {invoicePreview.preisProStunde.toFixed(2).replace('.', ',')} € = <strong>{positionSumme.toFixed(2).replace('.', ',')} €</strong>
+                          </td>
+                        </tr>
+                        {invoicePreview.useCustomTotal && korrektur !== 0 && (
+                          <tr style={{ color: korrektur < 0 ? '#c00' : '#060' }}>
+                            <td style={{ padding: '8px 0' }}>Korrektur:</td>
+                            <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                              <strong>{korrektur >= 0 ? '+' : ''}{korrektur.toFixed(2).replace('.', ',')} €</strong>
+                            </td>
+                          </tr>
+                        )}
+                        <tr>
+                          <td style={{ padding: '8px 0' }}>Zwischensumme:</td>
+                          <td style={{ padding: '8px 0', textAlign: 'right' }}><strong>{zwischensummeMitKorrektur.toFixed(2).replace('.', ',')} €</strong></td>
+                        </tr>
+                        {!invoicePreview.kleinunternehmer && (
+                          <tr>
+                            <td style={{ padding: '8px 0' }}>MwSt. 19%:</td>
+                            <td style={{ padding: '8px 0', textAlign: 'right' }}><strong>{mwstBetrag.toFixed(2).replace('.', ',')} €</strong></td>
+                          </tr>
+                        )}
+                        <tr style={{ borderTop: '2px solid #333' }}>
+                          <td style={{ padding: '12px 0', fontSize: 16, fontWeight: 'bold' }}>Gesamtbetrag:</td>
+                          <td style={{ padding: '12px 0', textAlign: 'right', fontSize: 18, fontWeight: 'bold' }}>
+                            {endBetrag.toFixed(2).replace('.', ',')} €
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
+
+              {/* Kleinunternehmer & IBAN */}
+              <div style={{ marginBottom: 20, padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: 14, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Zahlungsinformationen</h4>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={invoicePreview.kleinunternehmer}
+                      onChange={(e) => setInvoicePreview({ ...invoicePreview, kleinunternehmer: e.target.checked })}
+                    />
+                    <span>Kleinunternehmerregelung anwenden (keine MwSt.)</span>
+                  </label>
+                </div>
+                <div className="field">
+                  <label>IBAN</label>
+                  <input
+                    type="text"
+                    value={invoicePreview.iban}
+                    onChange={(e) => setInvoicePreview({ ...invoicePreview, iban: e.target.value })}
+                    style={{ backgroundColor: '#fff' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="modalActions">
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  // Zurück zum ersten Dialog
+                  setInvoiceDialog({
+                    stundenAnzahl: invoicePreview.stundenAnzahl,
+                    iban: invoicePreview.iban,
+                    adresse: invoicePreview.adresse,
+                    ustIdNr: invoicePreview.ustIdNr,
+                    kleinunternehmer: invoicePreview.kleinunternehmer,
+                  });
+                  setInvoicePreview(null);
+                }}
+              >
+                Zurück
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  // Speichere Einstellungen in localStorage
+                  localStorage.setItem(TRAINER_INVOICE_SETTINGS_KEY, JSON.stringify({
+                    iban: invoicePreview.iban,
+                    ustIdNr: invoicePreview.ustIdNr,
+                    kleinunternehmer: invoicePreview.kleinunternehmer,
+                  }));
+
+                  // Generiere finale Rechnung
+                  const invoiceHTML = generateFinalInvoiceHTML(invoicePreview);
+
+                  const win = window.open('', '_blank');
+                  if (win) {
+                    win.document.write(invoiceHTML);
+                    win.document.close();
+                    setTimeout(() => win.print(), 200);
+                  }
+
+                  setInvoicePreview(null);
+                }}
+              >
+                PDF erstellen
               </button>
             </div>
           </div>
