@@ -16,6 +16,10 @@ type Trainer = {
   email?: string;
   stundensatz?: number;
   notiz?: string;
+  adresse?: string;
+  iban?: string;
+  ustIdNr?: string;
+  kleinunternehmer?: boolean;
 };
 
 type Spieler = {
@@ -133,6 +137,7 @@ type PlanungState = {
 
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const PLANUNG_STORAGE_KEY = "tennis_planner_mutterplan_v4";
+const TRAINER_INVOICE_SETTINGS_KEY = "trainer_invoice_settings";
 const LEGACY_KEYS = [
   "tennis_planner_single_trainer",
   "tennis_planner_single_trainer_v5",
@@ -247,6 +252,284 @@ function paymentKey(monat: string, spielerId: string) {
 
 function trainerMonthSettledKey(monat: string, trainerId: string) {
   return `${monat}__${trainerId}`;
+}
+
+function generateInvoiceHTML(data: {
+  trainerName: string;
+  trainerAdresse: string;
+  ustIdNr: string;
+  stundenAnzahl: number;
+  stundensatz: number;
+  kleinunternehmer: boolean;
+  iban: string;
+  leistungszeitraum: string;
+}): string {
+  const {
+    trainerName,
+    trainerAdresse,
+    ustIdNr,
+    stundenAnzahl,
+    stundensatz,
+    kleinunternehmer,
+    iban,
+    leistungszeitraum,
+  } = data;
+
+  const rechnungsnummer = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
+  const rechnungsdatum = new Date().toLocaleDateString('de-DE');
+  const zwischensumme = stundenAnzahl * stundensatz;
+  const mwst = kleinunternehmer ? 0 : zwischensumme * 0.19;
+  const gesamtbetrag = zwischensumme + mwst;
+
+  const formatEuro = (amount: number) => amount.toFixed(2).replace('.', ',') + ' €';
+  const adresseHtml = trainerAdresse.split('\n').map(line => `${line}`).join('<br>');
+
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rechnung ${rechnungsnummer}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #333;
+      padding: 2cm;
+      max-width: 21cm;
+      margin: 0 auto;
+    }
+    .header {
+      margin-bottom: 2cm;
+    }
+    .title {
+      font-size: 24pt;
+      font-weight: bold;
+      margin-bottom: 1.5cm;
+      color: #1a1a1a;
+    }
+    .addresses {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1cm;
+    }
+    .address-block {
+      width: 45%;
+    }
+    .address-label {
+      font-size: 10pt;
+      color: #666;
+      margin-bottom: 0.3cm;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .address-content {
+      font-size: 11pt;
+    }
+    .meta-info {
+      margin-top: 1cm;
+      margin-bottom: 1cm;
+      padding: 0.5cm;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+    }
+    .meta-row {
+      display: flex;
+      margin-bottom: 0.2cm;
+    }
+    .meta-label {
+      width: 160px;
+      font-weight: bold;
+    }
+    .content {
+      margin-top: 1cm;
+      margin-bottom: 1cm;
+    }
+    .intro {
+      margin-bottom: 1cm;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1cm 0;
+    }
+    th, td {
+      padding: 0.3cm 0.5cm;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .summary-table {
+      width: 50%;
+      margin-left: auto;
+      margin-top: 0.5cm;
+    }
+    .summary-table td {
+      border-bottom: none;
+      padding: 0.2cm 0.5cm;
+    }
+    .summary-table .total-row td {
+      border-top: 2px solid #333;
+      font-weight: bold;
+      font-size: 14pt;
+      padding-top: 0.4cm;
+    }
+    .kleinunternehmer-note {
+      margin-top: 0.5cm;
+      font-size: 10pt;
+      color: #666;
+      font-style: italic;
+    }
+    .payment-info {
+      margin-top: 1.5cm;
+      padding: 0.5cm;
+      background-color: #f0f7ff;
+      border-radius: 4px;
+    }
+    .payment-info strong {
+      display: block;
+      margin-bottom: 0.3cm;
+    }
+    .footer {
+      margin-top: 2cm;
+    }
+    .signature {
+      margin-top: 1.5cm;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      @page {
+        margin: 2cm;
+        size: A4;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">RECHNUNG</div>
+
+    <div class="addresses">
+      <div class="address-block">
+        <div class="address-label">Rechnungssteller</div>
+        <div class="address-content">
+          <strong>${trainerName}</strong><br>
+          ${adresseHtml}
+          ${ustIdNr ? `<br>USt-IdNr: ${ustIdNr}` : ''}
+        </div>
+      </div>
+      <div class="address-block">
+        <div class="address-label">Rechnungsempfänger</div>
+        <div class="address-content">
+          <strong>Tennisschule Zlatan Palazov und<br>Artur Ivanenko GbR</strong><br>
+          Ricarda-Huch-Straße 40<br>
+          14480 Potsdam
+        </div>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      <div class="meta-row">
+        <span class="meta-label">Rechnungsnummer:</span>
+        <span>${rechnungsnummer}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Rechnungsdatum:</span>
+        <span>${rechnungsdatum}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Leistungszeitraum:</span>
+        <span>${leistungszeitraum}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="intro">
+      <p>Sehr geehrte Damen und Herren,</p>
+      <p>für die im Leistungszeitraum erbrachten Trainerstunden erlaube ich mir, folgende Rechnung zu stellen:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th class="text-right">Anzahl</th>
+          <th class="text-right">Preis</th>
+          <th class="text-right">Gesamt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Trainerstunden</td>
+          <td class="text-right">${stundenAnzahl}</td>
+          <td class="text-right">${formatEuro(stundensatz)}</td>
+          <td class="text-right">${formatEuro(zwischensumme)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="summary-table">
+      <tbody>
+        <tr>
+          <td>Zwischensumme:</td>
+          <td class="text-right">${formatEuro(zwischensumme)}</td>
+        </tr>
+        ${!kleinunternehmer ? `
+        <tr>
+          <td>MwSt. 19%:</td>
+          <td class="text-right">${formatEuro(mwst)}</td>
+        </tr>
+        ` : ''}
+        <tr class="total-row">
+          <td>Gesamtbetrag:</td>
+          <td class="text-right">${formatEuro(gesamtbetrag)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    ${kleinunternehmer ? `
+    <div class="kleinunternehmer-note">
+      Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
+    </div>
+    ` : ''}
+
+    <div class="payment-info">
+      <strong>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</strong>
+      <div class="meta-row">
+        <span class="meta-label">IBAN:</span>
+        <span>${iban}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Kontoinhaber:</span>
+        <span>${trainerName}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Vielen Dank für die Zusammenarbeit.</p>
+    <div class="signature">
+      <p>Mit freundlichen Grüßen</p>
+      <p><strong>${trainerName}</strong></p>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 function ensureTrainerList(
@@ -688,6 +971,14 @@ export default function App() {
     fromSaveTraining?: boolean;
   } | null>(null);
   const [cancelAdjustmentAmount, setCancelAdjustmentAmount] = useState<string>("15");
+  const [invoiceDialog, setInvoiceDialog] = useState<{
+    stundenAnzahl: number;
+    iban: string;
+    adresse: string;
+    ustIdNr: string;
+    kleinunternehmer: boolean;
+  } | null>(null);
+  const [invoiceError, setInvoiceError] = useState<string>("");
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
@@ -701,6 +992,7 @@ export default function App() {
     initial.state.trainers[0]?.stundensatz ?? 0
   );
   const [trainerNotiz, setTrainerNotiz] = useState("");
+  const [trainerAdresse, setTrainerAdresse] = useState("");
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
   const [spielerName, setSpielerName] = useState("");
@@ -1393,6 +1685,7 @@ export default function App() {
       email: trainerEmail.trim() || undefined,
       stundensatz: rate,
       notiz: trainerNotiz.trim() || undefined,
+      adresse: trainerAdresse.trim() || undefined,
     };
 
     setTrainers((prev) => [...prev, neu]);
@@ -1400,6 +1693,7 @@ export default function App() {
     setTrainerEmail("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
+    setTrainerAdresse("");
     setEditingTrainerId(null);
     if (!tTrainerId) setTTrainerId(neu.id);
   }
@@ -1410,6 +1704,7 @@ export default function App() {
     setTrainerEmail(t.email ?? "");
     setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
     setTrainerNotiz(t.notiz ?? "");
+    setTrainerAdresse(t.adresse ?? "");
   }
 
   function saveTrainer() {
@@ -1428,6 +1723,7 @@ export default function App() {
               email: trainerEmail.trim() || undefined,
               stundensatz: rate,
               notiz: trainerNotiz.trim() || undefined,
+              adresse: trainerAdresse.trim() || undefined,
             }
           : t
       )
@@ -1438,6 +1734,7 @@ export default function App() {
     setTrainerEmail("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
+    setTrainerAdresse("");
   }
 
   function deleteTrainer(id: string) {
@@ -4084,6 +4381,15 @@ export default function App() {
                             placeholder="Interne Notiz für diesen Trainer..."
                           />
                         </div>
+                        <div className="field" style={{ marginTop: 8 }}>
+                          <label>Rechnungsadresse des Trainers</label>
+                          <textarea
+                            rows={3}
+                            value={trainerAdresse}
+                            onChange={(e) => setTrainerAdresse(e.target.value)}
+                            placeholder="Max Mustermann&#10;Musterstraße 123&#10;12345 Berlin"
+                          />
+                        </div>
 
                         <div className="row">
                           <button
@@ -4109,6 +4415,7 @@ export default function App() {
                               setTrainerEmail("");
                               setTrainerStundensatz(0);
                               setTrainerNotiz("");
+                              setTrainerAdresse("");
                               setShowTrainerForm(false);
                             }}
                           >
@@ -5016,6 +5323,31 @@ export default function App() {
                             <span style={{ fontSize: 18 }}>○</span> Nicht abgerechnet
                           </span>
                         )}
+                      </div>
+                    )}
+
+                    {/* Rechnung erstellen Button für Trainer */}
+                    {isTrainer && ownTrainerId && (
+                      <div style={{ marginTop: 16 }}>
+                        <button
+                          className="btn"
+                          onClick={() => {
+                            // Lade gespeicherte Invoice-Einstellungen
+                            const savedSettings = localStorage.getItem(TRAINER_INVOICE_SETTINGS_KEY);
+                            const parsed = savedSettings ? JSON.parse(savedSettings) : {};
+                            const trainerData = trainerById.get(ownTrainerId);
+                            setInvoiceDialog({
+                              stundenAnzahl: nichtBarTrainings.length,
+                              iban: parsed.iban ?? "",
+                              adresse: trainerData?.adresse ?? "",
+                              ustIdNr: parsed.ustIdNr ?? "",
+                              kleinunternehmer: parsed.kleinunternehmer ?? false,
+                            });
+                            setInvoiceError("");
+                          }}
+                        >
+                          Rechnung für diesen Monat erstellen
+                        </button>
                       </div>
                     )}
 
@@ -6325,6 +6657,168 @@ export default function App() {
                 style={{ width: "100%" }}
               >
                 Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Dialog für Trainer */}
+      {invoiceDialog && isTrainer && ownTrainerId && (
+        <div className="modalOverlay">
+          <div className="modalCard" style={{ maxWidth: 500 }}>
+            <div className="modalHeader">
+              <div className="modalPill">Rechnung erstellen</div>
+              <h3>Rechnung für {abrechnungMonat.slice(5, 7)}/{abrechnungMonat.slice(0, 4)}</h3>
+              <p className="muted">
+                Erstellen Sie eine Rechnung für Ihre geleisteten Trainerstunden.
+              </p>
+            </div>
+
+            <div style={{ padding: "0 20px", marginBottom: 16 }}>
+              {invoiceError && (
+                <div style={{
+                  backgroundColor: "#fee2e2",
+                  color: "#dc2626",
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  marginBottom: 12,
+                  fontSize: 13
+                }}>
+                  {invoiceError}
+                </div>
+              )}
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label>Anzahl der abzurechnenden Stunden *</label>
+                <input
+                  type="number"
+                  value={invoiceDialog.stundenAnzahl}
+                  onChange={(e) => setInvoiceDialog({
+                    ...invoiceDialog,
+                    stundenAnzahl: parseInt(e.target.value) || 0
+                  })}
+                  min="0"
+                  style={{ maxWidth: 150 }}
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label>Ihre IBAN *</label>
+                <input
+                  type="text"
+                  value={invoiceDialog.iban}
+                  onChange={(e) => setInvoiceDialog({
+                    ...invoiceDialog,
+                    iban: e.target.value
+                  })}
+                  placeholder="DE89 3704 0044 0532 0130 00"
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label>Ihre Rechnungsadresse *</label>
+                <textarea
+                  rows={3}
+                  value={invoiceDialog.adresse}
+                  onChange={(e) => setInvoiceDialog({
+                    ...invoiceDialog,
+                    adresse: e.target.value
+                  })}
+                  placeholder={"Max Mustermann\nMusterstraße 123\n12345 Berlin"}
+                />
+              </div>
+
+              <div className="field" style={{ marginBottom: 12 }}>
+                <label>USt-IdNr (optional)</label>
+                <input
+                  type="text"
+                  value={invoiceDialog.ustIdNr}
+                  onChange={(e) => setInvoiceDialog({
+                    ...invoiceDialog,
+                    ustIdNr: e.target.value
+                  })}
+                  placeholder="DE123456789"
+                />
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={invoiceDialog.kleinunternehmer}
+                    onChange={(e) => setInvoiceDialog({
+                      ...invoiceDialog,
+                      kleinunternehmer: e.target.checked
+                    })}
+                  />
+                  <span>Kleinunternehmerregelung anwenden (keine MwSt.)</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="modalActions">
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  setInvoiceDialog(null);
+                  setInvoiceError("");
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  // Validierung
+                  if (invoiceDialog.stundenAnzahl <= 0) {
+                    setInvoiceError("Bitte geben Sie eine gültige Stundenanzahl an.");
+                    return;
+                  }
+                  if (!invoiceDialog.iban.trim()) {
+                    setInvoiceError("Bitte geben Sie Ihre IBAN an.");
+                    return;
+                  }
+                  if (!invoiceDialog.adresse.trim()) {
+                    setInvoiceError("Bitte geben Sie Ihre Rechnungsadresse an.");
+                    return;
+                  }
+
+                  // Speichere Einstellungen in localStorage
+                  localStorage.setItem(TRAINER_INVOICE_SETTINGS_KEY, JSON.stringify({
+                    iban: invoiceDialog.iban,
+                    ustIdNr: invoiceDialog.ustIdNr,
+                    kleinunternehmer: invoiceDialog.kleinunternehmer,
+                  }));
+
+                  // Generiere und zeige Rechnung
+                  const trainerData = trainerById.get(ownTrainerId);
+                  const stundensatz = trainerData?.stundensatz ?? 0;
+                  const trainerName = trainerData?.name ?? "Trainer";
+
+                  const invoiceHTML = generateInvoiceHTML({
+                    trainerName,
+                    trainerAdresse: invoiceDialog.adresse,
+                    ustIdNr: invoiceDialog.ustIdNr,
+                    stundenAnzahl: invoiceDialog.stundenAnzahl,
+                    stundensatz,
+                    kleinunternehmer: invoiceDialog.kleinunternehmer,
+                    iban: invoiceDialog.iban,
+                    leistungszeitraum: `${abrechnungMonat.slice(5, 7)}/${abrechnungMonat.slice(0, 4)}`,
+                  });
+
+                  const win = window.open('', '_blank');
+                  if (win) {
+                    win.document.write(invoiceHTML);
+                    win.document.close();
+                    setTimeout(() => win.print(), 100);
+                  }
+
+                  setInvoiceDialog(null);
+                  setInvoiceError("");
+                }}
+              >
+                Rechnung generieren
               </button>
             </div>
           </div>
