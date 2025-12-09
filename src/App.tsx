@@ -682,6 +682,12 @@ export default function App() {
     spielerName: string;
     amount: number;
   } | null>(null);
+  const [cancelTrainingDialog, setCancelTrainingDialog] = useState<{
+    trainings: Training[];
+    action: 'cancel' | 'delete';
+    fromSaveTraining?: boolean;
+  } | null>(null);
+  const [cancelAdjustmentAmount, setCancelAdjustmentAmount] = useState<string>("15");
 
   const [weekAnchor, setWeekAnchor] = useState<string>(todayISO());
 
@@ -1771,8 +1777,17 @@ export default function App() {
   function deleteTraining(id: string) {
     if (isTrainer) return;
     const existing = trainings.find((t) => t.id === id);
+    if (!existing) return;
 
-    if (existing && existing.serieId && applySerieScope === "abHeute") {
+    // Bei Gruppentraining (mehr als 1 Spieler) mit monatlichem Tarif: Dialog öffnen
+    const cfg = getPreisConfig(existing, tarifById);
+    if (existing.spielerIds.length > 1 && cfg?.abrechnung === "monatlich") {
+      setCancelTrainingDialog({ trainings: [existing], action: 'delete' });
+      setCancelAdjustmentAmount("15");
+      return;
+    }
+
+    if (existing.serieId && applySerieScope === "abHeute") {
       const sid = existing.serieId;
       const cutoff = existing.datum;
       setTrainings((prev) =>
@@ -1785,6 +1800,66 @@ export default function App() {
     if (selectedTrainingId === id) {
       resetTrainingForm();
     }
+  }
+
+  function executeDeleteTrainings(trainingsList: Training[]) {
+    const idsToDelete = new Set(trainingsList.map((t) => t.id));
+    setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
+    if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
+      resetTrainingForm();
+    }
+  }
+
+  function executeCancelTrainings(trainingsList: Training[]) {
+    const idsToCancel = new Set(trainingsList.map((t) => t.id));
+    setTrainings((prev) =>
+      prev.map((t) =>
+        idsToCancel.has(t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
+      )
+    );
+  }
+
+  function applyAdjustmentsForTrainings(trainingsList: Training[], amountPerPlayer: number) {
+    const newAdjustments = { ...monthlyAdjustments };
+
+    trainingsList.forEach((training) => {
+      const monat = training.datum.substring(0, 7); // YYYY-MM
+      training.spielerIds.forEach((spielerId) => {
+        const key = `${monat}__${spielerId}`;
+        const currentValue = newAdjustments[key] ?? 0;
+        newAdjustments[key] = round2(currentValue - amountPerPlayer);
+      });
+    });
+
+    setMonthlyAdjustments(newAdjustments);
+  }
+
+  function handleCancelDialogConfirm(withAdjustment: boolean) {
+    if (!cancelTrainingDialog) return;
+
+    const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
+
+    if (withAdjustment) {
+      const amount = parseFloat(cancelAdjustmentAmount) || 0;
+      if (amount > 0) {
+        applyAdjustmentsForTrainings(affectedTrainings, amount);
+      }
+    }
+
+    if (action === 'delete') {
+      executeDeleteTrainings(affectedTrainings);
+    } else if (fromSaveTraining) {
+      // Wenn vom Training-Tab aufgerufen, saveTraining mit skipCancelCheck aufrufen
+      setCancelTrainingDialog(null);
+      setCancelAdjustmentAmount("15");
+      saveTraining(true);
+      return;
+    } else {
+      executeCancelTrainings(affectedTrainings);
+    }
+
+    setCancelTrainingDialog(null);
+    setCancelAdjustmentAmount("15");
   }
 
   function toggleTrainingSelection(id: string) {
@@ -1800,6 +1875,34 @@ export default function App() {
   function batchUpdateStatusForSelected(newStatus: TrainingStatus) {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
+
+    // Bei Status "abgesagt": Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
+    if (newStatus === "abgesagt") {
+      const gruppenTrainingsMonatlich = trainings.filter((t) => {
+        if (!selectedTrainingIds.includes(t.id)) return false;
+        if (t.spielerIds.length <= 1) return false;
+        const cfg = getPreisConfig(t, tarifById);
+        return cfg?.abrechnung === "monatlich";
+      });
+      if (gruppenTrainingsMonatlich.length > 0) {
+        setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'cancel' });
+        setCancelAdjustmentAmount("15");
+        // Nicht betroffene Trainings direkt auf abgesagt setzen
+        const nichtBetroffen = selectedTrainingIds.filter(
+          (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
+        );
+        if (nichtBetroffen.length > 0) {
+          setTrainings((prev) =>
+            prev.map((t) =>
+              nichtBetroffen.includes(t.id) ? { ...t, status: newStatus } : t
+            )
+          );
+        }
+        clearTrainingSelection();
+        return;
+      }
+    }
+
     setTrainings((prev) =>
       prev.map((t) =>
         selectedTrainingIds.includes(t.id) ? { ...t, status: newStatus } : t
@@ -1835,6 +1938,33 @@ export default function App() {
   function batchDeleteSelectedTrainings() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
+
+    // Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
+    const gruppenTrainingsMonatlich = trainings.filter((t) => {
+      if (!selectedTrainingIds.includes(t.id)) return false;
+      if (t.spielerIds.length <= 1) return false;
+      const cfg = getPreisConfig(t, tarifById);
+      return cfg?.abrechnung === "monatlich";
+    });
+    if (gruppenTrainingsMonatlich.length > 0) {
+      setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'delete' });
+      setCancelAdjustmentAmount("15");
+      // Nicht betroffene Trainings direkt löschen
+      const nichtBetroffen = selectedTrainingIds.filter(
+        (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
+      );
+      if (nichtBetroffen.length > 0) {
+        setTrainings((prev) =>
+          prev.filter((t) => !nichtBetroffen.includes(t.id))
+        );
+        setSelectedTrainingId((prev) =>
+          prev && nichtBetroffen.includes(prev) ? null : prev
+        );
+      }
+      clearTrainingSelection();
+      return;
+    }
+
     setTrainings((prev) =>
       prev.filter((t) => !selectedTrainingIds.includes(t.id))
     );
@@ -1981,7 +2111,7 @@ export default function App() {
     markTrainingDone(t.id);
   }
 
-  function saveTraining() {
+  function saveTraining(skipCancelCheck?: boolean) {
     if (isTrainer) return;
     const hasTarif = !!tTarifId;
     const customPreis =
@@ -2003,6 +2133,34 @@ export default function App() {
       : undefined;
 
     if (selectedTrainingId && existing) {
+      // Prüfen ob Status auf "abgesagt" geändert wird bei Gruppentraining mit monatlichem Tarif
+      const cfgForCheck = getPreisConfig(existing, tarifById);
+      if (
+        !skipCancelCheck &&
+        existing.status !== "abgesagt" &&
+        tStatus === "abgesagt" &&
+        tSpielerIds.length > 1 &&
+        cfgForCheck?.abrechnung === "monatlich"
+      ) {
+        // Training-Objekt für Dialog erstellen
+        const trainingForDialog: Training = {
+          ...existing,
+          trainerId: trainerIdForSave,
+          datum: tDatum,
+          uhrzeitVon: tVon,
+          uhrzeitBis: tBis,
+          tarifId: hasTarif ? tTarifId : undefined,
+          spielerIds: tSpielerIds,
+          status: tStatus,
+          notiz: tNotiz.trim() || undefined,
+          customPreisProStunde: customPreis,
+          customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
+        };
+        setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
+        setCancelAdjustmentAmount("15");
+        return;
+      }
+
       const payload: Training = {
         ...existing,
         trainerId: trainerIdForSave,
@@ -2698,12 +2856,16 @@ export default function App() {
     return paymentsFlag ? "komplett_abgerechnet" : "offen";
   };
 
-  // Hilfsfunktion für angepasste Summe eines Spielers (überschreibt die berechnete Summe)
-  const getAdjustedSum = (spielerId: string, baseSum: number): number => {
+  // Hilfsfunktion um den Anpassungsbetrag eines Spielers zu ermitteln
+  const getAdjustmentForSpieler = (spielerId: string): number => {
     const adjustmentKey = `${abrechnungMonat}__${spielerId}`;
-    const override = monthlyAdjustments[adjustmentKey];
-    // Wenn ein Override existiert, verwende diesen, sonst die berechnete Summe
-    return override !== undefined ? override : baseSum;
+    return monthlyAdjustments[adjustmentKey] ?? 0;
+  };
+
+  const getAdjustedSum = (spielerId: string, baseSum: number): number => {
+    const adjustment = getAdjustmentForSpieler(spielerId);
+    // Anpassung zur Basissumme addieren (Anpassungen sind i.d.R. negativ bei Absagen)
+    return round2(baseSum + adjustment);
   };
 
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
@@ -2956,6 +3118,18 @@ export default function App() {
                         }
                       >
                         Alle geplant
+                      </button>
+                      <button
+                        className="btn micro"
+                        style={{
+                          backgroundColor: "#ef4444",
+                          borderColor: "#ef4444",
+                        }}
+                        onClick={() =>
+                          batchUpdateStatusForSelected("abgesagt")
+                        }
+                      >
+                        Alle abgesagt
                       </button>
                       <button
                         className="btn micro btnWarn"
@@ -3591,7 +3765,7 @@ export default function App() {
                     <div style={{ height: 10 }} />
 
                     <div className="row">
-                      <button className="btn" onClick={saveTraining}>
+                      <button className="btn" onClick={() => saveTraining()}>
                         {selectedTrainingId
                           ? "Änderungen speichern"
                           : "Training speichern"}
@@ -4437,6 +4611,11 @@ export default function App() {
                               .map((b) => `${b.count} × ${euro(b.amount)}`)
                               .join(" + ");
 
+                            // Anpassung für diesen Spieler/Monat
+                            const adjustmentKey = `${abrechnungMonat}__${r.id}`;
+                            const adjustment = getAdjustmentForSpieler(r.id);
+                            const hasAdjustment = adjustment !== 0;
+
                             let breakdownText = "-";
                             if (barParts && nichtBarParts) {
                               // Gemischter Fall: beide Teile anzeigen
@@ -4449,12 +4628,20 @@ export default function App() {
                               breakdownText = nichtBarParts;
                             }
 
+                            // Anpassung zum Breakdown hinzufügen wenn vorhanden
+                            if (hasAdjustment) {
+                              const adjustmentStr = adjustment < 0
+                                ? `${euro(adjustment)}`
+                                : `+${euro(adjustment)}`;
+                              if (breakdownText === "-") {
+                                breakdownText = adjustmentStr;
+                              } else {
+                                breakdownText = `${breakdownText} ${adjustmentStr}`;
+                              }
+                            }
+
                             const key = paymentKey(abrechnungMonat, r.id);
                             const paymentsFlag = payments[key] ?? false;
-
-                            // Anpassung für diesen Spieler/Monat
-                            const adjustmentKey = `${abrechnungMonat}__${r.id}`;
-                            const hasAdjustment = monthlyAdjustments[adjustmentKey] !== undefined;
 
                             // Berechne Bar-Summen
                             const sumBarSpieler = getSumBarForSpieler(r.id);
@@ -4583,11 +4770,13 @@ export default function App() {
                                         })}
                                         onKeyDown={(e) => {
                                           if (e.key === "Enter") {
-                                            const parsed = parseFloat(editingAdjustment.value.replace(",", "."));
-                                            if (!isNaN(parsed)) {
+                                            const desiredSum = parseFloat(editingAdjustment.value.replace(",", "."));
+                                            if (!isNaN(desiredSum)) {
+                                              // Benutzer gibt gewünschte Endsumme ein, wir berechnen das Delta
+                                              const newAdjustment = round2(desiredSum - sumTotalSpieler);
                                               setMonthlyAdjustments((prev) => ({
                                                 ...prev,
-                                                [adjustmentKey]: parsed,
+                                                [adjustmentKey]: newAdjustment,
                                               }));
                                             }
                                             setEditingAdjustment(null);
@@ -4597,11 +4786,13 @@ export default function App() {
                                           }
                                         }}
                                         onBlur={() => {
-                                          const parsed = parseFloat(editingAdjustment.value.replace(",", "."));
-                                          if (!isNaN(parsed)) {
+                                          const desiredSum = parseFloat(editingAdjustment.value.replace(",", "."));
+                                          if (!isNaN(desiredSum)) {
+                                            // Benutzer gibt gewünschte Endsumme ein, wir berechnen das Delta
+                                            const newAdjustment = round2(desiredSum - sumTotalSpieler);
                                             setMonthlyAdjustments((prev) => ({
                                               ...prev,
-                                              [adjustmentKey]: parsed,
+                                              [adjustmentKey]: newAdjustment,
                                             }));
                                           }
                                           setEditingAdjustment(null);
@@ -6037,6 +6228,103 @@ export default function App() {
               </button>
               <button className="btn" onClick={confirmPay}>
                 Ja, als bezahlt markieren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelTrainingDialog && (
+        <div className="modalOverlay">
+          <div className="modalCard" style={{ maxWidth: 500 }}>
+            <div className="modalHeader">
+              <div className="modalPill">
+                {cancelTrainingDialog.action === 'delete' ? 'Gruppentraining löschen' : 'Gruppentraining absagen'}
+              </div>
+              <h3>Abrechnung anpassen?</h3>
+              <p className="muted">
+                {cancelTrainingDialog.trainings.length === 1
+                  ? `Dieses Training hat ${cancelTrainingDialog.trainings[0].spielerIds.length} Spieler.`
+                  : `${cancelTrainingDialog.trainings.length} Gruppentrainings betroffen.`}
+                {" "}Möchtest du die monatliche Abrechnung für alle Spieler anpassen (z.B. wegen Regenausfall)?
+              </p>
+            </div>
+
+            <div style={{ padding: "0 20px", marginBottom: 16 }}>
+              <div style={{ marginBottom: 12 }}>
+                <strong>Betroffene Trainings:</strong>
+                <ul style={{ margin: "8px 0", paddingLeft: 20, fontSize: 13 }}>
+                  {cancelTrainingDialog.trainings.map((t) => {
+                    const spielerNamen = t.spielerIds
+                      .map((id) => spielerById.get(id)?.name ?? "Unbekannt")
+                      .join(", ");
+                    return (
+                      <li key={t.id} style={{ marginBottom: 4 }}>
+                        {formatShort(t.datum)} {t.uhrzeitVon}-{t.uhrzeitBis}: {spielerNamen}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <strong>Betroffene Spieler:</strong>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                  {(() => {
+                    const allSpielerIds = new Set<string>();
+                    cancelTrainingDialog.trainings.forEach((t) => {
+                      t.spielerIds.forEach((id) => allSpielerIds.add(id));
+                    });
+                    return Array.from(allSpielerIds).map((id) => (
+                      <span key={id} className="pill" style={{ fontSize: 12 }}>
+                        {spielerById.get(id)?.name ?? "Unbekannt"}
+                      </span>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              <div className="field" style={{ marginTop: 16 }}>
+                <label>Abzug pro Spieler (in EUR)</label>
+                <input
+                  type="number"
+                  value={cancelAdjustmentAmount}
+                  onChange={(e) => setCancelAdjustmentAmount(e.target.value)}
+                  placeholder="z.B. 15"
+                  min="0"
+                  step="0.01"
+                  style={{ maxWidth: 150 }}
+                />
+                <div className="muted" style={{ marginTop: 4 }}>
+                  Dieser Betrag wird von der monatlichen Abrechnung jedes betroffenen Spielers abgezogen.
+                </div>
+              </div>
+            </div>
+
+            <div className="modalActions" style={{ flexDirection: "column", gap: 8 }}>
+              <button
+                className="btn"
+                onClick={() => handleCancelDialogConfirm(true)}
+                style={{ width: "100%" }}
+              >
+                Mit Anpassung ({euro(parseFloat(cancelAdjustmentAmount) || 0)} Abzug pro Spieler)
+              </button>
+              <button
+                className="btn btnGhost"
+                onClick={() => handleCancelDialogConfirm(false)}
+                style={{ width: "100%" }}
+              >
+                Ohne Anpassung fortfahren
+              </button>
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  setCancelTrainingDialog(null);
+                  setCancelAdjustmentAmount("15");
+                }}
+                style={{ width: "100%" }}
+              >
+                Abbrechen
               </button>
             </div>
           </div>
