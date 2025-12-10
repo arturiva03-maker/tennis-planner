@@ -1260,7 +1260,6 @@ input::placeholder {
     border-radius: var(--radius-md);
     background: var(--bg-card);
     color: var(--text-primary);
-    min-height: 70px;
   }
 
   .kHeadCell {

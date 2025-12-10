@@ -3704,7 +3704,7 @@ export default function App() {
                             const selected = Array.from(e.target.selectedOptions, option => option.value);
                             setKalenderTrainerFilter(selected);
                           }}
-                          style={{ minHeight: 80 }}
+                          size={Math.min(trainers.length, 4)}
                         >
                           {trainers.map((tr) => (
                             <option key={tr.id} value={tr.id}>
@@ -3712,7 +3712,6 @@ export default function App() {
                             </option>
                           ))}
                         </select>
-                        <div className="muted">Strg+Klick für Mehrfachauswahl. Keine Auswahl = Alle.</div>
                       </div>
                     )}
 
