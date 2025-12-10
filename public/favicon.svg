@@ -1,22 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Schläger-Kopf (Rahmen) -->
   <ellipse cx="50" cy="35" rx="28" ry="32" fill="none" stroke="#4CAF50" stroke-width="4"/>
-
-  <!-- Bespannung horizontal -->
   <line x1="25" y1="20" x2="75" y2="20" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="23" y1="28" x2="77" y2="28" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="22" y1="36" x2="78" y2="36" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="23" y1="44" x2="77" y2="44" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="25" y1="52" x2="75" y2="52" stroke="#4CAF50" stroke-width="1.5"/>
-
-  <!-- Bespannung vertikal -->
   <line x1="35" y1="5" x2="35" y2="65" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="43" y1="4" x2="43" y2="66" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="50" y1="3" x2="50" y2="67" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="57" y1="4" x2="57" y2="66" stroke="#4CAF50" stroke-width="1.5"/>
   <line x1="65" y1="5" x2="65" y2="65" stroke="#4CAF50" stroke-width="1.5"/>
-
-  <!-- Griff -->
   <rect x="45" y="67" width="10" height="28" rx="2" fill="#8B4513"/>
   <rect x="45" y="70" width="10" height="3" fill="#6B3510"/>
   <rect x="45" y="78" width="10" height="3" fill="#6B3510"/>
