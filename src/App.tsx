@@ -3176,27 +3176,27 @@ export default function App() {
 
     const total = round2(spielerRows.reduce((sum, r) => sum + r.sum, 0));
 
+    // Bar-Total aus den gefilterten spielerRows berechnen (nicht aus trainingsInMonth)
+    // damit es korrekt auf den ausgewählten Spieler gefiltert ist
     let barTotal = 0;
-    trainingsInMonth.forEach((t) => {
-      if (!t.barBezahlt) return;
-      const cfg = getPreisConfig(t, tarifById);
-      if (!cfg) return;
-      if (cfg.abrechnung === "monatlich") return;
-      const preis = trainingPreisGesamt(t);
-      barTotal = round2(barTotal + preis);
+    spielerRows.forEach((row) => {
+      row.breakdownBar.forEach((item) => {
+        barTotal = round2(barTotal + item.subtotal);
+      });
     });
 
-    const totalMitBar = round2(total + barTotal);
+    // totalMitBar ist jetzt identisch mit total, da barTotal bereits in total enthalten ist
+    // (die spielerRows enthalten bereits alle Beträge inkl. bar)
+    // Für die korrekte Anzeige: total ist die Gesamtsumme, barTotal zeigt nur den Bar-Anteil
+    const totalMitBar = total; // Bar ist bereits in total enthalten
 
     return { total, spielerRows, barTotal, totalMitBar };
   }, [
     trainingsForAbrechnung,
-    trainingsInMonth,
     spielerById,
     spieler,
     priceFuerSpieler,
     tarifById,
-    trainingPreisGesamt,
     abrechnungSpielerSuche,
   ]);
 
