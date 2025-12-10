@@ -535,6 +535,81 @@ input::placeholder {
   display: none;
 }
 
+/* Trainer Filter Dropdown */
+.dropdownToggle {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.dropdownToggle:hover {
+  border-color: var(--primary);
+}
+
+.dropdownArrow {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  margin-top: 4px;
+  padding: 8px 0;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdownItem:hover {
+  background: var(--bg-inset);
+}
+
+.dropdownItem input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.dropdownReset {
+  width: calc(100% - 16px);
+  margin: 8px;
+  padding: 8px;
+  font-size: 13px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.dropdownReset:hover {
+  background: var(--border);
+}
+
 
 /* ═══════════════════════════════════════════════════════════════
    CALENDAR NAVIGATION
