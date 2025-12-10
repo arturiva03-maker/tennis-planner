@@ -1218,7 +1218,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>(isMobileInit ? "day" : "week");
   const [dayIndex, setDayIndex] = useState<number>(getTodayDayIndex());
   const [kalenderTrainerFilter, setKalenderTrainerFilter] =
-    useState<string>("alle");
+    useState<string[]>([]);
 
   const [abrechnungTab, setAbrechnungTab] =
     useState<AbrechnungTab>("spieler");
@@ -1857,6 +1857,15 @@ export default function App() {
         : "Alle Trainer"
       : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
 
+  const kalenderTrainerFilterLabel =
+    kalenderTrainerFilter.length === 0
+      ? trainers.length === 1
+        ? trainers[0]?.name ?? "Alle Trainer"
+        : "Alle Trainer"
+      : kalenderTrainerFilter.length === 1
+        ? trainerById.get(kalenderTrainerFilter[0])?.name ?? "Trainer"
+        : `${kalenderTrainerFilter.length} Trainer`;
+
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
     : ["kalender", "training", "verwaltung", "abrechnung", "weiteres", "planung"];
@@ -1901,16 +1910,17 @@ export default function App() {
   useEffect(() => {
     if (!trainers.length) return;
     if (isTrainer) {
-      if (ownTrainerId && kalenderTrainerFilter !== ownTrainerId) {
-        setKalenderTrainerFilter(ownTrainerId);
+      if (ownTrainerId && !kalenderTrainerFilter.includes(ownTrainerId)) {
+        setKalenderTrainerFilter([ownTrainerId]);
       }
       return;
     }
-    if (
-      kalenderTrainerFilter !== "alle" &&
-      !trainers.some((t) => t.id === kalenderTrainerFilter)
-    ) {
-      setKalenderTrainerFilter("alle");
+    // Entferne Trainer-IDs aus dem Filter, die nicht mehr existieren
+    const validIds = kalenderTrainerFilter.filter(id =>
+      trainers.some((t) => t.id === id)
+    );
+    if (validIds.length !== kalenderTrainerFilter.length) {
+      setKalenderTrainerFilter(validIds);
     }
   }, [kalenderTrainerFilter, trainers, isTrainer, ownTrainerId]);
 
@@ -1978,9 +1988,9 @@ export default function App() {
     return trainings
       .filter((t) => t.datum >= weekStart && t.datum < end)
       .filter((t) => {
-        if (kalenderTrainerFilter === "alle") return true;
+        if (kalenderTrainerFilter.length === 0) return true;
         const tid = t.trainerId || defaultTrainerId;
-        return tid === kalenderTrainerFilter;
+        return kalenderTrainerFilter.includes(tid);
       })
       .sort((a, b) =>
         (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
@@ -3594,7 +3604,7 @@ export default function App() {
           <div className="mobileTopTitle">
             <div className="mobileTopMain">Tennistrainer Planung</div>
             <div className="mobileTopSub">
-              {roleLabel} · {trainerFilterLabel}
+              {roleLabel} · {tab === "kalender" ? kalenderTrainerFilterLabel : trainerFilterLabel}
             </div>
           </div>
         </header>
@@ -3686,20 +3696,34 @@ export default function App() {
 
                     {!isTrainer && trainers.length > 1 && (
                       <div className="field" style={{ minWidth: 200 }}>
-                        <label>Trainer Filter</label>
-                        <select
-                          value={kalenderTrainerFilter}
-                          onChange={(e) =>
-                            setKalenderTrainerFilter(e.target.value)
-                          }
-                        >
-                          <option value="alle">Alle Trainer</option>
+                        <label>Trainer Filter {kalenderTrainerFilter.length > 0 && `(${kalenderTrainerFilter.length})`}</label>
+                        <div className="trainerFilterCheckboxes">
                           {trainers.map((tr) => (
-                            <option key={tr.id} value={tr.id}>
+                            <label key={tr.id} className="trainerFilterCheckbox">
+                              <input
+                                type="checkbox"
+                                checked={kalenderTrainerFilter.includes(tr.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
+                                  } else {
+                                    setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
+                                  }
+                                }}
+                              />
                               {tr.name}
-                            </option>
+                            </label>
                           ))}
-                        </select>
+                          {kalenderTrainerFilter.length > 0 && (
+                            <button
+                              className="btn btnSmall"
+                              style={{ marginTop: 4 }}
+                              onClick={() => setKalenderTrainerFilter([])}
+                            >
+                              Filter zurücksetzen
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -3884,17 +3908,32 @@ export default function App() {
                 {/* Trainer-Filter für Mobile (nur Hauptaccount) */}
                 {!isTrainer && trainers.length > 1 && (
                   <div className="mobileTrainerFilter">
-                    <select
-                      value={kalenderTrainerFilter}
-                      onChange={(e) => setKalenderTrainerFilter(e.target.value)}
-                    >
-                      <option value="alle">Alle Trainer</option>
+                    <div className="mobileTrainerFilterCheckboxes">
                       {trainers.map((tr) => (
-                        <option key={tr.id} value={tr.id}>
-                          {tr.name}
-                        </option>
+                        <label key={tr.id} className="mobileTrainerFilterCheckbox">
+                          <input
+                            type="checkbox"
+                            checked={kalenderTrainerFilter.includes(tr.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
+                              } else {
+                                setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
+                              }
+                            }}
+                          />
+                          <span>{tr.name}</span>
+                        </label>
                       ))}
-                    </select>
+                      {kalenderTrainerFilter.length > 0 && (
+                        <button
+                          className="mobileFilterResetBtn"
+                          onClick={() => setKalenderTrainerFilter([])}
+                        >
+                          Alle
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 

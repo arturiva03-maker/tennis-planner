@@ -535,6 +535,35 @@ input::placeholder {
   display: none;
 }
 
+/* Desktop Trainer-Filter Checkboxes */
+.trainerFilterCheckboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.trainerFilterCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.trainerFilterCheckbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.trainerFilterCheckbox:hover {
+  color: var(--primary);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CALENDAR NAVIGATION
    ═══════════════════════════════════════════════════════════════ */
@@ -1251,14 +1280,50 @@ input::placeholder {
     padding: 0 4px;
   }
 
-  .mobileTrainerFilter select {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+  .mobileTrainerFilterCheckboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mobileTrainerFilterCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
     background: var(--bg-card);
-    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .mobileTrainerFilterCheckbox:has(input:checked) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .mobileTrainerFilterCheckbox input[type="checkbox"] {
+    display: none;
+  }
+
+  .mobileFilterResetBtn {
+    padding: 8px 12px;
+    font-size: 13px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+  }
+
+  .mobileFilterResetBtn:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
   }
 
   .kHeadCell {
