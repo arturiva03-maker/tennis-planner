@@ -3696,34 +3696,23 @@ export default function App() {
 
                     {!isTrainer && trainers.length > 1 && (
                       <div className="field" style={{ minWidth: 200 }}>
-                        <label>Trainer Filter {kalenderTrainerFilter.length > 0 && `(${kalenderTrainerFilter.length})`}</label>
-                        <div className="trainerFilterCheckboxes">
+                        <label>Trainer Filter</label>
+                        <select
+                          multiple
+                          value={kalenderTrainerFilter}
+                          onChange={(e) => {
+                            const selected = Array.from(e.target.selectedOptions, option => option.value);
+                            setKalenderTrainerFilter(selected);
+                          }}
+                          style={{ minHeight: 80 }}
+                        >
                           {trainers.map((tr) => (
-                            <label key={tr.id} className="trainerFilterCheckbox">
-                              <input
-                                type="checkbox"
-                                checked={kalenderTrainerFilter.includes(tr.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
-                                  } else {
-                                    setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
-                                  }
-                                }}
-                              />
+                            <option key={tr.id} value={tr.id}>
                               {tr.name}
-                            </label>
+                            </option>
                           ))}
-                          {kalenderTrainerFilter.length > 0 && (
-                            <button
-                              className="btn btnSmall"
-                              style={{ marginTop: 4 }}
-                              onClick={() => setKalenderTrainerFilter([])}
-                            >
-                              Filter zurücksetzen
-                            </button>
-                          )}
-                        </div>
+                        </select>
+                        <div className="muted">Strg+Klick für Mehrfachauswahl. Keine Auswahl = Alle.</div>
                       </div>
                     )}
 
@@ -3908,32 +3897,20 @@ export default function App() {
                 {/* Trainer-Filter für Mobile (nur Hauptaccount) */}
                 {!isTrainer && trainers.length > 1 && (
                   <div className="mobileTrainerFilter">
-                    <div className="mobileTrainerFilterCheckboxes">
+                    <select
+                      multiple
+                      value={kalenderTrainerFilter}
+                      onChange={(e) => {
+                        const selected = Array.from(e.target.selectedOptions, option => option.value);
+                        setKalenderTrainerFilter(selected);
+                      }}
+                    >
                       {trainers.map((tr) => (
-                        <label key={tr.id} className="mobileTrainerFilterCheckbox">
-                          <input
-                            type="checkbox"
-                            checked={kalenderTrainerFilter.includes(tr.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
-                              } else {
-                                setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
-                              }
-                            }}
-                          />
-                          <span>{tr.name}</span>
-                        </label>
+                        <option key={tr.id} value={tr.id}>
+                          {tr.name}
+                        </option>
                       ))}
-                      {kalenderTrainerFilter.length > 0 && (
-                        <button
-                          className="mobileFilterResetBtn"
-                          onClick={() => setKalenderTrainerFilter([])}
-                        >
-                          Alle
-                        </button>
-                      )}
-                    </div>
+                    </select>
                   </div>
                 )}
 
