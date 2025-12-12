@@ -6715,6 +6715,16 @@ export default function App() {
 
                               const isCollapsed = collapsedVertretungTrainer.includes(trainerId);
 
+                              // Gruppiere nach Datum
+                              const groupedByDate = sortedItems.reduce((acc, item) => {
+                                const datum = item.training.datum;
+                                if (!acc[datum]) acc[datum] = [];
+                                acc[datum].push(item);
+                                return acc;
+                              }, {} as Record<string, typeof sortedItems>);
+
+                              const uniqueDates = Object.keys(groupedByDate).length;
+
                               return (
                                 <div key={trainerId} style={{ marginBottom: 20 }}>
                                   <div
@@ -6745,7 +6755,7 @@ export default function App() {
                                     }}>▼</span>
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontWeight: 600, fontSize: 15 }}>{trainerName} fehlt</div>
-                                      <div style={{ fontSize: 12, opacity: 0.9 }}>{sortedItems.length} Training{sortedItems.length !== 1 ? "s" : ""} betroffen</div>
+                                      <div style={{ fontSize: 12, opacity: 0.9 }}>{uniqueDates} Tag{uniqueDates !== 1 ? "e" : ""} betroffen</div>
                                     </div>
                                     <span style={{ fontSize: 12, opacity: 0.8 }}>
                                       {isCollapsed ? "Aufklappen" : "Zuklappen"}
@@ -6753,88 +6763,132 @@ export default function App() {
                                   </div>
 
                                   {!isCollapsed && <div style={{ overflowX: "auto" }}>
-                                    <table className="table" style={{ width: "100%", fontSize: 13 }}>
-                                      <thead>
-                                        <tr>
-                                          <th style={{ minWidth: 100 }}>Datum</th>
-                                          <th style={{ minWidth: 80 }}>Zeit</th>
-                                          <th style={{ minWidth: 120 }}>Spieler</th>
-                                          <th style={{ minWidth: 140 }}>Vertretung</th>
-                                          <th style={{ width: 40 }}></th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {sortedItems.map(({ vertretung: v, training: t }) => {
-                                          const d = new Date(t.datum + "T12:00:00");
-                                          const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-                                          const formattedDate = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
-                                          const spielerNames = t.spielerIds
-                                            .map((id) => spielerById.get(id)?.name ?? "?")
-                                            .join(", ");
-                                          const isOffen = !v.vertretungTrainerId;
+                                    {Object.entries(groupedByDate)
+                                      .sort(([a], [b]) => a.localeCompare(b))
+                                      .map(([datum, dateItems]) => {
+                                        const d = new Date(datum + "T12:00:00");
+                                        const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+                                        const formattedDate = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
 
-                                          return (
-                                            <tr key={v.trainingId}>
-                                              <td style={{ fontWeight: 500 }}>{formattedDate}</td>
-                                              <td>{t.uhrzeitVon}–{t.uhrzeitBis}</td>
-                                              <td style={{ color: "var(--text-muted)", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={spielerNames}>
-                                                {spielerNames}
-                                              </td>
-                                              <td>
-                                                <select
-                                                  value={v.vertretungTrainerId ?? ""}
-                                                  onChange={(e) => {
-                                                    const newId = e.target.value;
-                                                    setVertretungen((prev) => {
-                                                      const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
-                                                      return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
-                                                    });
-                                                  }}
-                                                  style={{
-                                                    width: "100%",
-                                                    fontSize: 13,
-                                                    padding: "6px 8px",
-                                                    borderRadius: 6,
-                                                    border: `2px solid ${isOffen ? "#f97316" : "#22c55e"}`,
-                                                    background: isOffen ? "rgba(249, 115, 22, 0.08)" : "rgba(34, 197, 94, 0.08)",
-                                                    color: isOffen ? "#ea580c" : "#16a34a",
-                                                    fontWeight: 600,
-                                                    cursor: "pointer"
-                                                  }}
-                                                >
-                                                  <option value="">⚠ Offen</option>
-                                                  {trainers
-                                                    .filter((tr) => tr.id !== trainerId)
-                                                    .map((tr) => (
-                                                      <option key={tr.id} value={tr.id}>
-                                                        ✓ {tr.name}
-                                                      </option>
-                                                    ))}
-                                                </select>
-                                              </td>
-                                              <td>
-                                                <button
-                                                  style={{
-                                                    background: "none",
-                                                    border: "none",
-                                                    cursor: "pointer",
-                                                    padding: 4,
-                                                    fontSize: 18,
-                                                    color: "var(--text-muted)",
-                                                    lineHeight: 1,
-                                                    borderRadius: 4
-                                                  }}
-                                                  title="Vertretung entfernen"
-                                                  onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
-                                                >
-                                                  ×
-                                                </button>
-                                              </td>
-                                            </tr>
-                                          );
-                                        })}
-                                      </tbody>
-                                    </table>
+                                        return (
+                                          <div key={datum} style={{ marginBottom: 12 }}>
+                                            {/* Datum Header */}
+                                            <div style={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 8,
+                                              padding: "8px 12px",
+                                              background: "var(--bg-card)",
+                                              borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
+                                              borderBottom: "2px solid #f97316",
+                                              fontWeight: 600,
+                                              fontSize: 14
+                                            }}>
+                                              <span style={{ fontSize: 16 }}>📅</span>
+                                              {formattedDate}
+                                              <span style={{
+                                                marginLeft: "auto",
+                                                fontSize: 12,
+                                                color: "var(--text-muted)",
+                                                fontWeight: 400
+                                              }}>
+                                                {dateItems.length} Training{dateItems.length !== 1 ? "s" : ""}
+                                              </span>
+                                            </div>
+
+                                            {/* Trainings als Unterzeilen */}
+                                            <div style={{
+                                              background: "var(--bg-inset)",
+                                              borderRadius: "0 0 var(--radius-sm) var(--radius-sm)",
+                                              overflow: "hidden"
+                                            }}>
+                                              {dateItems.map(({ vertretung: v, training: t }, idx) => {
+                                                const spielerNames = t.spielerIds
+                                                  .map((id) => spielerById.get(id)?.name ?? "?")
+                                                  .join(", ");
+                                                const isOffen = !v.vertretungTrainerId;
+
+                                                return (
+                                                  <div
+                                                    key={v.trainingId}
+                                                    style={{
+                                                      display: "flex",
+                                                      alignItems: "center",
+                                                      gap: 12,
+                                                      padding: "10px 12px",
+                                                      borderTop: idx > 0 ? "1px solid var(--border)" : "none",
+                                                      fontSize: 13
+                                                    }}
+                                                  >
+                                                    <div style={{
+                                                      minWidth: 90,
+                                                      fontWeight: 600,
+                                                      color: "var(--text)"
+                                                    }}>
+                                                      {t.uhrzeitVon}–{t.uhrzeitBis}
+                                                    </div>
+                                                    <div style={{
+                                                      flex: 1,
+                                                      color: "var(--text-muted)",
+                                                      overflow: "hidden",
+                                                      textOverflow: "ellipsis",
+                                                      whiteSpace: "nowrap"
+                                                    }} title={spielerNames}>
+                                                      {spielerNames}
+                                                    </div>
+                                                    <select
+                                                      value={v.vertretungTrainerId ?? ""}
+                                                      onChange={(e) => {
+                                                        const newId = e.target.value;
+                                                        setVertretungen((prev) => {
+                                                          const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
+                                                          return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
+                                                        });
+                                                      }}
+                                                      style={{
+                                                        minWidth: 130,
+                                                        fontSize: 13,
+                                                        padding: "6px 10px",
+                                                        borderRadius: 6,
+                                                        border: `2px solid ${isOffen ? "#f97316" : "#22c55e"}`,
+                                                        background: isOffen ? "rgba(249, 115, 22, 0.08)" : "rgba(34, 197, 94, 0.08)",
+                                                        color: isOffen ? "#ea580c" : "#16a34a",
+                                                        fontWeight: 600,
+                                                        cursor: "pointer"
+                                                      }}
+                                                    >
+                                                      <option value="">⚠ Offen</option>
+                                                      {trainers
+                                                        .filter((tr) => tr.id !== trainerId)
+                                                        .map((tr) => (
+                                                          <option key={tr.id} value={tr.id}>
+                                                            ✓ {tr.name}
+                                                          </option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                      style={{
+                                                        background: "none",
+                                                        border: "none",
+                                                        cursor: "pointer",
+                                                        padding: 4,
+                                                        fontSize: 18,
+                                                        color: "var(--text-muted)",
+                                                        lineHeight: 1,
+                                                        borderRadius: 4
+                                                      }}
+                                                      title="Vertretung entfernen"
+                                                      onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
+                                                    >
+                                                      ×
+                                                    </button>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                   </div>}
                                 </div>
                               );
