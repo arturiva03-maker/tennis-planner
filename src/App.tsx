@@ -6740,14 +6740,38 @@ export default function App() {
                                             <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                                               {spielerNames}
                                             </div>
-                                            <div style={{ fontSize: 12, marginTop: 2 }}>
+                                            <div style={{ fontSize: 12, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
                                               <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "?"}</span>
                                               {" → "}
-                                              {isOffen ? (
-                                                <span style={{ color: "#f97316", fontWeight: 500, fontStyle: "italic" }}>offen</span>
-                                              ) : (
-                                                <span style={{ color: "#22c55e", fontWeight: 500 }}>{substituteTrainer?.name || "?"}</span>
-                                              )}
+                                              <select
+                                                value={v.vertretungTrainerId ?? ""}
+                                                onChange={(e) => {
+                                                  const newId = e.target.value;
+                                                  setVertretungen((prev) => {
+                                                    const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
+                                                    return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
+                                                  });
+                                                }}
+                                                style={{
+                                                  fontSize: 12,
+                                                  padding: "2px 4px",
+                                                  borderRadius: 4,
+                                                  border: "1px solid var(--border)",
+                                                  background: isOffen ? "rgba(249, 115, 22, 0.1)" : "rgba(34, 197, 94, 0.1)",
+                                                  color: isOffen ? "#f97316" : "#22c55e",
+                                                  fontWeight: 500,
+                                                  cursor: "pointer"
+                                                }}
+                                              >
+                                                <option value="">-- offen --</option>
+                                                {trainers
+                                                  .filter((tr) => tr.id !== (training.trainerId || defaultTrainerId))
+                                                  .map((tr) => (
+                                                    <option key={tr.id} value={tr.id}>
+                                                      {tr.name}
+                                                    </option>
+                                                  ))}
+                                              </select>
                                             </div>
                                           </div>
                                           <button
