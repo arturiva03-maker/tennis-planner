@@ -99,6 +99,26 @@ export default function RegistrationForm() {
       return;
     }
 
+    if (!formData.telefon.trim()) {
+      setError("Bitte geben Sie Ihre Telefonnummer ein.");
+      return;
+    }
+
+    if (!formData.alter_jahre) {
+      setError("Bitte geben Sie Ihr Alter ein.");
+      return;
+    }
+
+    if (!formData.trainingsart) {
+      setError("Bitte wählen Sie eine Trainingsart aus.");
+      return;
+    }
+
+    if (!formData.trainings_pro_woche) {
+      setError("Bitte wählen Sie die gewünschte Anzahl Trainings pro Woche.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -209,7 +229,9 @@ export default function RegistrationForm() {
             </div>
 
             <div className="field">
-              <label>Telefon</label>
+              <label>
+                Telefon <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
               <input
                 type="tel"
                 name="telefon"
@@ -220,7 +242,9 @@ export default function RegistrationForm() {
             </div>
 
             <div className="field">
-              <label>Alter</label>
+              <label>
+                Alter <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
               <input
                 type="number"
                 name="alter_jahre"
@@ -233,7 +257,9 @@ export default function RegistrationForm() {
             </div>
 
             <div className="field">
-              <label>Trainingsart</label>
+              <label>
+                Trainingsart <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
               <select
                 name="trainingsart"
                 value={formData.trainingsart}
@@ -247,7 +273,9 @@ export default function RegistrationForm() {
             </div>
 
             <div className="field">
-              <label>Trainings pro Woche</label>
+              <label>
+                Trainings pro Woche <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
               <select
                 name="trainings_pro_woche"
                 value={formData.trainings_pro_woche}
