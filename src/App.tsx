@@ -100,6 +100,13 @@ type Notiz = {
   aktualisiertAm: string;
 };
 
+type Vertretung = {
+  trainingId: string;
+  vertretungTrainerId: string;
+};
+
+type WeiteresTabs = "notizen" | "vertretung";
+
 type AppState = {
   trainers: Trainer[];
   spieler: Spieler[];
@@ -110,6 +117,7 @@ type AppState = {
   trainerMonthSettled?: TrainerMonthSettledMap;
   notizen?: Notiz[];
   monthlyAdjustments?: MonthlyAdjustments;
+  vertretungen?: Vertretung[];
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung";
@@ -1271,6 +1279,12 @@ export default function App() {
   const [monthlyAdjustments, setMonthlyAdjustments] = useState<MonthlyAdjustments>(
     initial.state.monthlyAdjustments ?? {}
   );
+  const [vertretungen, setVertretungen] = useState<Vertretung[]>(
+    initial.state.vertretungen ?? []
+  );
+  const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("notizen");
+  const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
+  const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -1463,8 +1477,9 @@ export default function App() {
       trainerMonthSettled,
       notizen,
       monthlyAdjustments,
+      vertretungen,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen, monthlyAdjustments]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen, monthlyAdjustments, vertretungen]);
 
   useEffect(() => {
     writePlanungState(planungState);
@@ -1668,6 +1683,7 @@ export default function App() {
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
         setNotizen(local.state.notizen ?? []);
+        setVertretungen(local.state.vertretungen ?? []);
         setInitialSynced(true);
         return;
       }
@@ -1686,6 +1702,7 @@ export default function App() {
         setTrainerPayments(local.state.trainerPayments ?? {});
         setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
         setNotizen(local.state.notizen ?? []);
+        setVertretungen(local.state.vertretungen ?? []);
         setInitialSynced(true);
         return;
       }
@@ -1711,6 +1728,7 @@ export default function App() {
         setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
         setNotizen(cloud.notizen ?? []);
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
+        setVertretungen(cloud.vertretungen ?? []);
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1722,6 +1740,7 @@ export default function App() {
         setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
         setNotizen(local.state.notizen ?? []);
         setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
+        setVertretungen(local.state.vertretungen ?? []);
       }
 
       setInitialSynced(true);
@@ -1764,6 +1783,7 @@ export default function App() {
               setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
               setNotizen(cloud.notizen ?? []);
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
+              setVertretungen(cloud.vertretungen ?? []);
             }
           }
         }
@@ -1804,6 +1824,7 @@ export default function App() {
         trainerMonthSettled,
         notizen,
         monthlyAdjustments,
+        vertretungen,
       };
 
       const updatedAt = new Date().toISOString();
@@ -1842,6 +1863,7 @@ export default function App() {
     trainerMonthSettled,
     notizen,
     monthlyAdjustments,
+    vertretungen,
   ]);
 
 
@@ -4163,27 +4185,39 @@ export default function App() {
                                   t.trainerId ?? defaultTrainerId
                                 )?.name ?? "Trainer";
 
+                              // Vertretung prüfen
+                              const trainingVertretung = vertretungen.find((v) => v.trainingId === t.id);
+                              const vertretungTrainerObj = trainingVertretung
+                                ? trainerById.get(trainingVertretung.vertretungTrainerId)
+                                : null;
+
                               const taLine = isTrainer
                                 ? `Trainer: ${trainerName}`
                                 : trainers.length > 1
-                                ? `${ta} | ${trainerName}`
+                                ? trainingVertretung
+                                  ? `${ta} | ${vertretungTrainerObj?.name ?? "Vertretung"} (V)`
+                                  : `${ta} | ${trainerName}`
                                 : ta;
 
                               const isDone = t.status === "durchgefuehrt";
                               const isCancel = t.status === "abgesagt";
                               const isPulse = doneFlashId === t.id;
+                              const hasVertretung = !!trainingVertretung;
 
                               const isSelected = selectedTrainingIds.includes(
                                 t.id
                               );
 
                               // Ausgewählte Trainings haben eine violette Hintergrundfarbe
+                              // Vertretungen haben eine orange Hintergrundfarbe
                               const bg = isSelected
                                 ? "rgba(139, 92, 246, 0.35)"
                                 : isDone
                                 ? "rgba(34, 197, 94, 0.22)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.14)"
+                                : hasVertretung
+                                ? "rgba(249, 115, 22, 0.22)"
                                 : "rgba(59, 130, 246, 0.18)";
                               const border = isSelected
                                 ? "rgba(139, 92, 246, 0.6)"
@@ -4191,6 +4225,8 @@ export default function App() {
                                 ? "rgba(34, 197, 94, 0.45)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.34)"
+                                : hasVertretung
+                                ? "rgba(249, 115, 22, 0.45)"
                                 : "rgba(59, 130, 246, 0.30)";
 
                               // Position für überlappende Trainings berechnen
@@ -4252,7 +4288,11 @@ export default function App() {
                                     t.uhrzeitBis
                                   }${
                                     isTrainer ? "" : `\nTarif: ${ta}`
-                                  }\nTrainer: ${trainerName}\nStatus: ${statusLabel(
+                                  }\nTrainer: ${trainerName}${
+                                    hasVertretung
+                                      ? `\nVertretung: ${vertretungTrainerObj?.name ?? "Vertretung"}`
+                                      : ""
+                                  }\nStatus: ${statusLabel(
                                     t.status
                                   )}`}
                                 >
@@ -4284,18 +4324,33 @@ export default function App() {
                                       {taLine}
                                     </div>
                                   </div>
-                                  <div
-                                    style={{
-                                      width: 14,
-                                      height: 14,
-                                      borderRadius: "999px",
-                                      border: "2px solid white",
-                                      boxShadow:
-                                        "0 0 0 1px rgba(15,23,42,0.15)",
-                                      backgroundColor: statusDotColor(t.status),
-                                      flex: "0 0 auto",
-                                    }}
-                                  />
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
+                                    {hasVertretung && (
+                                      <span
+                                        style={{
+                                          fontSize: 9,
+                                          fontWeight: 700,
+                                          background: "#f97316",
+                                          color: "white",
+                                          padding: "1px 4px",
+                                          borderRadius: 3,
+                                        }}
+                                      >
+                                        V
+                                      </span>
+                                    )}
+                                    <div
+                                      style={{
+                                        width: 14,
+                                        height: 14,
+                                        borderRadius: "999px",
+                                        border: "2px solid white",
+                                        boxShadow:
+                                          "0 0 0 1px rgba(15,23,42,0.15)",
+                                        backgroundColor: statusDotColor(t.status),
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               );
                             })}
@@ -6445,133 +6500,396 @@ export default function App() {
             {tab === "weiteres" && !isTrainer && (
               <div className="card">
                 <h2>Weiteres</h2>
-                <p className="muted" style={{ marginBottom: 16 }}>
-                  Hier kannst du allgemeine Notizen speichern, z.B. Urlaubstage von Trainern, wichtige Termine oder sonstige Informationen.
-                </p>
 
-                <ul className="list">
-                  {notizen.map((n) => {
-                    const erstelltDate = new Date(n.erstelltAm);
-                    const aktualisiertDate = new Date(n.aktualisiertAm);
-                    const erstelltFormatted = `${pad2(erstelltDate.getDate())}.${pad2(erstelltDate.getMonth() + 1)}.${erstelltDate.getFullYear()}`;
-                    const aktualisiertFormatted = `${pad2(aktualisiertDate.getDate())}.${pad2(aktualisiertDate.getMonth() + 1)}.${aktualisiertDate.getFullYear()}`;
-                    
-                    return (
-                      <li key={n.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div>
-                            <strong>{n.titel}</strong>
-                            <div className="muted" style={{ fontSize: 11 }}>
-                              Erstellt: {erstelltFormatted}
-                              {n.erstelltAm !== n.aktualisiertAm && ` · Bearbeitet: ${aktualisiertFormatted}`}
+                {/* Sub-Tabs für Notizen und Vertretung */}
+                <div className="tabs" style={{ marginBottom: 20 }}>
+                  <button
+                    className={`tabBtn ${weiteresTabs === "notizen" ? "tabBtnActive" : ""}`}
+                    onClick={() => setWeiteresTabs("notizen")}
+                  >
+                    Notizen
+                  </button>
+                  <button
+                    className={`tabBtn ${weiteresTabs === "vertretung" ? "tabBtnActive" : ""}`}
+                    onClick={() => setWeiteresTabs("vertretung")}
+                  >
+                    Vertretung
+                  </button>
+                </div>
+
+                {/* Notizen Tab */}
+                {weiteresTabs === "notizen" && (
+                  <>
+                    <p className="muted" style={{ marginBottom: 16 }}>
+                      Hier kannst du allgemeine Notizen speichern, z.B. Urlaubstage von Trainern, wichtige Termine oder sonstige Informationen.
+                    </p>
+
+                    <ul className="list">
+                      {notizen.map((n) => {
+                        const erstelltDate = new Date(n.erstelltAm);
+                        const aktualisiertDate = new Date(n.aktualisiertAm);
+                        const erstelltFormatted = `${pad2(erstelltDate.getDate())}.${pad2(erstelltDate.getMonth() + 1)}.${erstelltDate.getFullYear()}`;
+                        const aktualisiertFormatted = `${pad2(aktualisiertDate.getDate())}.${pad2(aktualisiertDate.getMonth() + 1)}.${aktualisiertDate.getFullYear()}`;
+
+                        return (
+                          <li key={n.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <div>
+                                <strong>{n.titel}</strong>
+                                <div className="muted" style={{ fontSize: 11 }}>
+                                  Erstellt: {erstelltFormatted}
+                                  {n.erstelltAm !== n.aktualisiertAm && ` · Bearbeitet: ${aktualisiertFormatted}`}
+                                </div>
+                              </div>
+                              <div className="smallActions">
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => startEditNotiz(n)}
+                                >
+                                  Bearbeiten
+                                </button>
+                                <button
+                                  className="btn micro btnWarn"
+                                  onClick={() => deleteNotiz(n.id)}
+                                >
+                                  Löschen
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                          <div className="smallActions">
-                            <button
-                              className="btn micro btnGhost"
-                              onClick={() => startEditNotiz(n)}
-                            >
-                              Bearbeiten
-                            </button>
-                            <button
-                              className="btn micro btnWarn"
-                              onClick={() => deleteNotiz(n.id)}
-                            >
-                              Löschen
-                            </button>
-                          </div>
+                            {n.inhalt && (
+                              <div style={{
+                                whiteSpace: "pre-wrap",
+                                background: "var(--bg-inset)",
+                                padding: 12,
+                                borderRadius: "var(--radius-md)",
+                                fontSize: 14,
+                                lineHeight: 1.5
+                              }}>
+                                {n.inhalt}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {notizen.length === 0 && !showNotizForm && (
+                      <div className="muted" style={{ textAlign: "center", padding: 20 }}>
+                        Noch keine Notizen vorhanden.
+                      </div>
+                    )}
+
+                    {!showNotizForm && !editingNotizId && (
+                      <div style={{ marginTop: 16 }}>
+                        <button
+                          className="btn"
+                          onClick={() => setShowNotizForm(true)}
+                        >
+                          Neue Notiz hinzufügen
+                        </button>
+                      </div>
+                    )}
+
+                    {(showNotizForm || editingNotizId) && (
+                      <div className="card cardInset" style={{ marginTop: 16 }}>
+                        <h3>{editingNotizId ? "Notiz bearbeiten" : "Neue Notiz hinzufügen"}</h3>
+                        <div className="field">
+                          <label>Titel</label>
+                          <input
+                            value={notizTitel}
+                            onChange={(e) => setNotizTitel(e.target.value)}
+                            placeholder="z.B. Urlaubstage Trainer Max"
+                          />
                         </div>
-                        {n.inhalt && (
-                          <div style={{ 
-                            whiteSpace: "pre-wrap", 
-                            background: "var(--bg-inset)", 
-                            padding: 12, 
-                            borderRadius: "var(--radius-md)",
-                            fontSize: 14,
-                            lineHeight: 1.5
-                          }}>
-                            {n.inhalt}
+                        <div className="field" style={{ marginTop: 12 }}>
+                          <label>Inhalt</label>
+                          <textarea
+                            value={notizInhalt}
+                            onChange={(e) => setNotizInhalt(e.target.value)}
+                            placeholder="Details hier eingeben..."
+                            rows={6}
+                            style={{
+                              width: "100%",
+                              font: "inherit",
+                              fontSize: 15,
+                              padding: "10px 14px",
+                              borderRadius: "var(--radius-md)",
+                              border: "1px solid var(--border)",
+                              background: "var(--bg-card)",
+                              resize: "vertical",
+                              minHeight: 120
+                            }}
+                          />
+                        </div>
+                        <div className="row" style={{ marginTop: 12 }}>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              if (editingNotizId) {
+                                saveNotiz();
+                              } else {
+                                addNotiz();
+                              }
+                            }}
+                          >
+                            {editingNotizId ? "Notiz speichern" : "Notiz hinzufügen"}
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setEditingNotizId(null);
+                              setNotizTitel("");
+                              setNotizInhalt("");
+                              setShowNotizForm(false);
+                            }}
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Vertretung Tab */}
+                {weiteresTabs === "vertretung" && (
+                  <>
+                    <p className="muted" style={{ marginBottom: 16 }}>
+                      Plane Vertretungen für abwesende Trainer. Wähle einen Trainer, gib die Abwesenheitsdaten an und weise Vertretungen zu.
+                    </p>
+
+                    {/* Schritt 1: Trainer auswählen */}
+                    <div className="field" style={{ marginBottom: 16 }}>
+                      <label>Trainer auswählen</label>
+                      <select
+                        value={vertretungTrainerId}
+                        onChange={(e) => {
+                          setVertretungTrainerId(e.target.value);
+                          setVertretungDaten([]);
+                        }}
+                      >
+                        <option value="">-- Trainer wählen --</option>
+                        {trainers.map((tr) => (
+                          <option key={tr.id} value={tr.id}>
+                            {tr.name} {tr.nachname || ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Schritt 2: Daten auswählen */}
+                    {vertretungTrainerId && (
+                      <div className="field" style={{ marginBottom: 16 }}>
+                        <label>Fehlt am (Daten auswählen)</label>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                          <input
+                            type="date"
+                            onChange={(e) => {
+                              const datum = e.target.value;
+                              if (datum && !vertretungDaten.includes(datum)) {
+                                setVertretungDaten([...vertretungDaten, datum].sort());
+                              }
+                              e.target.value = "";
+                            }}
+                          />
+                        </div>
+                        {vertretungDaten.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+                            {vertretungDaten.map((datum) => {
+                              const d = new Date(datum + "T12:00:00");
+                              const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+                              return (
+                                <span
+                                  key={datum}
+                                  className="pill"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                    background: "var(--bg-inset)",
+                                    padding: "4px 10px",
+                                    borderRadius: "var(--radius-md)",
+                                    fontSize: 13
+                                  }}
+                                >
+                                  {formatted}
+                                  <button
+                                    type="button"
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      padding: 0,
+                                      fontSize: 14,
+                                      color: "var(--text-muted)"
+                                    }}
+                                    onClick={() => setVertretungDaten(vertretungDaten.filter((d) => d !== datum))}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                      </div>
+                    )}
 
-                {notizen.length === 0 && !showNotizForm && (
-                  <div className="muted" style={{ textAlign: "center", padding: 20 }}>
-                    Noch keine Notizen vorhanden.
-                  </div>
-                )}
+                    {/* Schritt 3: Trainings und Vertretungen */}
+                    {vertretungTrainerId && vertretungDaten.length > 0 && (
+                      <div style={{ marginTop: 20 }}>
+                        <h3 style={{ marginBottom: 12 }}>Trainings an diesen Tagen</h3>
+                        {vertretungDaten.map((datum) => {
+                          const d = new Date(datum + "T12:00:00");
+                          const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+                          const dayTrainings = trainings.filter(
+                            (t) => t.datum === datum && t.trainerId === vertretungTrainerId
+                          );
 
-                {!showNotizForm && !editingNotizId && (
-                  <div style={{ marginTop: 16 }}>
-                    <button
-                      className="btn"
-                      onClick={() => setShowNotizForm(true)}
-                    >
-                      Neue Notiz hinzufügen
-                    </button>
-                  </div>
-                )}
-
-                {(showNotizForm || editingNotizId) && (
-                  <div className="card cardInset" style={{ marginTop: 16 }}>
-                    <h3>{editingNotizId ? "Notiz bearbeiten" : "Neue Notiz hinzufügen"}</h3>
-                    <div className="field">
-                      <label>Titel</label>
-                      <input
-                        value={notizTitel}
-                        onChange={(e) => setNotizTitel(e.target.value)}
-                        placeholder="z.B. Urlaubstage Trainer Max"
-                      />
-                    </div>
-                    <div className="field" style={{ marginTop: 12 }}>
-                      <label>Inhalt</label>
-                      <textarea
-                        value={notizInhalt}
-                        onChange={(e) => setNotizInhalt(e.target.value)}
-                        placeholder="Details hier eingeben..."
-                        rows={6}
-                        style={{
-                          width: "100%",
-                          font: "inherit",
-                          fontSize: 15,
-                          padding: "10px 14px",
-                          borderRadius: "var(--radius-md)",
-                          border: "1px solid var(--border)",
-                          background: "var(--bg-card)",
-                          resize: "vertical",
-                          minHeight: 120
-                        }}
-                      />
-                    </div>
-                    <div className="row" style={{ marginTop: 12 }}>
-                      <button
-                        className="btn"
-                        onClick={() => {
-                          if (editingNotizId) {
-                            saveNotiz();
-                          } else {
-                            addNotiz();
+                          if (dayTrainings.length === 0) {
+                            return (
+                              <div key={datum} style={{ marginBottom: 16 }}>
+                                <strong>{formatted}</strong>
+                                <p className="muted" style={{ fontSize: 13 }}>Keine Trainings an diesem Tag.</p>
+                              </div>
+                            );
                           }
-                        }}
-                      >
-                        {editingNotizId ? "Notiz speichern" : "Notiz hinzufügen"}
-                      </button>
-                      <button
-                        className="btn btnGhost"
-                        onClick={() => {
-                          setEditingNotizId(null);
-                          setNotizTitel("");
-                          setNotizInhalt("");
-                          setShowNotizForm(false);
-                        }}
-                      >
-                        Abbrechen
-                      </button>
-                    </div>
-                  </div>
+
+                          return (
+                            <div key={datum} style={{ marginBottom: 20 }}>
+                              <strong style={{ display: "block", marginBottom: 8 }}>{formatted}</strong>
+                              <ul className="list" style={{ gap: 8 }}>
+                                {dayTrainings.map((t) => {
+                                  const spielerNames = t.spielerIds
+                                    .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                    .join(", ");
+                                  const existingVertretung = vertretungen.find((v) => v.trainingId === t.id);
+                                  const vertretungTrainer = existingVertretung
+                                    ? trainerById.get(existingVertretung.vertretungTrainerId)
+                                    : null;
+
+                                  return (
+                                    <li
+                                      key={t.id}
+                                      className="listItem"
+                                      style={{
+                                        flexDirection: "column",
+                                        alignItems: "stretch",
+                                        gap: 8,
+                                        padding: 12,
+                                        background: existingVertretung
+                                          ? "rgba(34, 197, 94, 0.1)"
+                                          : "rgba(239, 68, 68, 0.1)",
+                                        borderLeft: `3px solid ${existingVertretung ? "#22c55e" : "#ef4444"}`
+                                      }}
+                                    >
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div>
+                                          <div style={{ fontWeight: 600 }}>
+                                            {t.uhrzeitVon} - {t.uhrzeitBis}
+                                          </div>
+                                          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                                            {spielerNames}
+                                          </div>
+                                        </div>
+                                        <span
+                                          className="pill"
+                                          style={{
+                                            background: existingVertretung ? "#22c55e" : "#ef4444",
+                                            color: "white",
+                                            fontSize: 11,
+                                            padding: "2px 8px"
+                                          }}
+                                        >
+                                          {existingVertretung ? "Vertretung gefunden" : "Vertretung offen"}
+                                        </span>
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <label style={{ fontSize: 13, minWidth: 80 }}>Vertretung:</label>
+                                        <select
+                                          value={existingVertretung?.vertretungTrainerId ?? ""}
+                                          onChange={(e) => {
+                                            const newVertretungTrainerId = e.target.value;
+                                            if (newVertretungTrainerId) {
+                                              setVertretungen((prev) => {
+                                                const filtered = prev.filter((v) => v.trainingId !== t.id);
+                                                return [...filtered, { trainingId: t.id, vertretungTrainerId: newVertretungTrainerId }];
+                                              });
+                                            } else {
+                                              setVertretungen((prev) => prev.filter((v) => v.trainingId !== t.id));
+                                            }
+                                          }}
+                                          style={{ flex: 1 }}
+                                        >
+                                          <option value="">-- Keine Vertretung --</option>
+                                          {trainers
+                                            .filter((tr) => tr.id !== vertretungTrainerId)
+                                            .map((tr) => (
+                                              <option key={tr.id} value={tr.id}>
+                                                {tr.name} {tr.nachname || ""}
+                                              </option>
+                                            ))}
+                                        </select>
+                                      </div>
+                                      {vertretungTrainer && (
+                                        <div style={{ fontSize: 12, color: "#166534" }}>
+                                          Vertretung: {vertretungTrainer.name} {vertretungTrainer.nachname || ""}
+                                        </div>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Übersicht aller aktiven Vertretungen */}
+                    {vertretungen.length > 0 && (
+                      <div style={{ marginTop: 30, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+                        <h3 style={{ marginBottom: 12 }}>Alle aktiven Vertretungen</h3>
+                        <ul className="list" style={{ gap: 8 }}>
+                          {vertretungen.map((v) => {
+                            const training = trainings.find((t) => t.id === v.trainingId);
+                            if (!training) return null;
+                            const originalTrainer = trainerById.get(training.trainerId ?? "");
+                            const substituteTrainer = trainerById.get(v.vertretungTrainerId);
+                            const spielerNames = training.spielerIds
+                              .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                              .join(", ");
+                            const d = new Date(training.datum + "T12:00:00");
+                            const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+
+                            return (
+                              <li key={v.trainingId} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 4 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div>
+                                    <strong>{formatted}</strong> · {training.uhrzeitVon} - {training.uhrzeitBis}
+                                  </div>
+                                  <button
+                                    className="btn micro btnWarn"
+                                    onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
+                                  >
+                                    Entfernen
+                                  </button>
+                                </div>
+                                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                                  {spielerNames}
+                                </div>
+                                <div style={{ fontSize: 13 }}>
+                                  <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "Trainer"}</span>
+                                  {" → "}
+                                  <span style={{ color: "#22c55e" }}>{substituteTrainer?.name || "Vertretung"}</span>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
