@@ -6681,149 +6681,154 @@ export default function App() {
                 {/* Vertretung Tab */}
                 {weiteresTabs === "vertretung" && (
                   <>
-                    {/* Kompakte Übersicht aller Vertretungen - immer sichtbar */}
+                    {/* Moderne Tabellen-Übersicht aller Vertretungen */}
                     {vertretungen.length > 0 ? (
                       <div style={{ marginBottom: 24 }}>
-                        <div style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                          gap: 12
-                        }}>
-                          {(() => {
-                            // Gruppiere nach Datum und sortiere
-                            const grouped = vertretungen.reduce((acc, v) => {
-                              const training = trainings.find((t) => t.id === v.trainingId);
-                              if (!training) return acc;
-                              if (!acc[training.datum]) acc[training.datum] = [];
-                              acc[training.datum].push(v);
-                              return acc;
-                            }, {} as Record<string, Vertretung[]>);
+                        {(() => {
+                          // Gruppiere nach fehlendem Trainer
+                          const groupedByTrainer = vertretungen.reduce((acc, v) => {
+                            const training = trainings.find((t) => t.id === v.trainingId);
+                            if (!training) return acc;
+                            const trainerId = training.trainerId || defaultTrainerId;
+                            if (!acc[trainerId]) acc[trainerId] = [];
+                            acc[trainerId].push({ vertretung: v, training });
+                            return acc;
+                          }, {} as Record<string, { vertretung: Vertretung; training: Training }[]>);
 
-                            return Object.entries(grouped)
-                              .sort(([a], [b]) => a.localeCompare(b))
-                              .map(([datum, vList]) => {
-                                const d = new Date(datum + "T12:00:00");
-                                const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-                                const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
+                          return Object.entries(groupedByTrainer)
+                            .sort(([, a], [, b]) => {
+                              const dateA = a[0]?.training.datum || "";
+                              const dateB = b[0]?.training.datum || "";
+                              return dateA.localeCompare(dateB);
+                            })
+                            .map(([trainerId, items]) => {
+                              const trainerName = trainerById.get(trainerId)?.name || "Unbekannt";
 
-                                return (
-                                  <div
-                                    key={datum}
-                                    style={{
-                                      background: "var(--bg-inset)",
-                                      borderRadius: "var(--radius-md)",
-                                      padding: 12,
-                                      borderLeft: "3px solid #f97316"
-                                    }}
-                                  >
-                                    <div style={{
-                                      fontWeight: 600,
-                                      marginBottom: 8,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 6
-                                    }}>
-                                      <span style={{
-                                        background: "#f97316",
-                                        color: "white",
-                                        fontSize: 10,
-                                        padding: "2px 6px",
-                                        borderRadius: 3,
-                                        fontWeight: 700
-                                      }}>V</span>
-                                      {formatted}
-                                    </div>
-                                    {vList.map((v) => {
-                                      const training = trainings.find((t) => t.id === v.trainingId);
-                                      if (!training) return null;
-                                      const originalTrainer = trainerById.get(training.trainerId ?? "");
-                                      const substituteTrainer = v.vertretungTrainerId ? trainerById.get(v.vertretungTrainerId) : null;
-                                      const isOffen = !v.vertretungTrainerId;
-                                      const spielerNames = training.spielerIds
-                                        .map((id) => spielerById.get(id)?.name ?? "?")
-                                        .join(", ");
-
-                                      return (
-                                        <div
-                                          key={v.trainingId}
-                                          style={{
-                                            fontSize: 13,
-                                            padding: "6px 0",
-                                            borderTop: "1px solid var(--border)",
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "flex-start",
-                                            gap: 8
-                                          }}
-                                        >
-                                          <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: 500 }}>
-                                              {training.uhrzeitVon}-{training.uhrzeitBis}
-                                            </div>
-                                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                                              {spielerNames}
-                                            </div>
-                                            <div style={{ fontSize: 12, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
-                                              <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "?"}</span>
-                                              {" → "}
-                                              <select
-                                                value={v.vertretungTrainerId ?? ""}
-                                                onChange={(e) => {
-                                                  const newId = e.target.value;
-                                                  setVertretungen((prev) => {
-                                                    const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
-                                                    return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
-                                                  });
-                                                }}
-                                                style={{
-                                                  fontSize: 12,
-                                                  padding: "2px 4px",
-                                                  borderRadius: 4,
-                                                  border: "1px solid var(--border)",
-                                                  background: isOffen ? "rgba(249, 115, 22, 0.1)" : "rgba(34, 197, 94, 0.1)",
-                                                  color: isOffen ? "#f97316" : "#22c55e",
-                                                  fontWeight: 500,
-                                                  cursor: "pointer"
-                                                }}
-                                              >
-                                                <option value="">-- offen --</option>
-                                                {trainers
-                                                  .filter((tr) => tr.id !== (training.trainerId || defaultTrainerId))
-                                                  .map((tr) => (
-                                                    <option key={tr.id} value={tr.id}>
-                                                      {tr.name}
-                                                    </option>
-                                                  ))}
-                                              </select>
-                                            </div>
-                                          </div>
-                                          <button
-                                            style={{
-                                              background: "none",
-                                              border: "none",
-                                              cursor: "pointer",
-                                              padding: 2,
-                                              fontSize: 16,
-                                              color: "var(--text-muted)",
-                                              lineHeight: 1
-                                            }}
-                                            title="Entfernen"
-                                            onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
-                                          >
-                                            ×
-                                          </button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
+                              // Sortiere nach Datum und Zeit
+                              const sortedItems = [...items].sort((a, b) => {
+                                const dateComp = a.training.datum.localeCompare(b.training.datum);
+                                if (dateComp !== 0) return dateComp;
+                                return a.training.uhrzeitVon.localeCompare(b.training.uhrzeitVon);
                               });
-                          })()}
-                        </div>
+
+                              return (
+                                <div key={trainerId} style={{ marginBottom: 20 }}>
+                                  <div style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    marginBottom: 12,
+                                    padding: "10px 14px",
+                                    background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                                    borderRadius: "var(--radius-md)",
+                                    color: "white"
+                                  }}>
+                                    <span style={{ fontSize: 18 }}>👤</span>
+                                    <div>
+                                      <div style={{ fontWeight: 600, fontSize: 15 }}>{trainerName} fehlt</div>
+                                      <div style={{ fontSize: 12, opacity: 0.9 }}>{sortedItems.length} Training{sortedItems.length !== 1 ? "s" : ""} betroffen</div>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ overflowX: "auto" }}>
+                                    <table className="table" style={{ width: "100%", fontSize: 13 }}>
+                                      <thead>
+                                        <tr>
+                                          <th style={{ minWidth: 100 }}>Datum</th>
+                                          <th style={{ minWidth: 80 }}>Zeit</th>
+                                          <th style={{ minWidth: 120 }}>Spieler</th>
+                                          <th style={{ minWidth: 140 }}>Vertretung</th>
+                                          <th style={{ width: 40 }}></th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {sortedItems.map(({ vertretung: v, training: t }) => {
+                                          const d = new Date(t.datum + "T12:00:00");
+                                          const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                                          const formattedDate = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.`;
+                                          const spielerNames = t.spielerIds
+                                            .map((id) => spielerById.get(id)?.name ?? "?")
+                                            .join(", ");
+                                          const isOffen = !v.vertretungTrainerId;
+
+                                          return (
+                                            <tr key={v.trainingId}>
+                                              <td style={{ fontWeight: 500 }}>{formattedDate}</td>
+                                              <td>{t.uhrzeitVon}–{t.uhrzeitBis}</td>
+                                              <td style={{ color: "var(--text-muted)", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={spielerNames}>
+                                                {spielerNames}
+                                              </td>
+                                              <td>
+                                                <select
+                                                  value={v.vertretungTrainerId ?? ""}
+                                                  onChange={(e) => {
+                                                    const newId = e.target.value;
+                                                    setVertretungen((prev) => {
+                                                      const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
+                                                      return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
+                                                    });
+                                                  }}
+                                                  style={{
+                                                    width: "100%",
+                                                    fontSize: 13,
+                                                    padding: "6px 8px",
+                                                    borderRadius: 6,
+                                                    border: `2px solid ${isOffen ? "#f97316" : "#22c55e"}`,
+                                                    background: isOffen ? "rgba(249, 115, 22, 0.08)" : "rgba(34, 197, 94, 0.08)",
+                                                    color: isOffen ? "#ea580c" : "#16a34a",
+                                                    fontWeight: 600,
+                                                    cursor: "pointer"
+                                                  }}
+                                                >
+                                                  <option value="">⚠ Offen</option>
+                                                  {trainers
+                                                    .filter((tr) => tr.id !== trainerId)
+                                                    .map((tr) => (
+                                                      <option key={tr.id} value={tr.id}>
+                                                        ✓ {tr.name}
+                                                      </option>
+                                                    ))}
+                                                </select>
+                                              </td>
+                                              <td>
+                                                <button
+                                                  style={{
+                                                    background: "none",
+                                                    border: "none",
+                                                    cursor: "pointer",
+                                                    padding: 4,
+                                                    fontSize: 18,
+                                                    color: "var(--text-muted)",
+                                                    lineHeight: 1,
+                                                    borderRadius: 4
+                                                  }}
+                                                  title="Vertretung entfernen"
+                                                  onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
+                                                >
+                                                  ×
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              );
+                            });
+                        })()}
                       </div>
                     ) : (
-                      <div className="muted" style={{ textAlign: "center", padding: 20, background: "var(--bg-inset)", borderRadius: "var(--radius-md)", marginBottom: 20 }}>
-                        Keine Vertretungen eingetragen.
+                      <div style={{
+                        textAlign: "center",
+                        padding: 40,
+                        background: "var(--bg-inset)",
+                        borderRadius: "var(--radius-md)",
+                        marginBottom: 20
+                      }}>
+                        <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                        <div style={{ color: "var(--text-muted)" }}>Keine Vertretungen eingetragen</div>
                       </div>
                     )}
 
