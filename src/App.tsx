@@ -51,6 +51,8 @@ type Verfuegbarkeit = {
   mittwoch: string;
   donnerstag: string;
   freitag: string;
+  samstag: string;
+  sonntag: string;
 };
 
 type RegistrationRequest = {
@@ -5481,6 +5483,12 @@ export default function App() {
                                         )}
                                         {req.verfuegbarkeit.freitag && (
                                           <tr><td>Freitag</td><td>{req.verfuegbarkeit.freitag}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.samstag && (
+                                          <tr><td>Samstag</td><td>{req.verfuegbarkeit.samstag}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.sonntag && (
+                                          <tr><td>Sonntag</td><td>{req.verfuegbarkeit.sonntag}</td></tr>
                                         )}
                                       </tbody>
                                     </table>

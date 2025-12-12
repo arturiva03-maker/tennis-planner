@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
-type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag";
+type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag";
 
 type RegistrationData = {
   name: string;
@@ -23,6 +23,8 @@ const WOCHENTAGE: { key: Wochentag; label: string }[] = [
   { key: "mittwoch", label: "Mittwoch" },
   { key: "donnerstag", label: "Donnerstag" },
   { key: "freitag", label: "Freitag" },
+  { key: "samstag", label: "Samstag" },
+  { key: "sonntag", label: "Sonntag" },
 ];
 
 export default function RegistrationForm() {
@@ -39,6 +41,8 @@ export default function RegistrationForm() {
       mittwoch: "",
       donnerstag: "",
       freitag: "",
+      samstag: "",
+      sonntag: "",
     },
     trainingsart: "",
     trainings_pro_woche: "",
