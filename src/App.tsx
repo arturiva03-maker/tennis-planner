@@ -1286,6 +1286,7 @@ export default function App() {
   const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("notizen");
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
+  const [collapsedVertretungTrainer, setCollapsedVertretungTrainer] = useState<string[]>([]);
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -6711,26 +6712,46 @@ export default function App() {
                                 return a.training.uhrzeitVon.localeCompare(b.training.uhrzeitVon);
                               });
 
+                              const isCollapsed = collapsedVertretungTrainer.includes(trainerId);
+
                               return (
                                 <div key={trainerId} style={{ marginBottom: 20 }}>
-                                  <div style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 10,
-                                    marginBottom: 12,
-                                    padding: "10px 14px",
-                                    background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
-                                    borderRadius: "var(--radius-md)",
-                                    color: "white"
-                                  }}>
-                                    <span style={{ fontSize: 18 }}>👤</span>
-                                    <div>
+                                  <div
+                                    onClick={() => {
+                                      setCollapsedVertretungTrainer(prev =>
+                                        prev.includes(trainerId)
+                                          ? prev.filter(id => id !== trainerId)
+                                          : [...prev, trainerId]
+                                      );
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 10,
+                                      marginBottom: isCollapsed ? 0 : 12,
+                                      padding: "10px 14px",
+                                      background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                                      borderRadius: isCollapsed ? "var(--radius-md)" : "var(--radius-md) var(--radius-md) 0 0",
+                                      color: "white",
+                                      cursor: "pointer",
+                                      userSelect: "none"
+                                    }}
+                                  >
+                                    <span style={{
+                                      fontSize: 14,
+                                      transition: "transform 0.2s",
+                                      transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)"
+                                    }}>▼</span>
+                                    <div style={{ flex: 1 }}>
                                       <div style={{ fontWeight: 600, fontSize: 15 }}>{trainerName} fehlt</div>
                                       <div style={{ fontSize: 12, opacity: 0.9 }}>{sortedItems.length} Training{sortedItems.length !== 1 ? "s" : ""} betroffen</div>
                                     </div>
+                                    <span style={{ fontSize: 12, opacity: 0.8 }}>
+                                      {isCollapsed ? "Aufklappen" : "Zuklappen"}
+                                    </span>
                                   </div>
 
-                                  <div style={{ overflowX: "auto" }}>
+                                  {!isCollapsed && <div style={{ overflowX: "auto" }}>
                                     <table className="table" style={{ width: "100%", fontSize: 13 }}>
                                       <thead>
                                         <tr>
@@ -6813,7 +6834,7 @@ export default function App() {
                                         })}
                                       </tbody>
                                     </table>
-                                  </div>
+                                  </div>}
                                 </div>
                               );
                             });
