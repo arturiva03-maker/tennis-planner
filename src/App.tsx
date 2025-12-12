@@ -43,7 +43,21 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "anfragen";
+
+type RegistrationRequest = {
+  id: string;
+  account_id: string;
+  name: string;
+  email: string;
+  telefon: string | null;
+  gewuenschte_zeit: string | null;
+  erfahrungslevel: string | null;
+  alter_jahre: number | null;
+  nachricht: string | null;
+  created_at: string;
+  status: string;
+};
 
 type Training = {
   id: string;
@@ -1335,6 +1349,10 @@ export default function App() {
   const [tarifBeschreibung, setTarifBeschreibung] = useState("");
   const [editingTarifId, setEditingTarifId] = useState<string | null>(null);
 
+  const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
   );
@@ -1824,6 +1842,13 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (tab === "verwaltung" && verwaltungTab === "anfragen" && authUser?.accountId) {
+      fetchRegistrationRequests();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, verwaltungTab, authUser?.accountId]);
+
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
     [trainers]
@@ -2307,6 +2332,66 @@ export default function App() {
     setTarifPreisProStunde(60);
     setTarifAbrechnung("proTraining");
     setTarifBeschreibung("");
+  }
+
+  async function fetchRegistrationRequests() {
+    if (!authUser?.accountId) return;
+    setLoadingRequests(true);
+    try {
+      const { data, error } = await supabase
+        .from("registration_requests")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching registration requests:", error);
+        return;
+      }
+      setRegistrationRequests(data || []);
+    } catch (err) {
+      console.error("Error fetching registration requests:", err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  }
+
+  async function updateRequestStatus(requestId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from("registration_requests")
+        .update({ status: newStatus })
+        .eq("id", requestId);
+
+      if (error) {
+        console.error("Error updating status:", error);
+        return;
+      }
+
+      setRegistrationRequests((prev) =>
+        prev.map((r) => (r.id === requestId ? { ...r, status: newStatus } : r))
+      );
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
+  }
+
+  async function deleteRegistrationRequest(requestId: string) {
+    try {
+      const { error } = await supabase
+        .from("registration_requests")
+        .delete()
+        .eq("id", requestId);
+
+      if (error) {
+        console.error("Error deleting request:", error);
+        return;
+      }
+
+      setRegistrationRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } catch (err) {
+      console.error("Error deleting request:", err);
+    }
   }
 
   function toggleSpielerPick(id: string) {
@@ -4687,6 +4772,31 @@ export default function App() {
                   >
                     Tarife
                   </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "anfragen" ? "tabBtnActive" : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("anfragen")}
+                  >
+                    Anfragen
+                    {registrationRequests.filter(r => r.status === "neu").length > 0 && (
+                      <span style={{
+                        marginLeft: 6,
+                        background: "var(--danger)",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: 18,
+                        height: 18,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 700
+                      }}>
+                        {registrationRequests.filter(r => r.status === "neu").length}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
                 <div style={{ height: 12 }} />
@@ -5214,6 +5324,154 @@ export default function App() {
                           </button>
                         </div>
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {verwaltungTab === "anfragen" && (
+                  <div className="card">
+                    <h2>Trainingsanfragen</h2>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <p className="muted">
+                        Teilen Sie diesen Link mit Interessenten:{" "}
+                        <code style={{
+                          background: "var(--bg-inset)",
+                          padding: "4px 8px",
+                          borderRadius: 4,
+                          fontSize: 13,
+                          wordBreak: "break-all"
+                        }}>
+                          {window.location.origin}/anmeldung?a={authUser?.accountId}
+                        </code>
+                        <button
+                          className="btn micro btnGhost"
+                          style={{ marginLeft: 8 }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/anmeldung?a=${authUser?.accountId}`
+                            );
+                          }}
+                        >
+                          Kopieren
+                        </button>
+                      </p>
+                    </div>
+
+                    {loadingRequests ? (
+                      <p className="muted">Laden...</p>
+                    ) : registrationRequests.length === 0 ? (
+                      <p className="muted">Noch keine Anfragen eingegangen.</p>
+                    ) : (
+                      <ul className="list">
+                        {registrationRequests.map((req) => (
+                          <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                              <div>
+                                <strong>{req.name}</strong>
+                                <div className="muted">{req.email}</div>
+                                <div className="muted" style={{ fontSize: 12 }}>
+                                  {new Date(req.created_at).toLocaleDateString("de-DE", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                  })}
+                                </div>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span
+                                  className="pill"
+                                  style={{
+                                    background:
+                                      req.status === "neu"
+                                        ? "var(--primary)"
+                                        : req.status === "kontaktiert"
+                                        ? "var(--warning)"
+                                        : "var(--success)",
+                                    color: "white",
+                                    fontSize: 12,
+                                    padding: "4px 10px"
+                                  }}
+                                >
+                                  {req.status === "neu" ? "Neu" : req.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
+                                </span>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
+                                >
+                                  {expandedRequestId === req.id ? "Weniger" : "Details"}
+                                </button>
+                              </div>
+                            </div>
+
+                            {expandedRequestId === req.id && (
+                              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                  {req.telefon && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Telefon</div>
+                                      <div>{req.telefon}</div>
+                                    </div>
+                                  )}
+                                  {req.gewuenschte_zeit && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Gewünschte Zeit</div>
+                                      <div>{req.gewuenschte_zeit}</div>
+                                    </div>
+                                  )}
+                                  {req.erfahrungslevel && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Erfahrungslevel</div>
+                                      <div>
+                                        {req.erfahrungslevel === "anfaenger"
+                                          ? "Anfänger"
+                                          : req.erfahrungslevel === "fortgeschritten"
+                                          ? "Fortgeschritten"
+                                          : "Profi"}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {req.alter_jahre && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Alter</div>
+                                      <div>{req.alter_jahre} Jahre</div>
+                                    </div>
+                                  )}
+                                </div>
+                                {req.nachricht && (
+                                  <div style={{ marginBottom: 12 }}>
+                                    <div className="muted" style={{ fontSize: 11 }}>Nachricht</div>
+                                    <div style={{ whiteSpace: "pre-wrap" }}>{req.nachricht}</div>
+                                  </div>
+                                )}
+                                <div className="smallActions">
+                                  <select
+                                    value={req.status}
+                                    onChange={(e) => updateRequestStatus(req.id, e.target.value)}
+                                    style={{ padding: "6px 10px", borderRadius: 8 }}
+                                  >
+                                    <option value="neu">Neu</option>
+                                    <option value="kontaktiert">Kontaktiert</option>
+                                    <option value="erledigt">Erledigt</option>
+                                  </select>
+                                  <button
+                                    className="btn micro btnWarn"
+                                    onClick={() => {
+                                      if (window.confirm("Anfrage wirklich löschen?")) {
+                                        deleteRegistrationRequest(req.id);
+                                      }
+                                    }}
+                                  >
+                                    Löschen
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 )}

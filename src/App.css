@@ -2128,3 +2128,83 @@ select:focus:not(:focus-visible) {
     border: 1px solid #ddd;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PUBLIC REGISTRATION FORM
+   ═══════════════════════════════════════════════════════════════ */
+
+.registrationPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #e8f0fe 0%, #f5f8ff 50%, #fff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.registrationCard {
+  max-width: 600px;
+  width: 100%;
+}
+
+.registrationCard h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.registrationFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.registrationFields textarea {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.registrationFields textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .registrationFields {
+    grid-template-columns: 1fr;
+  }
+
+  .registrationCard h1 {
+    font-size: 20px;
+  }
+}
