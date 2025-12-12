@@ -2199,6 +2199,32 @@ select:focus:not(:focus-visible) {
   font-size: 14px;
 }
 
+.verfuegbarkeitTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-inset);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.verfuegbarkeitTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.verfuegbarkeitTable tr:last-child td {
+  border-bottom: none;
+}
+
+.verfuegbarkeitTable td:first-child {
+  width: 100px;
+  background: var(--bg-card);
+}
+
+.verfuegbarkeitTable input {
+  margin: 0;
+}
+
 @media (max-width: 600px) {
   .registrationFields {
     grid-template-columns: 1fr;
@@ -2206,5 +2232,10 @@ select:focus:not(:focus-visible) {
 
   .registrationCard h1 {
     font-size: 20px;
+  }
+
+  .verfuegbarkeitTable td:first-child {
+    width: 80px;
+    font-size: 13px;
   }
 }

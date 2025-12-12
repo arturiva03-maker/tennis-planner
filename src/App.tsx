@@ -45,13 +45,23 @@ type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 type AbrechnungTab = "spieler" | "trainer";
 type VerwaltungTab = "spieler" | "trainer" | "tarife" | "anfragen";
 
+type Verfuegbarkeit = {
+  montag: string;
+  dienstag: string;
+  mittwoch: string;
+  donnerstag: string;
+  freitag: string;
+};
+
 type RegistrationRequest = {
   id: string;
   account_id: string;
   name: string;
   email: string;
   telefon: string | null;
-  gewuenschte_zeit: string | null;
+  verfuegbarkeit: Verfuegbarkeit | null;
+  trainingsart: string | null;
+  trainings_pro_woche: number | null;
   erfahrungslevel: string | null;
   alter_jahre: number | null;
   nachricht: string | null;
@@ -5415,10 +5425,28 @@ export default function App() {
                                       <div>{req.telefon}</div>
                                     </div>
                                   )}
-                                  {req.gewuenschte_zeit && (
+                                  {req.alter_jahre && (
                                     <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Gewünschte Zeit</div>
-                                      <div>{req.gewuenschte_zeit}</div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Alter</div>
+                                      <div>{req.alter_jahre} Jahre</div>
+                                    </div>
+                                  )}
+                                  {req.trainingsart && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Trainingsart</div>
+                                      <div>
+                                        {req.trainingsart === "einzel"
+                                          ? "Einzeltraining"
+                                          : req.trainingsart === "gruppe"
+                                          ? "Gruppentraining"
+                                          : "Beides möglich"}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {req.trainings_pro_woche && (
+                                    <div>
+                                      <div className="muted" style={{ fontSize: 11 }}>Trainings pro Woche</div>
+                                      <div>{req.trainings_pro_woche}x</div>
                                     </div>
                                   )}
                                   {req.erfahrungslevel && (
@@ -5433,13 +5461,31 @@ export default function App() {
                                       </div>
                                     </div>
                                   )}
-                                  {req.alter_jahre && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Alter</div>
-                                      <div>{req.alter_jahre} Jahre</div>
-                                    </div>
-                                  )}
                                 </div>
+                                {req.verfuegbarkeit && (
+                                  <div style={{ marginBottom: 12 }}>
+                                    <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>Verfügbarkeit</div>
+                                    <table className="verfuegbarkeitTable" style={{ fontSize: 13 }}>
+                                      <tbody>
+                                        {req.verfuegbarkeit.montag && (
+                                          <tr><td>Montag</td><td>{req.verfuegbarkeit.montag}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.dienstag && (
+                                          <tr><td>Dienstag</td><td>{req.verfuegbarkeit.dienstag}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.mittwoch && (
+                                          <tr><td>Mittwoch</td><td>{req.verfuegbarkeit.mittwoch}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.donnerstag && (
+                                          <tr><td>Donnerstag</td><td>{req.verfuegbarkeit.donnerstag}</td></tr>
+                                        )}
+                                        {req.verfuegbarkeit.freitag && (
+                                          <tr><td>Freitag</td><td>{req.verfuegbarkeit.freitag}</td></tr>
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
                                 {req.nachricht && (
                                   <div style={{ marginBottom: 12 }}>
                                     <div className="muted" style={{ fontSize: 11 }}>Nachricht</div>

@@ -3,15 +3,27 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
+type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag";
+
 type RegistrationData = {
   name: string;
   email: string;
   telefon: string;
-  gewuenschte_zeit: string;
+  verfuegbarkeit: Record<Wochentag, string>;
+  trainingsart: string;
+  trainings_pro_woche: string;
   erfahrungslevel: string;
   alter_jahre: string;
   nachricht: string;
 };
+
+const WOCHENTAGE: { key: Wochentag; label: string }[] = [
+  { key: "montag", label: "Montag" },
+  { key: "dienstag", label: "Dienstag" },
+  { key: "mittwoch", label: "Mittwoch" },
+  { key: "donnerstag", label: "Donnerstag" },
+  { key: "freitag", label: "Freitag" },
+];
 
 export default function RegistrationForm() {
   const [searchParams] = useSearchParams();
@@ -21,7 +33,15 @@ export default function RegistrationForm() {
     name: "",
     email: "",
     telefon: "",
-    gewuenschte_zeit: "",
+    verfuegbarkeit: {
+      montag: "",
+      dienstag: "",
+      mittwoch: "",
+      donnerstag: "",
+      freitag: "",
+    },
+    trainingsart: "",
+    trainings_pro_woche: "",
     erfahrungslevel: "",
     alter_jahre: "",
     nachricht: "",
@@ -38,6 +58,16 @@ export default function RegistrationForm() {
   ) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleVerfuegbarkeitChange(tag: Wochentag, value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      verfuegbarkeit: {
+        ...prev.verfuegbarkeit,
+        [tag]: value,
+      },
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -75,7 +105,11 @@ export default function RegistrationForm() {
           name: formData.name.trim(),
           email: formData.email.trim(),
           telefon: formData.telefon.trim() || null,
-          gewuenschte_zeit: formData.gewuenschte_zeit.trim() || null,
+          verfuegbarkeit: formData.verfuegbarkeit,
+          trainingsart: formData.trainingsart || null,
+          trainings_pro_woche: formData.trainings_pro_woche
+            ? parseInt(formData.trainings_pro_woche, 10)
+            : null,
           erfahrungslevel: formData.erfahrungslevel || null,
           alter_jahre: formData.alter_jahre
             ? parseInt(formData.alter_jahre, 10)
@@ -182,14 +216,44 @@ export default function RegistrationForm() {
             </div>
 
             <div className="field">
-              <label>Gewünschte Trainingszeit</label>
+              <label>Alter</label>
               <input
-                type="text"
-                name="gewuenschte_zeit"
-                value={formData.gewuenschte_zeit}
+                type="number"
+                name="alter_jahre"
+                value={formData.alter_jahre}
                 onChange={handleChange}
-                placeholder="z.B. Dienstag Nachmittag, Wochenende"
+                placeholder="Ihr Alter"
+                min="1"
+                max="120"
               />
+            </div>
+
+            <div className="field">
+              <label>Trainingsart</label>
+              <select
+                name="trainingsart"
+                value={formData.trainingsart}
+                onChange={handleChange}
+              >
+                <option value="">Bitte auswählen...</option>
+                <option value="einzel">Einzeltraining</option>
+                <option value="gruppe">Gruppentraining</option>
+                <option value="beides">Beides möglich</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Trainings pro Woche</label>
+              <select
+                name="trainings_pro_woche"
+                value={formData.trainings_pro_woche}
+                onChange={handleChange}
+              >
+                <option value="">Bitte auswählen...</option>
+                <option value="1">1x pro Woche</option>
+                <option value="2">2x pro Woche</option>
+                <option value="3">3x pro Woche</option>
+              </select>
             </div>
 
             <div className="field">
@@ -206,17 +270,33 @@ export default function RegistrationForm() {
               </select>
             </div>
 
-            <div className="field">
-              <label>Alter</label>
-              <input
-                type="number"
-                name="alter_jahre"
-                value={formData.alter_jahre}
-                onChange={handleChange}
-                placeholder="Ihr Alter"
-                min="1"
-                max="120"
-              />
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>Gewünschte Trainingszeiten</label>
+              <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                Tragen Sie für jeden verfügbaren Tag Ihre bevorzugte Uhrzeit ein
+              </p>
+              <table className="verfuegbarkeitTable">
+                <tbody>
+                  {WOCHENTAGE.map(({ key, label }) => (
+                    <tr key={key}>
+                      <td style={{ fontWeight: 500, paddingRight: 12 }}>
+                        {label}
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          value={formData.verfuegbarkeit[key]}
+                          onChange={(e) =>
+                            handleVerfuegbarkeitChange(key, e.target.value)
+                          }
+                          placeholder="z.B. 14:00-18:00"
+                          style={{ width: "100%" }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div className="field" style={{ gridColumn: "1 / -1" }}>
