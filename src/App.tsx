@@ -4669,6 +4669,20 @@ export default function App() {
                           Durchgeführt + bar
                         </button>
                       )}
+                      {selectedTrainingId && tStatus === "durchgefuehrt" && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: trainings.find(t => t.id === selectedTrainingId)?.barBezahlt ? "#f97316" : "#8b5cf6",
+                            borderColor: trainings.find(t => t.id === selectedTrainingId)?.barBezahlt ? "#f97316" : "#8b5cf6",
+                          }}
+                          onClick={() => toggleBarBezahlt(selectedTrainingId)}
+                        >
+                          {trainings.find(t => t.id === selectedTrainingId)?.barBezahlt
+                            ? "Bar-Zahlung zurücknehmen"
+                            : "Als bar bezahlt markieren"}
+                        </button>
+                      )}
                       <span className="pill">
                         Preis Vorschau:{" "}
                         <strong>{euro(preisVorschau)}</strong>
