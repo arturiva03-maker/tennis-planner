@@ -1287,6 +1287,7 @@ export default function App() {
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [collapsedVertretungTrainer, setCollapsedVertretungTrainer] = useState<string[]>([]);
+  const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -6869,6 +6870,7 @@ export default function App() {
                             onChange={(e) => {
                               setVertretungTrainerId(e.target.value);
                               setVertretungDaten([]);
+                              setVertretungDatumPreview("");
                             }}
                           >
                             <option value="">-- wählen --</option>
@@ -6882,13 +6884,26 @@ export default function App() {
 
                         {vertretungTrainerId && (
                           <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
-                            <label>Datum hinzufügen</label>
+                            <label>Datum auswählen</label>
                             <input
                               type="date"
-                              onChange={(e) => {
-                                const datum = e.target.value;
-                                // Nur verarbeiten wenn ein vollständiges Datum ausgewählt wurde (YYYY-MM-DD)
-                                if (!datum || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return;
+                              value={vertretungDatumPreview}
+                              onChange={(e) => setVertretungDatumPreview(e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        {vertretungTrainerId && vertretungDatumPreview && /^\d{4}-\d{2}-\d{2}$/.test(vertretungDatumPreview) && (
+                          <div className="field" style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end" }}>
+                            <button
+                              className="btn"
+                              style={{
+                                background: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e",
+                                borderColor: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e"
+                              }}
+                              disabled={vertretungDaten.includes(vertretungDatumPreview)}
+                              onClick={() => {
+                                const datum = vertretungDatumPreview;
                                 if (!vertretungDaten.includes(datum)) {
                                   setVertretungDaten([...vertretungDaten, datum].sort());
                                   // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
@@ -6907,9 +6922,11 @@ export default function App() {
                                     });
                                   }
                                 }
-                                e.target.value = "";
+                                setVertretungDatumPreview("");
                               }}
-                            />
+                            >
+                              {vertretungDaten.includes(vertretungDatumPreview) ? "Bereits hinzugefügt" : "✓ Datum hinzufügen"}
+                            </button>
                           </div>
                         )}
                       </div>
