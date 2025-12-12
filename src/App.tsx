@@ -6817,7 +6817,7 @@ export default function App() {
                                   setVertretungDaten([...vertretungDaten, datum].sort());
                                   // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
                                   const dayTrainings = trainings.filter(
-                                    (t) => t.datum === datum && t.trainerId === vertretungTrainerId
+                                    (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
                                   );
                                   if (dayTrainings.length > 0) {
                                     setVertretungen((prev) => {
@@ -6887,7 +6887,7 @@ export default function App() {
                             const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
                             const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
                             const dayTrainings = trainings.filter(
-                              (t) => t.datum === datum && t.trainerId === vertretungTrainerId
+                              (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
                             );
 
                             if (dayTrainings.length === 0) {
