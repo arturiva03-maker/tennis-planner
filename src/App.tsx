@@ -6654,241 +6654,296 @@ export default function App() {
                 {/* Vertretung Tab */}
                 {weiteresTabs === "vertretung" && (
                   <>
-                    <p className="muted" style={{ marginBottom: 16 }}>
-                      Plane Vertretungen für abwesende Trainer. Wähle einen Trainer, gib die Abwesenheitsdaten an und weise Vertretungen zu.
-                    </p>
+                    {/* Kompakte Übersicht aller Vertretungen - immer sichtbar */}
+                    {vertretungen.length > 0 ? (
+                      <div style={{ marginBottom: 24 }}>
+                        <div style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                          gap: 12
+                        }}>
+                          {(() => {
+                            // Gruppiere nach Datum und sortiere
+                            const grouped = vertretungen.reduce((acc, v) => {
+                              const training = trainings.find((t) => t.id === v.trainingId);
+                              if (!training) return acc;
+                              if (!acc[training.datum]) acc[training.datum] = [];
+                              acc[training.datum].push(v);
+                              return acc;
+                            }, {} as Record<string, Vertretung[]>);
 
-                    {/* Schritt 1: Trainer auswählen */}
-                    <div className="field" style={{ marginBottom: 16 }}>
-                      <label>Trainer auswählen</label>
-                      <select
-                        value={vertretungTrainerId}
-                        onChange={(e) => {
-                          setVertretungTrainerId(e.target.value);
-                          setVertretungDaten([]);
-                        }}
-                      >
-                        <option value="">-- Trainer wählen --</option>
-                        {trainers.map((tr) => (
-                          <option key={tr.id} value={tr.id}>
-                            {tr.name} {tr.nachname || ""}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                            return Object.entries(grouped)
+                              .sort(([a], [b]) => a.localeCompare(b))
+                              .map(([datum, vList]) => {
+                                const d = new Date(datum + "T12:00:00");
+                                const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                                const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
 
-                    {/* Schritt 2: Daten auswählen */}
-                    {vertretungTrainerId && (
-                      <div className="field" style={{ marginBottom: 16 }}>
-                        <label>Fehlt am (Daten auswählen)</label>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                          <input
-                            type="date"
-                            onChange={(e) => {
-                              const datum = e.target.value;
-                              if (datum && !vertretungDaten.includes(datum)) {
-                                setVertretungDaten([...vertretungDaten, datum].sort());
-                              }
-                              e.target.value = "";
-                            }}
-                          />
-                        </div>
-                        {vertretungDaten.length > 0 && (
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-                            {vertretungDaten.map((datum) => {
-                              const d = new Date(datum + "T12:00:00");
-                              const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
-                              return (
-                                <span
-                                  key={datum}
-                                  className="pill"
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 6,
-                                    background: "var(--bg-inset)",
-                                    padding: "4px 10px",
-                                    borderRadius: "var(--radius-md)",
-                                    fontSize: 13
-                                  }}
-                                >
-                                  {formatted}
-                                  <button
-                                    type="button"
+                                return (
+                                  <div
+                                    key={datum}
                                     style={{
-                                      background: "none",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      padding: 0,
-                                      fontSize: 14,
-                                      color: "var(--text-muted)"
+                                      background: "var(--bg-inset)",
+                                      borderRadius: "var(--radius-md)",
+                                      padding: 12,
+                                      borderLeft: "3px solid #f97316"
                                     }}
-                                    onClick={() => setVertretungDaten(vertretungDaten.filter((d) => d !== datum))}
                                   >
-                                    ×
-                                  </button>
-                                </span>
-                              );
-                            })}
+                                    <div style={{
+                                      fontWeight: 600,
+                                      marginBottom: 8,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 6
+                                    }}>
+                                      <span style={{
+                                        background: "#f97316",
+                                        color: "white",
+                                        fontSize: 10,
+                                        padding: "2px 6px",
+                                        borderRadius: 3,
+                                        fontWeight: 700
+                                      }}>V</span>
+                                      {formatted}
+                                    </div>
+                                    {vList.map((v) => {
+                                      const training = trainings.find((t) => t.id === v.trainingId);
+                                      if (!training) return null;
+                                      const originalTrainer = trainerById.get(training.trainerId ?? "");
+                                      const substituteTrainer = trainerById.get(v.vertretungTrainerId);
+                                      const spielerNames = training.spielerIds
+                                        .map((id) => spielerById.get(id)?.name ?? "?")
+                                        .join(", ");
+
+                                      return (
+                                        <div
+                                          key={v.trainingId}
+                                          style={{
+                                            fontSize: 13,
+                                            padding: "6px 0",
+                                            borderTop: "1px solid var(--border)",
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "flex-start",
+                                            gap: 8
+                                          }}
+                                        >
+                                          <div style={{ flex: 1 }}>
+                                            <div style={{ fontWeight: 500 }}>
+                                              {training.uhrzeitVon}-{training.uhrzeitBis}
+                                            </div>
+                                            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                                              {spielerNames}
+                                            </div>
+                                            <div style={{ fontSize: 12, marginTop: 2 }}>
+                                              <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "?"}</span>
+                                              {" → "}
+                                              <span style={{ color: "#22c55e", fontWeight: 500 }}>{substituteTrainer?.name || "?"}</span>
+                                            </div>
+                                          </div>
+                                          <button
+                                            style={{
+                                              background: "none",
+                                              border: "none",
+                                              cursor: "pointer",
+                                              padding: 2,
+                                              fontSize: 16,
+                                              color: "var(--text-muted)",
+                                              lineHeight: 1
+                                            }}
+                                            title="Entfernen"
+                                            onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
+                                          >
+                                            ×
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              });
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="muted" style={{ textAlign: "center", padding: 20, background: "var(--bg-inset)", borderRadius: "var(--radius-md)", marginBottom: 20 }}>
+                        Keine Vertretungen eingetragen.
+                      </div>
+                    )}
+
+                    {/* Neue Vertretung hinzufügen */}
+                    <div style={{
+                      background: "var(--bg-inset)",
+                      borderRadius: "var(--radius-md)",
+                      padding: 16
+                    }}>
+                      <h3 style={{ marginBottom: 12, fontSize: 15 }}>Neue Vertretung planen</h3>
+
+                      <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                        <div className="field" style={{ flex: "1 1 180px", minWidth: 0 }}>
+                          <label>Trainer fehlt</label>
+                          <select
+                            value={vertretungTrainerId}
+                            onChange={(e) => {
+                              setVertretungTrainerId(e.target.value);
+                              setVertretungDaten([]);
+                            }}
+                          >
+                            <option value="">-- wählen --</option>
+                            {trainers.map((tr) => (
+                              <option key={tr.id} value={tr.id}>
+                                {tr.name} {tr.nachname || ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {vertretungTrainerId && (
+                          <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
+                            <label>Datum hinzufügen</label>
+                            <input
+                              type="date"
+                              onChange={(e) => {
+                                const datum = e.target.value;
+                                if (datum && !vertretungDaten.includes(datum)) {
+                                  setVertretungDaten([...vertretungDaten, datum].sort());
+                                }
+                                e.target.value = "";
+                              }}
+                            />
                           </div>
                         )}
                       </div>
-                    )}
 
-                    {/* Schritt 3: Trainings und Vertretungen */}
-                    {vertretungTrainerId && vertretungDaten.length > 0 && (
-                      <div style={{ marginTop: 20 }}>
-                        <h3 style={{ marginBottom: 12 }}>Trainings an diesen Tagen</h3>
-                        {vertretungDaten.map((datum) => {
-                          const d = new Date(datum + "T12:00:00");
-                          const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
-                          const dayTrainings = trainings.filter(
-                            (t) => t.datum === datum && t.trainerId === vertretungTrainerId
-                          );
-
-                          if (dayTrainings.length === 0) {
+                      {vertretungDaten.length > 0 && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+                          {vertretungDaten.map((datum) => {
+                            const d = new Date(datum + "T12:00:00");
+                            const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
                             return (
-                              <div key={datum} style={{ marginBottom: 16 }}>
-                                <strong>{formatted}</strong>
-                                <p className="muted" style={{ fontSize: 13 }}>Keine Trainings an diesem Tag.</p>
-                              </div>
+                              <span
+                                key={datum}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  background: "var(--bg-card)",
+                                  padding: "3px 8px",
+                                  borderRadius: "var(--radius-md)",
+                                  fontSize: 12,
+                                  border: "1px solid var(--border)"
+                                }}
+                              >
+                                {formatted}
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: 13,
+                                    color: "var(--text-muted)",
+                                    lineHeight: 1
+                                  }}
+                                  onClick={() => setVertretungDaten(vertretungDaten.filter((dd) => dd !== datum))}
+                                >
+                                  ×
+                                </button>
+                              </span>
                             );
-                          }
+                          })}
+                        </div>
+                      )}
 
-                          return (
-                            <div key={datum} style={{ marginBottom: 20 }}>
-                              <strong style={{ display: "block", marginBottom: 8 }}>{formatted}</strong>
-                              <ul className="list" style={{ gap: 8 }}>
+                      {/* Trainings und Vertretungen zuweisen */}
+                      {vertretungTrainerId && vertretungDaten.length > 0 && (
+                        <div style={{ marginTop: 16 }}>
+                          {vertretungDaten.map((datum) => {
+                            const d = new Date(datum + "T12:00:00");
+                            const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                            const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
+                            const dayTrainings = trainings.filter(
+                              (t) => t.datum === datum && t.trainerId === vertretungTrainerId
+                            );
+
+                            if (dayTrainings.length === 0) {
+                              return (
+                                <div key={datum} style={{
+                                  padding: "8px 12px",
+                                  background: "var(--bg-card)",
+                                  borderRadius: "var(--radius-sm)",
+                                  marginBottom: 8,
+                                  fontSize: 13
+                                }}>
+                                  <strong>{formatted}</strong>
+                                  <span className="muted"> – Keine Trainings</span>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div key={datum} style={{ marginBottom: 12 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>{formatted}</div>
                                 {dayTrainings.map((t) => {
                                   const spielerNames = t.spielerIds
-                                    .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                    .map((id) => spielerById.get(id)?.name ?? "?")
                                     .join(", ");
                                   const existingVertretung = vertretungen.find((v) => v.trainingId === t.id);
-                                  const vertretungTrainer = existingVertretung
-                                    ? trainerById.get(existingVertretung.vertretungTrainerId)
-                                    : null;
 
                                   return (
-                                    <li
+                                    <div
                                       key={t.id}
-                                      className="listItem"
                                       style={{
-                                        flexDirection: "column",
-                                        alignItems: "stretch",
-                                        gap: 8,
-                                        padding: 12,
-                                        background: existingVertretung
-                                          ? "rgba(34, 197, 94, 0.1)"
-                                          : "rgba(239, 68, 68, 0.1)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 10,
+                                        padding: "8px 12px",
+                                        background: existingVertretung ? "rgba(34, 197, 94, 0.1)" : "var(--bg-card)",
+                                        borderRadius: "var(--radius-sm)",
+                                        marginBottom: 4,
                                         borderLeft: `3px solid ${existingVertretung ? "#22c55e" : "#ef4444"}`
                                       }}
                                     >
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <div>
-                                          <div style={{ fontWeight: 600 }}>
-                                            {t.uhrzeitVon} - {t.uhrzeitBis}
-                                          </div>
-                                          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                                            {spielerNames}
-                                          </div>
-                                        </div>
-                                        <span
-                                          className="pill"
-                                          style={{
-                                            background: existingVertretung ? "#22c55e" : "#ef4444",
-                                            color: "white",
-                                            fontSize: 11,
-                                            padding: "2px 8px"
-                                          }}
-                                        >
-                                          {existingVertretung ? "Vertretung gefunden" : "Vertretung offen"}
-                                        </span>
+                                      <div style={{ minWidth: 70, fontSize: 13, fontWeight: 500 }}>
+                                        {t.uhrzeitVon}-{t.uhrzeitBis}
                                       </div>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <label style={{ fontSize: 13, minWidth: 80 }}>Vertretung:</label>
-                                        <select
-                                          value={existingVertretung?.vertretungTrainerId ?? ""}
-                                          onChange={(e) => {
-                                            const newVertretungTrainerId = e.target.value;
-                                            if (newVertretungTrainerId) {
-                                              setVertretungen((prev) => {
-                                                const filtered = prev.filter((v) => v.trainingId !== t.id);
-                                                return [...filtered, { trainingId: t.id, vertretungTrainerId: newVertretungTrainerId }];
-                                              });
-                                            } else {
-                                              setVertretungen((prev) => prev.filter((v) => v.trainingId !== t.id));
-                                            }
-                                          }}
-                                          style={{ flex: 1 }}
-                                        >
-                                          <option value="">-- Keine Vertretung --</option>
-                                          {trainers
-                                            .filter((tr) => tr.id !== vertretungTrainerId)
-                                            .map((tr) => (
-                                              <option key={tr.id} value={tr.id}>
-                                                {tr.name} {tr.nachname || ""}
-                                              </option>
-                                            ))}
-                                        </select>
+                                      <div style={{ flex: 1, fontSize: 12, color: "var(--text-muted)" }}>
+                                        {spielerNames}
                                       </div>
-                                      {vertretungTrainer && (
-                                        <div style={{ fontSize: 12, color: "#166534" }}>
-                                          Vertretung: {vertretungTrainer.name} {vertretungTrainer.nachname || ""}
-                                        </div>
-                                      )}
-                                    </li>
+                                      <select
+                                        value={existingVertretung?.vertretungTrainerId ?? ""}
+                                        onChange={(e) => {
+                                          const newId = e.target.value;
+                                          if (newId) {
+                                            setVertretungen((prev) => {
+                                              const filtered = prev.filter((v) => v.trainingId !== t.id);
+                                              return [...filtered, { trainingId: t.id, vertretungTrainerId: newId }];
+                                            });
+                                          } else {
+                                            setVertretungen((prev) => prev.filter((v) => v.trainingId !== t.id));
+                                          }
+                                        }}
+                                        style={{ width: 130, fontSize: 13 }}
+                                      >
+                                        <option value="">-- offen --</option>
+                                        {trainers
+                                          .filter((tr) => tr.id !== vertretungTrainerId)
+                                          .map((tr) => (
+                                            <option key={tr.id} value={tr.id}>
+                                              {tr.name}
+                                            </option>
+                                          ))}
+                                      </select>
+                                    </div>
                                   );
                                 })}
-                              </ul>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Übersicht aller aktiven Vertretungen */}
-                    {vertretungen.length > 0 && (
-                      <div style={{ marginTop: 30, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                        <h3 style={{ marginBottom: 12 }}>Alle aktiven Vertretungen</h3>
-                        <ul className="list" style={{ gap: 8 }}>
-                          {vertretungen.map((v) => {
-                            const training = trainings.find((t) => t.id === v.trainingId);
-                            if (!training) return null;
-                            const originalTrainer = trainerById.get(training.trainerId ?? "");
-                            const substituteTrainer = trainerById.get(v.vertretungTrainerId);
-                            const spielerNames = training.spielerIds
-                              .map((id) => spielerById.get(id)?.name ?? "Spieler")
-                              .join(", ");
-                            const d = new Date(training.datum + "T12:00:00");
-                            const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
-
-                            return (
-                              <li key={v.trainingId} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 4 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                  <div>
-                                    <strong>{formatted}</strong> · {training.uhrzeitVon} - {training.uhrzeitBis}
-                                  </div>
-                                  <button
-                                    className="btn micro btnWarn"
-                                    onClick={() => setVertretungen((prev) => prev.filter((vt) => vt.trainingId !== v.trainingId))}
-                                  >
-                                    Entfernen
-                                  </button>
-                                </div>
-                                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                                  {spielerNames}
-                                </div>
-                                <div style={{ fontSize: 13 }}>
-                                  <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "Trainer"}</span>
-                                  {" → "}
-                                  <span style={{ color: "#22c55e" }}>{substituteTrainer?.name || "Vertretung"}</span>
-                                </div>
-                              </li>
+                              </div>
                             );
                           })}
-                        </ul>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
