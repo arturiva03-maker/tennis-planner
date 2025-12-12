@@ -2501,7 +2501,9 @@ export default function App() {
   }
 
   function trainerHonorarFuerTraining(t: Training) {
-    const tid = t.trainerId || defaultTrainerId;
+    // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
+    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
     const trainer = trainerById.get(tid);
     const rate = trainer?.stundensatz ?? 0;
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
@@ -2510,7 +2512,10 @@ export default function App() {
 
   function fillTrainingFromSelected(t: Training) {
     if (isTrainer) return;
-    setTTrainerId(t.trainerId ?? defaultTrainerId);
+    // Wenn eine Vertretung existiert, den Vertretungstrainer übernehmen
+    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+    const effectiveTrainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+    setTTrainerId(effectiveTrainerId);
     setTDatum(t.datum);
     setTVon(t.uhrzeitVon);
     setTBis(t.uhrzeitBis);
@@ -3338,8 +3343,10 @@ export default function App() {
     trainingsForAbrechnung.forEach((t) => {
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg || cfg.abrechnung !== "monatlich") return;
-      
-      const tid = t.trainerId || defaultTrainerId;
+
+      // Vertretungstrainer berücksichtigen
+      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
       const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
       const trainingDate = new Date(t.datum + "T12:00:00");
       const weekday = trainingDate.getDay();
@@ -3355,7 +3362,9 @@ export default function App() {
     const monthlyTrainerProcessed = new Set<string>();
 
     trainingsForAbrechnung.forEach((t) => {
-      const tid = t.trainerId || defaultTrainerId;
+      // Vertretungstrainer berücksichtigen
+      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
       const name = trainerById.get(tid)?.name ?? "Trainer";
       const cfg = getPreisConfig(t, tarifById);
       if (!cfg) return;
