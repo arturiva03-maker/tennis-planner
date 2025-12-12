@@ -6861,7 +6861,9 @@ export default function App() {
                               type="date"
                               onChange={(e) => {
                                 const datum = e.target.value;
-                                if (datum && !vertretungDaten.includes(datum)) {
+                                // Nur verarbeiten wenn ein vollständiges Datum ausgewählt wurde (YYYY-MM-DD)
+                                if (!datum || !/^\d{4}-\d{2}-\d{2}$/.test(datum)) return;
+                                if (!vertretungDaten.includes(datum)) {
                                   setVertretungDaten([...vertretungDaten, datum].sort());
                                   // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
                                   const dayTrainings = trainings.filter(
