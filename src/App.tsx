@@ -924,6 +924,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     trainerMonthSettled: parsed?.trainerMonthSettled ?? {},
     notizen: parsed?.notizen ?? [],
     monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
+    vertretungen: parsed?.vertretungen ?? [],
   };
 }
 
