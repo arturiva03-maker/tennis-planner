@@ -102,7 +102,7 @@ type Notiz = {
 
 type Vertretung = {
   trainingId: string;
-  vertretungTrainerId: string;
+  vertretungTrainerId?: string; // Optional - wenn leer, dann "Vertretung offen"
 };
 
 type WeiteresTabs = "notizen" | "vertretung";
@@ -4187,15 +4187,18 @@ export default function App() {
 
                               // Vertretung prüfen
                               const trainingVertretung = vertretungen.find((v) => v.trainingId === t.id);
-                              const vertretungTrainerObj = trainingVertretung
+                              const vertretungTrainerObj = trainingVertretung?.vertretungTrainerId
                                 ? trainerById.get(trainingVertretung.vertretungTrainerId)
                                 : null;
+                              const isVertretungOffen = trainingVertretung && !trainingVertretung.vertretungTrainerId;
 
                               const taLine = isTrainer
                                 ? `Trainer: ${trainerName}`
                                 : trainers.length > 1
                                 ? trainingVertretung
-                                  ? `${ta} | ${vertretungTrainerObj?.name ?? "Vertretung"} (V)`
+                                  ? isVertretungOffen
+                                    ? `${ta} | (V offen)`
+                                    : `${ta} | ${vertretungTrainerObj?.name ?? "Vertretung"} (V)`
                                   : `${ta} | ${trainerName}`
                                 : ta;
 
@@ -4290,7 +4293,7 @@ export default function App() {
                                     isTrainer ? "" : `\nTarif: ${ta}`
                                   }\nTrainer: ${trainerName}${
                                     hasVertretung
-                                      ? `\nVertretung: ${vertretungTrainerObj?.name ?? "Vertretung"}`
+                                      ? `\nVertretung: ${isVertretungOffen ? "offen" : vertretungTrainerObj?.name ?? "Vertretung"}`
                                       : ""
                                   }\nStatus: ${statusLabel(
                                     t.status
@@ -6710,7 +6713,8 @@ export default function App() {
                                       const training = trainings.find((t) => t.id === v.trainingId);
                                       if (!training) return null;
                                       const originalTrainer = trainerById.get(training.trainerId ?? "");
-                                      const substituteTrainer = trainerById.get(v.vertretungTrainerId);
+                                      const substituteTrainer = v.vertretungTrainerId ? trainerById.get(v.vertretungTrainerId) : null;
+                                      const isOffen = !v.vertretungTrainerId;
                                       const spielerNames = training.spielerIds
                                         .map((id) => spielerById.get(id)?.name ?? "?")
                                         .join(", ");
@@ -6738,7 +6742,11 @@ export default function App() {
                                             <div style={{ fontSize: 12, marginTop: 2 }}>
                                               <span style={{ color: "#ef4444" }}>{originalTrainer?.name || "?"}</span>
                                               {" → "}
-                                              <span style={{ color: "#22c55e", fontWeight: 500 }}>{substituteTrainer?.name || "?"}</span>
+                                              {isOffen ? (
+                                                <span style={{ color: "#f97316", fontWeight: 500, fontStyle: "italic" }}>offen</span>
+                                              ) : (
+                                                <span style={{ color: "#22c55e", fontWeight: 500 }}>{substituteTrainer?.name || "?"}</span>
+                                              )}
                                             </div>
                                           </div>
                                           <button
@@ -6807,6 +6815,21 @@ export default function App() {
                                 const datum = e.target.value;
                                 if (datum && !vertretungDaten.includes(datum)) {
                                   setVertretungDaten([...vertretungDaten, datum].sort());
+                                  // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
+                                  const dayTrainings = trainings.filter(
+                                    (t) => t.datum === datum && t.trainerId === vertretungTrainerId
+                                  );
+                                  if (dayTrainings.length > 0) {
+                                    setVertretungen((prev) => {
+                                      const newVertretungen = [...prev];
+                                      dayTrainings.forEach((t) => {
+                                        if (!newVertretungen.some((v) => v.trainingId === t.id)) {
+                                          newVertretungen.push({ trainingId: t.id });
+                                        }
+                                      });
+                                      return newVertretungen;
+                                    });
+                                  }
                                 }
                                 e.target.value = "";
                               }}
@@ -6891,6 +6914,7 @@ export default function App() {
                                     .join(", ");
                                   const existingVertretung = vertretungen.find((v) => v.trainingId === t.id);
 
+                                  const hatVertretung = existingVertretung?.vertretungTrainerId;
                                   return (
                                     <div
                                       key={t.id}
@@ -6899,10 +6923,14 @@ export default function App() {
                                         alignItems: "center",
                                         gap: 10,
                                         padding: "8px 12px",
-                                        background: existingVertretung ? "rgba(34, 197, 94, 0.1)" : "var(--bg-card)",
+                                        background: hatVertretung
+                                          ? "rgba(34, 197, 94, 0.1)"
+                                          : existingVertretung
+                                          ? "rgba(249, 115, 22, 0.1)"
+                                          : "var(--bg-card)",
                                         borderRadius: "var(--radius-sm)",
                                         marginBottom: 4,
-                                        borderLeft: `3px solid ${existingVertretung ? "#22c55e" : "#ef4444"}`
+                                        borderLeft: `3px solid ${hatVertretung ? "#22c55e" : existingVertretung ? "#f97316" : "#cbd5e1"}`
                                       }}
                                     >
                                       <div style={{ minWidth: 70, fontSize: 13, fontWeight: 500 }}>
@@ -6915,14 +6943,11 @@ export default function App() {
                                         value={existingVertretung?.vertretungTrainerId ?? ""}
                                         onChange={(e) => {
                                           const newId = e.target.value;
-                                          if (newId) {
-                                            setVertretungen((prev) => {
-                                              const filtered = prev.filter((v) => v.trainingId !== t.id);
-                                              return [...filtered, { trainingId: t.id, vertretungTrainerId: newId }];
-                                            });
-                                          } else {
-                                            setVertretungen((prev) => prev.filter((v) => v.trainingId !== t.id));
-                                          }
+                                          // Immer speichern - auch ohne Vertretungstrainer (dann "offen")
+                                          setVertretungen((prev) => {
+                                            const filtered = prev.filter((v) => v.trainingId !== t.id);
+                                            return [...filtered, { trainingId: t.id, vertretungTrainerId: newId || undefined }];
+                                          });
                                         }}
                                         style={{ width: 130, fontSize: 13 }}
                                       >
