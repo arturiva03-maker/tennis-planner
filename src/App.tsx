@@ -1288,6 +1288,9 @@ export default function App() {
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [collapsedVertretungTrainer, setCollapsedVertretungTrainer] = useState<string[]>([]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
+  const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
+  const [vertretungVon, setVertretungVon] = useState<string>("");
+  const [vertretungBis, setVertretungBis] = useState<string>("");
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -6928,6 +6931,8 @@ export default function App() {
                               setVertretungTrainerId(e.target.value);
                               setVertretungDaten([]);
                               setVertretungDatumPreview("");
+                              setVertretungVon("");
+                              setVertretungBis("");
                             }}
                           >
                             <option value="">-- wählen --</option>
@@ -6940,6 +6945,46 @@ export default function App() {
                         </div>
 
                         {vertretungTrainerId && (
+                          <div className="field" style={{ flex: "0 0 auto" }}>
+                            <label>Modus</label>
+                            <div style={{ display: "flex", gap: 0, borderRadius: "var(--radius-sm)", overflow: "hidden", border: "1px solid var(--border)" }}>
+                              <button
+                                type="button"
+                                onClick={() => setVertretungModus("einzeln")}
+                                style={{
+                                  padding: "6px 12px",
+                                  fontSize: 13,
+                                  border: "none",
+                                  cursor: "pointer",
+                                  background: vertretungModus === "einzeln" ? "var(--primary)" : "var(--bg-card)",
+                                  color: vertretungModus === "einzeln" ? "white" : "var(--text)"
+                                }}
+                              >
+                                Einzeln
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVertretungModus("zeitraum")}
+                                style={{
+                                  padding: "6px 12px",
+                                  fontSize: 13,
+                                  border: "none",
+                                  borderLeft: "1px solid var(--border)",
+                                  cursor: "pointer",
+                                  background: vertretungModus === "zeitraum" ? "var(--primary)" : "var(--bg-card)",
+                                  color: vertretungModus === "zeitraum" ? "white" : "var(--text)"
+                                }}
+                              >
+                                Zeitraum
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Einzeldatum-Modus */}
+                      {vertretungTrainerId && vertretungModus === "einzeln" && (
+                        <div className="row" style={{ gap: 12, flexWrap: "wrap", marginTop: 12 }}>
                           <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
                             <label>Datum auswählen</label>
                             <input
@@ -6948,29 +6993,84 @@ export default function App() {
                               onChange={(e) => setVertretungDatumPreview(e.target.value)}
                             />
                           </div>
-                        )}
 
-                        {vertretungTrainerId && vertretungDatumPreview && /^\d{4}-\d{2}-\d{2}$/.test(vertretungDatumPreview) && (
-                          <div className="field" style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end" }}>
-                            <button
-                              className="btn"
-                              style={{
-                                background: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e",
-                                borderColor: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e"
-                              }}
-                              disabled={vertretungDaten.includes(vertretungDatumPreview)}
-                              onClick={() => {
-                                const datum = vertretungDatumPreview;
-                                if (!vertretungDaten.includes(datum)) {
-                                  setVertretungDaten([...vertretungDaten, datum].sort());
-                                  // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
-                                  const dayTrainings = trainings.filter(
-                                    (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                          {vertretungDatumPreview && /^\d{4}-\d{2}-\d{2}$/.test(vertretungDatumPreview) && (
+                            <div className="field" style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end" }}>
+                              <button
+                                className="btn"
+                                style={{
+                                  background: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e",
+                                  borderColor: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e"
+                                }}
+                                disabled={vertretungDaten.includes(vertretungDatumPreview)}
+                                onClick={() => {
+                                  const datum = vertretungDatumPreview;
+                                  if (!vertretungDaten.includes(datum)) {
+                                    setVertretungDaten([...vertretungDaten, datum].sort());
+                                    // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
+                                    const dayTrainings = trainings.filter(
+                                      (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                                    );
+                                    if (dayTrainings.length > 0) {
+                                      setVertretungen((prev) => {
+                                        const newVertretungen = [...prev];
+                                        dayTrainings.forEach((t) => {
+                                          if (!newVertretungen.some((v) => v.trainingId === t.id)) {
+                                            newVertretungen.push({ trainingId: t.id });
+                                          }
+                                        });
+                                        return newVertretungen;
+                                      });
+                                    }
+                                  }
+                                  setVertretungDatumPreview("");
+                                }}
+                              >
+                                {vertretungDaten.includes(vertretungDatumPreview) ? "Bereits hinzugefügt" : "Datum hinzufügen"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Zeitraum-Modus */}
+                      {vertretungTrainerId && vertretungModus === "zeitraum" && (
+                        <div className="row" style={{ gap: 12, flexWrap: "wrap", marginTop: 12, alignItems: "flex-end" }}>
+                          <div className="field" style={{ flex: "1 1 140px", minWidth: 0 }}>
+                            <label>Von</label>
+                            <input
+                              type="date"
+                              value={vertretungVon}
+                              onChange={(e) => setVertretungVon(e.target.value)}
+                            />
+                          </div>
+                          <div className="field" style={{ flex: "1 1 140px", minWidth: 0 }}>
+                            <label>Bis</label>
+                            <input
+                              type="date"
+                              value={vertretungBis}
+                              min={vertretungVon}
+                              onChange={(e) => setVertretungBis(e.target.value)}
+                            />
+                          </div>
+                          {vertretungVon && vertretungBis && vertretungVon <= vertretungBis && (
+                            <div className="field" style={{ flex: "0 0 auto" }}>
+                              <button
+                                className="btn"
+                                style={{ background: "#22c55e", borderColor: "#22c55e" }}
+                                onClick={() => {
+                                  // Alle Trainings des Trainers im Zeitraum als "offen" markieren
+                                  const rangeTrainings = trainings.filter(
+                                    (t) => t.datum >= vertretungVon && t.datum <= vertretungBis && (t.trainerId || defaultTrainerId) === vertretungTrainerId
                                   );
-                                  if (dayTrainings.length > 0) {
+                                  if (rangeTrainings.length > 0) {
+                                    // Daten für Anzeige sammeln
+                                    const datenImZeitraum = Array.from(new Set(rangeTrainings.map(t => t.datum))).sort();
+                                    setVertretungDaten(prev => Array.from(new Set([...prev, ...datenImZeitraum])).sort());
+
                                     setVertretungen((prev) => {
                                       const newVertretungen = [...prev];
-                                      dayTrainings.forEach((t) => {
+                                      rangeTrainings.forEach((t) => {
                                         if (!newVertretungen.some((v) => v.trainingId === t.id)) {
                                           newVertretungen.push({ trainingId: t.id });
                                         }
@@ -6978,15 +7078,18 @@ export default function App() {
                                       return newVertretungen;
                                     });
                                   }
-                                }
-                                setVertretungDatumPreview("");
-                              }}
-                            >
-                              {vertretungDaten.includes(vertretungDatumPreview) ? "Bereits hinzugefügt" : "✓ Datum hinzufügen"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                                  setVertretungVon("");
+                                  setVertretungBis("");
+                                }}
+                              >
+                                Zeitraum hinzufügen ({trainings.filter(
+                                  (t) => t.datum >= vertretungVon && t.datum <= vertretungBis && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                                ).length} Trainings)
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {vertretungDaten.length > 0 && (
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
