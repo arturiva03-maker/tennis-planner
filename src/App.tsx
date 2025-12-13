@@ -1290,10 +1290,10 @@ export default function App() {
 
   // Reset expanded state when switching to vertretung tab
   useEffect(() => {
-    if (weiteresTabs === "vertretung") {
+    if (tab === "weiteres" && weiteresTabs === "vertretung") {
       setExpandedVertretungTrainer([]);
     }
-  }, [weiteresTabs]);
+  }, [tab, weiteresTabs]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
   const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
   const [vertretungVon, setVertretungVon] = useState<string>("");
