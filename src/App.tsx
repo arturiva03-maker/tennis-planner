@@ -1287,6 +1287,13 @@ export default function App() {
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [expandedVertretungTrainer, setExpandedVertretungTrainer] = useState<string[]>([]);
+
+  // Reset expanded state when switching to vertretung tab
+  useEffect(() => {
+    if (weiteresTabs === "vertretung") {
+      setExpandedVertretungTrainer([]);
+    }
+  }, [weiteresTabs]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
   const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
   const [vertretungVon, setVertretungVon] = useState<string>("");
