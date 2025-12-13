@@ -2053,12 +2053,15 @@ export default function App() {
       .filter((t) => {
         if (kalenderTrainerFilter.length === 0) return true;
         const tid = t.trainerId || defaultTrainerId;
-        return kalenderTrainerFilter.includes(tid);
+        // Auch Vertretungstrainer berücksichtigen
+        const vertretung = vertretungen.find(v => v.trainingId === t.id);
+        const vertretungTid = vertretung?.vertretungTrainerId;
+        return kalenderTrainerFilter.includes(tid) || (vertretungTid && kalenderTrainerFilter.includes(vertretungTid));
       })
       .sort((a, b) =>
         (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
       );
-  }, [trainings, weekStart, kalenderTrainerFilter, defaultTrainerId]);
+  }, [trainings, weekStart, kalenderTrainerFilter, defaultTrainerId, vertretungen]);
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
