@@ -1286,7 +1286,7 @@ export default function App() {
   const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("notizen");
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
-  const [collapsedVertretungTrainer, setCollapsedVertretungTrainer] = useState<string[]>([]);
+  const [expandedVertretungTrainer, setExpandedVertretungTrainer] = useState<string[]>([]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
   const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
   const [vertretungVon, setVertretungVon] = useState<string>("");
@@ -6719,7 +6719,7 @@ export default function App() {
                                 return a.training.uhrzeitVon.localeCompare(b.training.uhrzeitVon);
                               });
 
-                              const isCollapsed = collapsedVertretungTrainer.includes(trainerId);
+                              const isCollapsed = !expandedVertretungTrainer.includes(trainerId);
 
                               // Gruppiere nach Datum
                               const groupedByDate = sortedItems.reduce((acc, item) => {
@@ -6735,7 +6735,7 @@ export default function App() {
                                 <div key={trainerId} style={{ marginBottom: 20 }}>
                                   <div
                                     onClick={() => {
-                                      setCollapsedVertretungTrainer(prev =>
+                                      setExpandedVertretungTrainer(prev =>
                                         prev.includes(trainerId)
                                           ? prev.filter(id => id !== trainerId)
                                           : [...prev, trainerId]
