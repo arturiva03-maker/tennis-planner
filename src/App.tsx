@@ -33,6 +33,10 @@ type Spieler = {
   iban?: string;
   mandatsreferenz?: string;
   unterschriftsdatum?: string;
+  // Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
+  abweichenderEmpfaenger?: boolean;
+  empfaengerName?: string;
+  empfaengerAdresse?: string;
 };
 
 type Tarif = {
@@ -1385,6 +1389,9 @@ export default function App() {
   const [spielerIban, setSpielerIban] = useState("");
   const [spielerMandatsreferenz, setSpielerMandatsreferenz] = useState("");
   const [spielerUnterschriftsdatum, setSpielerUnterschriftsdatum] = useState("");
+  const [spielerAbweichenderEmpfaenger, setSpielerAbweichenderEmpfaenger] = useState(false);
+  const [spielerEmpfaengerName, setSpielerEmpfaengerName] = useState("");
+  const [spielerEmpfaengerAdresse, setSpielerEmpfaengerAdresse] = useState("");
   const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   // Profil SEPA-Einstellungen (Gläubiger)
@@ -2256,6 +2263,9 @@ export default function App() {
       setSpielerIban("");
       setSpielerMandatsreferenz("");
       setSpielerUnterschriftsdatum("");
+      setSpielerAbweichenderEmpfaenger(false);
+      setSpielerEmpfaengerName("");
+      setSpielerEmpfaengerAdresse("");
     }
   }
 
@@ -2313,6 +2323,9 @@ export default function App() {
       iban: spielerIban.trim() || undefined,
       mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
       unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
+      abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
+      empfaengerName: spielerEmpfaengerName.trim() || undefined,
+      empfaengerAdresse: spielerEmpfaengerAdresse.trim() || undefined,
     };
 
     setSpieler((prev) => [...prev, neu]);
@@ -2325,6 +2338,9 @@ export default function App() {
     setSpielerIban("");
     setSpielerMandatsreferenz("");
     setSpielerUnterschriftsdatum("");
+    setSpielerAbweichenderEmpfaenger(false);
+    setSpielerEmpfaengerName("");
+    setSpielerEmpfaengerAdresse("");
     setShowSpielerForm(false);
   }
 
@@ -2338,6 +2354,9 @@ export default function App() {
     setSpielerIban(s.iban ?? "");
     setSpielerMandatsreferenz(s.mandatsreferenz ?? "");
     setSpielerUnterschriftsdatum(s.unterschriftsdatum ?? "");
+    setSpielerAbweichenderEmpfaenger(s.abweichenderEmpfaenger ?? false);
+    setSpielerEmpfaengerName(s.empfaengerName ?? "");
+    setSpielerEmpfaengerAdresse(s.empfaengerAdresse ?? "");
   }
 
   function saveSpieler() {
@@ -2381,6 +2400,9 @@ export default function App() {
               iban: spielerIban.trim() || undefined,
               mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
               unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
+              abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
+              empfaengerName: spielerEmpfaengerName.trim() || undefined,
+              empfaengerAdresse: spielerEmpfaengerAdresse.trim() || undefined,
             }
           : s
       )
@@ -2395,6 +2417,9 @@ export default function App() {
     setSpielerIban("");
     setSpielerMandatsreferenz("");
     setSpielerUnterschriftsdatum("");
+    setSpielerAbweichenderEmpfaenger(false);
+    setSpielerEmpfaengerName("");
+    setSpielerEmpfaengerAdresse("");
     setShowSpielerForm(false);
   }
 
@@ -5303,7 +5328,39 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="row">
+                        <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Rechnungsempfänger</h4>
+                        <div className="row" style={{ alignItems: "center" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="checkbox"
+                              checked={spielerAbweichenderEmpfaenger}
+                              onChange={(e) => setSpielerAbweichenderEmpfaenger(e.target.checked)}
+                            />
+                            Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
+                          </label>
+                        </div>
+                        {spielerAbweichenderEmpfaenger && (
+                          <div className="row" style={{ marginTop: 12 }}>
+                            <div className="field" style={{ minWidth: 200 }}>
+                              <label>Name des Empfängers</label>
+                              <input
+                                value={spielerEmpfaengerName}
+                                onChange={(e) => setSpielerEmpfaengerName(e.target.value)}
+                                placeholder="z.B. Familie Müller"
+                              />
+                            </div>
+                            <div className="field" style={{ minWidth: 280 }}>
+                              <label>Adresse des Empfängers</label>
+                              <input
+                                value={spielerEmpfaengerAdresse}
+                                onChange={(e) => setSpielerEmpfaengerAdresse(e.target.value)}
+                                placeholder="Straße, PLZ Ort"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="row" style={{ marginTop: 20 }}>
                           <button
                             className="btn"
                             onClick={() => {
@@ -5330,6 +5387,9 @@ export default function App() {
                               setSpielerIban("");
                               setSpielerMandatsreferenz("");
                               setSpielerUnterschriftsdatum("");
+                              setSpielerAbweichenderEmpfaenger(false);
+                              setSpielerEmpfaengerName("");
+                              setSpielerEmpfaengerAdresse("");
                               setSpielerError(null);
                               setShowSpielerForm(false);
                             }}
@@ -7771,9 +7831,15 @@ export default function App() {
   <div class="addresses">
     <div class="address-block">
       <h3>Rechnungsempfänger</h3>
-      <p><strong>${selectedSpieler.name}</strong></p>
-      <p>${selectedSpieler.rechnungsAdresse || ""}</p>
-      ${selectedSpieler.kontaktEmail ? `<p>${selectedSpieler.kontaktEmail}</p>` : ""}
+      ${selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? `
+        <p><strong>${selectedSpieler.empfaengerName}</strong></p>
+        <p>${selectedSpieler.empfaengerAdresse || ""}</p>
+        <p style="font-size: 10pt; color: #666;">Betreff: ${selectedSpieler.name}</p>
+      ` : `
+        <p><strong>${selectedSpieler.name}</strong></p>
+        <p>${selectedSpieler.rechnungsAdresse || ""}</p>
+        ${selectedSpieler.kontaktEmail ? `<p>${selectedSpieler.kontaktEmail}</p>` : ""}
+      `}
     </div>
     <div class="address-block">
       <h3>Leistungszeitraum</h3>
@@ -7832,7 +7898,7 @@ export default function App() {
 
   <div class="footer">
     <p>${profilFirmenname || ""} ${profilAdresse ? "· " + profilAdresse : ""}</p>
-    <p>IBAN: ${profilKontoIban || "---"} ${profilGlaeubigerId ? "· Gläubiger-ID: " + profilGlaeubigerId : ""}</p>
+    ${!selectedSpieler.abweichenderEmpfaenger ? `<p>IBAN: ${profilKontoIban || "---"} ${profilGlaeubigerId ? "· Gläubiger-ID: " + profilGlaeubigerId : ""}</p>` : `<p>Gläubiger-ID: ${profilGlaeubigerId || "---"}</p>`}
   </div>
 </body>
 </html>`;
@@ -7864,8 +7930,18 @@ export default function App() {
 
                       <div style={{ marginBottom: 24 }}>
                         <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>RECHNUNGSEMPFÄNGER</div>
-                        <div><strong>{selectedSpieler.name}</strong></div>
-                        <div>{selectedSpieler.rechnungsAdresse}</div>
+                        {selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? (
+                          <>
+                            <div><strong>{selectedSpieler.empfaengerName}</strong></div>
+                            <div>{selectedSpieler.empfaengerAdresse}</div>
+                            <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>Betreff: {selectedSpieler.name}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div><strong>{selectedSpieler.name}</strong></div>
+                            <div>{selectedSpieler.rechnungsAdresse}</div>
+                          </>
+                        )}
                       </div>
 
                       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
