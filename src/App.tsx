@@ -1392,9 +1392,9 @@ export default function App() {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.glaeubigerId || "";
+      return parsed.glaeubigerId || "DE58ZZZ00002765947";
     }
-    return "";
+    return "DE58ZZZ00002765947";
   });
   const [profilKontoIban, setProfilKontoIban] = useState(() => {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
@@ -1408,17 +1408,17 @@ export default function App() {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.firmenname || "";
+      return parsed.firmenname || "Tennisschule Zlatan Palazov und Artur Ivanenko GbR";
     }
-    return "";
+    return "Tennisschule Zlatan Palazov und Artur Ivanenko GbR";
   });
   const [profilAdresse, setProfilAdresse] = useState(() => {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.adresse || "";
+      return parsed.adresse || "Ricarda-Huch-Straße 40, 14480 Potsdam";
     }
-    return "";
+    return "Ricarda-Huch-Straße 40, 14480 Potsdam";
   });
 
   // Rechnung Tab States
