@@ -1304,10 +1304,13 @@ export default function App() {
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [expandedVertretungTrainer, setExpandedVertretungTrainer] = useState<string[]>([]);
 
-  // Reset expanded state when switching to vertretung tab
+  // Reset expanded state and clean up past dates when switching to vertretung tab
   useEffect(() => {
     if (tab === "weiteres" && weiteresTabs === "vertretung") {
       setExpandedVertretungTrainer([]);
+      // Vergangene Daten automatisch entfernen
+      const heute = todayISO();
+      setVertretungDaten(prev => prev.filter(d => d >= heute));
     }
   }, [tab, weiteresTabs]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
