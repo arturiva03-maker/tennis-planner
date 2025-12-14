@@ -78,6 +78,24 @@ type RegistrationRequest = {
   status: string;
 };
 
+type SepaMandate = {
+  id: string;
+  account_id: string;
+  vorname: string;
+  nachname: string;
+  ist_kind: boolean;
+  elternteil_name: string | null;
+  strasse: string;
+  plz: string;
+  ort: string;
+  iban: string;
+  email: string;
+  mandatsreferenz: string;
+  unterschriftsdatum: string;
+  created_at: string;
+  status?: string;
+};
+
 type Training = {
   id: string;
   trainerId?: string;
@@ -1468,6 +1486,10 @@ export default function App() {
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
+  const [sepaMandates, setSepaMandates] = useState<SepaMandate[]>([]);
+  const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
+  const [expandedSepaMandateId, setExpandedSepaMandateId] = useState<string | null>(null);
+
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
   );
@@ -1968,6 +1990,7 @@ export default function App() {
   useEffect(() => {
     if (tab === "verwaltung" && verwaltungTab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
+      fetchSepaMandates();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
@@ -2509,6 +2532,48 @@ export default function App() {
       console.error("Error fetching registration requests:", err);
     } finally {
       setLoadingRequests(false);
+    }
+  }
+
+  async function fetchSepaMandates() {
+    if (!authUser?.accountId) return;
+    setLoadingSepaMandates(true);
+    try {
+      const { data, error } = await supabase
+        .from("sepa_mandates")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching SEPA mandates:", error);
+        return;
+      }
+      setSepaMandates(data || []);
+    } catch (err) {
+      console.error("Error fetching SEPA mandates:", err);
+    } finally {
+      setLoadingSepaMandates(false);
+    }
+  }
+
+  async function updateSepaMandateStatus(mandateId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from("sepa_mandates")
+        .update({ status: newStatus })
+        .eq("id", mandateId);
+
+      if (error) {
+        console.error("Error updating SEPA mandate status:", error);
+        return;
+      }
+
+      setSepaMandates((prev) =>
+        prev.map((m) => (m.id === mandateId ? { ...m, status: newStatus } : m))
+      );
+    } catch (err) {
+      console.error("Error updating SEPA mandate status:", err);
     }
   }
 
@@ -5640,6 +5705,19 @@ export default function App() {
                         onClick={() => setFormulareTab("sepa")}
                       >
                         SEPA-Mandat
+                        {sepaMandates.filter(m => (m.status || "neu") === "neu").length > 0 && (
+                          <span style={{
+                            marginLeft: 6,
+                            background: "var(--primary)",
+                            color: "#fff",
+                            borderRadius: 10,
+                            padding: "2px 6px",
+                            fontSize: 11,
+                            fontWeight: 600
+                          }}>
+                            {sepaMandates.filter(m => (m.status || "neu") === "neu").length}
+                          </span>
+                        )}
                       </button>
                     </div>
 
@@ -5861,37 +5939,97 @@ export default function App() {
                           </p>
                         </div>
 
-                        <div style={{
-                          background: "var(--bg-inset)",
-                          padding: 16,
-                          borderRadius: 8,
-                          marginBottom: 16
-                        }}>
-                          <h4 style={{ marginBottom: 8 }}>SEPA-Formular Felder:</h4>
-                          <ul style={{ margin: 0, paddingLeft: 20, color: "var(--text-muted)" }}>
-                            <li>Vorname & Nachname des Kontoinhabers</li>
-                            <li>Bei Kindern: Name des Elternteils/Erziehungsberechtigten</li>
-                            <li>Rechnungsadresse (Straße, PLZ, Ort)</li>
-                            <li>IBAN</li>
-                            <li>Gläubiger-Identifikationsnummer (wird automatisch eingefügt)</li>
-                            <li>Mandatsreferenz (wird automatisch generiert)</li>
-                            <li>Einwilligung zur SEPA-Lastschrift</li>
-                            <li>Datum & digitale Unterschrift</li>
+                        {loadingSepaMandates ? (
+                          <p className="muted">Lade SEPA-Mandate...</p>
+                        ) : sepaMandates.length === 0 ? (
+                          <div style={{
+                            textAlign: "center",
+                            padding: "40px 20px",
+                            color: "var(--text-muted)"
+                          }}>
+                            <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                            <div>Noch keine SEPA-Mandate eingegangen.</div>
+                          </div>
+                        ) : (
+                          <ul className="simpleList">
+                            {sepaMandates.map((mandate) => (
+                              <li key={mandate.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div
+                                    style={{ flex: 1, cursor: "pointer" }}
+                                    onClick={() => setExpandedSepaMandateId(
+                                      expandedSepaMandateId === mandate.id ? null : mandate.id
+                                    )}
+                                  >
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                      <strong>{mandate.vorname} {mandate.nachname}</strong>
+                                      {mandate.ist_kind && (
+                                        <span style={{
+                                          fontSize: 11,
+                                          background: "var(--warning)",
+                                          color: "#000",
+                                          padding: "2px 6px",
+                                          borderRadius: 4
+                                        }}>
+                                          Kind
+                                        </span>
+                                      )}
+                                      <span style={{
+                                        fontSize: 11,
+                                        background: (mandate.status || "neu") === "neu" ? "var(--primary)" :
+                                                   (mandate.status || "neu") === "zugeordnet" ? "var(--success)" : "var(--text-muted)",
+                                        color: "#fff",
+                                        padding: "2px 6px",
+                                        borderRadius: 4
+                                      }}>
+                                        {(mandate.status || "neu") === "neu" ? "Neu" :
+                                         (mandate.status || "neu") === "zugeordnet" ? "Zugeordnet" : mandate.status}
+                                      </span>
+                                    </div>
+                                    <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+                                      {mandate.email} • Mandat vom {new Date(mandate.unterschriftsdatum).toLocaleDateString("de-DE")}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {expandedSepaMandateId === mandate.id && (
+                                  <div style={{
+                                    marginTop: 12,
+                                    padding: 12,
+                                    background: "var(--bg-inset)",
+                                    borderRadius: 8,
+                                    fontSize: 13
+                                  }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                                      <div><strong>Name:</strong> {mandate.vorname} {mandate.nachname}</div>
+                                      {mandate.ist_kind && mandate.elternteil_name && (
+                                        <div><strong>Elternteil:</strong> {mandate.elternteil_name}</div>
+                                      )}
+                                      <div><strong>E-Mail:</strong> {mandate.email}</div>
+                                      <div><strong>IBAN:</strong> {maskIban(mandate.iban)}</div>
+                                      <div style={{ gridColumn: "1 / -1" }}>
+                                        <strong>Adresse:</strong> {mandate.strasse}, {mandate.plz} {mandate.ort}
+                                      </div>
+                                      <div><strong>Mandatsreferenz:</strong> {mandate.mandatsreferenz}</div>
+                                      <div><strong>Unterschrieben:</strong> {new Date(mandate.unterschriftsdatum).toLocaleDateString("de-DE")}</div>
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                      <select
+                                        value={mandate.status || "neu"}
+                                        onChange={(e) => updateSepaMandateStatus(mandate.id, e.target.value)}
+                                        style={{ fontSize: 13, padding: "4px 8px" }}
+                                      >
+                                        <option value="neu">Neu</option>
+                                        <option value="zugeordnet">Zugeordnet</option>
+                                        <option value="erledigt">Erledigt</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                )}
+                              </li>
+                            ))}
                           </ul>
-                        </div>
-
-                        <p className="muted" style={{ fontSize: 13 }}>
-                          Eingegangene SEPA-Mandate werden hier angezeigt. Die Daten können dann direkt einem Spieler zugeordnet werden.
-                        </p>
-
-                        <div style={{
-                          textAlign: "center",
-                          padding: "40px 20px",
-                          color: "var(--text-muted)"
-                        }}>
-                          <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-                          <div>Noch keine SEPA-Mandate eingegangen.</div>
-                        </div>
+                        )}
                       </>
                     )}
                   </div>
