@@ -7701,9 +7701,9 @@ export default function App() {
       border-bottom: 2px solid #0066cc;
     }
     .logo-area h1 {
-      font-size: 24pt;
+      font-size: 14pt;
       color: #0066cc;
-      font-weight: 700;
+      font-weight: 600;
     }
     .logo-area p { color: #666; font-size: 10pt; }
     .invoice-info { text-align: right; }
@@ -7817,16 +7817,14 @@ export default function App() {
       ${selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? `
         <p><strong>${selectedSpieler.empfaengerName}</strong></p>
         <p>${selectedSpieler.rechnungsAdresse || ""}</p>
-        <p style="font-size: 10pt; color: #666;">Betreff: ${selectedSpieler.name}</p>
       ` : `
         <p><strong>${selectedSpieler.name}</strong></p>
         <p>${selectedSpieler.rechnungsAdresse || ""}</p>
-        ${selectedSpieler.kontaktEmail ? `<p>${selectedSpieler.kontaktEmail}</p>` : ""}
       `}
     </div>
     <div class="address-block">
-      <h3>Leistungszeitraum</h3>
-      <p><strong>${monatName}</strong></p>
+      <h3>Betreff</h3>
+      <p><strong>Tennistraining ${monatName} ${selectedSpieler.name}</strong></p>
     </div>
   </div>
 
@@ -7861,10 +7859,9 @@ export default function App() {
     <strong>Gläubiger-ID:</strong> ${profilGlaeubigerId || "---"}
   </div>
 
-  <div class="footer">
-    <p>${profilFirmenname || ""} ${profilAdresse ? "· " + profilAdresse : ""}</p>
-    ${!selectedSpieler.abweichenderEmpfaenger ? `<p>IBAN: ${profilKontoIban || "---"} ${profilGlaeubigerId ? "· Gläubiger-ID: " + profilGlaeubigerId : ""}</p>` : `<p>Gläubiger-ID: ${profilGlaeubigerId || "---"}</p>`}
-  </div>
+  <p style="margin-top: 20px; font-size: 9pt; color: #666;">
+    Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
+  </p>
 </body>
 </html>`;
               };
@@ -7883,7 +7880,7 @@ export default function App() {
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
                         <div>
-                          <h3 style={{ color: "var(--color-primary)", marginBottom: 4 }}>{profilFirmenname || "Tennisschule"}</h3>
+                          <div style={{ color: "var(--color-primary)", marginBottom: 4, fontSize: 14, fontWeight: 600 }}>{profilFirmenname || "Tennisschule"}</div>
                           <div className="muted">{profilAdresse}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
@@ -7893,20 +7890,25 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: 24 }}>
-                        <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>RECHNUNGSEMPFÄNGER</div>
-                        {selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? (
-                          <>
-                            <div><strong>{selectedSpieler.empfaengerName}</strong></div>
-                            <div>{selectedSpieler.rechnungsAdresse}</div>
-                            <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>Betreff: {selectedSpieler.name}</div>
-                          </>
-                        ) : (
-                          <>
-                            <div><strong>{selectedSpieler.name}</strong></div>
-                            <div>{selectedSpieler.rechnungsAdresse}</div>
-                          </>
-                        )}
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
+                        <div>
+                          <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>RECHNUNGSEMPFÄNGER</div>
+                          {selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? (
+                            <>
+                              <div><strong>{selectedSpieler.empfaengerName}</strong></div>
+                              <div>{selectedSpieler.rechnungsAdresse}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div><strong>{selectedSpieler.name}</strong></div>
+                              <div>{selectedSpieler.rechnungsAdresse}</div>
+                            </>
+                          )}
+                        </div>
+                        <div>
+                          <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>BETREFF</div>
+                          <div><strong>Tennistraining {monatName} {selectedSpieler.name}</strong></div>
+                        </div>
                       </div>
 
                       <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
@@ -7944,6 +7946,10 @@ export default function App() {
                         <strong>Mandatsreferenz:</strong> {selectedSpieler.mandatsreferenz || "---"}<br />
                         <strong>Mandatsdatum:</strong> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br />
                         <strong>Gläubiger-ID:</strong> {profilGlaeubigerId || "---"}
+                      </div>
+
+                      <div className="muted" style={{ marginTop: 16, fontSize: 11 }}>
+                        Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
                       </div>
                     </div>
 
