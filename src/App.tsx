@@ -36,7 +36,6 @@ type Spieler = {
   // Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
   abweichenderEmpfaenger?: boolean;
   empfaengerName?: string;
-  empfaengerAdresse?: string;
 };
 
 type Tarif = {
@@ -1391,7 +1390,6 @@ export default function App() {
   const [spielerUnterschriftsdatum, setSpielerUnterschriftsdatum] = useState("");
   const [spielerAbweichenderEmpfaenger, setSpielerAbweichenderEmpfaenger] = useState(false);
   const [spielerEmpfaengerName, setSpielerEmpfaengerName] = useState("");
-  const [spielerEmpfaengerAdresse, setSpielerEmpfaengerAdresse] = useState("");
   const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   // Profil SEPA-Einstellungen (Gläubiger)
@@ -2265,7 +2263,6 @@ export default function App() {
       setSpielerUnterschriftsdatum("");
       setSpielerAbweichenderEmpfaenger(false);
       setSpielerEmpfaengerName("");
-      setSpielerEmpfaengerAdresse("");
     }
   }
 
@@ -2325,7 +2322,6 @@ export default function App() {
       unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
       abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
       empfaengerName: spielerEmpfaengerName.trim() || undefined,
-      empfaengerAdresse: spielerEmpfaengerAdresse.trim() || undefined,
     };
 
     setSpieler((prev) => [...prev, neu]);
@@ -2340,7 +2336,6 @@ export default function App() {
     setSpielerUnterschriftsdatum("");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
-    setSpielerEmpfaengerAdresse("");
     setShowSpielerForm(false);
   }
 
@@ -2356,7 +2351,6 @@ export default function App() {
     setSpielerUnterschriftsdatum(s.unterschriftsdatum ?? "");
     setSpielerAbweichenderEmpfaenger(s.abweichenderEmpfaenger ?? false);
     setSpielerEmpfaengerName(s.empfaengerName ?? "");
-    setSpielerEmpfaengerAdresse(s.empfaengerAdresse ?? "");
   }
 
   function saveSpieler() {
@@ -2402,7 +2396,6 @@ export default function App() {
               unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
               abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
               empfaengerName: spielerEmpfaengerName.trim() || undefined,
-              empfaengerAdresse: spielerEmpfaengerAdresse.trim() || undefined,
             }
           : s
       )
@@ -2419,7 +2412,6 @@ export default function App() {
     setSpielerUnterschriftsdatum("");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
-    setSpielerEmpfaengerAdresse("");
     setShowSpielerForm(false);
   }
 
@@ -5341,20 +5333,12 @@ export default function App() {
                         </div>
                         {spielerAbweichenderEmpfaenger && (
                           <div className="row" style={{ marginTop: 12 }}>
-                            <div className="field" style={{ minWidth: 200 }}>
+                            <div className="field" style={{ minWidth: 280 }}>
                               <label>Name des Empfängers</label>
                               <input
                                 value={spielerEmpfaengerName}
                                 onChange={(e) => setSpielerEmpfaengerName(e.target.value)}
                                 placeholder="z.B. Familie Müller"
-                              />
-                            </div>
-                            <div className="field" style={{ minWidth: 280 }}>
-                              <label>Adresse des Empfängers</label>
-                              <input
-                                value={spielerEmpfaengerAdresse}
-                                onChange={(e) => setSpielerEmpfaengerAdresse(e.target.value)}
-                                placeholder="Straße, PLZ Ort"
                               />
                             </div>
                           </div>
@@ -5389,7 +5373,6 @@ export default function App() {
                               setSpielerUnterschriftsdatum("");
                               setSpielerAbweichenderEmpfaenger(false);
                               setSpielerEmpfaengerName("");
-                              setSpielerEmpfaengerAdresse("");
                               setSpielerError(null);
                               setShowSpielerForm(false);
                             }}
@@ -7833,7 +7816,7 @@ export default function App() {
       <h3>Rechnungsempfänger</h3>
       ${selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? `
         <p><strong>${selectedSpieler.empfaengerName}</strong></p>
-        <p>${selectedSpieler.empfaengerAdresse || ""}</p>
+        <p>${selectedSpieler.rechnungsAdresse || ""}</p>
         <p style="font-size: 10pt; color: #666;">Betreff: ${selectedSpieler.name}</p>
       ` : `
         <p><strong>${selectedSpieler.name}</strong></p>
@@ -7933,7 +7916,7 @@ export default function App() {
                         {selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? (
                           <>
                             <div><strong>{selectedSpieler.empfaengerName}</strong></div>
-                            <div>{selectedSpieler.empfaengerAdresse}</div>
+                            <div>{selectedSpieler.rechnungsAdresse}</div>
                             <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>Betreff: {selectedSpieler.name}</div>
                           </>
                         ) : (
