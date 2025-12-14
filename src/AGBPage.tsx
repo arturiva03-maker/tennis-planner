@@ -93,6 +93,7 @@ export default function AGBPage() {
             <li>Rechnungen werden auf Wunsch elektronisch versandt</li>
             <li><strong>Gruppentraining:</strong> Gebühr wird auch bei Nichtteilnahme fällig</li>
             <li><strong>Einzeltraining:</strong> Absage spätestens 24 Stunden vorher, sonst wird das Honorar fällig</li>
+            <li><strong>Einzeltraining Absage:</strong> Die Hallenstunde kann ohne Rückerstattung auf einen anderen Spieler übertragen werden</li>
             <li>Hallengebühr kann in keinem Fall erstattet werden</li>
             <li>Versäumte Stunden können nicht nachgeholt oder erstattet werden</li>
             <li>Bei trainerbedingtem Ausfall: Ersatztermin oder Kostenerstattung</li>
