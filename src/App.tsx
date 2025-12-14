@@ -7853,30 +7853,12 @@ export default function App() {
     </tbody>
   </table>
 
-  <div class="sepa-info">
-    <h3>SEPA-Lastschrift Information</h3>
-    <div class="sepa-grid">
-      <div class="sepa-item">
-        <label>Gläubiger-ID</label>
-        <span>${profilGlaeubigerId || "Nicht hinterlegt"}</span>
-      </div>
-      <div class="sepa-item">
-        <label>Mandatsreferenz</label>
-        <span>${selectedSpieler.mandatsreferenz || "Nicht hinterlegt"}</span>
-      </div>
-      <div class="sepa-item">
-        <label>IBAN (Zahler)</label>
-        <span>${selectedSpieler.iban || "Nicht hinterlegt"}</span>
-      </div>
-      <div class="sepa-item">
-        <label>Mandatsdatum</label>
-        <span>${selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "Nicht hinterlegt"}</span>
-      </div>
-    </div>
-  </div>
-
   <div class="notice">
-    <strong>Hinweis:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto (IBAN: ${selectedSpieler.iban || "---"}) abgebucht. Die Mandatsreferenz lautet: <strong>${selectedSpieler.mandatsreferenz || "---"}</strong>.
+    <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br><br>
+    <strong>IBAN:</strong> ${selectedSpieler.iban || "---"}<br>
+    <strong>Mandatsreferenz:</strong> ${selectedSpieler.mandatsreferenz || "---"}<br>
+    <strong>Mandatsdatum:</strong> ${selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br>
+    <strong>Gläubiger-ID:</strong> ${profilGlaeubigerId || "---"}
   </div>
 
   <div class="footer">
@@ -7951,29 +7933,17 @@ export default function App() {
                       </table>
 
                       <div style={{
-                        background: "linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)",
-                        border: "1px solid #b3d4fc",
-                        borderRadius: "var(--radius-md)",
-                        padding: 16,
-                        marginBottom: 16
-                      }}>
-                        <div style={{ fontWeight: 600, color: "var(--color-primary)", marginBottom: 8 }}>SEPA-Lastschrift Information</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
-                          <div><span className="muted">Gläubiger-ID:</span> {profilGlaeubigerId || "---"}</div>
-                          <div><span className="muted">Mandatsreferenz:</span> {selectedSpieler.mandatsreferenz || "---"}</div>
-                          <div><span className="muted">IBAN (Zahler):</span> {selectedSpieler.iban || "---"}</div>
-                          <div><span className="muted">Mandatsdatum:</span> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}</div>
-                        </div>
-                      </div>
-
-                      <div style={{
                         background: "#fff3cd",
                         border: "1px solid #ffc107",
                         borderRadius: "var(--radius-md)",
                         padding: 12,
                         fontSize: 13
                       }}>
-                        <strong>Hinweis:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht. Die Mandatsreferenz lautet: <strong>{selectedSpieler.mandatsreferenz || "---"}</strong>.
+                        <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br /><br />
+                        <strong>IBAN:</strong> {selectedSpieler.iban || "---"}<br />
+                        <strong>Mandatsreferenz:</strong> {selectedSpieler.mandatsreferenz || "---"}<br />
+                        <strong>Mandatsdatum:</strong> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br />
+                        <strong>Gläubiger-ID:</strong> {profilGlaeubigerId || "---"}
                       </div>
                     </div>
 
