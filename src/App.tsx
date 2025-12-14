@@ -1400,9 +1400,9 @@ export default function App() {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      return parsed.kontoIban || "";
+      return parsed.kontoIban || "DE74 1604 0000 0136 8752 00";
     }
-    return "";
+    return "DE74 1604 0000 0136 8752 00";
   });
   const [profilFirmenname, setProfilFirmenname] = useState(() => {
     const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
