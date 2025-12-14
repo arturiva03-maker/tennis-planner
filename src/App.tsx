@@ -7889,10 +7889,10 @@ export default function App() {
   </div>
   ` : `
   <div class="notice" style="background: #e8f5e9; border-color: #4caf50;">
-    <strong>Überweisung:</strong> Bitte überweisen Sie den Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> innerhalb von 14 Tagen auf folgendes Konto:<br><br>
+    Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen nach Erhalt der Rechnung auf folgendes Konto:<br><br>
     <strong>Empfänger:</strong> ${profilFirmenname || "---"}<br>
-    <strong>IBAN:</strong> ${maskIban(profilKontoIban)}<br>
-    <strong>Verwendungszweck:</strong> Rechnung ${rechnungNummer || "---"}
+    <strong>IBAN:</strong> ${profilKontoIban || "---"}<br>
+    <strong>Verwendungszweck:</strong> ${rechnungNummer || "---"}
   </div>
   `}
 
@@ -7993,10 +7993,10 @@ export default function App() {
                           padding: 12,
                           fontSize: 13
                         }}>
-                          <strong>Überweisung:</strong> Bitte überweisen Sie den Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> innerhalb von 14 Tagen auf folgendes Konto:<br /><br />
+                          Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen nach Erhalt der Rechnung auf folgendes Konto:<br /><br />
                           <strong>Empfänger:</strong> {profilFirmenname || "---"}<br />
-                          <strong>IBAN:</strong> {maskIban(profilKontoIban)}<br />
-                          <strong>Verwendungszweck:</strong> Rechnung {rechnungNummer || "---"}
+                          <strong>IBAN:</strong> {profilKontoIban || "---"}<br />
+                          <strong>Verwendungszweck:</strong> {rechnungNummer || "---"}
                         </div>
                       )}
 
