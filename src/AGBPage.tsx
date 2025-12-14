@@ -82,6 +82,10 @@ export default function AGBPage() {
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Die Hallengebühr wird im Gruppentraining auf die Anzahl der Schüler aufgeteilt.
           </p>
+
+          <p style={{ marginTop: 16, fontStyle: "italic" }}>
+            Die Hallengebühr wird bei unter-saisonalem Beitritt anteilig berechnet.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
@@ -180,6 +184,10 @@ export default function AGBPage() {
           <p className="muted" style={{ fontSize: 13 }}>
             AUL = Arbeitsumlage (wird nach Ableistung von Arbeitsstunden erstattet).
             Bei Eintritt nach dem 30.07. wird nur die Hälfte des Jahresbeitrags fällig.
+          </p>
+          <p style={{ marginTop: 12, fontStyle: "italic" }}>
+            Gebühren und Konditionen für Vereinsmitgliedschaften können sich ändern.
+            Aktuelle Informationen bitte direkt der Vereinswebsite entnehmen (Link siehe unten).
           </p>
         </section>
 
