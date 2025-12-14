@@ -270,6 +270,15 @@ function euro(n: number) {
   return `${n.toFixed(2).replace(".", ",")} EUR`;
 }
 
+function maskIban(iban: string | undefined): string {
+  if (!iban) return "---";
+  const cleaned = iban.replace(/\s/g, "");
+  if (cleaned.length <= 8) return iban;
+  const first4 = cleaned.slice(0, 4);
+  const last4 = cleaned.slice(-4);
+  return `${first4} **** **** **** ${last4}`;
+}
+
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -554,7 +563,7 @@ function generateInvoiceHTML(data: {
       <strong>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</strong>
       <div class="meta-row">
         <span class="meta-label">IBAN:</span>
-        <span>${iban}</span>
+        <span>${maskIban(iban)}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Kontoinhaber:</span>
@@ -853,7 +862,7 @@ function generateFinalInvoiceHTML(data: {
       <strong>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</strong>
       <div class="meta-row">
         <span class="meta-label">IBAN:</span>
-        <span>${iban}</span>
+        <span>${maskIban(iban)}</span>
       </div>
       <div class="meta-row">
         <span class="meta-label">Kontoinhaber:</span>
@@ -7384,7 +7393,7 @@ export default function App() {
 
             {tab === "rechnung" && !isTrainer && (
               <div className="card">
-                <h2>Rechnung erstellen</h2>
+                <h2>Rechnung erstellen <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>– Vorlage 1 (SEPA)</span></h2>
 
                 {/* Profil SEPA-Einstellungen */}
                 <div className="card cardInset" style={{ marginBottom: 24 }}>
@@ -7853,7 +7862,7 @@ export default function App() {
 
   <div class="notice">
     <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br><br>
-    <strong>IBAN:</strong> ${selectedSpieler.iban || "---"}<br>
+    <strong>IBAN:</strong> ${maskIban(selectedSpieler.iban)}<br>
     <strong>Mandatsreferenz:</strong> ${selectedSpieler.mandatsreferenz || "---"}<br>
     <strong>Mandatsdatum:</strong> ${selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br>
     <strong>Gläubiger-ID:</strong> ${profilGlaeubigerId || "---"}
@@ -7869,7 +7878,7 @@ export default function App() {
               return (
                 <div className="modal" onClick={() => setShowRechnungPreview(false)}>
                   <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: "90vh", overflow: "auto" }}>
-                    <h2 style={{ marginBottom: 16 }}>Rechnungsvorschau</h2>
+                    <h2 style={{ marginBottom: 16 }}>Rechnungsvorschau <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>– Vorlage 1 (SEPA)</span></h2>
 
                     <div style={{
                       background: "#fff",
@@ -7942,7 +7951,7 @@ export default function App() {
                         fontSize: 13
                       }}>
                         <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br /><br />
-                        <strong>IBAN:</strong> {selectedSpieler.iban || "---"}<br />
+                        <strong>IBAN:</strong> {maskIban(selectedSpieler.iban)}<br />
                         <strong>Mandatsreferenz:</strong> {selectedSpieler.mandatsreferenz || "---"}<br />
                         <strong>Mandatsdatum:</strong> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br />
                         <strong>Gläubiger-ID:</strong> {profilGlaeubigerId || "---"}
