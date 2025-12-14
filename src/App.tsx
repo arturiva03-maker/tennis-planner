@@ -6006,7 +6006,7 @@ export default function App() {
                                         <div><strong>Elternteil:</strong> {mandate.elternteil_name}</div>
                                       )}
                                       <div><strong>E-Mail:</strong> {mandate.email}</div>
-                                      <div><strong>IBAN:</strong> {maskIban(mandate.iban)}</div>
+                                      <div><strong>IBAN:</strong> <span style={{ fontFamily: "monospace" }}>{mandate.iban.replace(/(.{4})/g, "$1 ").trim()}</span></div>
                                       <div style={{ gridColumn: "1 / -1" }}>
                                         <strong>Adresse:</strong> {mandate.strasse}, {mandate.plz} {mandate.ort}
                                       </div>
