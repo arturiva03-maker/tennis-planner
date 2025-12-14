@@ -1442,6 +1442,7 @@ export default function App() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
+  const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung">("sepa");
 
   const generateRechnungNummer = () => {
     const d = new Date();
@@ -7393,7 +7394,25 @@ export default function App() {
 
             {tab === "rechnung" && !isTrainer && (
               <div className="card">
-                <h2>Rechnung erstellen <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>– Vorlage 1 (SEPA)</span></h2>
+                <h2>Rechnung erstellen</h2>
+
+                {/* Vorlagen-Auswahl */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+                  <button
+                    className={`btn ${rechnungVorlage === "sepa" ? "" : "btnGhost"}`}
+                    onClick={() => setRechnungVorlage("sepa")}
+                    style={{ flex: 1 }}
+                  >
+                    Vorlage 1 (SEPA)
+                  </button>
+                  <button
+                    className={`btn ${rechnungVorlage === "ueberweisung" ? "" : "btnGhost"}`}
+                    onClick={() => setRechnungVorlage("ueberweisung")}
+                    style={{ flex: 1 }}
+                  >
+                    Vorlage 2 (Überweisung)
+                  </button>
+                </div>
 
                 {/* Profil SEPA-Einstellungen */}
                 <div className="card cardInset" style={{ marginBottom: 24 }}>
@@ -7590,7 +7609,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        {!selectedSpieler.iban && (
+                        {rechnungVorlage === "sepa" && !selectedSpieler.iban && (
                           <div style={{
                             backgroundColor: "#fef3c7",
                             border: "1px solid #f59e0b",
@@ -7860,6 +7879,7 @@ export default function App() {
     </tbody>
   </table>
 
+  ${rechnungVorlage === "sepa" ? `
   <div class="notice">
     <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br><br>
     <strong>IBAN:</strong> ${maskIban(selectedSpieler.iban)}<br>
@@ -7867,6 +7887,14 @@ export default function App() {
     <strong>Mandatsdatum:</strong> ${selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br>
     <strong>Gläubiger-ID:</strong> ${profilGlaeubigerId || "---"}
   </div>
+  ` : `
+  <div class="notice" style="background: #e8f5e9; border-color: #4caf50;">
+    <strong>Überweisung:</strong> Bitte überweisen Sie den Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> innerhalb von 14 Tagen auf folgendes Konto:<br><br>
+    <strong>Empfänger:</strong> ${profilFirmenname || "---"}<br>
+    <strong>IBAN:</strong> ${maskIban(profilKontoIban)}<br>
+    <strong>Verwendungszweck:</strong> Rechnung ${rechnungNummer || "---"}
+  </div>
+  `}
 
   <p style="margin-top: 20px; font-size: 9pt; color: #666;">
     Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
@@ -7878,7 +7906,7 @@ export default function App() {
               return (
                 <div className="modal" onClick={() => setShowRechnungPreview(false)}>
                   <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: "90vh", overflow: "auto" }}>
-                    <h2 style={{ marginBottom: 16 }}>Rechnungsvorschau <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>– Vorlage 1 (SEPA)</span></h2>
+                    <h2 style={{ marginBottom: 16 }}>Rechnungsvorschau <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>– {rechnungVorlage === "sepa" ? "Vorlage 1 (SEPA)" : "Vorlage 2 (Überweisung)"}</span></h2>
 
                     <div style={{
                       background: "#fff",
@@ -7943,19 +7971,34 @@ export default function App() {
                         </tbody>
                       </table>
 
-                      <div style={{
-                        background: "#fff3cd",
-                        border: "1px solid #ffc107",
-                        borderRadius: "var(--radius-md)",
-                        padding: 12,
-                        fontSize: 13
-                      }}>
-                        <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br /><br />
-                        <strong>IBAN:</strong> {maskIban(selectedSpieler.iban)}<br />
-                        <strong>Mandatsreferenz:</strong> {selectedSpieler.mandatsreferenz || "---"}<br />
-                        <strong>Mandatsdatum:</strong> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br />
-                        <strong>Gläubiger-ID:</strong> {profilGlaeubigerId || "---"}
-                      </div>
+                      {rechnungVorlage === "sepa" ? (
+                        <div style={{
+                          background: "#fff3cd",
+                          border: "1px solid #ffc107",
+                          borderRadius: "var(--radius-md)",
+                          padding: 12,
+                          fontSize: 13
+                        }}>
+                          <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br /><br />
+                          <strong>IBAN:</strong> {maskIban(selectedSpieler.iban)}<br />
+                          <strong>Mandatsreferenz:</strong> {selectedSpieler.mandatsreferenz || "---"}<br />
+                          <strong>Mandatsdatum:</strong> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}<br />
+                          <strong>Gläubiger-ID:</strong> {profilGlaeubigerId || "---"}
+                        </div>
+                      ) : (
+                        <div style={{
+                          background: "#e8f5e9",
+                          border: "1px solid #4caf50",
+                          borderRadius: "var(--radius-md)",
+                          padding: 12,
+                          fontSize: 13
+                        }}>
+                          <strong>Überweisung:</strong> Bitte überweisen Sie den Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> innerhalb von 14 Tagen auf folgendes Konto:<br /><br />
+                          <strong>Empfänger:</strong> {profilFirmenname || "---"}<br />
+                          <strong>IBAN:</strong> {maskIban(profilKontoIban)}<br />
+                          <strong>Verwendungszweck:</strong> Rechnung {rechnungNummer || "---"}
+                        </div>
+                      )}
 
                       <div className="muted" style={{ marginTop: 16, fontSize: 11 }}>
                         Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
