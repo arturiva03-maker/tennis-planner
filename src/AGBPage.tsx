@@ -7,6 +7,7 @@ type AGBSection = {
   id: string;
   title: string;
   titleColor: string;
+  textColor: string;
   content: string;
   items: string[];
 };
@@ -77,10 +78,10 @@ export default function AGBPage() {
                 {index + 1}. {section.title}
               </h2>
               {section.content && (
-                <p style={{ marginBottom: 12 }}>{section.content}</p>
+                <p style={{ marginBottom: 12, color: section.textColor || "#1f2937" }}>{section.content}</p>
               )}
               {section.items.length > 0 && (
-                <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
+                <ul style={{ paddingLeft: 20, lineHeight: 1.8, color: section.textColor || "#1f2937" }}>
                   {section.items.map((item, i) => (
                     <li key={i} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                   ))}

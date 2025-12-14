@@ -56,6 +56,7 @@ type AGBSection = {
   id: string;
   title: string;
   titleColor: string;
+  textColor: string;
   content: string;
   items: string[];
 };
@@ -2602,6 +2603,7 @@ export default function App() {
       id: "1",
       title: "Trainingspreise (Honorar)",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam.",
       items: [
         "**Gruppentraining (3-5 Personen):** 60 EUR pro Monat",
@@ -2614,6 +2616,7 @@ export default function App() {
       id: "2",
       title: "Saisonbedingungen",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [
         "**Sommersaison:** Mitte April bis Mitte Oktober",
@@ -2630,6 +2633,7 @@ export default function App() {
       id: "3",
       title: "Hallengebühren (Wintersaison)",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "Im Sommer fallen keine zusätzlichen Platzgebühren an. Die Hallengebühr wird bei unter-saisonalem Beitritt anteilig berechnet.",
       items: [
         "**Kinder/Jugendliche Mitglied, 1x pro Woche:** Wird vom Verein bezahlt",
@@ -2644,6 +2648,7 @@ export default function App() {
       id: "4",
       title: "Zahlung und Absageregelungen",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [
         "Zahlung erfolgt zum **Monatsende per SEPA-Lastschrift**",
@@ -2661,6 +2666,7 @@ export default function App() {
       id: "5",
       title: "Ausnahmeregelungen",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [
         "Bei mehrmonatiger Krankheit, Schwangerschaft oder Verletzung kann der Vertrag vorzeitig beendet werden",
@@ -2673,6 +2679,7 @@ export default function App() {
       id: "6",
       title: "Haftung und Aufsichtspflicht",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [
         "**Teilnahme erfolgt auf eigene Gefahr**",
@@ -2687,6 +2694,7 @@ export default function App() {
       id: "7",
       title: "Vereinsmitgliedschaft (BSC Rehberge Tennis)",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich (Ausnahmen: Probetraining, Tenniscamps, Wintertraining). Gebühren und Konditionen für Vereinsmitgliedschaften können sich ändern. Aktuelle Informationen bitte direkt der Vereinswebsite entnehmen.",
       items: [
         "**Vollmitglied:** 330 EUR Jahresbeitrag, 100 EUR AUL, 200 EUR Aufnahme",
@@ -2702,6 +2710,7 @@ export default function App() {
       id: "8",
       title: "Datenschutz",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [
         "Erhobene Daten werden ausschließlich für Organisation und Training genutzt",
@@ -2773,6 +2782,7 @@ export default function App() {
       id: crypto.randomUUID(),
       title: "Neuer Abschnitt",
       titleColor: "#2563eb",
+      textColor: "#1f2937",
       content: "",
       items: [],
     };
@@ -6401,6 +6411,41 @@ export default function App() {
                                                 borderRadius: 4,
                                                 background: color,
                                                 border: section.titleColor === color ? "2px solid #000" : "1px solid var(--border)",
+                                                cursor: "pointer"
+                                              }}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="field" style={{ marginBottom: 12 }}>
+                                      <label>Text-Farbe</label>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                        <input
+                                          type="color"
+                                          value={section.textColor || "#1f2937"}
+                                          onChange={(e) => updateAgbSection(section.id, { textColor: e.target.value })}
+                                          style={{ width: 50, height: 36, padding: 2, cursor: "pointer" }}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={section.textColor || "#1f2937"}
+                                          onChange={(e) => updateAgbSection(section.id, { textColor: e.target.value })}
+                                          style={{ width: 100 }}
+                                          placeholder="#1f2937"
+                                        />
+                                        <div style={{ display: "flex", gap: 4 }}>
+                                          {["#1f2937", "#000000", "#374151", "#6b7280", "#991b1b"].map(color => (
+                                            <button
+                                              key={color}
+                                              onClick={() => updateAgbSection(section.id, { textColor: color })}
+                                              style={{
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: 4,
+                                                background: color,
+                                                border: (section.textColor || "#1f2937") === color ? "2px solid #2563eb" : "1px solid var(--border)",
                                                 cursor: "pointer"
                                               }}
                                             />
