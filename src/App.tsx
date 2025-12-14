@@ -6861,17 +6861,35 @@ export default function App() {
                     {vertretungen.length > 0 ? (
                       <div style={{ marginBottom: 24 }}>
                         {(() => {
-                          // Gruppiere nach fehlendem Trainer
+                          // Gruppiere nach fehlendem Trainer (nur zukünftige Trainings)
+                          const jetzt = new Date();
                           const groupedByTrainer = vertretungen.reduce((acc, v) => {
                             const training = trainings.find((t) => t.id === v.trainingId);
                             if (!training) return acc;
+                            // Vergangene Trainings ausblenden (basierend auf Endzeit)
+                            const trainingsEnde = new Date(`${training.datum}T${training.uhrzeitBis}:00`);
+                            if (trainingsEnde <= jetzt) return acc;
                             const trainerId = training.trainerId || defaultTrainerId;
                             if (!acc[trainerId]) acc[trainerId] = [];
                             acc[trainerId].push({ vertretung: v, training });
                             return acc;
                           }, {} as Record<string, { vertretung: Vertretung; training: Training }[]>);
 
-                          return Object.entries(groupedByTrainer)
+                          const trainerEntries = Object.entries(groupedByTrainer);
+                          if (trainerEntries.length === 0) {
+                            return (
+                              <div style={{
+                                textAlign: "center",
+                                padding: "40px 20px",
+                                color: "var(--text-muted)"
+                              }}>
+                                <div style={{ fontSize: 40, marginBottom: 12 }}>✓</div>
+                                <div>Keine offenen Vertretungen</div>
+                              </div>
+                            );
+                          }
+
+                          return trainerEntries
                             .sort(([, a], [, b]) => {
                               const dateA = a[0]?.training.datum || "";
                               const dateB = b[0]?.training.datum || "";
