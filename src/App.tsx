@@ -7470,10 +7470,10 @@ export default function App() {
                     const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
                     if (!selectedSpieler) return null;
 
-                    // Berechne offenen Betrag für den Monat
+                    // Berechne offenen Betrag für den Monat (nur durchgeführte Trainings)
                     const monatTrainings = trainings.filter((t) => {
                       if (!t.datum.startsWith(rechnungMonat)) return false;
-                      if (t.status === "abgesagt") return false;
+                      if (t.status !== "durchgefuehrt") return false;
                       return t.spielerIds.includes(rechnungSpielerId);
                     });
 
@@ -7570,10 +7570,10 @@ export default function App() {
               const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
               if (!selectedSpieler) return null;
 
-              // Berechne Betrag
+              // Berechne Betrag (nur durchgeführte Trainings)
               const monatTrainings = trainings.filter((t) => {
                 if (!t.datum.startsWith(rechnungMonat)) return false;
-                if (t.status === "abgesagt") return false;
+                if (t.status !== "durchgefuehrt") return false;
                 return t.spielerIds.includes(rechnungSpielerId);
               });
 
