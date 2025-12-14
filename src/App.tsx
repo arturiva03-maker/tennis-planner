@@ -2597,6 +2597,121 @@ export default function App() {
     }
   }
 
+  const defaultAgbSections: AGBSection[] = [
+    {
+      id: "1",
+      title: "Trainingspreise (Honorar)",
+      titleColor: "#2563eb",
+      content: "Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam.",
+      items: [
+        "**Gruppentraining (3-5 Personen):** 60 EUR pro Monat",
+        "**Privattraining 3er-Gruppe:** 20 EUR pro Person/Stunde",
+        "**Privattraining 2er-Gruppe:** 25 EUR pro Person/Stunde",
+        "**Einzeltraining:** 40 EUR pro Stunde",
+      ],
+    },
+    {
+      id: "2",
+      title: "Saisonbedingungen",
+      titleColor: "#2563eb",
+      content: "",
+      items: [
+        "**Sommersaison:** Mitte April bis Mitte Oktober",
+        "**Wintersaison:** Mitte Oktober bis Mitte April",
+        "Die Anmeldung ist **verbindlich für die gesamte Saison**",
+        "Training findet auch in den Berliner Schulferien statt",
+        "Bei unter-saisonalem Beitritt wird anteilig berechnet",
+        "Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt)",
+        "**Ein vorzeitiges Aussteigen innerhalb einer Saison ist nicht möglich**",
+        "Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung",
+      ],
+    },
+    {
+      id: "3",
+      title: "Hallengebühren (Wintersaison)",
+      titleColor: "#2563eb",
+      content: "Im Sommer fallen keine zusätzlichen Platzgebühren an. Die Hallengebühr wird bei unter-saisonalem Beitritt anteilig berechnet.",
+      items: [
+        "**Kinder/Jugendliche Mitglied, 1x pro Woche:** Wird vom Verein bezahlt",
+        "**Kinder/Jugendliche Mitglied, 2. Training/Woche:** 112 EUR zusätzlich (pauschal)",
+        "**Kinder/Jugendliche Nicht-Mitglied:** 140 EUR einmalig (pauschal)",
+        "**Einzel-/Privattraining Mitglieder:** 16 EUR pro Stunde",
+        "**Einzel-/Privattraining Nicht-Mitglieder:** 18 EUR pro Stunde",
+        "Die Hallengebühr wird im Gruppentraining auf die Anzahl der Schüler aufgeteilt",
+      ],
+    },
+    {
+      id: "4",
+      title: "Zahlung und Absageregelungen",
+      titleColor: "#2563eb",
+      content: "",
+      items: [
+        "Zahlung erfolgt zum **Monatsende per SEPA-Lastschrift**",
+        "Rechnungen werden auf Wunsch elektronisch versandt",
+        "**Gruppentraining:** Gebühr wird auch bei Nichtteilnahme fällig",
+        "**Einzeltraining:** Absage spätestens 24 Stunden vorher, sonst wird das Honorar fällig",
+        "**Einzeltraining Absage:** Die Hallenstunde kann ohne Rückerstattung auf einen anderen Spieler übertragen werden",
+        "Hallengebühr kann in keinem Fall erstattet werden",
+        "Versäumte Stunden können nicht nachgeholt oder erstattet werden",
+        "Bei trainerbedingtem Ausfall: Ersatztermin oder Kostenerstattung",
+        "Bei erheblichen Regenunterbrechungen: Ersatztermin oder 50% Gutschrift",
+      ],
+    },
+    {
+      id: "5",
+      title: "Ausnahmeregelungen",
+      titleColor: "#2563eb",
+      content: "",
+      items: [
+        "Bei mehrmonatiger Krankheit, Schwangerschaft oder Verletzung kann der Vertrag vorzeitig beendet werden",
+        "Kein genereller Anspruch auf Änderung oder Unterbrechung",
+        "Bei grobem Fehlverhalten: Ausschluss ohne Erstattung",
+        "Zahlungsverzug oder Rücklastschriften können zum Trainingsausschluss führen",
+      ],
+    },
+    {
+      id: "6",
+      title: "Haftung und Aufsichtspflicht",
+      titleColor: "#2563eb",
+      content: "",
+      items: [
+        "**Teilnahme erfolgt auf eigene Gefahr**",
+        "Haftung der Trainer nur bei Vorsatz und grober Fahrlässigkeit",
+        "Eltern haften für ihre Kinder",
+        "**Aufsichtspflicht der Trainer besteht nur während der Trainingszeit**",
+        "Eltern müssen Kinder pünktlich bringen und abholen",
+        "Gesundheitliche Einschränkungen müssen vor dem Training mitgeteilt werden",
+      ],
+    },
+    {
+      id: "7",
+      title: "Vereinsmitgliedschaft (BSC Rehberge Tennis)",
+      titleColor: "#2563eb",
+      content: "Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich (Ausnahmen: Probetraining, Tenniscamps, Wintertraining). Gebühren und Konditionen für Vereinsmitgliedschaften können sich ändern. Aktuelle Informationen bitte direkt der Vereinswebsite entnehmen.",
+      items: [
+        "**Vollmitglied:** 330 EUR Jahresbeitrag, 100 EUR AUL, 200 EUR Aufnahme",
+        "**Student über 18:** 235 EUR Jahresbeitrag, 70 EUR AUL, 50 EUR Aufnahme",
+        "**Jugendliche bis 18:** 150 EUR Jahresbeitrag, 70 EUR AUL",
+        "**Jugendliche bis 14:** 150 EUR Jahresbeitrag",
+        "**Kind unter 12:** 70 EUR Jahresbeitrag",
+        "AUL = Arbeitsumlage (wird nach Ableistung von Arbeitsstunden erstattet)",
+        "Bei Eintritt nach dem 30.07. wird nur die Hälfte des Jahresbeitrags fällig",
+      ],
+    },
+    {
+      id: "8",
+      title: "Datenschutz",
+      titleColor: "#2563eb",
+      content: "",
+      items: [
+        "Erhobene Daten werden ausschließlich für Organisation und Training genutzt",
+        "Daten werden vertraulich behandelt",
+        "Fotos und Videos können zu Dokumentations- und Werbezwecken erstellt werden",
+        "Schriftlicher Widerspruch ist jederzeit möglich",
+      ],
+    },
+  ];
+
   async function fetchAgbContent() {
     if (!authUser?.accountId) return;
     setAgbLoading(true);
@@ -2609,13 +2724,19 @@ export default function App() {
 
       if (error && error.code !== "PGRST116") {
         console.error("Error fetching AGB content:", error);
+        // Fallback to default sections
+        setAgbSections(defaultAgbSections);
         return;
       }
-      if (data?.sections) {
+      if (data?.sections && data.sections.length > 0) {
         setAgbSections(data.sections);
+      } else {
+        // No saved content, use defaults
+        setAgbSections(defaultAgbSections);
       }
     } catch (err) {
       console.error("Error fetching AGB content:", err);
+      setAgbSections(defaultAgbSections);
     } finally {
       setAgbLoading(false);
     }
