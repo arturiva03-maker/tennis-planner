@@ -2162,10 +2162,16 @@ export default function App() {
       .filter((t) => {
         if (kalenderTrainerFilter.length === 0) return true;
         const tid = t.trainerId || defaultTrainerId;
-        // Auch Vertretungstrainer berücksichtigen
+        // Bei Vertretung: NUR beim Vertretungstrainer anzeigen, nicht mehr beim ursprünglichen Trainer
         const vertretung = vertretungen.find(v => v.trainingId === t.id);
-        const vertretungTid = vertretung?.vertretungTrainerId;
-        return kalenderTrainerFilter.includes(tid) || (vertretungTid && kalenderTrainerFilter.includes(vertretungTid));
+        if (vertretung) {
+          // Wenn Vertretung offen (kein Vertretungstrainer), bei niemandem im Filter anzeigen
+          if (!vertretung.vertretungTrainerId) return false;
+          // Nur beim Vertretungstrainer anzeigen
+          return kalenderTrainerFilter.includes(vertretung.vertretungTrainerId);
+        }
+        // Keine Vertretung: normaler Trainer
+        return kalenderTrainerFilter.includes(tid);
       })
       .sort((a, b) =>
         (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
