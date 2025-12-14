@@ -3204,13 +3204,15 @@ export default function App() {
         .filter((t) => t.status === "durchgefuehrt")
         .filter((t) => {
           if (abrechnungTrainerFilter === "alle") return true;
-          const tid = t.trainerId || defaultTrainerId;
+          // Vertretungstrainer berücksichtigen
+          const vertretung = vertretungen.find(v => v.trainingId === t.id);
+          const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
           return tid === abrechnungTrainerFilter;
         })
         .sort((a, b) =>
           (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
         ),
-    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId]
+    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId, vertretungen]
   );
 
   const trainingsForAbrechnung = useMemo(() => {
@@ -3810,7 +3812,9 @@ export default function App() {
 
   const rueckzahlungTrainerOffen = round2(
     trainingsForAbrechnung.reduce((acc, t) => {
-      const tid = t.trainerId || defaultTrainerId;
+      // Vertretungstrainer berücksichtigen
+      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
       // Berücksichtige den Trainerfilter: wenn "alle" gewählt ist, alle Trainer einbeziehen
       if (abrechnungTrainerFilter !== "alle" && tid !== abrechnungTrainerFilter) return acc;
       if (!t.barBezahlt) return acc;
@@ -3826,7 +3830,9 @@ export default function App() {
   const eigeneTrainingsImMonat = trainings.filter((t) => {
     if (t.status !== "durchgefuehrt") return false;
     if (!t.datum.startsWith(abrechnungMonat)) return false;
-    const tid = t.trainerId || defaultTrainerId;
+    // Vertretungstrainer berücksichtigen
+    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
     return tid === ownTrainerId;
   });
 
@@ -6489,12 +6495,14 @@ export default function App() {
                             <tbody>
                               {abrechnungTrainer.rows.map((r) => {
                                 const isSascha = r.name.trim().toLowerCase() === "sascha";
-                                
+
                                 if (isSascha) {
-                                  // Für Sascha: Bar/Nicht-Bar Stunden zählen
-                                  const saschaTrainings = trainingsForAbrechnung.filter(
-                                    (t) => (t.trainerId || defaultTrainerId) === r.id
-                                  );
+                                  // Für Sascha: Bar/Nicht-Bar Stunden zählen (Vertretung berücksichtigen)
+                                  const saschaTrainings = trainingsForAbrechnung.filter((t) => {
+                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                                    return tid === r.id;
+                                  });
                                   const nichtBarCount = saschaTrainings.filter(
                                     (t) => !t.barBezahlt
                                   ).length;
@@ -6572,10 +6580,10 @@ export default function App() {
                               (id) => spielerById.get(id)?.name ?? "Spieler"
                             )
                             .join(", ");
-                          const trainerName =
-                            trainerById.get(
-                              t.trainerId ?? defaultTrainerId
-                            )?.name ?? "Trainer";
+                          // Vertretungstrainer berücksichtigen
+                          const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                          const effectiveTrainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                          const trainerName = trainerById.get(effectiveTrainerId)?.name ?? "Trainer";
                           const priceNum = round2(trainingPreisGesamt(t));
                           const price = euro(priceNum);
                           const honorarNum = trainerHonorarFuerTraining(t);
