@@ -30,6 +30,9 @@ type Spieler = {
   kontaktTelefon?: string;
   rechnungsAdresse?: string;
   notizen?: string;
+  iban?: string;
+  mandatsreferenz?: string;
+  unterschriftsdatum?: string;
 };
 
 type Tarif = {
@@ -120,7 +123,7 @@ type AppState = {
   vertretungen?: Vertretung[];
 };
 
-type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung";
+type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung" | "rechnung";
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -173,6 +176,7 @@ type PlanungState = {
 const STORAGE_KEY = "tennis_planner_multi_trainer_v6";
 const PLANUNG_STORAGE_KEY = "tennis_planner_mutterplan_v4";
 const TRAINER_INVOICE_SETTINGS_KEY = "trainer_invoice_settings";
+const PROFILE_SEPA_SETTINGS_KEY = "profile_sepa_settings";
 const LEGACY_KEYS = [
   "tennis_planner_single_trainer",
   "tennis_planner_single_trainer_v5",
@@ -1378,7 +1382,53 @@ export default function App() {
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
+  const [spielerIban, setSpielerIban] = useState("");
+  const [spielerMandatsreferenz, setSpielerMandatsreferenz] = useState("");
+  const [spielerUnterschriftsdatum, setSpielerUnterschriftsdatum] = useState("");
   const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
+
+  // Profil SEPA-Einstellungen (Gläubiger)
+  const [profilGlaeubigerId, setProfilGlaeubigerId] = useState(() => {
+    const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.glaeubigerId || "";
+    }
+    return "";
+  });
+  const [profilKontoIban, setProfilKontoIban] = useState(() => {
+    const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.kontoIban || "";
+    }
+    return "";
+  });
+  const [profilFirmenname, setProfilFirmenname] = useState(() => {
+    const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.firmenname || "";
+    }
+    return "";
+  });
+  const [profilAdresse, setProfilAdresse] = useState(() => {
+    const saved = localStorage.getItem(PROFILE_SEPA_SETTINGS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed.adresse || "";
+    }
+    return "";
+  });
+
+  // Rechnung Tab States
+  const [rechnungSpielerId, setRechnungSpielerId] = useState<string>("");
+  const [rechnungMonat, setRechnungMonat] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  });
+  const [showRechnungPreview, setShowRechnungPreview] = useState(false);
+  const [rechnungNummer, setRechnungNummer] = useState("");
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
@@ -1941,7 +1991,7 @@ export default function App() {
 
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
-    : ["kalender", "training", "verwaltung", "abrechnung", "weiteres", "planung"];
+    : ["kalender", "training", "verwaltung", "abrechnung", "rechnung", "weiteres", "planung"];
 
   const roleLabel = isTrainer ? "Trainer" : "Admin";
 
@@ -2198,6 +2248,9 @@ export default function App() {
       setSpielerTelefon("");
       setSpielerRechnung("");
       setSpielerNotizen("");
+      setSpielerIban("");
+      setSpielerMandatsreferenz("");
+      setSpielerUnterschriftsdatum("");
     }
   }
 
@@ -2252,6 +2305,9 @@ export default function App() {
       kontaktTelefon: spielerTelefon.trim() || undefined,
       rechnungsAdresse: spielerRechnung.trim() || undefined,
       notizen: spielerNotizen.trim() || undefined,
+      iban: spielerIban.trim() || undefined,
+      mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
+      unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
     };
 
     setSpieler((prev) => [...prev, neu]);
@@ -2261,6 +2317,9 @@ export default function App() {
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
+    setSpielerIban("");
+    setSpielerMandatsreferenz("");
+    setSpielerUnterschriftsdatum("");
     setShowSpielerForm(false);
   }
 
@@ -2271,6 +2330,9 @@ export default function App() {
     setSpielerTelefon(s.kontaktTelefon ?? "");
     setSpielerRechnung(s.rechnungsAdresse ?? "");
     setSpielerNotizen(s.notizen ?? "");
+    setSpielerIban(s.iban ?? "");
+    setSpielerMandatsreferenz(s.mandatsreferenz ?? "");
+    setSpielerUnterschriftsdatum(s.unterschriftsdatum ?? "");
   }
 
   function saveSpieler() {
@@ -2311,6 +2373,9 @@ export default function App() {
               kontaktTelefon: spielerTelefon.trim() || undefined,
               rechnungsAdresse: spielerRechnung.trim() || undefined,
               notizen: spielerNotizen.trim() || undefined,
+              iban: spielerIban.trim() || undefined,
+              mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
+              unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
             }
           : s
       )
@@ -2322,6 +2387,9 @@ export default function App() {
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
+    setSpielerIban("");
+    setSpielerMandatsreferenz("");
+    setSpielerUnterschriftsdatum("");
     setShowSpielerForm(false);
   }
 
@@ -3793,6 +3861,7 @@ export default function App() {
                 {t === "training" && "Training"}
                 {t === "verwaltung" && "Verwaltung"}
                 {t === "abrechnung" && "Abrechnung"}
+                {t === "rechnung" && "Rechnung"}
                 {t === "weiteres" && "Weiteres"}
                 {t === "planung" && "Planung"}
               </button>
@@ -5201,6 +5270,34 @@ export default function App() {
                           </div>
                         </div>
 
+                        <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>SEPA-Lastschrift Daten</h4>
+                        <div className="row">
+                          <div className="field" style={{ minWidth: 280 }}>
+                            <label>IBAN</label>
+                            <input
+                              value={spielerIban}
+                              onChange={(e) => setSpielerIban(e.target.value)}
+                              placeholder="DE89 3704 0044 0532 0130 00"
+                            />
+                          </div>
+                          <div className="field" style={{ minWidth: 180 }}>
+                            <label>Mandatsreferenz</label>
+                            <input
+                              value={spielerMandatsreferenz}
+                              onChange={(e) => setSpielerMandatsreferenz(e.target.value)}
+                              placeholder="z.B. MANDAT-001"
+                            />
+                          </div>
+                          <div className="field" style={{ minWidth: 160 }}>
+                            <label>Unterschriftsdatum</label>
+                            <input
+                              type="date"
+                              value={spielerUnterschriftsdatum}
+                              onChange={(e) => setSpielerUnterschriftsdatum(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
                         <div className="row">
                           <button
                             className="btn"
@@ -5225,6 +5322,9 @@ export default function App() {
                               setSpielerTelefon("");
                               setSpielerRechnung("");
                               setSpielerNotizen("");
+                              setSpielerIban("");
+                              setSpielerMandatsreferenz("");
+                              setSpielerUnterschriftsdatum("");
                               setSpielerError(null);
                               setShowSpielerForm(false);
                             }}
@@ -7233,6 +7333,598 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {tab === "rechnung" && !isTrainer && (
+              <div className="card">
+                <h2>Rechnung erstellen</h2>
+
+                {/* Profil SEPA-Einstellungen */}
+                <div className="card cardInset" style={{ marginBottom: 24 }}>
+                  <h3>Meine SEPA-Daten (Gläubiger)</h3>
+                  <div className="row">
+                    <div className="field" style={{ minWidth: 200 }}>
+                      <label>Firmenname / Name</label>
+                      <input
+                        value={profilFirmenname}
+                        onChange={(e) => {
+                          setProfilFirmenname(e.target.value);
+                          localStorage.setItem(PROFILE_SEPA_SETTINGS_KEY, JSON.stringify({
+                            glaeubigerId: profilGlaeubigerId,
+                            kontoIban: profilKontoIban,
+                            firmenname: e.target.value,
+                            adresse: profilAdresse,
+                          }));
+                        }}
+                        placeholder="Mein Unternehmen"
+                      />
+                    </div>
+                    <div className="field" style={{ minWidth: 280 }}>
+                      <label>Adresse</label>
+                      <input
+                        value={profilAdresse}
+                        onChange={(e) => {
+                          setProfilAdresse(e.target.value);
+                          localStorage.setItem(PROFILE_SEPA_SETTINGS_KEY, JSON.stringify({
+                            glaeubigerId: profilGlaeubigerId,
+                            kontoIban: profilKontoIban,
+                            firmenname: profilFirmenname,
+                            adresse: e.target.value,
+                          }));
+                        }}
+                        placeholder="Straße, PLZ Ort"
+                      />
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="field" style={{ minWidth: 280 }}>
+                      <label>Gläubiger-Identifikationsnummer</label>
+                      <input
+                        value={profilGlaeubigerId}
+                        onChange={(e) => {
+                          setProfilGlaeubigerId(e.target.value);
+                          localStorage.setItem(PROFILE_SEPA_SETTINGS_KEY, JSON.stringify({
+                            glaeubigerId: e.target.value,
+                            kontoIban: profilKontoIban,
+                            firmenname: profilFirmenname,
+                            adresse: profilAdresse,
+                          }));
+                        }}
+                        placeholder="DE98ZZZ09999999999"
+                      />
+                    </div>
+                    <div className="field" style={{ minWidth: 280 }}>
+                      <label>Meine IBAN (Empfängerkonto)</label>
+                      <input
+                        value={profilKontoIban}
+                        onChange={(e) => {
+                          setProfilKontoIban(e.target.value);
+                          localStorage.setItem(PROFILE_SEPA_SETTINGS_KEY, JSON.stringify({
+                            glaeubigerId: profilGlaeubigerId,
+                            kontoIban: e.target.value,
+                            firmenname: profilFirmenname,
+                            adresse: profilAdresse,
+                          }));
+                        }}
+                        placeholder="DE89 3704 0044 0532 0130 00"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rechnung erstellen */}
+                <div className="card cardInset" style={{ marginBottom: 24 }}>
+                  <h3>Neue Rechnung</h3>
+                  <div className="row">
+                    <div className="field" style={{ minWidth: 200 }}>
+                      <label>Spieler auswählen</label>
+                      <select
+                        value={rechnungSpielerId}
+                        onChange={(e) => setRechnungSpielerId(e.target.value)}
+                      >
+                        <option value="">-- Spieler wählen --</option>
+                        {spieler
+                          .slice()
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div className="field" style={{ minWidth: 160 }}>
+                      <label>Monat</label>
+                      <input
+                        type="month"
+                        value={rechnungMonat}
+                        onChange={(e) => setRechnungMonat(e.target.value)}
+                      />
+                    </div>
+                    <div className="field" style={{ minWidth: 160 }}>
+                      <label>Rechnungsnummer</label>
+                      <input
+                        value={rechnungNummer}
+                        onChange={(e) => setRechnungNummer(e.target.value)}
+                        placeholder="RE-2024-001"
+                      />
+                    </div>
+                  </div>
+
+                  {rechnungSpielerId && (() => {
+                    const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
+                    if (!selectedSpieler) return null;
+
+                    // Berechne offenen Betrag für den Monat
+                    const monatTrainings = trainings.filter((t) => {
+                      if (!t.datum.startsWith(rechnungMonat)) return false;
+                      if (t.status === "abgesagt") return false;
+                      return t.spielerIds.includes(rechnungSpielerId);
+                    });
+
+                    let gesamtBetrag = 0;
+                    monatTrainings.forEach((t) => {
+                      const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                      const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                      const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                      const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
+                      const hours = mins / 60;
+
+                      if (abrechnung === "proSpieler") {
+                        gesamtBetrag += preisProStunde * hours;
+                      } else {
+                        const anzahlSpieler = t.spielerIds.length || 1;
+                        gesamtBetrag += (preisProStunde * hours) / anzahlSpieler;
+                      }
+                    });
+
+                    // Monatliche Anpassung berücksichtigen
+                    const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
+                    const adjustment = monthlyAdjustments[adjustmentKey] ?? 0;
+                    gesamtBetrag += adjustment;
+
+                    const monatName = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+
+                    return (
+                      <div style={{ marginTop: 16 }}>
+                        <div style={{
+                          background: "var(--bg-card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--radius-md)",
+                          padding: 16,
+                          marginBottom: 16
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span className="muted">Spieler:</span>
+                            <strong>{selectedSpieler.name}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span className="muted">Trainings im {monatName}:</span>
+                            <span>{monatTrainings.length}</span>
+                          </div>
+                          {adjustment !== 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                              <span className="muted">Anpassung:</span>
+                              <span style={{ color: adjustment > 0 ? "var(--color-danger)" : "var(--color-success)" }}>
+                                {adjustment > 0 ? "+" : ""}{adjustment.toFixed(2)} €
+                              </span>
+                            </div>
+                          )}
+                          <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            paddingTop: 8,
+                            borderTop: "1px solid var(--border)",
+                            fontSize: 18,
+                            fontWeight: 600
+                          }}>
+                            <span>Offener Betrag:</span>
+                            <span style={{ color: "var(--color-primary)" }}>{gesamtBetrag.toFixed(2)} €</span>
+                          </div>
+                        </div>
+
+                        {!selectedSpieler.iban && (
+                          <div style={{
+                            backgroundColor: "#fef3c7",
+                            border: "1px solid #f59e0b",
+                            borderRadius: "var(--radius-md)",
+                            padding: "12px 16px",
+                            marginBottom: 16,
+                            color: "#92400e"
+                          }}>
+                            Hinweis: Für diesen Spieler ist keine IBAN hinterlegt. Bitte ergänze die SEPA-Daten unter Verwaltung → Spieler.
+                          </div>
+                        )}
+
+                        <button
+                          className="btn"
+                          onClick={() => setShowRechnungPreview(true)}
+                          disabled={gesamtBetrag <= 0}
+                        >
+                          Rechnung erstellen
+                        </button>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Rechnungs-Vorschau Modal */}
+            {showRechnungPreview && rechnungSpielerId && (() => {
+              const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
+              if (!selectedSpieler) return null;
+
+              // Berechne Betrag
+              const monatTrainings = trainings.filter((t) => {
+                if (!t.datum.startsWith(rechnungMonat)) return false;
+                if (t.status === "abgesagt") return false;
+                return t.spielerIds.includes(rechnungSpielerId);
+              });
+
+              let gesamtBetrag = 0;
+              const positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
+
+              monatTrainings
+                .sort((a, b) => a.datum.localeCompare(b.datum))
+                .forEach((t) => {
+                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                  const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                  const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                  const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
+                  const hours = mins / 60;
+
+                  let betrag = 0;
+                  if (abrechnung === "proSpieler") {
+                    betrag = preisProStunde * hours;
+                  } else {
+                    const anzahlSpieler = t.spielerIds.length || 1;
+                    betrag = (preisProStunde * hours) / anzahlSpieler;
+                  }
+
+                  gesamtBetrag += betrag;
+
+                  const datumFormatiert = new Date(t.datum).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  });
+                  positionen.push({
+                    datum: datumFormatiert,
+                    beschreibung: `Training ${t.uhrzeitVon}-${t.uhrzeitBis} (${hours.toFixed(1)}h)`,
+                    betrag
+                  });
+                });
+
+              const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
+              const adjustment = monthlyAdjustments[adjustmentKey] ?? 0;
+              if (adjustment !== 0) {
+                gesamtBetrag += adjustment;
+                positionen.push({
+                  datum: "",
+                  beschreibung: adjustment > 0 ? "Zusatzgebühr" : "Gutschrift/Rabatt",
+                  betrag: adjustment
+                });
+              }
+
+              const monatName = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+              const letzterTag = new Date(
+                parseInt(rechnungMonat.split("-")[0]),
+                parseInt(rechnungMonat.split("-")[1]),
+                0
+              ).getDate();
+              const abbuchungsDatum = `${letzterTag}.${rechnungMonat.split("-")[1]}.${rechnungMonat.split("-")[0]}`;
+              const heute = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+              const generateInvoiceHTML = () => {
+                return `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rechnung ${rechnungNummer || "ENTWURF"}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #1a1a1a;
+      padding: 40px;
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #0066cc;
+    }
+    .logo-area h1 {
+      font-size: 24pt;
+      color: #0066cc;
+      font-weight: 700;
+    }
+    .logo-area p { color: #666; font-size: 10pt; }
+    .invoice-info { text-align: right; }
+    .invoice-info h2 {
+      font-size: 14pt;
+      color: #0066cc;
+      margin-bottom: 8px;
+    }
+    .addresses {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    .address-block { min-width: 200px; }
+    .address-block h3 {
+      font-size: 9pt;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .address-block p { font-size: 11pt; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    th {
+      background: #f8f9fa;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #dee2e6;
+      font-size: 10pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    .text-right { text-align: right; }
+    .total-row td {
+      font-weight: 700;
+      font-size: 14pt;
+      border-top: 2px solid #0066cc;
+      border-bottom: none;
+      padding-top: 16px;
+    }
+    .sepa-info {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
+      border: 1px solid #b3d4fc;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    .sepa-info h3 {
+      color: #0066cc;
+      margin-bottom: 12px;
+      font-size: 12pt;
+    }
+    .sepa-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .sepa-item label {
+      font-size: 9pt;
+      color: #666;
+      display: block;
+    }
+    .sepa-item span { font-weight: 500; }
+    .notice {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 20px;
+      font-size: 10pt;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      font-size: 9pt;
+      color: #666;
+      text-align: center;
+    }
+    @media print {
+      body { padding: 20px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-area">
+      <h1>${profilFirmenname || "Tennisschule"}</h1>
+      <p>${profilAdresse || ""}</p>
+    </div>
+    <div class="invoice-info">
+      <h2>RECHNUNG</h2>
+      <p><strong>Nr.:</strong> ${rechnungNummer || "ENTWURF"}</p>
+      <p><strong>Datum:</strong> ${heute}</p>
+    </div>
+  </div>
+
+  <div class="addresses">
+    <div class="address-block">
+      <h3>Rechnungsempfänger</h3>
+      <p><strong>${selectedSpieler.name}</strong></p>
+      <p>${selectedSpieler.rechnungsAdresse || ""}</p>
+      ${selectedSpieler.kontaktEmail ? `<p>${selectedSpieler.kontaktEmail}</p>` : ""}
+    </div>
+    <div class="address-block">
+      <h3>Leistungszeitraum</h3>
+      <p><strong>${monatName}</strong></p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Datum</th>
+        <th>Beschreibung</th>
+        <th class="text-right">Betrag</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${positionen.map(p => `
+        <tr>
+          <td>${p.datum}</td>
+          <td>${p.beschreibung}</td>
+          <td class="text-right">${p.betrag.toFixed(2)} €</td>
+        </tr>
+      `).join("")}
+      <tr class="total-row">
+        <td colspan="2">Gesamtbetrag</td>
+        <td class="text-right">${gesamtBetrag.toFixed(2)} €</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sepa-info">
+    <h3>SEPA-Lastschrift Information</h3>
+    <div class="sepa-grid">
+      <div class="sepa-item">
+        <label>Gläubiger-ID</label>
+        <span>${profilGlaeubigerId || "Nicht hinterlegt"}</span>
+      </div>
+      <div class="sepa-item">
+        <label>Mandatsreferenz</label>
+        <span>${selectedSpieler.mandatsreferenz || "Nicht hinterlegt"}</span>
+      </div>
+      <div class="sepa-item">
+        <label>IBAN (Zahler)</label>
+        <span>${selectedSpieler.iban || "Nicht hinterlegt"}</span>
+      </div>
+      <div class="sepa-item">
+        <label>Mandatsdatum</label>
+        <span>${selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "Nicht hinterlegt"}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>Hinweis:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto (IBAN: ${selectedSpieler.iban || "---"}) abgebucht. Die Mandatsreferenz lautet: <strong>${selectedSpieler.mandatsreferenz || "---"}</strong>.
+  </div>
+
+  <div class="footer">
+    <p>${profilFirmenname || ""} ${profilAdresse ? "· " + profilAdresse : ""}</p>
+    <p>IBAN: ${profilKontoIban || "---"} ${profilGlaeubigerId ? "· Gläubiger-ID: " + profilGlaeubigerId : ""}</p>
+  </div>
+</body>
+</html>`;
+              };
+
+              return (
+                <div className="modal" onClick={() => setShowRechnungPreview(false)}>
+                  <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: "90vh", overflow: "auto" }}>
+                    <h2 style={{ marginBottom: 16 }}>Rechnungsvorschau</h2>
+
+                    <div style={{
+                      background: "#fff",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: 24,
+                      marginBottom: 16
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
+                        <div>
+                          <h3 style={{ color: "var(--color-primary)", marginBottom: 4 }}>{profilFirmenname || "Tennisschule"}</h3>
+                          <div className="muted">{profilAdresse}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 12, color: "var(--color-primary)", fontWeight: 600 }}>RECHNUNG</div>
+                          <div><strong>Nr.:</strong> {rechnungNummer || "ENTWURF"}</div>
+                          <div><strong>Datum:</strong> {heute}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 24 }}>
+                        <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>RECHNUNGSEMPFÄNGER</div>
+                        <div><strong>{selectedSpieler.name}</strong></div>
+                        <div>{selectedSpieler.rechnungsAdresse}</div>
+                      </div>
+
+                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                            <th style={{ textAlign: "left", padding: "8px 0", fontSize: 11 }}>Datum</th>
+                            <th style={{ textAlign: "left", padding: "8px 0", fontSize: 11 }}>Beschreibung</th>
+                            <th style={{ textAlign: "right", padding: "8px 0", fontSize: 11 }}>Betrag</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {positionen.map((p, i) => (
+                            <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                              <td style={{ padding: "8px 0" }}>{p.datum}</td>
+                              <td style={{ padding: "8px 0" }}>{p.beschreibung}</td>
+                              <td style={{ padding: "8px 0", textAlign: "right" }}>{p.betrag.toFixed(2)} €</td>
+                            </tr>
+                          ))}
+                          <tr style={{ borderTop: "2px solid var(--color-primary)" }}>
+                            <td colSpan={2} style={{ padding: "12px 0", fontWeight: 700, fontSize: 16 }}>Gesamtbetrag</td>
+                            <td style={{ padding: "12px 0", textAlign: "right", fontWeight: 700, fontSize: 16, color: "var(--color-primary)" }}>{gesamtBetrag.toFixed(2)} €</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <div style={{
+                        background: "linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%)",
+                        border: "1px solid #b3d4fc",
+                        borderRadius: "var(--radius-md)",
+                        padding: 16,
+                        marginBottom: 16
+                      }}>
+                        <div style={{ fontWeight: 600, color: "var(--color-primary)", marginBottom: 8 }}>SEPA-Lastschrift Information</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
+                          <div><span className="muted">Gläubiger-ID:</span> {profilGlaeubigerId || "---"}</div>
+                          <div><span className="muted">Mandatsreferenz:</span> {selectedSpieler.mandatsreferenz || "---"}</div>
+                          <div><span className="muted">IBAN (Zahler):</span> {selectedSpieler.iban || "---"}</div>
+                          <div><span className="muted">Mandatsdatum:</span> {selectedSpieler.unterschriftsdatum ? new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE") : "---"}</div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        background: "#fff3cd",
+                        border: "1px solid #ffc107",
+                        borderRadius: "var(--radius-md)",
+                        padding: 12,
+                        fontSize: 13
+                      }}>
+                        <strong>Hinweis:</strong> Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht. Die Mandatsreferenz lautet: <strong>{selectedSpieler.mandatsreferenz || "---"}</strong>.
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <button className="btn btnGhost" onClick={() => setShowRechnungPreview(false)}>
+                        Zurück
+                      </button>
+                      <button
+                        className="btn"
+                        onClick={() => {
+                          const invoiceHTML = generateInvoiceHTML();
+                          const win = window.open("", "_blank");
+                          if (win) {
+                            win.document.write(invoiceHTML);
+                            win.document.close();
+                            setTimeout(() => win.print(), 200);
+                          }
+                        }}
+                      >
+                        PDF erstellen / Drucken
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {tab === "planung" && !isTrainer && (() => {
               const activeSheet = planungState.sheets.find((s) => s.id === planungState.activeSheetId) || planungState.sheets[0];
