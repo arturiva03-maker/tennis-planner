@@ -380,6 +380,21 @@ export default function SepaForm() {
                 </span>
               </label>
             </div>
+
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+                Mit der Erteilung des SEPA-Mandats akzeptieren Sie unsere{" "}
+                <a
+                  href="/agb"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--primary)" }}
+                >
+                  Allgemeinen Geschäftsbedingungen (AGB)
+                </a>
+                .
+              </p>
+            </div>
           </div>
 
           <div style={{ marginTop: 24 }}>
