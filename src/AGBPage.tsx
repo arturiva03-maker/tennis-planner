@@ -1,7 +1,119 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 import "./App.css";
 
+type AGBSection = {
+  id: string;
+  title: string;
+  titleColor: string;
+  content: string;
+  items: string[];
+};
+
 export default function AGBPage() {
+  const [searchParams] = useSearchParams();
+  const accountId = searchParams.get("a");
+
+  const [sections, setSections] = useState<AGBSection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasCustomContent, setHasCustomContent] = useState(false);
+
+  useEffect(() => {
+    async function fetchAGB() {
+      if (!accountId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("agb_content")
+          .select("*")
+          .eq("account_id", accountId)
+          .single();
+
+        if (error && error.code !== "PGRST116") {
+          console.error("Error fetching AGB:", error);
+        }
+
+        if (data?.sections && data.sections.length > 0) {
+          setSections(data.sections);
+          setHasCustomContent(true);
+        }
+      } catch (err) {
+        console.error("Error fetching AGB:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAGB();
+  }, [accountId]);
+
+  if (loading) {
+    return (
+      <div className="registrationPage">
+        <div className="card registrationCard" style={{ maxWidth: 800 }}>
+          <p className="muted">Lade AGB...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If custom content from database exists, show that
+  if (hasCustomContent && sections.length > 0) {
+    return (
+      <div className="registrationPage">
+        <div className="card registrationCard" style={{ maxWidth: 800 }}>
+          <h1>Allgemeine Geschäftsbedingungen</h1>
+          <p className="muted" style={{ marginBottom: 24 }}>
+            Trainings- und Vertragsbedingungen für das Tennistraining
+          </p>
+
+          {sections.map((section, index) => (
+            <section key={section.id} style={{ marginBottom: 32 }}>
+              <h2 style={{ fontSize: 18, marginBottom: 12, color: section.titleColor }}>
+                {index + 1}. {section.title}
+              </h2>
+              {section.content && (
+                <p style={{ marginBottom: 12 }}>{section.content}</p>
+              )}
+              {section.items.length > 0 && (
+                <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
+                  {section.items.map((item, i) => (
+                    <li key={i} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+
+          <div style={{
+            background: "var(--bg-inset)",
+            padding: 16,
+            borderRadius: 8,
+            fontSize: 13,
+            color: "var(--text-muted)"
+          }}>
+            <p style={{ margin: 0 }}>
+              Weitere Informationen zur Vereinsmitgliedschaft unter:{" "}
+              <a
+                href="https://bscrehberge-tennis.de/verein/mitgliedschaft/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--primary)" }}
+              >
+                bscrehberge-tennis.de/verein/mitgliedschaft
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default static content
   return (
     <div className="registrationPage">
       <div className="card registrationCard" style={{ maxWidth: 800 }}>

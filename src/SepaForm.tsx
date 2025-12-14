@@ -385,7 +385,7 @@ export default function SepaForm() {
               <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
                 Mit der Erteilung des SEPA-Mandats akzeptieren Sie unsere{" "}
                 <a
-                  href="/agb"
+                  href={`/agb${accountId ? `?a=${accountId}` : ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)" }}

@@ -49,8 +49,16 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "agb";
 type FormulareTab = "anmeldung" | "sepa";
+
+type AGBSection = {
+  id: string;
+  title: string;
+  titleColor: string;
+  content: string;
+  items: string[];
+};
 
 type Verfuegbarkeit = {
   montag: string;
@@ -1490,6 +1498,11 @@ export default function App() {
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
   const [expandedSepaMandateId, setExpandedSepaMandateId] = useState<string | null>(null);
 
+  const [agbSections, setAgbSections] = useState<AGBSection[]>([]);
+  const [agbLoading, setAgbLoading] = useState(false);
+  const [agbSaving, setAgbSaving] = useState(false);
+  const [editingAgbSectionId, setEditingAgbSectionId] = useState<string | null>(null);
+
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
   );
@@ -1991,6 +2004,13 @@ export default function App() {
     if (tab === "verwaltung" && verwaltungTab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
       fetchSepaMandates();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, verwaltungTab, authUser?.accountId]);
+
+  useEffect(() => {
+    if (tab === "verwaltung" && verwaltungTab === "agb" && authUser?.accountId) {
+      fetchAgbContent();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
@@ -2575,6 +2595,90 @@ export default function App() {
     } catch (err) {
       console.error("Error updating SEPA mandate status:", err);
     }
+  }
+
+  async function fetchAgbContent() {
+    if (!authUser?.accountId) return;
+    setAgbLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("agb_content")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        console.error("Error fetching AGB content:", error);
+        return;
+      }
+      if (data?.sections) {
+        setAgbSections(data.sections);
+      }
+    } catch (err) {
+      console.error("Error fetching AGB content:", err);
+    } finally {
+      setAgbLoading(false);
+    }
+  }
+
+  async function saveAgbContent() {
+    if (!authUser?.accountId) return;
+    setAgbSaving(true);
+    try {
+      const { error } = await supabase
+        .from("agb_content")
+        .upsert({
+          account_id: authUser.accountId,
+          sections: agbSections,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "account_id" });
+
+      if (error) {
+        console.error("Error saving AGB content:", error);
+        alert("Fehler beim Speichern der AGB.");
+        return;
+      }
+      alert("AGB erfolgreich gespeichert!");
+    } catch (err) {
+      console.error("Error saving AGB content:", err);
+      alert("Fehler beim Speichern der AGB.");
+    } finally {
+      setAgbSaving(false);
+    }
+  }
+
+  function addAgbSection() {
+    const newSection: AGBSection = {
+      id: crypto.randomUUID(),
+      title: "Neuer Abschnitt",
+      titleColor: "#2563eb",
+      content: "",
+      items: [],
+    };
+    setAgbSections([...agbSections, newSection]);
+    setEditingAgbSectionId(newSection.id);
+  }
+
+  function updateAgbSection(id: string, updates: Partial<AGBSection>) {
+    setAgbSections(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  }
+
+  function deleteAgbSection(id: string) {
+    if (window.confirm("Abschnitt wirklich löschen?")) {
+      setAgbSections(prev => prev.filter(s => s.id !== id));
+    }
+  }
+
+  function moveAgbSection(id: string, direction: "up" | "down") {
+    const index = agbSections.findIndex(s => s.id === id);
+    if (index === -1) return;
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === agbSections.length - 1) return;
+
+    const newSections = [...agbSections];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    [newSections[index], newSections[swapIndex]] = [newSections[swapIndex], newSections[index]];
+    setAgbSections(newSections);
   }
 
   async function updateRequestStatus(requestId: string, newStatus: string) {
@@ -5084,6 +5188,14 @@ export default function App() {
                       </span>
                     )}
                   </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "agb" ? "tabBtnActive" : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("agb")}
+                  >
+                    AGB
+                  </button>
                 </div>
 
                 <div style={{ height: 12 }} />
@@ -6030,6 +6142,200 @@ export default function App() {
                             ))}
                           </ul>
                         )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {verwaltungTab === "agb" && (
+                  <div className="card">
+                    <h2>AGB bearbeiten</h2>
+                    <p className="muted" style={{ marginBottom: 16 }}>
+                      Bearbeiten Sie hier Ihre Allgemeinen Geschäftsbedingungen. Die Änderungen werden auf der öffentlichen AGB-Seite angezeigt.
+                    </p>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <a
+                        href={`/agb?a=${authUser?.accountId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btnGhost"
+                        style={{ marginRight: 8 }}
+                      >
+                        AGB-Seite ansehen
+                      </a>
+                      <button
+                        className="btn"
+                        onClick={saveAgbContent}
+                        disabled={agbSaving}
+                      >
+                        {agbSaving ? "Speichern..." : "AGB speichern"}
+                      </button>
+                    </div>
+
+                    {agbLoading ? (
+                      <p className="muted">Lade AGB...</p>
+                    ) : (
+                      <>
+                        {agbSections.length === 0 ? (
+                          <div style={{
+                            textAlign: "center",
+                            padding: "40px 20px",
+                            background: "var(--bg-inset)",
+                            borderRadius: 8,
+                            marginBottom: 16
+                          }}>
+                            <p className="muted">Noch keine AGB-Abschnitte vorhanden.</p>
+                            <p className="muted" style={{ fontSize: 13 }}>
+                              Klicken Sie auf "Abschnitt hinzufügen", um zu beginnen.
+                            </p>
+                          </div>
+                        ) : (
+                          <ul className="simpleList" style={{ marginBottom: 16 }}>
+                            {agbSections.map((section, index) => (
+                              <li
+                                key={section.id}
+                                className="listItem"
+                                style={{ flexDirection: "column", alignItems: "stretch" }}
+                              >
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <div
+                                    style={{ flex: 1, cursor: "pointer" }}
+                                    onClick={() => setEditingAgbSectionId(
+                                      editingAgbSectionId === section.id ? null : section.id
+                                    )}
+                                  >
+                                    <strong style={{ color: section.titleColor }}>
+                                      {index + 1}. {section.title}
+                                    </strong>
+                                    <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
+                                      ({section.items.length} Punkte)
+                                    </span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 4 }}>
+                                    <button
+                                      className="btn micro btnGhost"
+                                      onClick={() => moveAgbSection(section.id, "up")}
+                                      disabled={index === 0}
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      className="btn micro btnGhost"
+                                      onClick={() => moveAgbSection(section.id, "down")}
+                                      disabled={index === agbSections.length - 1}
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      className="btn micro btnWarn"
+                                      onClick={() => deleteAgbSection(section.id)}
+                                    >
+                                      Löschen
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {editingAgbSectionId === section.id && (
+                                  <div style={{
+                                    marginTop: 12,
+                                    padding: 16,
+                                    background: "var(--bg-inset)",
+                                    borderRadius: 8
+                                  }}>
+                                    <div className="field" style={{ marginBottom: 12 }}>
+                                      <label>Titel</label>
+                                      <input
+                                        type="text"
+                                        value={section.title}
+                                        onChange={(e) => updateAgbSection(section.id, { title: e.target.value })}
+                                        placeholder="Abschnitt-Titel"
+                                      />
+                                    </div>
+
+                                    <div className="field" style={{ marginBottom: 12 }}>
+                                      <label>Titel-Farbe</label>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                        <input
+                                          type="color"
+                                          value={section.titleColor}
+                                          onChange={(e) => updateAgbSection(section.id, { titleColor: e.target.value })}
+                                          style={{ width: 50, height: 36, padding: 2, cursor: "pointer" }}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={section.titleColor}
+                                          onChange={(e) => updateAgbSection(section.id, { titleColor: e.target.value })}
+                                          style={{ width: 100 }}
+                                          placeholder="#2563eb"
+                                        />
+                                        <div style={{ display: "flex", gap: 4 }}>
+                                          {["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c"].map(color => (
+                                            <button
+                                              key={color}
+                                              onClick={() => updateAgbSection(section.id, { titleColor: color })}
+                                              style={{
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: 4,
+                                                background: color,
+                                                border: section.titleColor === color ? "2px solid #000" : "1px solid var(--border)",
+                                                cursor: "pointer"
+                                              }}
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="field" style={{ marginBottom: 12 }}>
+                                      <label>Einleitungstext (optional)</label>
+                                      <textarea
+                                        value={section.content}
+                                        onChange={(e) => updateAgbSection(section.id, { content: e.target.value })}
+                                        placeholder="Optionaler einleitender Text vor der Liste..."
+                                        rows={2}
+                                        style={{ resize: "vertical" }}
+                                      />
+                                    </div>
+
+                                    <div className="field">
+                                      <label>Listenpunkte (einer pro Zeile)</label>
+                                      <textarea
+                                        value={section.items.join("\n")}
+                                        onChange={(e) => updateAgbSection(section.id, {
+                                          items: e.target.value.split("\n").filter(line => line.trim())
+                                        })}
+                                        placeholder="Erster Punkt&#10;Zweiter Punkt&#10;Dritter Punkt"
+                                        rows={6}
+                                        style={{ resize: "vertical", fontFamily: "monospace", fontSize: 13 }}
+                                      />
+                                      <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                                        Jede Zeile wird als separater Listenpunkt angezeigt.
+                                      </p>
+                                    </div>
+
+                                    <div style={{ marginTop: 12 }}>
+                                      <button
+                                        className="btn btnGhost"
+                                        onClick={() => setEditingAgbSectionId(null)}
+                                      >
+                                        Fertig
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        <button
+                          className="btn btnGhost"
+                          onClick={addAgbSection}
+                        >
+                          + Abschnitt hinzufügen
+                        </button>
                       </>
                     )}
                   </div>
