@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import RegistrationForm from './RegistrationForm';
+import SepaForm from './SepaForm';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -15,6 +16,7 @@ root.render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/anmeldung" element={<RegistrationForm />} />
+        <Route path="/sepa" element={<SepaForm />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

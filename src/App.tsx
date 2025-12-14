@@ -49,7 +49,8 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "anfragen";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare";
+type FormulareTab = "anmeldung" | "sepa";
 
 type Verfuegbarkeit = {
   montag: string;
@@ -1276,6 +1277,8 @@ export default function App() {
     useState<AbrechnungTab>("spieler");
   const [verwaltungTab, setVerwaltungTab] =
     useState<VerwaltungTab>("trainer");
+  const [formulareTab, setFormulareTab] =
+    useState<FormulareTab>("anmeldung");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -1963,7 +1966,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (tab === "verwaltung" && verwaltungTab === "anfragen" && authUser?.accountId) {
+    if (tab === "verwaltung" && verwaltungTab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4993,11 +4996,11 @@ export default function App() {
                   </button>
                   <button
                     className={`tabBtn ${
-                      verwaltungTab === "anfragen" ? "tabBtnActive" : ""
+                      verwaltungTab === "formulare" ? "tabBtnActive" : ""
                     }`}
-                    onClick={() => setVerwaltungTab("anfragen")}
+                    onClick={() => setVerwaltungTab("formulare")}
                   >
-                    Anfragen
+                    Formulare
                     {registrationRequests.filter(r => r.status === "neu").length > 0 && (
                       <span style={{
                         marginLeft: 6,
@@ -5604,192 +5607,292 @@ export default function App() {
                   </div>
                 )}
 
-                {verwaltungTab === "anfragen" && (
+                {verwaltungTab === "formulare" && (
                   <div className="card">
-                    <h2>Trainingsanfragen</h2>
+                    <h2>Formulare</h2>
 
-                    <div style={{ marginBottom: 16 }}>
-                      <p className="muted">
-                        Teilen Sie diesen Link mit Interessenten:{" "}
-                        <code style={{
-                          background: "var(--bg-inset)",
-                          padding: "4px 8px",
-                          borderRadius: 4,
-                          fontSize: 13,
-                          wordBreak: "break-all"
-                        }}>
-                          {window.location.origin}/anmeldung?a={authUser?.accountId}
-                        </code>
-                        <button
-                          className="btn micro btnGhost"
-                          style={{ marginLeft: 8 }}
-                          onClick={() => {
-                            navigator.clipboard.writeText(
-                              `${window.location.origin}/anmeldung?a=${authUser?.accountId}`
-                            );
-                          }}
-                        >
-                          Kopieren
-                        </button>
-                      </p>
+                    {/* Sub-Tabs für Formulare */}
+                    <div className="tabBar" style={{ marginBottom: 20 }}>
+                      <button
+                        className={`tabBtn ${formulareTab === "anmeldung" ? "tabBtnActive" : ""}`}
+                        onClick={() => setFormulareTab("anmeldung")}
+                      >
+                        Anmeldung
+                        {registrationRequests.filter(r => r.status === "neu").length > 0 && (
+                          <span style={{
+                            marginLeft: 6,
+                            background: "var(--danger)",
+                            color: "white",
+                            borderRadius: "50%",
+                            width: 18,
+                            height: 18,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 11
+                          }}>
+                            {registrationRequests.filter(r => r.status === "neu").length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        className={`tabBtn ${formulareTab === "sepa" ? "tabBtnActive" : ""}`}
+                        onClick={() => setFormulareTab("sepa")}
+                      >
+                        SEPA-Mandat
+                      </button>
                     </div>
 
-                    {loadingRequests ? (
-                      <p className="muted">Laden...</p>
-                    ) : registrationRequests.length === 0 ? (
-                      <p className="muted">Noch keine Anfragen eingegangen.</p>
-                    ) : (
-                      <ul className="list">
-                        {registrationRequests.map((req) => (
-                          <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                              <div>
-                                <strong>{req.name}</strong>
-                                <div className="muted">{req.email}</div>
-                                <div className="muted" style={{ fontSize: 12 }}>
-                                  {new Date(req.created_at).toLocaleDateString("de-DE", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  })}
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span
-                                  className="pill"
-                                  style={{
-                                    background:
-                                      req.status === "neu"
-                                        ? "var(--primary)"
-                                        : req.status === "kontaktiert"
-                                        ? "var(--warning)"
-                                        : "var(--success)",
-                                    color: "white",
-                                    fontSize: 12,
-                                    padding: "4px 10px"
-                                  }}
-                                >
-                                  {req.status === "neu" ? "Neu" : req.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
-                                </span>
-                                <button
-                                  className="btn micro btnGhost"
-                                  onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
-                                >
-                                  {expandedRequestId === req.id ? "Weniger" : "Details"}
-                                </button>
-                              </div>
-                            </div>
+                    {/* Anmeldung Tab */}
+                    {formulareTab === "anmeldung" && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <p className="muted">
+                            Teilen Sie diesen Link mit Interessenten:{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                              wordBreak: "break-all"
+                            }}>
+                              {window.location.origin}/anmeldung?a={authUser?.accountId}
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/anmeldung?a=${authUser?.accountId}`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                        </div>
 
-                            {expandedRequestId === req.id && (
-                              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                                  {req.telefon && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Telefon</div>
-                                      <div>{req.telefon}</div>
+                        {loadingRequests ? (
+                          <p className="muted">Laden...</p>
+                        ) : registrationRequests.length === 0 ? (
+                          <p className="muted">Noch keine Anmeldungen eingegangen.</p>
+                        ) : (
+                          <ul className="list">
+                            {registrationRequests.map((req) => (
+                              <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <strong>{req.name}</strong>
+                                    <div className="muted">{req.email}</div>
+                                    <div className="muted" style={{ fontSize: 12 }}>
+                                      {new Date(req.created_at).toLocaleDateString("de-DE", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
                                     </div>
-                                  )}
-                                  {req.alter_jahre && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Alter</div>
-                                      <div>{req.alter_jahre} Jahre</div>
-                                    </div>
-                                  )}
-                                  {req.trainingsart && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Trainingsart</div>
-                                      <div>
-                                        {req.trainingsart === "einzel"
-                                          ? "Einzeltraining"
-                                          : req.trainingsart === "gruppe"
-                                          ? "Gruppentraining"
-                                          : "Beides möglich"}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {req.trainings_pro_woche && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Trainings pro Woche</div>
-                                      <div>{req.trainings_pro_woche}x</div>
-                                    </div>
-                                  )}
-                                  {req.erfahrungslevel && (
-                                    <div>
-                                      <div className="muted" style={{ fontSize: 11 }}>Erfahrungslevel</div>
-                                      <div>
-                                        {req.erfahrungslevel === "anfaenger"
-                                          ? "Anfänger"
-                                          : req.erfahrungslevel === "fortgeschritten"
-                                          ? "Fortgeschritten"
-                                          : "Profi"}
-                                      </div>
-                                    </div>
-                                  )}
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span
+                                      className="pill"
+                                      style={{
+                                        background:
+                                          req.status === "neu"
+                                            ? "var(--primary)"
+                                            : req.status === "kontaktiert"
+                                            ? "var(--warning)"
+                                            : "var(--success)",
+                                        color: "white",
+                                        fontSize: 12,
+                                        padding: "4px 10px"
+                                      }}
+                                    >
+                                      {req.status === "neu" ? "Neu" : req.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
+                                    </span>
+                                    <button
+                                      className="btn micro btnGhost"
+                                      onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
+                                    >
+                                      {expandedRequestId === req.id ? "Weniger" : "Details"}
+                                    </button>
+                                  </div>
                                 </div>
-                                {req.verfuegbarkeit && (
-                                  <div style={{ marginBottom: 12 }}>
-                                    <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>Verfügbarkeit</div>
-                                    <table className="verfuegbarkeitTable" style={{ fontSize: 13 }}>
-                                      <tbody>
-                                        {req.verfuegbarkeit.montag && (
-                                          <tr><td>Montag</td><td>{req.verfuegbarkeit.montag}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.dienstag && (
-                                          <tr><td>Dienstag</td><td>{req.verfuegbarkeit.dienstag}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.mittwoch && (
-                                          <tr><td>Mittwoch</td><td>{req.verfuegbarkeit.mittwoch}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.donnerstag && (
-                                          <tr><td>Donnerstag</td><td>{req.verfuegbarkeit.donnerstag}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.freitag && (
-                                          <tr><td>Freitag</td><td>{req.verfuegbarkeit.freitag}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.samstag && (
-                                          <tr><td>Samstag</td><td>{req.verfuegbarkeit.samstag}</td></tr>
-                                        )}
-                                        {req.verfuegbarkeit.sonntag && (
-                                          <tr><td>Sonntag</td><td>{req.verfuegbarkeit.sonntag}</td></tr>
-                                        )}
-                                      </tbody>
-                                    </table>
+
+                                {expandedRequestId === req.id && (
+                                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                      {req.telefon && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Telefon</div>
+                                          <div>{req.telefon}</div>
+                                        </div>
+                                      )}
+                                      {req.alter_jahre && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Alter</div>
+                                          <div>{req.alter_jahre} Jahre</div>
+                                        </div>
+                                      )}
+                                      {req.trainingsart && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Trainingsart</div>
+                                          <div>
+                                            {req.trainingsart === "einzel"
+                                              ? "Einzeltraining"
+                                              : req.trainingsart === "gruppe"
+                                              ? "Gruppentraining"
+                                              : "Beides möglich"}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {req.trainings_pro_woche && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Trainings pro Woche</div>
+                                          <div>{req.trainings_pro_woche}x</div>
+                                        </div>
+                                      )}
+                                      {req.erfahrungslevel && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Erfahrungslevel</div>
+                                          <div>
+                                            {req.erfahrungslevel === "anfaenger"
+                                              ? "Anfänger"
+                                              : req.erfahrungslevel === "fortgeschritten"
+                                              ? "Fortgeschritten"
+                                              : "Profi"}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {req.verfuegbarkeit && (
+                                      <div style={{ marginBottom: 12 }}>
+                                        <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>Verfügbarkeit</div>
+                                        <table className="verfuegbarkeitTable" style={{ fontSize: 13 }}>
+                                          <tbody>
+                                            {req.verfuegbarkeit.montag && (
+                                              <tr><td>Montag</td><td>{req.verfuegbarkeit.montag}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.dienstag && (
+                                              <tr><td>Dienstag</td><td>{req.verfuegbarkeit.dienstag}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.mittwoch && (
+                                              <tr><td>Mittwoch</td><td>{req.verfuegbarkeit.mittwoch}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.donnerstag && (
+                                              <tr><td>Donnerstag</td><td>{req.verfuegbarkeit.donnerstag}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.freitag && (
+                                              <tr><td>Freitag</td><td>{req.verfuegbarkeit.freitag}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.samstag && (
+                                              <tr><td>Samstag</td><td>{req.verfuegbarkeit.samstag}</td></tr>
+                                            )}
+                                            {req.verfuegbarkeit.sonntag && (
+                                              <tr><td>Sonntag</td><td>{req.verfuegbarkeit.sonntag}</td></tr>
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                    {req.nachricht && (
+                                      <div style={{ marginBottom: 12 }}>
+                                        <div className="muted" style={{ fontSize: 11 }}>Nachricht</div>
+                                        <div style={{ whiteSpace: "pre-wrap" }}>{req.nachricht}</div>
+                                      </div>
+                                    )}
+                                    <div className="smallActions">
+                                      <select
+                                        value={req.status}
+                                        onChange={(e) => updateRequestStatus(req.id, e.target.value)}
+                                        style={{ padding: "6px 10px", borderRadius: 8 }}
+                                      >
+                                        <option value="neu">Neu</option>
+                                        <option value="kontaktiert">Kontaktiert</option>
+                                        <option value="erledigt">Erledigt</option>
+                                      </select>
+                                      <button
+                                        className="btn micro btnWarn"
+                                        onClick={() => {
+                                          if (window.confirm("Anmeldung wirklich löschen?")) {
+                                            deleteRegistrationRequest(req.id);
+                                          }
+                                        }}
+                                      >
+                                        Löschen
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
-                                {req.nachricht && (
-                                  <div style={{ marginBottom: 12 }}>
-                                    <div className="muted" style={{ fontSize: 11 }}>Nachricht</div>
-                                    <div style={{ whiteSpace: "pre-wrap" }}>{req.nachricht}</div>
-                                  </div>
-                                )}
-                                <div className="smallActions">
-                                  <select
-                                    value={req.status}
-                                    onChange={(e) => updateRequestStatus(req.id, e.target.value)}
-                                    style={{ padding: "6px 10px", borderRadius: 8 }}
-                                  >
-                                    <option value="neu">Neu</option>
-                                    <option value="kontaktiert">Kontaktiert</option>
-                                    <option value="erledigt">Erledigt</option>
-                                  </select>
-                                  <button
-                                    className="btn micro btnWarn"
-                                    onClick={() => {
-                                      if (window.confirm("Anfrage wirklich löschen?")) {
-                                        deleteRegistrationRequest(req.id);
-                                      }
-                                    }}
-                                  >
-                                    Löschen
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )}
+
+                    {/* SEPA-Mandat Tab */}
+                    {formulareTab === "sepa" && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <p className="muted">
+                            Teilen Sie diesen Link für das SEPA-Lastschriftmandat:{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                              wordBreak: "break-all"
+                            }}>
+                              {window.location.origin}/sepa?a={authUser?.accountId}
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/sepa?a=${authUser?.accountId}`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                        </div>
+
+                        <div style={{
+                          background: "var(--bg-inset)",
+                          padding: 16,
+                          borderRadius: 8,
+                          marginBottom: 16
+                        }}>
+                          <h4 style={{ marginBottom: 8 }}>SEPA-Formular Felder:</h4>
+                          <ul style={{ margin: 0, paddingLeft: 20, color: "var(--text-muted)" }}>
+                            <li>Vorname & Nachname des Kontoinhabers</li>
+                            <li>Bei Kindern: Name des Elternteils/Erziehungsberechtigten</li>
+                            <li>Rechnungsadresse (Straße, PLZ, Ort)</li>
+                            <li>IBAN</li>
+                            <li>Gläubiger-Identifikationsnummer (wird automatisch eingefügt)</li>
+                            <li>Mandatsreferenz (wird automatisch generiert)</li>
+                            <li>Einwilligung zur SEPA-Lastschrift</li>
+                            <li>Datum & digitale Unterschrift</li>
+                          </ul>
+                        </div>
+
+                        <p className="muted" style={{ fontSize: 13 }}>
+                          Eingegangene SEPA-Mandate werden hier angezeigt. Die Daten können dann direkt einem Spieler zugeordnet werden.
+                        </p>
+
+                        <div style={{
+                          textAlign: "center",
+                          padding: "40px 20px",
+                          color: "var(--text-muted)"
+                        }}>
+                          <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                          <div>Noch keine SEPA-Mandate eingegangen.</div>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
