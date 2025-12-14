@@ -1503,6 +1503,9 @@ export default function App() {
   const [agbLoading, setAgbLoading] = useState(false);
   const [agbSaving, setAgbSaving] = useState(false);
   const [editingAgbSectionId, setEditingAgbSectionId] = useState<string | null>(null);
+  const [agbInlineColor, setAgbInlineColor] = useState("#dc2626");
+  const agbContentRef = React.useRef<HTMLTextAreaElement>(null);
+  const agbItemsRef = React.useRef<HTMLTextAreaElement>(null);
 
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
@@ -2810,6 +2813,36 @@ export default function App() {
     const swapIndex = direction === "up" ? index - 1 : index + 1;
     [newSections[index], newSections[swapIndex]] = [newSections[swapIndex], newSections[index]];
     setAgbSections(newSections);
+  }
+
+  function applyAgbInlineColor(sectionId: string, field: "content" | "items") {
+    const ref = field === "content" ? agbContentRef : agbItemsRef;
+    const textarea = ref.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) {
+      alert("Bitte markieren Sie zuerst den Text, den Sie farbig hervorheben möchten.");
+      return;
+    }
+
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    const coloredText = `{${agbInlineColor}}${selectedText}{/}`;
+    const newText = text.substring(0, start) + coloredText + text.substring(end);
+
+    if (field === "content") {
+      updateAgbSection(sectionId, { content: newText });
+    } else {
+      updateAgbSection(sectionId, { items: newText.split("\n").filter(line => line.trim()) });
+    }
+
+    // Restore focus and selection
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start, start + coloredText.length);
+    }, 0);
   }
 
   async function updateRequestStatus(requestId: string, newStatus: string) {
@@ -6456,18 +6489,83 @@ export default function App() {
 
                                     <div className="field" style={{ marginBottom: 12 }}>
                                       <label>Einleitungstext (optional)</label>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                                        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Textfarbe:</span>
+                                        <input
+                                          type="color"
+                                          value={agbInlineColor}
+                                          onChange={(e) => setAgbInlineColor(e.target.value)}
+                                          style={{ width: 28, height: 28, padding: 1, cursor: "pointer" }}
+                                        />
+                                        {["#dc2626", "#16a34a", "#2563eb", "#9333ea", "#ea580c"].map(color => (
+                                          <button
+                                            key={color}
+                                            onClick={() => setAgbInlineColor(color)}
+                                            style={{
+                                              width: 20,
+                                              height: 20,
+                                              borderRadius: 4,
+                                              background: color,
+                                              border: agbInlineColor === color ? "2px solid #000" : "1px solid var(--border)",
+                                              cursor: "pointer"
+                                            }}
+                                          />
+                                        ))}
+                                        <button
+                                          className="btn micro"
+                                          onClick={() => applyAgbInlineColor(section.id, "content")}
+                                          style={{ marginLeft: 8 }}
+                                        >
+                                          Farbe anwenden
+                                        </button>
+                                      </div>
                                       <textarea
+                                        ref={agbContentRef}
                                         value={section.content}
                                         onChange={(e) => updateAgbSection(section.id, { content: e.target.value })}
                                         placeholder="Optionaler einleitender Text vor der Liste..."
                                         rows={2}
                                         style={{ resize: "vertical" }}
                                       />
+                                      <p className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                                        Text markieren und "Farbe anwenden" klicken. Syntax: {"{#ff0000}roter Text{/}"}
+                                      </p>
                                     </div>
 
                                     <div className="field">
                                       <label>Listenpunkte (einer pro Zeile)</label>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                                        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Textfarbe:</span>
+                                        <input
+                                          type="color"
+                                          value={agbInlineColor}
+                                          onChange={(e) => setAgbInlineColor(e.target.value)}
+                                          style={{ width: 28, height: 28, padding: 1, cursor: "pointer" }}
+                                        />
+                                        {["#dc2626", "#16a34a", "#2563eb", "#9333ea", "#ea580c"].map(color => (
+                                          <button
+                                            key={color}
+                                            onClick={() => setAgbInlineColor(color)}
+                                            style={{
+                                              width: 20,
+                                              height: 20,
+                                              borderRadius: 4,
+                                              background: color,
+                                              border: agbInlineColor === color ? "2px solid #000" : "1px solid var(--border)",
+                                              cursor: "pointer"
+                                            }}
+                                          />
+                                        ))}
+                                        <button
+                                          className="btn micro"
+                                          onClick={() => applyAgbInlineColor(section.id, "items")}
+                                          style={{ marginLeft: 8 }}
+                                        >
+                                          Farbe anwenden
+                                        </button>
+                                      </div>
                                       <textarea
+                                        ref={agbItemsRef}
                                         value={section.items.join("\n")}
                                         onChange={(e) => updateAgbSection(section.id, {
                                           items: e.target.value.split("\n").filter(line => line.trim())
@@ -6477,7 +6575,7 @@ export default function App() {
                                         style={{ resize: "vertical", fontFamily: "monospace", fontSize: 13 }}
                                       />
                                       <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                                        Jede Zeile wird als separater Listenpunkt angezeigt.
+                                        Jede Zeile wird als separater Listenpunkt angezeigt. **fett**, {"{#ff0000}farbig{/}"}
                                       </p>
                                     </div>
 

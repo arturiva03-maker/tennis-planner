@@ -12,6 +12,16 @@ type AGBSection = {
   items: string[];
 };
 
+// Parse text with inline colors {#HEXCODE}text{/} and bold **text**
+function parseFormattedText(text: string): string {
+  let result = text;
+  // Parse inline colors: {#HEXCODE}text{/}
+  result = result.replace(/\{(#[0-9A-Fa-f]{3,6})\}(.*?)\{\/\}/g, '<span style="color:$1">$2</span>');
+  // Parse bold: **text**
+  result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return result;
+}
+
 export default function AGBPage() {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a");
@@ -78,12 +88,15 @@ export default function AGBPage() {
                 {index + 1}. {section.title}
               </h2>
               {section.content && (
-                <p style={{ marginBottom: 12, color: section.textColor || "#1f2937" }}>{section.content}</p>
+                <p
+                  style={{ marginBottom: 12, color: section.textColor || "#1f2937" }}
+                  dangerouslySetInnerHTML={{ __html: parseFormattedText(section.content) }}
+                />
               )}
               {section.items.length > 0 && (
                 <ul style={{ paddingLeft: 20, lineHeight: 1.8, color: section.textColor || "#1f2937" }}>
                   {section.items.map((item, i) => (
-                    <li key={i} dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                    <li key={i} dangerouslySetInnerHTML={{ __html: parseFormattedText(item) }} />
                   ))}
                 </ul>
               )}
