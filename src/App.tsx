@@ -7256,51 +7256,61 @@ export default function App() {
                         </div>
                       )}
 
-                      {vertretungDaten.length > 0 && (
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-                          {vertretungDaten.map((datum) => {
-                            const d = new Date(datum + "T12:00:00");
-                            const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
-                            return (
-                              <span
-                                key={datum}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  background: "var(--bg-card)",
-                                  padding: "3px 8px",
-                                  borderRadius: "var(--radius-md)",
-                                  fontSize: 12,
-                                  border: "1px solid var(--border)"
-                                }}
-                              >
-                                {formatted}
-                                <button
-                                  type="button"
+                      {(() => {
+                        // Nur zukünftige Daten anzeigen (vergangene ausblenden)
+                        const heute = todayISO();
+                        const zukuenftigeDaten = vertretungDaten.filter(d => d >= heute);
+
+                        return zukuenftigeDaten.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+                            {zukuenftigeDaten.map((datum) => {
+                              const d = new Date(datum + "T12:00:00");
+                              const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
+                              return (
+                                <span
+                                  key={datum}
                                   style={{
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    padding: 0,
-                                    fontSize: 13,
-                                    color: "var(--text-muted)",
-                                    lineHeight: 1
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                    background: "var(--bg-card)",
+                                    padding: "3px 8px",
+                                    borderRadius: "var(--radius-md)",
+                                    fontSize: 12,
+                                    border: "1px solid var(--border)"
                                   }}
-                                  onClick={() => setVertretungDaten(vertretungDaten.filter((dd) => dd !== datum))}
                                 >
-                                  ×
-                                </button>
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
+                                  {formatted}
+                                  <button
+                                    type="button"
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      padding: 0,
+                                      fontSize: 13,
+                                      color: "var(--text-muted)",
+                                      lineHeight: 1
+                                    }}
+                                    onClick={() => setVertretungDaten(vertretungDaten.filter((dd) => dd !== datum))}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
 
                       {/* Trainings und Vertretungen zuweisen */}
-                      {vertretungTrainerId && vertretungDaten.length > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                          {vertretungDaten.map((datum) => {
+                      {(() => {
+                        const heute = todayISO();
+                        const zukuenftigeDaten = vertretungDaten.filter(d => d >= heute);
+
+                        return vertretungTrainerId && zukuenftigeDaten.length > 0 && (
+                          <div style={{ marginTop: 16 }}>
+                            {zukuenftigeDaten.map((datum) => {
                             const d = new Date(datum + "T12:00:00");
                             const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
                             const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
@@ -7383,9 +7393,10 @@ export default function App() {
                                 })}
                               </div>
                             );
-                          })}
-                        </div>
-                      )}
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </>
                 )}
