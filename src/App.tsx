@@ -1428,7 +1428,12 @@ export default function App() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
-  const [rechnungNummer, setRechnungNummer] = useState("");
+
+  const generateRechnungNummer = () => {
+    const d = new Date();
+    return `RE-${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  };
+  const [rechnungNummer, setRechnungNummer] = useState(generateRechnungNummer);
 
   const [tarifName, setTarifName] = useState("");
   const [tarifPreisProStunde, setTarifPreisProStunde] = useState(60);
@@ -7440,13 +7445,24 @@ export default function App() {
                         onChange={(e) => setRechnungMonat(e.target.value)}
                       />
                     </div>
-                    <div className="field" style={{ minWidth: 160 }}>
+                    <div className="field" style={{ minWidth: 220 }}>
                       <label>Rechnungsnummer</label>
-                      <input
-                        value={rechnungNummer}
-                        onChange={(e) => setRechnungNummer(e.target.value)}
-                        placeholder="RE-2024-001"
-                      />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          value={rechnungNummer}
+                          readOnly
+                          style={{ flex: 1, background: "var(--bg-inset)" }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btnGhost"
+                          style={{ padding: "6px 10px", fontSize: 12 }}
+                          onClick={() => setRechnungNummer(generateRechnungNummer())}
+                          title="Neue Nummer generieren"
+                        >
+                          Neu
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -7916,6 +7932,9 @@ export default function App() {
                             win.document.close();
                             setTimeout(() => win.print(), 200);
                           }
+                          // Nach dem Drucken: Modal schließen und neue Nummer für nächste Rechnung
+                          setShowRechnungPreview(false);
+                          setRechnungNummer(generateRechnungNummer());
                         }}
                       >
                         PDF erstellen / Drucken
