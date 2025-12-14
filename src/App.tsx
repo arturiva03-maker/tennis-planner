@@ -7264,16 +7264,16 @@ export default function App() {
                         const jetzt = new Date();
                         const zukuenftigeDaten = vertretungDaten.filter(datum => {
                           // Finde alle Trainings dieses Trainers an diesem Tag
-                          const dayTrainings = trainings.filter(
-                            t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
-                          );
+                          const dayTrainings = vertretungTrainerId
+                            ? trainings.filter(t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId)
+                            : trainings.filter(t => t.datum === datum);
                           if (dayTrainings.length === 0) {
                             // Keine Trainings = Datum nur anzeigen wenn heute oder später
                             return datum >= todayISO();
                           }
                           // Prüfe ob das letzte Training noch nicht beendet ist
                           const letztesEnde = dayTrainings
-                            .map(t => new Date(`${t.datum}T${t.uhrzeitBis}`))
+                            .map(t => new Date(`${t.datum}T${t.uhrzeitBis}:00`))
                             .reduce((a, b) => a > b ? a : b);
                           return letztesEnde > jetzt;
                         });
@@ -7325,14 +7325,14 @@ export default function App() {
                         // Nur Daten anzeigen, wo noch nicht alle Trainings beendet sind
                         const jetzt = new Date();
                         const zukuenftigeDaten = vertretungDaten.filter(datum => {
-                          const dayTrainings = trainings.filter(
-                            t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
-                          );
+                          const dayTrainings = vertretungTrainerId
+                            ? trainings.filter(t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId)
+                            : trainings.filter(t => t.datum === datum);
                           if (dayTrainings.length === 0) {
                             return datum >= todayISO();
                           }
                           const letztesEnde = dayTrainings
-                            .map(t => new Date(`${t.datum}T${t.uhrzeitBis}`))
+                            .map(t => new Date(`${t.datum}T${t.uhrzeitBis}:00`))
                             .reduce((a, b) => a > b ? a : b);
                           return letztesEnde > jetzt;
                         });
