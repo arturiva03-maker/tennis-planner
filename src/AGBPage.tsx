@@ -138,7 +138,7 @@ export default function AGBPage() {
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
             7. Vereinsmitgliedschaft (BSC Rehberge Tennis)
           </h2>
-          <p style={{ marginBottom: 12 }}>
+          <p style={{ marginBottom: 12, color: "#dc2626" }}>
             Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich
             (Ausnahmen: Probetraining, Tenniscamps, Wintertraining).
           </p>
