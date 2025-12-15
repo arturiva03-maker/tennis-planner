@@ -46,6 +46,12 @@ export default function AGBPage() {
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
             2. Saisonbedingungen
           </h2>
+          <p style={{ marginBottom: 16, lineHeight: 1.8 }}>
+            Der Saisonzeitraum kann je nach Wetter variieren. Der genaue Trainingsbeginn und das Ende einer Saison wird den Teilnehmern mitgeteilt. Die Hallengebühr wird bei unter-saisonalem Beitritt anteilig berechnet.
+          </p>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
+            In diesem Fall wird die genaue Hallengebühr mitgeteilt.
+          </p>
           <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
             <li><strong>Sommersaison:</strong> Mitte April bis Mitte Oktober</li>
             <li><strong>Wintersaison:</strong> Mitte Oktober bis Mitte April</li>
