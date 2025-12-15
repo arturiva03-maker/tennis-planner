@@ -353,8 +353,8 @@ export default function SepaForm() {
               }}>
                 <strong>SEPA-Lastschriftmandat</strong>
                 <p style={{ margin: "12px 0" }}>
-                  Ich ermächtige den Zahlungsempfänger, Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
-                  Zugleich weise ich mein Kreditinstitut an, die vom Zahlungsempfänger auf mein Konto gezogenen
+                  Ich ermächtige die Tennisschule Zlatan Palazov und Artur Ivanenko GbR, Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
+                  Zugleich weise ich mein Kreditinstitut an, die von der Tennisschule Zlatan Palazov und Artur Ivanenko GbR auf mein Konto gezogenen
                   Lastschriften einzulösen.
                 </p>
                 <p style={{ margin: "12px 0" }}>

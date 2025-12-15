@@ -2583,6 +2583,28 @@ export default function App() {
     }
   }
 
+  async function deleteSepaMandate(mandateId: string) {
+    if (!window.confirm("Möchten Sie dieses SEPA-Mandat wirklich löschen?")) {
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("sepa_mandates")
+        .delete()
+        .eq("id", mandateId);
+
+      if (error) {
+        console.error("Error deleting SEPA mandate:", error);
+        return;
+      }
+
+      setSepaMandates((prev) => prev.filter((m) => m.id !== mandateId));
+      setExpandedSepaMandateId(null);
+    } catch (err) {
+      console.error("Error deleting SEPA mandate:", err);
+    }
+  }
+
   async function updateRequestStatus(requestId: string, newStatus: string) {
     try {
       const { error } = await supabase
@@ -6029,6 +6051,13 @@ export default function App() {
                                         <option value="zugeordnet">Zugeordnet</option>
                                         <option value="erledigt">Erledigt</option>
                                       </select>
+                                      <button
+                                        className="btn danger"
+                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        onClick={() => deleteSepaMandate(mandate.id)}
+                                      >
+                                        Löschen
+                                      </button>
                                     </div>
                                   </div>
                                 )}
