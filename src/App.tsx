@@ -501,7 +501,7 @@ function generateInvoiceHTML(data: {
         <div class="address-content">
           <strong>${trainerName}</strong><br>
           ${adresseHtml}
-          ${ustIdNr ? `<br>USt-IdNr: ${ustIdNr}` : ''}
+          ${ustIdNr ? `<br>Steuernummer: ${ustIdNr}` : ''}
         </div>
       </div>
       <div class="address-block">
@@ -792,7 +792,7 @@ function generateFinalInvoiceHTML(data: {
         <div class="address-content">
           <strong>${rechnungssteller}</strong><br>
           ${adresseHtml}
-          ${ustIdNr ? `<br>USt-IdNr: ${ustIdNr}` : ''}
+          ${ustIdNr ? `<br>Steuernummer: ${ustIdNr}` : ''}
         </div>
       </div>
       <div class="address-block">
@@ -5273,11 +5273,11 @@ export default function App() {
                             />
                           </div>
                           <div className="field">
-                            <label>USt-IdNr</label>
+                            <label>Steuernummer</label>
                             <input
                               value={trainerUstIdNr}
                               onChange={(e) => setTrainerUstIdNr(e.target.value)}
-                              placeholder="DE123456789"
+                              placeholder="123/456/78901"
                             />
                           </div>
                         </div>
@@ -9430,7 +9430,7 @@ export default function App() {
               </div>
 
               <div className="field" style={{ marginBottom: 12 }}>
-                <label>USt-IdNr (optional)</label>
+                <label>Steuernummer (optional)</label>
                 <input
                   type="text"
                   value={invoiceDialog.ustIdNr}
@@ -9438,7 +9438,7 @@ export default function App() {
                     ...invoiceDialog,
                     ustIdNr: e.target.value
                   })}
-                  placeholder="DE123456789"
+                  placeholder="123/456/78901"
                 />
               </div>
 
@@ -9554,12 +9554,12 @@ export default function App() {
                   />
                 </div>
                 <div className="field">
-                  <label>USt-IdNr (optional)</label>
+                  <label>Steuernummer (optional)</label>
                   <input
                     type="text"
                     value={invoicePreview.ustIdNr}
                     onChange={(e) => setInvoicePreview({ ...invoicePreview, ustIdNr: e.target.value })}
-                    placeholder="DE123456789"
+                    placeholder="123/456/78901"
                     style={{ backgroundColor: '#fff' }}
                   />
                 </div>
