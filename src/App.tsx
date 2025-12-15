@@ -5876,7 +5876,7 @@ export default function App() {
                               style={{ padding: "4px 8px" }}
                             >
                               <option value="alle">Alle</option>
-                              <option value="offen">Offen (Neu/Kontaktiert)</option>
+                              <option value="offen">Offen</option>
                               <option value="erledigt">Erledigt</option>
                             </select>
                           </div>
@@ -5945,18 +5945,13 @@ export default function App() {
                                     <span
                                       className="pill"
                                       style={{
-                                        background:
-                                          req.status === "neu"
-                                            ? "var(--primary)"
-                                            : req.status === "kontaktiert"
-                                            ? "var(--warning)"
-                                            : "var(--success)",
+                                        background: req.status === "erledigt" ? "var(--success)" : "var(--danger)",
                                         color: "white",
                                         fontSize: 12,
                                         padding: "4px 10px"
                                       }}
                                     >
-                                      {req.status === "neu" ? "Neu" : req.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
+                                      {req.status === "erledigt" ? "Erledigt" : "Offen"}
                                     </span>
                                     <button
                                       className="btn micro btnGhost"
@@ -6051,12 +6046,11 @@ export default function App() {
                                     )}
                                     <div className="smallActions">
                                       <select
-                                        value={req.status}
+                                        value={req.status === "erledigt" ? "erledigt" : "offen"}
                                         onChange={(e) => updateRequestStatus(req.id, e.target.value)}
                                         style={{ padding: "6px 10px", borderRadius: 8 }}
                                       >
-                                        <option value="neu">Neu</option>
-                                        <option value="kontaktiert">Kontaktiert</option>
+                                        <option value="offen">Offen</option>
                                         <option value="erledigt">Erledigt</option>
                                       </select>
                                       <button
