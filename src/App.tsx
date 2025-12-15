@@ -76,6 +76,7 @@ type RegistrationRequest = {
   nachricht: string | null;
   created_at: string;
   status: string;
+  anlage?: string | null;
 };
 
 type SepaMandate = {
@@ -5772,8 +5773,8 @@ export default function App() {
                     {formulareTab === "anmeldung" && (
                       <>
                         <div style={{ marginBottom: 16 }}>
-                          <p className="muted">
-                            Teilen Sie diesen Link mit Interessenten:{" "}
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Anmeldung Wedding:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
@@ -5781,14 +5782,37 @@ export default function App() {
                               fontSize: 13,
                               wordBreak: "break-all"
                             }}>
-                              {window.location.origin}/anmeldung?a={authUser?.accountId}
+                              {window.location.origin}/anmeldung-wedding?a={authUser?.accountId}
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/anmeldung?a=${authUser?.accountId}`
+                                  `${window.location.origin}/anmeldung-wedding?a=${authUser?.accountId}`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                          <p className="muted">
+                            <strong>Anmeldung Britz:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                              wordBreak: "break-all"
+                            }}>
+                              {window.location.origin}/anmeldung-britz?a={authUser?.accountId}
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/anmeldung-britz?a=${authUser?.accountId}`
                                 );
                               }}
                             >
@@ -5807,7 +5831,20 @@ export default function App() {
                               <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                   <div>
-                                    <strong>{req.name}</strong>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                      <strong>{req.name}</strong>
+                                      {req.anlage && (
+                                        <span style={{
+                                          fontSize: 11,
+                                          background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                                          color: req.anlage === "Britz" ? "#000" : "#fff",
+                                          padding: "2px 6px",
+                                          borderRadius: 4
+                                        }}>
+                                          {req.anlage}
+                                        </span>
+                                      )}
+                                    </div>
                                     <div className="muted">{req.email}</div>
                                     <div className="muted" style={{ fontSize: 12 }}>
                                       {new Date(req.created_at).toLocaleDateString("de-DE", {

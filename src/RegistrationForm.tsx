@@ -27,7 +27,11 @@ const WOCHENTAGE: { key: Wochentag; label: string }[] = [
   { key: "sonntag", label: "Sonntag" },
 ];
 
-export default function RegistrationForm() {
+type RegistrationFormProps = {
+  anlage: "Wedding" | "Britz";
+};
+
+export default function RegistrationForm({ anlage }: RegistrationFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a");
 
@@ -139,6 +143,7 @@ export default function RegistrationForm() {
             ? parseInt(formData.alter_jahre, 10)
             : null,
           nachricht: formData.nachricht.trim() || null,
+          anlage: anlage,
         });
 
       if (insertError) {
@@ -192,7 +197,7 @@ export default function RegistrationForm() {
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
-        <h1>Trainingsanmeldung</h1>
+        <h1>Trainingsanmeldung {anlage}</h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Füllen Sie das Formular aus, um sich für ein Tennistraining
           anzumelden.

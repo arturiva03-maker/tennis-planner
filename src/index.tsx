@@ -16,7 +16,9 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/anmeldung" element={<RegistrationForm />} />
+        <Route path="/anmeldung" element={<RegistrationForm anlage="Wedding" />} />
+        <Route path="/anmeldung-wedding" element={<RegistrationForm anlage="Wedding" />} />
+        <Route path="/anmeldung-britz" element={<RegistrationForm anlage="Britz" />} />
         <Route path="/sepa" element={<SepaForm />} />
         <Route path="/agb" element={<AGBPage />} />
       </Routes>
