@@ -228,7 +228,6 @@ export default function SepaForm() {
                 name="vorname"
                 value={formData.vorname}
                 onChange={handleChange}
-                placeholder="Vorname des Spielers"
               />
             </div>
 
@@ -241,7 +240,6 @@ export default function SepaForm() {
                 name="nachname"
                 value={formData.nachname}
                 onChange={handleChange}
-                placeholder="Nachname des Spielers"
               />
             </div>
 
@@ -268,7 +266,6 @@ export default function SepaForm() {
                   name="elternteilName"
                   value={formData.elternteilName}
                   onChange={handleChange}
-                  placeholder="Vollständiger Name"
                 />
               </div>
             )}
@@ -282,7 +279,6 @@ export default function SepaForm() {
                 name="strasse"
                 value={formData.strasse}
                 onChange={handleChange}
-                placeholder="Musterstraße 123"
               />
             </div>
 
@@ -295,7 +291,6 @@ export default function SepaForm() {
                 name="plz"
                 value={formData.plz}
                 onChange={handleChange}
-                placeholder="12345"
                 maxLength={5}
               />
             </div>
@@ -309,7 +304,6 @@ export default function SepaForm() {
                 name="ort"
                 value={formData.ort}
                 onChange={handleChange}
-                placeholder="Musterstadt"
               />
             </div>
 
@@ -322,7 +316,6 @@ export default function SepaForm() {
                 name="iban"
                 value={formData.iban}
                 onChange={handleChange}
-                placeholder="DE89 3704 0044 0532 0130 00"
                 style={{ fontFamily: "monospace", letterSpacing: 1 }}
               />
             </div>
@@ -336,7 +329,6 @@ export default function SepaForm() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="ihre@email.de"
               />
               <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
                 An diese Adresse senden wir die Bestätigung des Mandats.
