@@ -144,6 +144,7 @@ type AppState = {
   payments: PaymentsMap;
   trainerPayments: TrainerPaymentsMap;
   trainerMonthSettled?: TrainerMonthSettledMap;
+  trainerBarSettled?: TrainerMonthSettledMap;
   notizen?: Notiz[];
   monthlyAdjustments?: MonthlyAdjustments;
   vertretungen?: Vertretung[];
@@ -962,6 +963,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
     trainerMonthSettled: parsed?.trainerMonthSettled ?? {},
+    trainerBarSettled: parsed?.trainerBarSettled ?? {},
     notizen: parsed?.notizen ?? [],
     monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
     vertretungen: parsed?.vertretungen ?? [],
@@ -1331,6 +1333,10 @@ export default function App() {
     useState<TrainerPaymentsMap>(initial.state.trainerPayments ?? {});
   const [trainerMonthSettled, setTrainerMonthSettled] =
     useState<TrainerMonthSettledMap>(initial.state.trainerMonthSettled ?? {});
+  const [trainerBarSettled, setTrainerBarSettled] =
+    useState<TrainerMonthSettledMap>(initial.state.trainerBarSettled ?? {});
+  const [adminTrainerPaymentView, setAdminTrainerPaymentView] =
+    useState<"none" | "bar" | "nichtBar">("none");
   const [notizen, setNotizen] = useState<Notiz[]>(
     initial.state.notizen ?? []
   );
@@ -1609,11 +1615,12 @@ export default function App() {
       payments,
       trainerPayments,
       trainerMonthSettled,
+      trainerBarSettled,
       notizen,
       monthlyAdjustments,
       vertretungen,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, notizen, monthlyAdjustments, vertretungen]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen]);
 
   useEffect(() => {
     writePlanungState(planungState);
@@ -1835,6 +1842,7 @@ export default function App() {
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
         setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
+        setTrainerBarSettled(local.state.trainerBarSettled ?? {});
         setNotizen(local.state.notizen ?? []);
         setVertretungen(local.state.vertretungen ?? []);
         setInitialSynced(true);
@@ -1860,6 +1868,7 @@ export default function App() {
         setPayments(cloud.payments ?? {});
         setTrainerPayments(cloud.trainerPayments ?? {});
         setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
+        setTrainerBarSettled(cloud.trainerBarSettled ?? {});
         setNotizen(cloud.notizen ?? []);
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
@@ -1872,6 +1881,7 @@ export default function App() {
         setPayments(local.state.payments ?? {});
         setTrainerPayments(local.state.trainerPayments ?? {});
         setTrainerMonthSettled(local.state.trainerMonthSettled ?? {});
+        setTrainerBarSettled(local.state.trainerBarSettled ?? {});
         setNotizen(local.state.notizen ?? []);
         setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
         setVertretungen(local.state.vertretungen ?? []);
@@ -1915,6 +1925,7 @@ export default function App() {
               setPayments(cloud.payments ?? {});
               setTrainerPayments(cloud.trainerPayments ?? {});
               setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
+              setTrainerBarSettled(cloud.trainerBarSettled ?? {});
               setNotizen(cloud.notizen ?? []);
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
@@ -1956,6 +1967,7 @@ export default function App() {
         payments,
         trainerPayments,
         trainerMonthSettled,
+        trainerBarSettled,
         notizen,
         monthlyAdjustments,
         vertretungen,
@@ -1995,6 +2007,7 @@ export default function App() {
     payments,
     trainerPayments,
     trainerMonthSettled,
+    trainerBarSettled,
     notizen,
     monthlyAdjustments,
     vertretungen,
@@ -3869,6 +3882,22 @@ export default function App() {
     [trainingsInMonth, tarifById]
   );
 
+  // Bar/Nicht-Bar Trainings für Admin-Ansicht (wenn ein Trainer gefiltert ist)
+  const adminTrainerTrainings = useMemo(() => {
+    if (abrechnungTrainerFilter === "alle") return [];
+    return trainingsForAbrechnung.filter((t) => {
+      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+      return tid === abrechnungTrainerFilter;
+    });
+  }, [trainingsForAbrechnung, abrechnungTrainerFilter, vertretungen, defaultTrainerId]);
+
+  const adminBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => t.barBezahlt), [adminTrainerTrainings]);
+  const adminNichtBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => !t.barBezahlt), [adminTrainerTrainings]);
+
+  // Bar-Abrechnung Key für Trainer
+  const trainerBarSettledKey = useCallback((month: string, trainerId: string) => `${month}__${trainerId}__bar`, []);
+
     if (authLoading || profileLoading || !initialSynced) {
     return (
       <div className="container">
@@ -3941,7 +3970,6 @@ export default function App() {
     }, 0)
   );
 
-  const trainerHonorarTotal = abrechnungTrainer.totalHonorar;
   const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
   const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
 
@@ -3968,6 +3996,12 @@ export default function App() {
       return diff > 0 ? acc + diff : acc;
     }, 0)
   );
+
+  // Effektive Rückzahlung (0 wenn bar-abgerechnet)
+  const effectiveRueckzahlung = abrechnungTrainerFilter !== "alle" &&
+    trainerBarSettled[trainerBarSettledKey(abrechnungMonat, abrechnungTrainerFilter)]
+    ? 0
+    : rueckzahlungTrainerOffen;
 
   const eigeneTrainingsImMonat = trainings.filter((t) => {
     if (t.status !== "durchgefuehrt") return false;
@@ -6960,14 +6994,6 @@ export default function App() {
                       ) && (
                         <div className="row" style={{ marginTop: 12 }}>
                           <span className="pill">
-                            Umsatz gesamt:{" "}
-                            <strong>{euro(abrechnung.total)}</strong>
-                          </span>
-                          <span className="pill">
-                            Trainer Honorar gesamt:{" "}
-                            <strong>{euro(trainerHonorarTotal)}</strong>
-                          </span>
-                          <span className="pill">
                             Honorar bezahlt:{" "}
                             <strong>{euro(trainerHonorarBezahltTotal)}</strong>
                           </span>
@@ -6977,51 +7003,184 @@ export default function App() {
                           </span>
                           <span className="pill">
                             Rückzahlung an Schule (bar):{" "}
-                            <strong>{euro(rueckzahlungTrainerOffen)}</strong>
+                            <strong>{euro(effectiveRueckzahlung)}</strong>
                           </span>
                         </div>
                       )}
 
+                    {/* Bar/Nicht-Bar Stunden für Admin (wenn ein Trainer gefiltert) */}
+                    {!isTrainer && abrechnungTrainerFilter !== "alle" && (
+                      <>
+                        <div style={{ height: 14 }} />
+                        <div className="card cardInset">
+                          <h2>Übersicht Stunden</h2>
+                          <p className="muted" style={{ marginBottom: 8 }}>Klicke auf eine Zeile, um die Details anzuzeigen.</p>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Art</th>
+                                <th>Anzahl</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr
+                                onClick={() => setAdminTrainerPaymentView(adminTrainerPaymentView === "nichtBar" ? "none" : "nichtBar")}
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: adminTrainerPaymentView === "nichtBar" ? "var(--surface-hover)" : undefined
+                                }}
+                              >
+                                <td>Nicht bar</td>
+                                <td>{adminNichtBarTrainings.length}</td>
+                              </tr>
+                              <tr
+                                onClick={() => setAdminTrainerPaymentView(adminTrainerPaymentView === "bar" ? "none" : "bar")}
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: adminTrainerPaymentView === "bar" ? "var(--surface-hover)" : undefined
+                                }}
+                              >
+                                <td>Bar</td>
+                                <td>{adminBarTrainings.length}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Detailansicht der Stunden für Admin */}
+                        {adminTrainerPaymentView !== "none" && (
+                          <div className="card cardInset" style={{ marginTop: 14 }}>
+                            <h2>
+                              {adminTrainerPaymentView === "bar"
+                                ? "Bar bezahlte Stunden"
+                                : "Nicht bar bezahlte Stunden"}
+                            </h2>
+                            {(adminTrainerPaymentView === "bar" ? adminBarTrainings : adminNichtBarTrainings).length === 0 ? (
+                              <p className="muted">
+                                {adminTrainerPaymentView === "bar"
+                                  ? "Keine bar bezahlten Stunden im ausgewählten Zeitraum."
+                                  : "Keine nicht bar bezahlten Stunden im ausgewählten Zeitraum."}
+                              </p>
+                            ) : (
+                              <table className="table">
+                                <thead>
+                                  <tr>
+                                    <th>Datum</th>
+                                    <th>Zeit</th>
+                                    <th>Spieler</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(adminTrainerPaymentView === "bar" ? adminBarTrainings : adminNichtBarTrainings)
+                                    .sort((a, b) => a.datum.localeCompare(b.datum) || a.uhrzeitVon.localeCompare(b.uhrzeitVon))
+                                    .map((t) => {
+                                      const [y, m, d] = t.datum.split("-");
+                                      const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
+                                      const spielerNamen = t.spielerIds
+                                        .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                        .join(", ");
+                                      return (
+                                        <tr key={t.id}>
+                                          <td>{germanDate}</td>
+                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>{spielerNamen}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     {/* Abrechnungsstatus für Admin - mit Toggle */}
                     {!isTrainer && abrechnungTrainerFilter !== "alle" && (
-                      <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 12 }}>
-                        {trainerMonthSettled[trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter)] ? (
-                          <>
-                            <span style={{ color: "#22c55e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontSize: 18 }}>✓</span> Abgerechnet
-                            </span>
-                            <button
-                              className="btn btnGhost"
-                              style={{ fontSize: 12, padding: "4px 10px" }}
-                              onClick={() => {
-                                const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
-                                setTrainerMonthSettled((prev) => {
-                                  const next = { ...prev };
-                                  delete next[key];
-                                  return next;
-                                });
-                              }}
-                            >
-                              Markierung entfernen
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                              <span style={{ fontSize: 18 }}>○</span> Nicht abgerechnet
-                            </span>
-                            <button
-                              className="btn"
-                              style={{ fontSize: 12, padding: "4px 10px" }}
-                              onClick={() => {
-                                const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
-                                setTrainerMonthSettled((prev) => ({ ...prev, [key]: true }));
-                              }}
-                            >
-                              Als abgerechnet markieren
-                            </button>
-                          </>
-                        )}
+                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* Honorar-Abrechnung */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ minWidth: 140 }}>Honorar:</span>
+                          {trainerMonthSettled[trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter)] ? (
+                            <>
+                              <span style={{ color: "#22c55e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                                <span style={{ fontSize: 18 }}>✓</span> Abgerechnet
+                              </span>
+                              <button
+                                className="btn btnGhost"
+                                style={{ fontSize: 12, padding: "4px 10px" }}
+                                onClick={() => {
+                                  const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                  setTrainerMonthSettled((prev) => {
+                                    const next = { ...prev };
+                                    delete next[key];
+                                    return next;
+                                  });
+                                }}
+                              >
+                                Markierung entfernen
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                                <span style={{ fontSize: 18 }}>○</span> Nicht abgerechnet
+                              </span>
+                              <button
+                                className="btn"
+                                style={{ fontSize: 12, padding: "4px 10px" }}
+                                onClick={() => {
+                                  const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                  setTrainerMonthSettled((prev) => ({ ...prev, [key]: true }));
+                                }}
+                              >
+                                Als abgerechnet markieren
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Bar-Abrechnung */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ minWidth: 140 }}>Bar-Rückzahlung:</span>
+                          {trainerBarSettled[trainerBarSettledKey(abrechnungMonat, abrechnungTrainerFilter)] ? (
+                            <>
+                              <span style={{ color: "#22c55e", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                                <span style={{ fontSize: 18 }}>✓</span> Erledigt
+                              </span>
+                              <button
+                                className="btn btnGhost"
+                                style={{ fontSize: 12, padding: "4px 10px" }}
+                                onClick={() => {
+                                  const key = trainerBarSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                  setTrainerBarSettled((prev) => {
+                                    const next = { ...prev };
+                                    delete next[key];
+                                    return next;
+                                  });
+                                }}
+                              >
+                                Markierung entfernen
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                                <span style={{ fontSize: 18 }}>○</span> Nicht erledigt
+                              </span>
+                              <button
+                                className="btn"
+                                style={{ fontSize: 12, padding: "4px 10px" }}
+                                onClick={() => {
+                                  const key = trainerBarSettledKey(abrechnungMonat, abrechnungTrainerFilter);
+                                  setTrainerBarSettled((prev) => ({ ...prev, [key]: true }));
+                                }}
+                              >
+                                Als erledigt markieren
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
 
