@@ -7916,10 +7916,25 @@ export default function App() {
                                                       value={v.vertretungTrainerId ?? ""}
                                                       onChange={(e) => {
                                                         const newId = e.target.value;
-                                                        setVertretungen((prev) => {
-                                                          const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
-                                                          return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
-                                                        });
+                                                        const oldId = v.vertretungTrainerId;
+
+                                                        console.log("Vertretung onChange (Liste):", { newId, oldId, spielerIds: t.spielerIds, training: t });
+
+                                                        // Wenn ein neuer Vertretungstrainer zugewiesen wird
+                                                        if (newId && newId !== oldId && t.spielerIds.length > 0) {
+                                                          console.log("Showing notification dialog (Liste)");
+                                                          setVertretungNotifyDialog({
+                                                            trainingId: v.trainingId,
+                                                            newTrainerId: newId,
+                                                            training: t
+                                                          });
+                                                        } else {
+                                                          console.log("Skipping dialog (Liste)");
+                                                          setVertretungen((prev) => {
+                                                            const filtered = prev.filter((vt) => vt.trainingId !== v.trainingId);
+                                                            return [...filtered, { trainingId: v.trainingId, vertretungTrainerId: newId || undefined }];
+                                                          });
+                                                        }
                                                       }}
                                                       style={{
                                                         minWidth: 130,
