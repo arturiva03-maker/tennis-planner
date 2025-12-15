@@ -110,6 +110,7 @@ type Training = {
   customPreisProStunde?: number;
   customAbrechnung?: "proTraining" | "proSpieler";
   barBezahlt?: boolean;
+  anlage?: string;
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
@@ -953,6 +954,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
         t.trainerId && trainers.some((tr) => tr.id === t.trainerId)
           ? t.trainerId
           : defaultTrainerId,
+      anlage: t.anlage ?? "Wedding",
     })),
     payments: parsed?.payments ?? {},
     trainerPayments: parsed?.trainerPayments ?? {},
@@ -1504,6 +1506,7 @@ export default function App() {
   >("");
   const [tCustomAbrechnung, setTCustomAbrechnung] =
     useState<"proTraining" | "proSpieler">("proTraining");
+  const [tAnlage, setTAnlage] = useState("Wedding");
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
@@ -2744,6 +2747,7 @@ export default function App() {
       typeof t.customPreisProStunde === "number" ? t.customPreisProStunde : ""
     );
     setTCustomAbrechnung(t.customAbrechnung ?? "proTraining");
+    setTAnlage(t.anlage ?? "Wedding");
     setTab("training");
   }
 
@@ -2763,6 +2767,7 @@ export default function App() {
     setTTarifId("");
     setTCustomPreisProStunde("");
     setTCustomAbrechnung("proTraining");
+    setTAnlage("Wedding");
   }
 
   function deleteTraining(id: string) {
@@ -3164,6 +3169,7 @@ export default function App() {
         notiz: tNotiz.trim() || undefined,
         customPreisProStunde: customPreis,
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
+        anlage: tAnlage,
       };
 
       if (existing.serieId && applySerieScope === "abHeute") {
@@ -3183,6 +3189,7 @@ export default function App() {
               notiz: payload.notiz,
               customPreisProStunde: payload.customPreisProStunde,
               customAbrechnung: payload.customAbrechnung,
+              anlage: payload.anlage,
             };
           })
         );
@@ -3219,6 +3226,7 @@ export default function App() {
           serieId,
           customPreisProStunde: customPreis,
           customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
+          anlage: tAnlage,
         });
         d = addDaysISO(d, 7);
       }
@@ -3243,6 +3251,7 @@ export default function App() {
         notiz: tNotiz.trim() || undefined,
         customPreisProStunde: customPreis,
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
+        anlage: tAnlage,
       },
     ]);
 
@@ -4667,6 +4676,16 @@ export default function App() {
                               {tr.name}
                             </option>
                           ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Anlage</label>
+                        <select
+                          value={tAnlage}
+                          onChange={(e) => setTAnlage(e.target.value)}
+                        >
+                          <option value="Wedding">Wedding</option>
+                          <option value="Britz">Britz</option>
                         </select>
                       </div>
                     </div>
