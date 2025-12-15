@@ -10292,19 +10292,25 @@ export default function App() {
           .filter((s): s is Spieler => !!s && !!s.kontaktEmail);
 
         const emailSubject = `Traineränderung für Ihr Training am ${germanDate}`;
-        const emailBody = `Liebe/r Tennisspieler/in,
 
-wir möchten Sie informieren, dass sich der Trainer für Ihr Training geändert hat:
+        // Funktion für personalisierten E-Mail-Text
+        const getEmailBody = (playerName: string) => `Hallo ${playerName},
 
-Datum: ${germanDate}
-Uhrzeit: ${training.uhrzeitVon} - ${training.uhrzeitBis} Uhr
-${originalTrainer ? `Ursprünglicher Trainer: ${originalTrainer.name}` : ""}
-Neuer Trainer: ${newTrainer?.name ?? "Unbekannt"}
+wir möchten dich informieren, dass sich der Trainer für dein Training geändert hat:
 
-Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+📅 Datum: ${germanDate}
+🕐 Uhrzeit: ${training.uhrzeitVon} - ${training.uhrzeitBis} Uhr
+${originalTrainer ? `👤 Ursprünglicher Trainer: ${originalTrainer.name}` : ""}
+✨ Neuer Trainer: ${newTrainer?.name ?? "Unbekannt"}
 
-Mit sportlichen Grüßen,
-Ihre Tennisschule`;
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Sportliche Grüße,
+Deine Tennisschule`;
+
+        // Vorschau mit erstem Empfänger oder Platzhalter
+        const previewName = recipients.length > 0 ? recipients[0].name : "[Name]";
+        const emailBodyPreview = getEmailBody(previewName);
 
         return (
           <div className="modalOverlay">
@@ -10376,7 +10382,12 @@ Ihre Tennisschule`;
                           fontSize: 13,
                           whiteSpace: "pre-wrap",
                           lineHeight: 1.5
-                        }}>{emailBody}</pre>
+                        }}>{emailBodyPreview}</pre>
+                        {recipients.length > 1 && (
+                          <div className="muted" style={{ marginTop: 8, fontSize: 12, fontStyle: "italic" }}>
+                            Jeder Spieler erhält eine personalisierte E-Mail mit seinem Namen.
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -10420,34 +10431,50 @@ Ihre Tennisschule`;
                     setVertretungNotifySending(true);
 
                     try {
-                      const response = await fetch("/api/send-newsletter", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          to: recipients.map(r => r.kontaktEmail),
-                          subject: emailSubject,
-                          body: emailBody,
-                          fromName: "Tennisschule"
-                        })
+                      // Sende individuelle E-Mails für jeden Empfänger
+                      let successCount = 0;
+                      const errors: string[] = [];
+
+                      for (const recipient of recipients) {
+                        try {
+                          const response = await fetch("/api/send-newsletter", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                              to: [recipient.kontaktEmail],
+                              subject: emailSubject,
+                              body: getEmailBody(recipient.name),
+                              fromName: "Tennisschule"
+                            })
+                          });
+
+                          if (!response.ok) {
+                            const error = await response.json();
+                            errors.push(`${recipient.name}: ${error.message || "Fehler"}`);
+                          } else {
+                            successCount++;
+                          }
+                        } catch (err) {
+                          errors.push(`${recipient.name}: ${err instanceof Error ? err.message : "Fehler"}`);
+                        }
+                      }
+
+                      // Vertretung speichern (unabhängig vom E-Mail-Erfolg)
+                      setVertretungen((prev) => {
+                        const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
+                        return [...filtered, {
+                          trainingId: vertretungNotifyDialog.trainingId,
+                          vertretungTrainerId: vertretungNotifyDialog.newTrainerId
+                        }];
                       });
 
-                    if (!response.ok) {
-                      const error = await response.json();
-                      throw new Error(error.message || "Fehler beim Versenden");
-                    }
-
-                    // Erfolg - jetzt die Vertretung speichern
-                    setVertretungen((prev) => {
-                      const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
-                      return [...filtered, {
-                        trainingId: vertretungNotifyDialog.trainingId,
-                        vertretungTrainerId: vertretungNotifyDialog.newTrainerId
-                      }];
-                    });
-
-                    alert(`E-Mail wurde erfolgreich an ${recipients.length} Spieler gesendet.`);
+                      if (errors.length > 0) {
+                        alert(`${successCount} von ${recipients.length} E-Mails erfolgreich gesendet.\n\nFehler:\n${errors.join("\n")}`);
+                      } else {
+                        alert(`E-Mail wurde erfolgreich an ${successCount} Spieler gesendet.`);
+                      }
                   } catch (err) {
                     alert(`Fehler beim Senden: ${err instanceof Error ? err.message : "Unbekannter Fehler"}\n\nDie Vertretung wird trotzdem gespeichert.`);
                     // Trotzdem speichern
