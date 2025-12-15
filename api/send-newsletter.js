@@ -1,6 +1,13 @@
-const nodemailer = require('nodemailer');
+let nodemailer;
+try {
+  nodemailer = require('nodemailer');
+} catch (e) {
+  console.error('Failed to load nodemailer:', e);
+}
 
 module.exports = async function handler(req, res) {
+  console.log('Newsletter function called, method:', req.method);
+
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,8 +21,13 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (!nodemailer) {
+    return res.status(500).json({ error: 'Nodemailer not available' });
+  }
+
   try {
-    const { to, subject, body, fromName } = req.body;
+    const { to, subject, body, fromName } = req.body || {};
+    console.log('Request body:', { to, subject, fromName, bodyLength: body?.length });
 
     if (!to || to.length === 0) {
       return res.status(400).json({ error: 'Keine Empfänger angegeben' });
@@ -27,6 +39,7 @@ module.exports = async function handler(req, res) {
 
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
+    console.log('SMTP config exists:', !!smtpUser, !!smtpPass);
 
     if (!smtpUser || !smtpPass) {
       return res.status(500).json({ error: 'SMTP-Konfiguration fehlt' });
@@ -47,6 +60,7 @@ module.exports = async function handler(req, res) {
 
     for (const recipient of to) {
       try {
+        console.log('Sending to:', recipient);
         await transporter.sendMail({
           from: `${fromName} <${smtpUser}>`,
           to: recipient,
@@ -54,7 +68,9 @@ module.exports = async function handler(req, res) {
           text: body,
         });
         successCount++;
+        console.log('Sent successfully to:', recipient);
       } catch (err) {
+        console.error('Send error:', err.message);
         errors.push(`${recipient}: ${err.message}`);
       }
     }
