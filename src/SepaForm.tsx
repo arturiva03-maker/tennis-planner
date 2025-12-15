@@ -378,7 +378,7 @@ export default function SepaForm() {
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)" }}
                 >
-                  Allgemeinen Geschäftsbedingungen (AGB)
+                  Trainingsbedingungen und Preise
                 </a>
                 .
               </p>
