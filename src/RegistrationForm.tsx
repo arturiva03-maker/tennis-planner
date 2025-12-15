@@ -444,15 +444,14 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
           </div>
 
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 16 }}>
-            Mit der Anmeldung akzeptieren Sie unsere{" "}
             <a
               href="/agb"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--primary)" }}
             >
-              Trainingsbedingungen
-            </a>.
+              Zu unseren Trainingspreisen und Bedingungen
+            </a>
           </p>
 
           <div style={{ marginTop: 16 }}>
