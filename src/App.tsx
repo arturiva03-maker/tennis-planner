@@ -1300,6 +1300,8 @@ export default function App() {
     useState<VerwaltungTab>("trainer");
   const [formulareTab, setFormulareTab] =
     useState<FormulareTab>("anmeldung");
+  const [anmeldungAnlageFilter, setAnmeldungAnlageFilter] =
+    useState<"alle" | "Wedding" | "Britz">("alle");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -5821,13 +5823,26 @@ export default function App() {
                           </p>
                         </div>
 
+                        <div style={{ marginBottom: 16 }}>
+                          <label style={{ marginRight: 8 }}>Filter Anlage:</label>
+                          <select
+                            value={anmeldungAnlageFilter}
+                            onChange={(e) => setAnmeldungAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
+                            style={{ padding: "4px 8px" }}
+                          >
+                            <option value="alle">Alle</option>
+                            <option value="Wedding">Wedding</option>
+                            <option value="Britz">Britz</option>
+                          </select>
+                        </div>
+
                         {loadingRequests ? (
                           <p className="muted">Laden...</p>
-                        ) : registrationRequests.length === 0 ? (
-                          <p className="muted">Noch keine Anmeldungen eingegangen.</p>
+                        ) : registrationRequests.filter(r => anmeldungAnlageFilter === "alle" || r.anlage === anmeldungAnlageFilter).length === 0 ? (
+                          <p className="muted">Keine Anmeldungen für diesen Filter.</p>
                         ) : (
                           <ul className="list">
-                            {registrationRequests.map((req) => (
+                            {registrationRequests.filter(r => anmeldungAnlageFilter === "alle" || r.anlage === anmeldungAnlageFilter).map((req) => (
                               <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                   <div>
