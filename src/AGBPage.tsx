@@ -5,10 +5,7 @@ export default function AGBPage() {
   return (
     <div className="registrationPage">
       <div className="card registrationCard" style={{ maxWidth: 800 }}>
-        <h1>Allgemeine Geschäftsbedingungen</h1>
-        <p className="muted" style={{ marginBottom: 24 }}>
-          Trainings- und Vertragsbedingungen für das Tennistraining
-        </p>
+        <h1>Trainingsbedingungen</h1>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
