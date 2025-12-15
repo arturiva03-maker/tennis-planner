@@ -6456,22 +6456,18 @@ export default function App() {
                           setNewsletterSuccess(false);
 
                           try {
-                            const response = await fetch(
-                              "https://mutzxaenmaketlmarqxn.supabase.co/functions/v1/rapid-processor",
-                              {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-                                },
-                                body: JSON.stringify({
-                                  to: recipients.map(r => r.kontaktEmail),
-                                  subject: newsletterSubject.trim(),
-                                  body: newsletterBody.trim(),
-                                  fromName: "Tennisschule"
-                                })
-                              }
-                            );
+                            const response = await fetch("/api/send-newsletter", {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                to: recipients.map(r => r.kontaktEmail),
+                                subject: newsletterSubject.trim(),
+                                body: newsletterBody.trim(),
+                                fromName: "Tennisschule"
+                              })
+                            });
 
                             if (!response.ok) {
                               const error = await response.json();
