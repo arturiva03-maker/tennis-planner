@@ -1305,6 +1305,8 @@ export default function App() {
   const [anmeldungNameSuche, setAnmeldungNameSuche] = useState("");
   const [anmeldungTagFilter, setAnmeldungTagFilter] =
     useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
+  const [anmeldungStatusFilter, setAnmeldungStatusFilter] =
+    useState<"alle" | "offen" | "erledigt">("alle");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -5866,6 +5868,18 @@ export default function App() {
                               <option value="sonntag">Sonntag</option>
                             </select>
                           </div>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Status</label>
+                            <select
+                              value={anmeldungStatusFilter}
+                              onChange={(e) => setAnmeldungStatusFilter(e.target.value as typeof anmeldungStatusFilter)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle</option>
+                              <option value="offen">Offen (Neu/Kontaktiert)</option>
+                              <option value="erledigt">Erledigt</option>
+                            </select>
+                          </div>
                         </div>
 
                         {loadingRequests ? (
@@ -5880,6 +5894,9 @@ export default function App() {
                             const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
                             if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                           }
+                          // Status Filter
+                          if (anmeldungStatusFilter === "offen" && r.status === "erledigt") return false;
+                          if (anmeldungStatusFilter === "erledigt" && r.status !== "erledigt") return false;
                           return true;
                         }).length === 0 ? (
                           <p className="muted">Keine Anmeldungen für diesen Filter.</p>
@@ -5892,6 +5909,8 @@ export default function App() {
                                 const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
+                              if (anmeldungStatusFilter === "offen" && r.status === "erledigt") return false;
+                              if (anmeldungStatusFilter === "erledigt" && r.status !== "erledigt") return false;
                               return true;
                             }).map((req) => (
                               <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
