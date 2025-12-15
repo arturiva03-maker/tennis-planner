@@ -1,7 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import nodemailer from 'nodemailer';
+const nodemailer = require('nodemailer');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req: any, res: any) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -71,4 +70,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Newsletter error:', err);
     return res.status(500).json({ error: err.message || 'Unbekannter Fehler' });
   }
-}
+};
