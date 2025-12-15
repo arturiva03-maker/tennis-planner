@@ -237,10 +237,36 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     <div className="registrationPage">
       <div className="card registrationCard">
         <h1>Trainingsanmeldung {anlage}</h1>
-        <p className="muted" style={{ marginBottom: 24 }}>
+        <p className="muted" style={{ marginBottom: 16 }}>
           Füllen Sie das Formular aus, um sich für ein Tennistraining
           anzumelden.
         </p>
+
+        <div style={{
+          background: "var(--bg-inset)",
+          border: "1px solid var(--warning)",
+          borderRadius: 8,
+          padding: 16,
+          marginBottom: 24,
+          fontSize: 14,
+          lineHeight: 1.6
+        }}>
+          <strong style={{ color: "var(--warning)" }}>Wichtiger Hinweis zur Mitgliedschaft:</strong>
+          <p style={{ margin: "8px 0 0 0" }}>
+            Das Training ist grundsätzlich nur für Vereinsmitglieder möglich. Mitglieder zahlen neben den Trainingsgebühren zusätzliche Mitgliedsgebühren. Ausnahmen bestehen für Probetrainings und Tenniscamps.
+          </p>
+          <p style={{ margin: "8px 0 0 0" }}>
+            Für weitere Informationen zu den Mitgliedspreisen schauen Sie bitte direkt auf der Vereinswebsite nach:{" "}
+            <a
+              href={anlage === "Wedding" ? "https://bscrehberge-tennis.de/" : "https://tc-britz.de/"}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--primary)" }}
+            >
+              {anlage === "Wedding" ? "bscrehberge-tennis.de" : "tc-britz.de"}
+            </a>
+          </p>
+        </div>
 
         {error && <div className="errorBox">{error}</div>}
 
