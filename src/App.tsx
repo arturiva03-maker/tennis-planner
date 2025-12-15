@@ -1364,6 +1364,12 @@ export default function App() {
   const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
   const [vertretungVon, setVertretungVon] = useState<string>("");
   const [vertretungBis, setVertretungBis] = useState<string>("");
+  const [vertretungNotifyDialog, setVertretungNotifyDialog] = useState<{
+    trainingId: string;
+    newTrainerId: string;
+    training: Training | null;
+  } | null>(null);
+  const [vertretungNotifySending, setVertretungNotifySending] = useState(false);
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -8296,11 +8302,23 @@ export default function App() {
                                         value={existingVertretung?.vertretungTrainerId ?? ""}
                                         onChange={(e) => {
                                           const newId = e.target.value;
-                                          // Immer speichern - auch ohne Vertretungstrainer (dann "offen")
-                                          setVertretungen((prev) => {
-                                            const filtered = prev.filter((v) => v.trainingId !== t.id);
-                                            return [...filtered, { trainingId: t.id, vertretungTrainerId: newId || undefined }];
-                                          });
+                                          const oldId = existingVertretung?.vertretungTrainerId;
+
+                                          // Wenn ein neuer Vertretungstrainer zugewiesen wird (nicht "offen" und nicht gleicher Trainer)
+                                          if (newId && newId !== oldId && t.spielerIds.length > 0) {
+                                            // Dialog zur Benachrichtigung anzeigen
+                                            setVertretungNotifyDialog({
+                                              trainingId: t.id,
+                                              newTrainerId: newId,
+                                              training: t
+                                            });
+                                          } else {
+                                            // Direkt speichern wenn keine Benachrichtigung nötig
+                                            setVertretungen((prev) => {
+                                              const filtered = prev.filter((v) => v.trainingId !== t.id);
+                                              return [...filtered, { trainingId: t.id, vertretungTrainerId: newId || undefined }];
+                                            });
+                                          }
                                         }}
                                         style={{ width: 130, fontSize: 13 }}
                                       >
@@ -10241,6 +10259,170 @@ export default function App() {
                 }}
               >
                 PDF erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vertretung Benachrichtigungs-Dialog */}
+      {vertretungNotifyDialog && (
+        <div className="modalOverlay">
+          <div className="modalCard" style={{ maxWidth: 500 }}>
+            <div className="modalHeader">
+              <div className="modalPill">Vertretung zugewiesen</div>
+              <h3>Spieler benachrichtigen?</h3>
+              <p className="muted">
+                {(() => {
+                  const training = vertretungNotifyDialog.training;
+                  const newTrainer = trainers.find(t => t.id === vertretungNotifyDialog.newTrainerId);
+                  if (!training) return "";
+                  const [y, m, d] = training.datum.split("-");
+                  const germanDate = d && m && y ? `${d}.${m}.${y}` : training.datum;
+                  return `${newTrainer?.name ?? "Unbekannt"} übernimmt das Training am ${germanDate} um ${training.uhrzeitVon} - ${training.uhrzeitBis} Uhr.`;
+                })()}
+              </p>
+            </div>
+
+            <div style={{ padding: "0 20px", marginBottom: 16 }}>
+              <strong>Betroffene Spieler:</strong>
+              <ul style={{ margin: "8px 0", paddingLeft: 20, fontSize: 13 }}>
+                {vertretungNotifyDialog.training?.spielerIds.map((spielerId) => {
+                  const s = spielerById.get(spielerId);
+                  return (
+                    <li key={spielerId} style={{ marginBottom: 4 }}>
+                      {s?.name ?? "Unbekannt"}
+                      {s?.kontaktEmail ? (
+                        <span className="muted"> ({s.kontaktEmail})</span>
+                      ) : (
+                        <span style={{ color: "var(--warning)", marginLeft: 4 }}>(keine E-Mail)</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {vertretungNotifyDialog.training?.spielerIds.filter(id => spielerById.get(id)?.kontaktEmail).length === 0 && (
+                <p style={{ color: "var(--warning)", fontSize: 13 }}>
+                  Keiner der Spieler hat eine E-Mail-Adresse hinterlegt.
+                </p>
+              )}
+            </div>
+
+            <div className="modalActions">
+              <button
+                className="btn btnGhost"
+                disabled={vertretungNotifySending}
+                onClick={() => {
+                  // Nur speichern ohne E-Mail
+                  setVertretungen((prev) => {
+                    const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
+                    return [...filtered, {
+                      trainingId: vertretungNotifyDialog.trainingId,
+                      vertretungTrainerId: vertretungNotifyDialog.newTrainerId
+                    }];
+                  });
+                  setVertretungNotifyDialog(null);
+                }}
+              >
+                Nein, nur speichern
+              </button>
+              <button
+                className="btn"
+                disabled={
+                  vertretungNotifySending ||
+                  (vertretungNotifyDialog.training?.spielerIds.filter(id => spielerById.get(id)?.kontaktEmail).length ?? 0) === 0
+                }
+                onClick={async () => {
+                  const training = vertretungNotifyDialog.training;
+                  const newTrainer = trainers.find(t => t.id === vertretungNotifyDialog.newTrainerId);
+                  if (!training || !newTrainer) return;
+
+                  const recipients = training.spielerIds
+                    .map(id => spielerById.get(id))
+                    .filter((s): s is Spieler => !!s && !!s.kontaktEmail);
+
+                  if (recipients.length === 0) {
+                    setVertretungen((prev) => {
+                      const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
+                      return [...filtered, {
+                        trainingId: vertretungNotifyDialog.trainingId,
+                        vertretungTrainerId: vertretungNotifyDialog.newTrainerId
+                      }];
+                    });
+                    setVertretungNotifyDialog(null);
+                    return;
+                  }
+
+                  setVertretungNotifySending(true);
+
+                  try {
+                    const [y, m, d] = training.datum.split("-");
+                    const germanDate = d && m && y ? `${d}.${m}.${y}` : training.datum;
+
+                    const originalTrainer = trainers.find(t =>
+                      t.id === (training.trainerId || defaultTrainerId)
+                    );
+
+                    const subject = `Traineränderung für Ihr Training am ${germanDate}`;
+                    const body = `Liebe/r Tennisspieler/in,
+
+wir möchten Sie informieren, dass sich der Trainer für Ihr Training geändert hat:
+
+Datum: ${germanDate}
+Uhrzeit: ${training.uhrzeitVon} - ${training.uhrzeitBis} Uhr
+${originalTrainer ? `Ursprünglicher Trainer: ${originalTrainer.name}` : ""}
+Neuer Trainer: ${newTrainer.name}
+
+Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+
+Mit sportlichen Grüßen,
+Ihre Tennisschule`;
+
+                    const response = await fetch("/api/send-newsletter", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        to: recipients.map(r => r.kontaktEmail),
+                        subject,
+                        body,
+                        fromName: "Tennisschule"
+                      })
+                    });
+
+                    if (!response.ok) {
+                      const error = await response.json();
+                      throw new Error(error.message || "Fehler beim Versenden");
+                    }
+
+                    // Erfolg - jetzt die Vertretung speichern
+                    setVertretungen((prev) => {
+                      const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
+                      return [...filtered, {
+                        trainingId: vertretungNotifyDialog.trainingId,
+                        vertretungTrainerId: vertretungNotifyDialog.newTrainerId
+                      }];
+                    });
+
+                    alert(`E-Mail wurde erfolgreich an ${recipients.length} Spieler gesendet.`);
+                  } catch (err) {
+                    alert(`Fehler beim Senden: ${err instanceof Error ? err.message : "Unbekannter Fehler"}\n\nDie Vertretung wird trotzdem gespeichert.`);
+                    // Trotzdem speichern
+                    setVertretungen((prev) => {
+                      const filtered = prev.filter((v) => v.trainingId !== vertretungNotifyDialog.trainingId);
+                      return [...filtered, {
+                        trainingId: vertretungNotifyDialog.trainingId,
+                        vertretungTrainerId: vertretungNotifyDialog.newTrainerId
+                      }];
+                    });
+                  } finally {
+                    setVertretungNotifySending(false);
+                    setVertretungNotifyDialog(null);
+                  }
+                }}
+              >
+                {vertretungNotifySending ? "Wird gesendet..." : "Ja, per E-Mail informieren"}
               </button>
             </div>
           </div>
