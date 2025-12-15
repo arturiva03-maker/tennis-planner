@@ -36,6 +36,8 @@ type Spieler = {
   // Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
   abweichenderEmpfaenger?: boolean;
   empfaengerName?: string;
+  // Labels für Newsletter-Filterung
+  labels?: string[];
 };
 
 type Tarif = {
@@ -49,7 +51,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter";
 type FormulareTab = "anmeldung" | "sepa";
 
 type Verfuegbarkeit = {
@@ -1308,6 +1310,14 @@ export default function App() {
   const [anmeldungStatusFilter, setAnmeldungStatusFilter] =
     useState<"alle" | "offen" | "erledigt">("alle");
 
+  // Newsletter State
+  const [newsletterSubject, setNewsletterSubject] = useState("");
+  const [newsletterBody, setNewsletterBody] = useState("");
+  const [newsletterLabelFilter, setNewsletterLabelFilter] = useState<string>("alle");
+  const [newsletterSending, setNewsletterSending] = useState(false);
+  const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const [newsletterSuccess, setNewsletterSuccess] = useState(false);
+
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
   const [tarife, setTarife] = useState<Tarif[]>(initial.state.tarife);
@@ -1433,6 +1443,8 @@ export default function App() {
   const [spielerUnterschriftsdatum, setSpielerUnterschriftsdatum] = useState("");
   const [spielerAbweichenderEmpfaenger, setSpielerAbweichenderEmpfaenger] = useState(false);
   const [spielerEmpfaengerName, setSpielerEmpfaengerName] = useState("");
+  const [spielerLabels, setSpielerLabels] = useState<string[]>([]);
+  const [newLabelInput, setNewLabelInput] = useState("");
   const [editingSpielerId, setEditingSpielerId] = useState<string | null>(null);
 
   // Profil SEPA-Einstellungen (Gläubiger)
@@ -2016,6 +2028,15 @@ export default function App() {
     [spieler]
   );
 
+  // Alle verfügbaren Labels aus Spielern sammeln
+  const allLabels = useMemo(() => {
+    const labelSet = new Set<string>();
+    spieler.forEach((s) => {
+      s.labels?.forEach((label) => labelSet.add(label));
+    });
+    return Array.from(labelSet).sort();
+  }, [spieler]);
+
   const tarifById = useMemo(
     () => new Map(tarife.map((t) => [t.id, t])),
     [tarife]
@@ -2378,6 +2399,7 @@ export default function App() {
       unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
       abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
       empfaengerName: spielerEmpfaengerName.trim() || undefined,
+      labels: spielerLabels.length > 0 ? spielerLabels : undefined,
     };
 
     setSpieler((prev) => [...prev, neu]);
@@ -2392,6 +2414,8 @@ export default function App() {
     setSpielerUnterschriftsdatum("");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
+    setSpielerLabels([]);
+    setNewLabelInput("");
     setShowSpielerForm(false);
   }
 
@@ -2407,6 +2431,8 @@ export default function App() {
     setSpielerUnterschriftsdatum(s.unterschriftsdatum ?? "");
     setSpielerAbweichenderEmpfaenger(s.abweichenderEmpfaenger ?? false);
     setSpielerEmpfaengerName(s.empfaengerName ?? "");
+    setSpielerLabels(s.labels ?? []);
+    setNewLabelInput("");
   }
 
   function saveSpieler() {
@@ -2452,6 +2478,7 @@ export default function App() {
               unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
               abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
               empfaengerName: spielerEmpfaengerName.trim() || undefined,
+              labels: spielerLabels.length > 0 ? spielerLabels : undefined,
             }
           : s
       )
@@ -2468,6 +2495,8 @@ export default function App() {
     setSpielerUnterschriftsdatum("");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
+    setSpielerLabels([]);
+    setNewLabelInput("");
     setShowSpielerForm(false);
   }
 
@@ -5139,6 +5168,14 @@ export default function App() {
                       </span>
                     )}
                   </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "newsletter" ? "tabBtnActive" : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("newsletter")}
+                  >
+                    Newsletter
+                  </button>
                 </div>
 
                 <div style={{ height: 12 }} />
@@ -5434,6 +5471,83 @@ export default function App() {
                           </div>
                         </div>
 
+                        <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Labels (für Newsletter)</h4>
+                        <div className="row" style={{ alignItems: "flex-start" }}>
+                          <div className="field" style={{ flex: 1 }}>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                              {spielerLabels.map((label, idx) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    background: "var(--primary)",
+                                    color: "#fff",
+                                    padding: "4px 10px",
+                                    borderRadius: 12,
+                                    fontSize: 13,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
+                                  }}
+                                >
+                                  {label}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSpielerLabels(spielerLabels.filter((_, i) => i !== idx))}
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      color: "#fff",
+                                      cursor: "pointer",
+                                      padding: 0,
+                                      fontSize: 14,
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    &times;
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <input
+                                value={newLabelInput}
+                                onChange={(e) => setNewLabelInput(e.target.value)}
+                                placeholder="Neues Label eingeben..."
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const label = newLabelInput.trim();
+                                    if (label && !spielerLabels.includes(label)) {
+                                      setSpielerLabels([...spielerLabels, label]);
+                                      setNewLabelInput("");
+                                    }
+                                  }
+                                }}
+                                list="available-labels"
+                                style={{ flex: 1 }}
+                              />
+                              <datalist id="available-labels">
+                                {allLabels.filter(l => !spielerLabels.includes(l)).map((label) => (
+                                  <option key={label} value={label} />
+                                ))}
+                              </datalist>
+                              <button
+                                type="button"
+                                className="btn btnGhost"
+                                onClick={() => {
+                                  const label = newLabelInput.trim();
+                                  if (label && !spielerLabels.includes(label)) {
+                                    setSpielerLabels([...spielerLabels, label]);
+                                    setNewLabelInput("");
+                                  }
+                                }}
+                              >
+                                Hinzufügen
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
                         <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>SEPA-Lastschrift Daten</h4>
                         <div className="row">
                           <div className="field" style={{ minWidth: 280 }}>
@@ -5555,6 +5669,24 @@ export default function App() {
                             )}
                             {s.notizen && (
                               <div className="muted">{s.notizen}</div>
+                            )}
+                            {s.labels && s.labels.length > 0 && (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                                {s.labels.map((label, idx) => (
+                                  <span
+                                    key={idx}
+                                    style={{
+                                      background: "var(--primary)",
+                                      color: "#fff",
+                                      padding: "2px 8px",
+                                      borderRadius: 10,
+                                      fontSize: 11,
+                                    }}
+                                  >
+                                    {label}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
                           <div className="smallActions">
@@ -6201,6 +6333,177 @@ export default function App() {
                           </ul>
                         )}
                       </>
+                    )}
+                  </div>
+                )}
+
+                {verwaltungTab === "newsletter" && (
+                  <div className="card">
+                    <h2>Newsletter versenden</h2>
+                    <p className="muted" style={{ marginBottom: 16 }}>
+                      Senden Sie E-Mails an Ihre Spieler. Wählen Sie optional ein Label um nur bestimmte Spieler anzuschreiben.
+                    </p>
+
+                    {newsletterSuccess && (
+                      <div style={{
+                        background: "#d1fae5",
+                        border: "1px solid #10b981",
+                        borderRadius: 8,
+                        padding: 16,
+                        marginBottom: 16,
+                        color: "#065f46"
+                      }}>
+                        Newsletter erfolgreich versendet!
+                        <button
+                          className="btn btnGhost"
+                          style={{ marginLeft: 12, fontSize: 12 }}
+                          onClick={() => setNewsletterSuccess(false)}
+                        >
+                          Schließen
+                        </button>
+                      </div>
+                    )}
+
+                    {newsletterError && (
+                      <div style={{
+                        background: "#fee2e2",
+                        border: "1px solid #dc2626",
+                        borderRadius: 8,
+                        padding: 16,
+                        marginBottom: 16,
+                        color: "#991b1b"
+                      }}>
+                        {newsletterError}
+                        <button
+                          className="btn btnGhost"
+                          style={{ marginLeft: 12, fontSize: 12 }}
+                          onClick={() => setNewsletterError(null)}
+                        >
+                          Schließen
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="row" style={{ marginBottom: 16 }}>
+                      <div className="field">
+                        <label>Empfänger filtern nach Label</label>
+                        <select
+                          value={newsletterLabelFilter}
+                          onChange={(e) => setNewsletterLabelFilter(e.target.value)}
+                        >
+                          <option value="alle">Alle Spieler mit E-Mail</option>
+                          {allLabels.map((label) => (
+                            <option key={label} value={label}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field" style={{ alignSelf: "flex-end" }}>
+                        <span style={{
+                          background: "var(--bg-inset)",
+                          padding: "8px 16px",
+                          borderRadius: 8,
+                          fontSize: 14
+                        }}>
+                          {spieler.filter(s =>
+                            s.kontaktEmail &&
+                            (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
+                          ).length} Empfänger
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="field" style={{ marginBottom: 16 }}>
+                      <label>Betreff *</label>
+                      <input
+                        value={newsletterSubject}
+                        onChange={(e) => setNewsletterSubject(e.target.value)}
+                        placeholder="E-Mail Betreff eingeben..."
+                      />
+                    </div>
+
+                    <div className="field" style={{ marginBottom: 16 }}>
+                      <label>Nachricht *</label>
+                      <textarea
+                        rows={10}
+                        value={newsletterBody}
+                        onChange={(e) => setNewsletterBody(e.target.value)}
+                        placeholder="Ihre Nachricht hier eingeben..."
+                        style={{ fontFamily: "inherit", resize: "vertical" }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <button
+                        className="btn"
+                        disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim()}
+                        onClick={async () => {
+                          const recipients = spieler.filter(s =>
+                            s.kontaktEmail &&
+                            (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
+                          );
+
+                          if (recipients.length === 0) {
+                            setNewsletterError("Keine Empfänger mit E-Mail-Adresse gefunden.");
+                            return;
+                          }
+
+                          if (!window.confirm(`Newsletter an ${recipients.length} Empfänger senden?`)) {
+                            return;
+                          }
+
+                          setNewsletterSending(true);
+                          setNewsletterError(null);
+                          setNewsletterSuccess(false);
+
+                          try {
+                            const response = await fetch(
+                              "https://mutzxaenmaketlmarqxn.supabase.co/functions/v1/rapid-processor",
+                              {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                                },
+                                body: JSON.stringify({
+                                  to: recipients.map(r => r.kontaktEmail),
+                                  subject: newsletterSubject.trim(),
+                                  body: newsletterBody.trim(),
+                                  fromName: "Tennisschule"
+                                })
+                              }
+                            );
+
+                            if (!response.ok) {
+                              const error = await response.json();
+                              throw new Error(error.message || "Fehler beim Versenden");
+                            }
+
+                            setNewsletterSuccess(true);
+                            setNewsletterSubject("");
+                            setNewsletterBody("");
+                          } catch (err) {
+                            setNewsletterError(err instanceof Error ? err.message : "Unbekannter Fehler");
+                          } finally {
+                            setNewsletterSending(false);
+                          }
+                        }}
+                      >
+                        {newsletterSending ? "Wird gesendet..." : "Newsletter senden"}
+                      </button>
+
+                      {spieler.filter(s =>
+                        s.kontaktEmail &&
+                        (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
+                      ).length === 0 && (
+                        <span className="muted">Keine Spieler mit E-Mail-Adresse {newsletterLabelFilter !== "alle" ? `und Label "${newsletterLabelFilter}"` : ""} gefunden.</span>
+                      )}
+                    </div>
+
+                    {allLabels.length === 0 && (
+                      <p className="muted" style={{ marginTop: 20, fontSize: 13 }}>
+                        Tipp: Sie können Spielern Labels zuweisen (z.B. "Erwachsene", "Kinder", "Anfänger")
+                        um Newsletter gezielt an bestimmte Gruppen zu senden.
+                      </p>
                     )}
                   </div>
                 )}
