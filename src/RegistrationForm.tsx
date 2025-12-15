@@ -27,22 +27,9 @@ const WOCHENTAGE: { key: Wochentag; label: string }[] = [
   { key: "sonntag", label: "Sonntag" },
 ];
 
-const ZEIT_OPTIONEN = [
-  "",
-  "nicht verfügbar",
-  "08:00-10:00",
-  "09:00-11:00",
-  "10:00-12:00",
-  "11:00-13:00",
-  "12:00-14:00",
-  "13:00-15:00",
-  "14:00-16:00",
-  "15:00-17:00",
-  "16:00-18:00",
-  "17:00-19:00",
-  "18:00-20:00",
-  "19:00-21:00",
-  "flexibel",
+const UHRZEITEN = [
+  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00",
+  "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"
 ];
 
 type RegistrationFormProps = {
@@ -73,6 +60,19 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     nachricht: "",
   });
 
+  const [zeitVon, setZeitVon] = useState<Record<Wochentag, string>>({
+    montag: "", dienstag: "", mittwoch: "", donnerstag: "",
+    freitag: "", samstag: "", sonntag: ""
+  });
+  const [zeitBis, setZeitBis] = useState<Record<Wochentag, string>>({
+    montag: "", dienstag: "", mittwoch: "", donnerstag: "",
+    freitag: "", samstag: "", sonntag: ""
+  });
+  const [nichtVerfuegbar, setNichtVerfuegbar] = useState<Record<Wochentag, boolean>>({
+    montag: false, dienstag: false, mittwoch: false, donnerstag: false,
+    freitag: false, samstag: false, sonntag: false
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,28 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleVerfuegbarkeitChange(tag: Wochentag, value: string) {
+  function handleZeitVonChange(tag: Wochentag, value: string) {
+    setZeitVon((prev) => ({ ...prev, [tag]: value }));
+    updateVerfuegbarkeit(tag, value, zeitBis[tag], nichtVerfuegbar[tag]);
+  }
+
+  function handleZeitBisChange(tag: Wochentag, value: string) {
+    setZeitBis((prev) => ({ ...prev, [tag]: value }));
+    updateVerfuegbarkeit(tag, zeitVon[tag], value, nichtVerfuegbar[tag]);
+  }
+
+  function handleNichtVerfuegbarChange(tag: Wochentag, checked: boolean) {
+    setNichtVerfuegbar((prev) => ({ ...prev, [tag]: checked }));
+    updateVerfuegbarkeit(tag, zeitVon[tag], zeitBis[tag], checked);
+  }
+
+  function updateVerfuegbarkeit(tag: Wochentag, von: string, bis: string, nichtVerf: boolean) {
+    let value = "";
+    if (nichtVerf) {
+      value = "nicht verfügbar";
+    } else if (von && bis) {
+      value = `${von}-${bis}`;
+    }
     setFormData((prev) => ({
       ...prev,
       verfuegbarkeit: {
@@ -328,29 +349,50 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>Gewünschte Trainingszeiten</label>
               <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-                Wählen Sie für jeden Tag Ihre bevorzugte Uhrzeit aus
+                Wählen Sie für jeden Tag Ihre verfügbare Zeit aus
               </p>
               <table className="verfuegbarkeitTable">
                 <tbody>
                   {WOCHENTAGE.map(({ key, label }) => (
                     <tr key={key}>
-                      <td style={{ fontWeight: 500, paddingRight: 12 }}>
+                      <td style={{ fontWeight: 500, paddingRight: 12, minWidth: 100 }}>
                         {label}
                       </td>
                       <td>
-                        <select
-                          value={formData.verfuegbarkeit[key]}
-                          onChange={(e) =>
-                            handleVerfuegbarkeitChange(key, e.target.value)
-                          }
-                          style={{ width: "100%", padding: "8px" }}
-                        >
-                          {ZEIT_OPTIONEN.map((zeit) => (
-                            <option key={zeit} value={zeit}>
-                              {zeit === "" ? "Bitte auswählen..." : zeit}
-                            </option>
-                          ))}
-                        </select>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <select
+                            value={zeitVon[key]}
+                            onChange={(e) => handleZeitVonChange(key, e.target.value)}
+                            disabled={nichtVerfuegbar[key]}
+                            style={{ padding: "6px 8px", opacity: nichtVerfuegbar[key] ? 0.5 : 1 }}
+                          >
+                            <option value="">Von</option>
+                            {UHRZEITEN.map((zeit) => (
+                              <option key={zeit} value={zeit}>{zeit}</option>
+                            ))}
+                          </select>
+                          <span>–</span>
+                          <select
+                            value={zeitBis[key]}
+                            onChange={(e) => handleZeitBisChange(key, e.target.value)}
+                            disabled={nichtVerfuegbar[key]}
+                            style={{ padding: "6px 8px", opacity: nichtVerfuegbar[key] ? 0.5 : 1 }}
+                          >
+                            <option value="">Bis</option>
+                            {UHRZEITEN.map((zeit) => (
+                              <option key={zeit} value={zeit}>{zeit}</option>
+                            ))}
+                          </select>
+                          <label style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 8, cursor: "pointer", fontSize: 13 }}>
+                            <input
+                              type="checkbox"
+                              checked={nichtVerfuegbar[key]}
+                              onChange={(e) => handleNichtVerfuegbarChange(key, e.target.checked)}
+                              style={{ width: "auto" }}
+                            />
+                            nicht verfügbar
+                          </label>
+                        </div>
                       </td>
                     </tr>
                   ))}
