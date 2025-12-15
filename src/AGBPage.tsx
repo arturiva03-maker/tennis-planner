@@ -55,11 +55,10 @@ export default function AGBPage() {
           <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
             <li><strong>Sommersaison:</strong> Mitte April bis Mitte Oktober</li>
             <li><strong>Wintersaison:</strong> Mitte Oktober bis Mitte April</li>
-            <li style={{ color: "#dc2626" }}>Die Anmeldung ist <strong>verbindlich für die gesamte Saison</strong></li>
+            <li style={{ color: "#dc2626" }}>Die Anmeldung ist <strong>verbindlich für die gesamte Saison</strong> – ein vorzeitiges Aussteigen ist nicht möglich</li>
             <li>Training findet auch in den Berliner Schulferien statt</li>
             <li>Bei unter-saisonalem Beitritt wird anteilig berechnet</li>
             <li>Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt)</li>
-            <li><strong>Ein vorzeitiges Aussteigen innerhalb einer Saison ist nicht möglich</strong></li>
             <li>Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung</li>
           </ul>
         </section>
