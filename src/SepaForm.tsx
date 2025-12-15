@@ -200,7 +200,6 @@ export default function SepaForm() {
           <h1>SEPA-Mandat erteilt!</h1>
           <p className="muted">
             Vielen Dank! Ihr SEPA-Lastschriftmandat wurde erfolgreich übermittelt.
-            Sie erhalten eine Bestätigung per E-Mail.
           </p>
         </div>
       </div>
@@ -330,9 +329,6 @@ export default function SepaForm() {
                 value={formData.email}
                 onChange={handleChange}
               />
-              <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                An diese Adresse senden wir die Bestätigung des Mandats.
-              </p>
             </div>
 
             <div className="field" style={{ gridColumn: "1 / -1", marginTop: 16 }}>
