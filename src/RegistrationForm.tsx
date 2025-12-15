@@ -443,7 +443,19 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             </div>
           </div>
 
-          <div style={{ marginTop: 24 }}>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 16 }}>
+            Mit der Anmeldung akzeptieren Sie unsere{" "}
+            <a
+              href="/agb"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--primary)" }}
+            >
+              Trainingsbedingungen
+            </a>.
+          </p>
+
+          <div style={{ marginTop: 16 }}>
             <button type="submit" className="btn" disabled={loading}>
               {loading ? "Wird gesendet..." : "Anmeldung absenden"}
             </button>
