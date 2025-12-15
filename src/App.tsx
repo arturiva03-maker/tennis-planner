@@ -8304,8 +8304,11 @@ export default function App() {
                                           const newId = e.target.value;
                                           const oldId = existingVertretung?.vertretungTrainerId;
 
+                                          console.log("Vertretung onChange:", { newId, oldId, spielerIds: t.spielerIds, training: t });
+
                                           // Wenn ein neuer Vertretungstrainer zugewiesen wird (nicht "offen" und nicht gleicher Trainer)
                                           if (newId && newId !== oldId && t.spielerIds.length > 0) {
+                                            console.log("Showing notification dialog");
                                             // Dialog zur Benachrichtigung anzeigen
                                             setVertretungNotifyDialog({
                                               trainingId: t.id,
@@ -8313,6 +8316,7 @@ export default function App() {
                                               training: t
                                             });
                                           } else {
+                                            console.log("Skipping dialog, directly saving");
                                             // Direkt speichern wenn keine Benachrichtigung nötig
                                             setVertretungen((prev) => {
                                               const filtered = prev.filter((v) => v.trainingId !== t.id);
@@ -10266,6 +10270,7 @@ export default function App() {
       )}
 
       {/* Vertretung Benachrichtigungs-Dialog */}
+      {vertretungNotifyDialog && console.log("Rendering notification dialog:", vertretungNotifyDialog)}
       {vertretungNotifyDialog && (
         <div className="modalOverlay">
           <div className="modalCard" style={{ maxWidth: 500 }}>
