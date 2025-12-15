@@ -1302,6 +1302,9 @@ export default function App() {
     useState<FormulareTab>("anmeldung");
   const [anmeldungAnlageFilter, setAnmeldungAnlageFilter] =
     useState<"alle" | "Wedding" | "Britz">("alle");
+  const [anmeldungNameSuche, setAnmeldungNameSuche] = useState("");
+  const [anmeldungTagFilter, setAnmeldungTagFilter] =
+    useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -5823,26 +5826,74 @@ export default function App() {
                           </p>
                         </div>
 
-                        <div style={{ marginBottom: 16 }}>
-                          <label style={{ marginRight: 8 }}>Filter Anlage:</label>
-                          <select
-                            value={anmeldungAnlageFilter}
-                            onChange={(e) => setAnmeldungAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
-                            style={{ padding: "4px 8px" }}
-                          >
-                            <option value="alle">Alle</option>
-                            <option value="Wedding">Wedding</option>
-                            <option value="Britz">Britz</option>
-                          </select>
+                        <div style={{ marginBottom: 16, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Suche</label>
+                            <input
+                              type="text"
+                              placeholder="Name suchen..."
+                              value={anmeldungNameSuche}
+                              onChange={(e) => setAnmeldungNameSuche(e.target.value)}
+                              style={{ padding: "4px 8px", width: 150 }}
+                            />
+                          </div>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Anlage</label>
+                            <select
+                              value={anmeldungAnlageFilter}
+                              onChange={(e) => setAnmeldungAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle</option>
+                              <option value="Wedding">Wedding</option>
+                              <option value="Britz">Britz</option>
+                            </select>
+                          </div>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Verfügbar am</label>
+                            <select
+                              value={anmeldungTagFilter}
+                              onChange={(e) => setAnmeldungTagFilter(e.target.value as typeof anmeldungTagFilter)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle Tage</option>
+                              <option value="montag">Montag</option>
+                              <option value="dienstag">Dienstag</option>
+                              <option value="mittwoch">Mittwoch</option>
+                              <option value="donnerstag">Donnerstag</option>
+                              <option value="freitag">Freitag</option>
+                              <option value="samstag">Samstag</option>
+                              <option value="sonntag">Sonntag</option>
+                            </select>
+                          </div>
                         </div>
 
                         {loadingRequests ? (
                           <p className="muted">Laden...</p>
-                        ) : registrationRequests.filter(r => anmeldungAnlageFilter === "alle" || r.anlage === anmeldungAnlageFilter).length === 0 ? (
+                        ) : registrationRequests.filter(r => {
+                          // Anlage Filter
+                          if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
+                          // Name Suche
+                          if (anmeldungNameSuche && !r.name.toLowerCase().includes(anmeldungNameSuche.toLowerCase())) return false;
+                          // Tag Filter - prüfe ob an diesem Tag eine gültige Zeit eingetragen ist (nicht leer und nicht "nicht verfügbar")
+                          if (anmeldungTagFilter !== "alle" && r.verfuegbarkeit) {
+                            const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
+                            if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                          }
+                          return true;
+                        }).length === 0 ? (
                           <p className="muted">Keine Anmeldungen für diesen Filter.</p>
                         ) : (
                           <ul className="list">
-                            {registrationRequests.filter(r => anmeldungAnlageFilter === "alle" || r.anlage === anmeldungAnlageFilter).map((req) => (
+                            {registrationRequests.filter(r => {
+                              if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
+                              if (anmeldungNameSuche && !r.name.toLowerCase().includes(anmeldungNameSuche.toLowerCase())) return false;
+                              if (anmeldungTagFilter !== "alle" && r.verfuegbarkeit) {
+                                const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
+                                if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                              }
+                              return true;
+                            }).map((req) => (
                               <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                   <div>

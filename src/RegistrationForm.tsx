@@ -27,6 +27,24 @@ const WOCHENTAGE: { key: Wochentag; label: string }[] = [
   { key: "sonntag", label: "Sonntag" },
 ];
 
+const ZEIT_OPTIONEN = [
+  "",
+  "nicht verfügbar",
+  "08:00-10:00",
+  "09:00-11:00",
+  "10:00-12:00",
+  "11:00-13:00",
+  "12:00-14:00",
+  "13:00-15:00",
+  "14:00-16:00",
+  "15:00-17:00",
+  "16:00-18:00",
+  "17:00-19:00",
+  "18:00-20:00",
+  "19:00-21:00",
+  "flexibel",
+];
+
 type RegistrationFormProps = {
   anlage: "Wedding" | "Britz";
 };
@@ -310,7 +328,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>Gewünschte Trainingszeiten</label>
               <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-                Tragen Sie für jeden verfügbaren Tag Ihre bevorzugte Uhrzeit ein
+                Wählen Sie für jeden Tag Ihre bevorzugte Uhrzeit aus
               </p>
               <table className="verfuegbarkeitTable">
                 <tbody>
@@ -320,15 +338,19 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
                         {label}
                       </td>
                       <td>
-                        <input
-                          type="text"
+                        <select
                           value={formData.verfuegbarkeit[key]}
                           onChange={(e) =>
                             handleVerfuegbarkeitChange(key, e.target.value)
                           }
-                          placeholder="z.B. 14:00-18:00"
-                          style={{ width: "100%" }}
-                        />
+                          style={{ width: "100%", padding: "8px" }}
+                        >
+                          {ZEIT_OPTIONEN.map((zeit) => (
+                            <option key={zeit} value={zeit}>
+                              {zeit === "" ? "Bitte auswählen..." : zeit}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                     </tr>
                   ))}
