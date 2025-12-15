@@ -1,7 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 const nodemailer = require('nodemailer');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -44,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     let successCount = 0;
-    const errors: string[] = [];
+    const errors = [];
 
     for (const recipient of to) {
       try {
@@ -55,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           text: body,
         });
         successCount++;
-      } catch (err: any) {
+      } catch (err) {
         errors.push(`${recipient}: ${err.message}`);
       }
     }
@@ -67,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       errors: errors.length > 0 ? errors : undefined,
     });
 
-  } catch (err: any) {
+  } catch (err) {
     console.error('Newsletter error:', err);
     return res.status(500).json({ error: err.message || 'Unbekannter Fehler' });
   }
