@@ -254,7 +254,7 @@ export default function SepaForm() {
                   onChange={handleChange}
                   style={{ width: "auto" }}
                 />
-                Der Spieler ist minderjährig (unter 18 Jahre)
+                Es handelt sich um mein Kind (unter 18 Jahre)
               </label>
             </div>
 
