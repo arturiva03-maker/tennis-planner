@@ -1372,6 +1372,11 @@ export default function App() {
     training: Training | null;
   } | null>(null);
   const [vertretungNotifySending, setVertretungNotifySending] = useState(false);
+  const [cancelNotifyDialog, setCancelNotifyDialog] = useState<{
+    trainings: Training[];
+    onConfirm: () => void;
+  } | null>(null);
+  const [cancelNotifySending, setCancelNotifySending] = useState(false);
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -2920,31 +2925,31 @@ export default function App() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
 
-    // Bei Status "abgesagt": Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
+    // Bei Status "abgesagt": Benachrichtigungs-Dialog anzeigen
     if (newStatus === "abgesagt") {
-      const gruppenTrainingsMonatlich = trainings.filter((t) => {
-        if (!selectedTrainingIds.includes(t.id)) return false;
-        if (t.spielerIds.length <= 1) return false;
-        const cfg = getPreisConfig(t, tarifById);
-        return cfg?.abrechnung === "monatlich";
-      });
-      if (gruppenTrainingsMonatlich.length > 0) {
-        setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'cancel' });
-        setCancelAdjustmentAmount("15");
-        // Nicht betroffene Trainings direkt auf abgesagt setzen
-        const nichtBetroffen = selectedTrainingIds.filter(
-          (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
-        );
-        if (nichtBetroffen.length > 0) {
-          setTrainings((prev) =>
-            prev.map((t) =>
-              nichtBetroffen.includes(t.id) ? { ...t, status: newStatus } : t
-            )
-          );
-        }
+      const trainingsToCancel = trainings.filter((t) => selectedTrainingIds.includes(t.id));
+
+      // Prüfen ob Spieler mit E-Mail vorhanden sind
+      const hasPlayersWithEmail = trainingsToCancel.some((t) =>
+        t.spielerIds.some((id) => spielerById.get(id)?.kontaktEmail)
+      );
+
+      if (hasPlayersWithEmail) {
+        // Dialog anzeigen
+        setCancelNotifyDialog({
+          trainings: trainingsToCancel,
+          onConfirm: () => {
+            executeCancelTrainings(trainingsToCancel);
+          }
+        });
         clearTrainingSelection();
         return;
       }
+
+      // Keine Spieler mit E-Mail - direkt absagen
+      executeCancelTrainings(trainingsToCancel);
+      clearTrainingSelection();
+      return;
     }
 
     setTrainings((prev) =>
@@ -2958,6 +2963,39 @@ export default function App() {
       });
     }
     clearTrainingSelection();
+  }
+
+  function executeCancelTrainings(trainingsToCancel: Training[]) {
+    // Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
+    const gruppenTrainingsMonatlich = trainingsToCancel.filter((t) => {
+      if (t.spielerIds.length <= 1) return false;
+      const cfg = getPreisConfig(t, tarifById);
+      return cfg?.abrechnung === "monatlich";
+    });
+
+    if (gruppenTrainingsMonatlich.length > 0) {
+      setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'cancel' });
+      setCancelAdjustmentAmount("15");
+      // Nicht betroffene Trainings direkt auf abgesagt setzen
+      const nichtBetroffen = trainingsToCancel.filter(
+        (t) => !gruppenTrainingsMonatlich.some((gt) => gt.id === t.id)
+      );
+      if (nichtBetroffen.length > 0) {
+        setTrainings((prev) =>
+          prev.map((t) =>
+            nichtBetroffen.some((nb) => nb.id === t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
+          )
+        );
+      }
+      return;
+    }
+
+    // Alle Trainings direkt auf abgesagt setzen
+    setTrainings((prev) =>
+      prev.map((t) =>
+        trainingsToCancel.some((tc) => tc.id === t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
+      )
+    );
   }
 
   function batchSetDurchgefuehrtUndBarBezahlt() {
@@ -3177,16 +3215,12 @@ export default function App() {
       : undefined;
 
     if (selectedTrainingId && existing) {
-      // Prüfen ob Status auf "abgesagt" geändert wird bei Gruppentraining mit monatlichem Tarif
-      const cfgForCheck = getPreisConfig(existing, tarifById);
+      // Prüfen ob Status auf "abgesagt" geändert wird - Benachrichtigungs-Dialog anzeigen
       if (
         !skipCancelCheck &&
         existing.status !== "abgesagt" &&
-        tStatus === "abgesagt" &&
-        tSpielerIds.length > 1 &&
-        cfgForCheck?.abrechnung === "monatlich"
+        tStatus === "abgesagt"
       ) {
-        // Training-Objekt für Dialog erstellen
         const trainingForDialog: Training = {
           ...existing,
           trainerId: trainerIdForSave,
@@ -3200,9 +3234,42 @@ export default function App() {
           customPreisProStunde: customPreis,
           customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         };
-        setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
-        setCancelAdjustmentAmount("15");
-        return;
+
+        // Prüfen ob Spieler mit E-Mail vorhanden sind
+        const hasPlayersWithEmail = tSpielerIds.some((id) => spielerById.get(id)?.kontaktEmail);
+
+        if (hasPlayersWithEmail) {
+          // Benachrichtigungs-Dialog anzeigen
+          setCancelNotifyDialog({
+            trainings: [trainingForDialog],
+            onConfirm: () => {
+              // Nach Bestätigung: Prüfen ob Gruppentraining mit monatlichem Tarif
+              const cfgForCheck = getPreisConfig(existing, tarifById);
+              if (
+                tSpielerIds.length > 1 &&
+                cfgForCheck?.abrechnung === "monatlich"
+              ) {
+                setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
+                setCancelAdjustmentAmount("15");
+              } else {
+                // Direkt absagen
+                saveTraining(true);
+              }
+            }
+          });
+          return;
+        }
+
+        // Keine Spieler mit E-Mail - Prüfen ob Gruppentraining mit monatlichem Tarif
+        const cfgForCheck = getPreisConfig(existing, tarifById);
+        if (
+          tSpielerIds.length > 1 &&
+          cfgForCheck?.abrechnung === "monatlich"
+        ) {
+          setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
+          setCancelAdjustmentAmount("15");
+          return;
+        }
       }
 
       const payload: Training = {
@@ -10654,6 +10721,215 @@ Deine Tennisschule`;
             </div>
           </div>
         </div>
+        );
+      })()}
+
+      {/* Absage Benachrichtigungs-Dialog */}
+      {cancelNotifyDialog && (() => {
+        const trainingsToCancel = cancelNotifyDialog.trainings;
+
+        // Alle Spieler mit E-Mail sammeln (dedupliziert)
+        const recipientMap = new Map<string, Spieler>();
+        trainingsToCancel.forEach((t) => {
+          t.spielerIds.forEach((id) => {
+            const s = spielerById.get(id);
+            if (s && s.kontaktEmail) {
+              recipientMap.set(s.id, s);
+            }
+          });
+        });
+        const recipients = Array.from(recipientMap.values());
+
+        // Trainingsdetails für E-Mail
+        const trainingDetails = trainingsToCancel.map((t) => {
+          const [y, m, d] = t.datum.split("-");
+          const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
+          const trainer = trainers.find((tr) => tr.id === (t.trainerId || defaultTrainerId));
+          return {
+            datum: germanDate,
+            uhrzeit: `${t.uhrzeitVon} - ${t.uhrzeitBis}`,
+            trainer: trainer?.name ?? "Unbekannt",
+            spieler: t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Unbekannt").join(", ")
+          };
+        });
+
+        const emailSubject = trainingsToCancel.length === 1
+          ? `Training am ${trainingDetails[0].datum} abgesagt`
+          : `Trainingsabsage`;
+
+        const getEmailBody = (playerName: string) => {
+          let body = `Hallo ${playerName},
+
+leider müssen wir dir mitteilen, dass ${trainingsToCancel.length === 1 ? "dein Training" : "folgende Trainings"} abgesagt ${trainingsToCancel.length === 1 ? "wurde" : "wurden"}:
+
+`;
+          trainingDetails.forEach((t, idx) => {
+            body += `📅 ${t.datum} um ${t.uhrzeit} Uhr\n`;
+          });
+
+          body += `
+Wir entschuldigen uns für die Unannehmlichkeiten.
+
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Sportliche Grüße,
+Deine Tennisschule`;
+
+          return body;
+        };
+
+        const previewName = recipients.length > 0 ? recipients[0].name : "[Name]";
+        const emailBodyPreview = getEmailBody(previewName);
+
+        return (
+          <div className="modalOverlay">
+            <div className="modalCard" style={{ maxWidth: 600, maxHeight: "90vh", overflow: "auto" }}>
+              <div className="modalHeader">
+                <div className="modalPill" style={{ background: "#ef4444" }}>Absage</div>
+                <h3>Spieler per E-Mail benachrichtigen?</h3>
+                <p className="muted">
+                  {trainingsToCancel.length === 1
+                    ? `Das Training am ${trainingDetails[0].datum} um ${trainingDetails[0].uhrzeit} wird abgesagt.`
+                    : `${trainingsToCancel.length} Trainings werden abgesagt.`}
+                </p>
+              </div>
+
+              <div style={{ padding: "0 20px", marginBottom: 16 }}>
+                {/* Empfänger */}
+                <div style={{ marginBottom: 16 }}>
+                  <strong>Empfänger ({recipients.length}):</strong>
+                  {recipients.length > 0 ? (
+                    <div style={{
+                      marginTop: 8,
+                      padding: 12,
+                      background: "var(--bg-inset)",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      maxHeight: 150,
+                      overflowY: "auto"
+                    }}>
+                      {recipients.map((s, idx) => (
+                        <div key={s.id} style={{ marginBottom: idx < recipients.length - 1 ? 4 : 0 }}>
+                          {s.name} <span className="muted">({s.kontaktEmail})</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: "var(--warning)", fontSize: 13, marginTop: 8 }}>
+                      Keiner der Spieler hat eine E-Mail-Adresse hinterlegt.
+                    </p>
+                  )}
+                </div>
+
+                {/* E-Mail Vorschau */}
+                {recipients.length > 0 && (
+                  <div>
+                    <strong>E-Mail Vorschau:</strong>
+                    <div style={{
+                      marginTop: 8,
+                      padding: 16,
+                      background: "var(--bg-inset)",
+                      borderRadius: 6,
+                      border: "1px solid var(--border)"
+                    }}>
+                      <div style={{ marginBottom: 12 }}>
+                        <span className="muted" style={{ fontSize: 12 }}>Betreff:</span>
+                        <div style={{ fontWeight: 600 }}>{emailSubject}</div>
+                      </div>
+                      <div>
+                        <span className="muted" style={{ fontSize: 12 }}>Nachricht:</span>
+                        <pre style={{
+                          margin: "4px 0 0 0",
+                          fontFamily: "inherit",
+                          fontSize: 13,
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.5
+                        }}>{emailBodyPreview}</pre>
+                        {recipients.length > 1 && (
+                          <div className="muted" style={{ marginTop: 8, fontSize: 12, fontStyle: "italic" }}>
+                            Jeder Spieler erhält eine personalisierte E-Mail mit seinem Namen.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="modalActions">
+                <button
+                  className="btn btnGhost"
+                  disabled={cancelNotifySending}
+                  onClick={() => {
+                    // Absage ohne E-Mail
+                    cancelNotifyDialog.onConfirm();
+                    setCancelNotifyDialog(null);
+                  }}
+                >
+                  Ohne E-Mail absagen
+                </button>
+                <button
+                  className="btn"
+                  disabled={cancelNotifySending || recipients.length === 0}
+                  onClick={async () => {
+                    if (recipients.length === 0) {
+                      cancelNotifyDialog.onConfirm();
+                      setCancelNotifyDialog(null);
+                      return;
+                    }
+
+                    setCancelNotifySending(true);
+                    try {
+                      let successCount = 0;
+                      const errors: string[] = [];
+
+                      // Personalisierte E-Mails an jeden Empfänger senden
+                      for (const recipient of recipients) {
+                        try {
+                          const response = await fetch("/api/send-newsletter", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              to: [recipient.kontaktEmail],
+                              subject: emailSubject,
+                              body: getEmailBody(recipient.name),
+                              fromName: "Tennisschule"
+                            })
+                          });
+
+                          if (!response.ok) {
+                            const error = await response.json();
+                            errors.push(`${recipient.name}: ${error.message || "Fehler"}`);
+                          } else {
+                            successCount++;
+                          }
+                        } catch (err) {
+                          errors.push(`${recipient.name}: ${err instanceof Error ? err.message : "Fehler"}`);
+                        }
+                      }
+
+                      // Trainings absagen (unabhängig vom E-Mail-Erfolg)
+                      cancelNotifyDialog.onConfirm();
+
+                      if (errors.length > 0) {
+                        alert(`${successCount} von ${recipients.length} E-Mails erfolgreich gesendet.\n\nFehler:\n${errors.join("\n")}`);
+                      } else {
+                        alert(`E-Mail wurde erfolgreich an ${successCount} Spieler gesendet.`);
+                      }
+                    } catch (err) {
+                      alert(`Fehler beim Senden: ${err instanceof Error ? err.message : "Unbekannter Fehler"}\n\nDie Absage wird trotzdem durchgeführt.`);
+                      cancelNotifyDialog.onConfirm();
+                    } finally {
+                      setCancelNotifySending(false);
+                      setCancelNotifyDialog(null);
+                    }
+                  }}
+                >
+                  {cancelNotifySending ? "Wird gesendet..." : "Ja, per E-Mail informieren"}
+                </button>
+              </div>
+            </div>
+          </div>
         );
       })()}
     </>
