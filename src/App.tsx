@@ -2386,21 +2386,16 @@ export default function App() {
     const name = spielerName.trim();
     if (!name) return;
 
-    // Duplikatscheck: Name oder Email bereits vorhanden?
+    // Duplikatscheck: Name muss eindeutig sein (Email darf doppelt sein, z.B. bei Geschwistern)
     const nameLower = name.toLowerCase();
-    const emailLower = spielerEmail.trim().toLowerCase();
-    
+
     const duplicate = spieler.find((s) => {
       const existingNameLower = s.name.trim().toLowerCase();
-      const existingEmailLower = (s.kontaktEmail ?? "").trim().toLowerCase();
-      
-      if (existingNameLower === nameLower) return true;
-      if (emailLower && existingEmailLower && existingEmailLower === emailLower) return true;
-      return false;
+      return existingNameLower === nameLower;
     });
 
     if (duplicate) {
-      setSpielerError("Es existiert bereits ein Spieler mit gleichem Namen oder gleicher Email.");
+      setSpielerError("Es existiert bereits ein Spieler mit diesem Namen.");
       return;
     }
 
@@ -2459,24 +2454,19 @@ export default function App() {
     const name = spielerName.trim();
     if (!name) return;
 
-    // Duplikatscheck: Name oder Email bereits bei anderem Spieler vorhanden?
+    // Duplikatscheck: Name muss eindeutig sein (Email darf doppelt sein, z.B. bei Geschwistern)
     const nameLower = name.toLowerCase();
-    const emailLower = spielerEmail.trim().toLowerCase();
-    
+
     const duplicate = spieler.find((s) => {
       // Nicht mit sich selbst vergleichen
       if (s.id === editingSpielerId) return false;
-      
+
       const existingNameLower = s.name.trim().toLowerCase();
-      const existingEmailLower = (s.kontaktEmail ?? "").trim().toLowerCase();
-      
-      if (existingNameLower === nameLower) return true;
-      if (emailLower && existingEmailLower && existingEmailLower === emailLower) return true;
-      return false;
+      return existingNameLower === nameLower;
     });
 
     if (duplicate) {
-      setSpielerError("Es existiert bereits ein Spieler mit gleichem Namen oder gleicher Email.");
+      setSpielerError("Es existiert bereits ein Spieler mit diesem Namen.");
       return;
     }
 
