@@ -7188,15 +7188,11 @@ export default function App() {
                       ) && (
                         <div className="row" style={{ marginTop: 12 }}>
                           <span className="pill">
-                            Dein Honorar gesamt:{" "}
-                            <strong>{euro(eigenerHonorarGesamt)}</strong>
-                          </span>
-                          <span className="pill">
-                            Bereits ausgezahlt:{" "}
+                            Honorar bezahlt:{" "}
                             <strong>{euro(eigenerHonorarBezahlt)}</strong>
                           </span>
                           <span className="pill">
-                            Noch auszuzahlen:{" "}
+                            Honorar offen:{" "}
                             <strong>{euro(eigenerHonorarOffen)}</strong>
                           </span>
                           <span className="pill">
