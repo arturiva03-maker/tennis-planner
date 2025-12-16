@@ -1377,6 +1377,8 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
   const [cancelNotifySending, setCancelNotifySending] = useState(false);
+  const [cancelNotifySubject, setCancelNotifySubject] = useState("");
+  const [cancelNotifyBody, setCancelNotifyBody] = useState("");
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -2935,7 +2937,35 @@ export default function App() {
       );
 
       if (hasPlayersWithEmail) {
-        // Dialog anzeigen
+        // Dialog anzeigen - Standardtext generieren
+        const trainingDetails = trainingsToCancel.map((t) => {
+          const [y, m, d] = t.datum.split("-");
+          const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
+          return { datum: germanDate, uhrzeit: `${t.uhrzeitVon} - ${t.uhrzeitBis}` };
+        });
+
+        const defaultSubject = trainingsToCancel.length === 1
+          ? `Training am ${trainingDetails[0].datum} abgesagt`
+          : `Trainingsabsage`;
+
+        let defaultBody = `Hallo [Name],
+
+leider müssen wir dir mitteilen, dass ${trainingsToCancel.length === 1 ? "dein Training" : "folgende Trainings"} abgesagt ${trainingsToCancel.length === 1 ? "wurde" : "wurden"}:
+
+`;
+        trainingDetails.forEach((t) => {
+          defaultBody += `📅 ${t.datum} um ${t.uhrzeit} Uhr\n`;
+        });
+        defaultBody += `
+Wir entschuldigen uns für die Unannehmlichkeiten.
+
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Sportliche Grüße,
+Deine Tennisschule`;
+
+        setCancelNotifySubject(defaultSubject);
+        setCancelNotifyBody(defaultBody);
         setCancelNotifyDialog({
           trainings: trainingsToCancel,
           onConfirm: () => {
@@ -3206,6 +3236,26 @@ export default function App() {
         const hasPlayersWithEmail = tSpielerIds.some((id) => spielerById.get(id)?.kontaktEmail);
 
         if (hasPlayersWithEmail) {
+          // Standardtext generieren
+          const [y, m, d] = tDatum.split("-");
+          const germanDate = d && m && y ? `${d}.${m}.${y}` : tDatum;
+
+          const defaultSubject = `Training am ${germanDate} abgesagt`;
+          const defaultBody = `Hallo [Name],
+
+leider müssen wir dir mitteilen, dass dein Training abgesagt wurde:
+
+📅 ${germanDate} um ${tVon} - ${tBis} Uhr
+
+Wir entschuldigen uns für die Unannehmlichkeiten.
+
+Bei Fragen stehen wir dir gerne zur Verfügung.
+
+Sportliche Grüße,
+Deine Tennisschule`;
+
+          setCancelNotifySubject(defaultSubject);
+          setCancelNotifyBody(defaultBody);
           // Benachrichtigungs-Dialog anzeigen
           setCancelNotifyDialog({
             trainings: [trainingForDialog],
@@ -10720,33 +10770,10 @@ Deine Tennisschule`;
           };
         });
 
-        const emailSubject = trainingsToCancel.length === 1
-          ? `Training am ${trainingDetails[0].datum} abgesagt`
-          : `Trainingsabsage`;
-
-        const getEmailBody = (playerName: string) => {
-          let body = `Hallo ${playerName},
-
-leider müssen wir dir mitteilen, dass ${trainingsToCancel.length === 1 ? "dein Training" : "folgende Trainings"} abgesagt ${trainingsToCancel.length === 1 ? "wurde" : "wurden"}:
-
-`;
-          trainingDetails.forEach((t, idx) => {
-            body += `📅 ${t.datum} um ${t.uhrzeit} Uhr\n`;
-          });
-
-          body += `
-Wir entschuldigen uns für die Unannehmlichkeiten.
-
-Bei Fragen stehen wir dir gerne zur Verfügung.
-
-Sportliche Grüße,
-Deine Tennisschule`;
-
-          return body;
+        // Personalisierte E-Mail erstellen (Name wird beim Senden ersetzt)
+        const getPersonalizedBody = (body: string, playerName: string) => {
+          return body.replace(/\[Name\]/g, playerName);
         };
-
-        const previewName = recipients.length > 0 ? recipients[0].name : "[Name]";
-        const emailBodyPreview = getEmailBody(previewName);
 
         return (
           <div className="modalOverlay">
@@ -10772,7 +10799,7 @@ Deine Tennisschule`;
                       background: "var(--bg-inset)",
                       borderRadius: 6,
                       fontSize: 13,
-                      maxHeight: 150,
+                      maxHeight: 100,
                       overflowY: "auto"
                     }}>
                       {recipients.map((s, idx) => (
@@ -10788,36 +10815,37 @@ Deine Tennisschule`;
                   )}
                 </div>
 
-                {/* E-Mail Vorschau */}
+                {/* E-Mail bearbeiten */}
                 {recipients.length > 0 && (
                   <div>
-                    <strong>E-Mail Vorschau:</strong>
-                    <div style={{
-                      marginTop: 8,
-                      padding: 16,
-                      background: "var(--bg-inset)",
-                      borderRadius: 6,
-                      border: "1px solid var(--border)"
-                    }}>
-                      <div style={{ marginBottom: 12 }}>
-                        <span className="muted" style={{ fontSize: 12 }}>Betreff:</span>
-                        <div style={{ fontWeight: 600 }}>{emailSubject}</div>
-                      </div>
-                      <div>
-                        <span className="muted" style={{ fontSize: 12 }}>Nachricht:</span>
-                        <pre style={{
-                          margin: "4px 0 0 0",
+                    <strong>E-Mail bearbeiten:</strong>
+                    <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 12 }}>
+                      Verwende [Name] als Platzhalter für den Spielernamen.
+                    </p>
+
+                    <div className="field" style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 13 }}>Betreff</label>
+                      <input
+                        type="text"
+                        value={cancelNotifySubject}
+                        onChange={(e) => setCancelNotifySubject(e.target.value)}
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label style={{ fontSize: 13 }}>Nachricht</label>
+                      <textarea
+                        value={cancelNotifyBody}
+                        onChange={(e) => setCancelNotifyBody(e.target.value)}
+                        rows={10}
+                        style={{
+                          width: "100%",
                           fontFamily: "inherit",
                           fontSize: 13,
-                          whiteSpace: "pre-wrap",
-                          lineHeight: 1.5
-                        }}>{emailBodyPreview}</pre>
-                        {recipients.length > 1 && (
-                          <div className="muted" style={{ marginTop: 8, fontSize: 12, fontStyle: "italic" }}>
-                            Jeder Spieler erhält eine personalisierte E-Mail mit seinem Namen.
-                          </div>
-                        )}
-                      </div>
+                          resize: "vertical"
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -10831,13 +10859,15 @@ Deine Tennisschule`;
                     // Absage ohne E-Mail
                     cancelNotifyDialog.onConfirm();
                     setCancelNotifyDialog(null);
+                    setCancelNotifySubject("");
+                    setCancelNotifyBody("");
                   }}
                 >
                   Ohne E-Mail absagen
                 </button>
                 <button
                   className="btn"
-                  disabled={cancelNotifySending || recipients.length === 0}
+                  disabled={cancelNotifySending || recipients.length === 0 || !cancelNotifySubject.trim() || !cancelNotifyBody.trim()}
                   onClick={async () => {
                     if (recipients.length === 0) {
                       cancelNotifyDialog.onConfirm();
@@ -10858,8 +10888,8 @@ Deine Tennisschule`;
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                               to: [recipient.kontaktEmail],
-                              subject: emailSubject,
-                              body: getEmailBody(recipient.name),
+                              subject: cancelNotifySubject.trim(),
+                              body: getPersonalizedBody(cancelNotifyBody.trim(), recipient.name),
                               fromName: "Tennisschule"
                             })
                           });
@@ -10889,6 +10919,8 @@ Deine Tennisschule`;
                     } finally {
                       setCancelNotifySending(false);
                       setCancelNotifyDialog(null);
+                      setCancelNotifySubject("");
+                      setCancelNotifyBody("");
                     }
                   }}
                 >
