@@ -1379,6 +1379,10 @@ export default function App() {
   const [cancelNotifySending, setCancelNotifySending] = useState(false);
   const [cancelNotifySubject, setCancelNotifySubject] = useState("");
   const [cancelNotifyBody, setCancelNotifyBody] = useState("");
+  const [reverseAdjustmentDialog, setReverseAdjustmentDialog] = useState<{
+    training: Training;
+    onConfirm: (reverseAdjustment: boolean) => void;
+  } | null>(null);
   const [editingAdjustment, setEditingAdjustment] = useState<{
     spielerId: string;
     value: string;
@@ -3212,6 +3216,41 @@ Deine Tennisschule`;
       : undefined;
 
     if (selectedTrainingId && existing) {
+      // Prüfen ob Status von "abgesagt" auf "geplant" geändert wird - Rücknahme des Abzugs anbieten
+      if (
+        !skipCancelCheck &&
+        existing.status === "abgesagt" &&
+        tStatus === "geplant"
+      ) {
+        // Prüfen ob es Abzüge für dieses Training gab
+        const monat = existing.datum.substring(0, 7);
+        const hasAdjustments = existing.spielerIds.some((spielerId) => {
+          const key = `${monat}__${spielerId}`;
+          return (monthlyAdjustments[key] ?? 0) < 0;
+        });
+
+        if (hasAdjustments) {
+          setReverseAdjustmentDialog({
+            training: existing,
+            onConfirm: (reverseAdjustment) => {
+              if (reverseAdjustment) {
+                // Abzüge rückgängig machen (+15€ pro Spieler)
+                const newAdjustments = { ...monthlyAdjustments };
+                existing.spielerIds.forEach((spielerId) => {
+                  const key = `${monat}__${spielerId}`;
+                  const currentValue = newAdjustments[key] ?? 0;
+                  newAdjustments[key] = round2(currentValue + 15);
+                });
+                setMonthlyAdjustments(newAdjustments);
+              }
+              // Training auf geplant setzen
+              saveTraining(true);
+            }
+          });
+          return;
+        }
+      }
+
       // Prüfen ob Status auf "abgesagt" geändert wird - Benachrichtigungs-Dialog anzeigen
       if (
         !skipCancelCheck &&
@@ -10925,6 +10964,70 @@ Deine Tennisschule`;
                   }}
                 >
                   {cancelNotifySending ? "Wird gesendet..." : "Ja, per E-Mail informieren"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Dialog: Abzug rückgängig machen bei Reaktivierung */}
+      {reverseAdjustmentDialog && (() => {
+        const training = reverseAdjustmentDialog.training;
+        const [y, m, d] = training.datum.split("-");
+        const germanDate = d && m && y ? `${d}.${m}.${y}` : training.datum;
+        const spielerNamen = training.spielerIds
+          .map((id) => spielerById.get(id)?.name ?? "Unbekannt")
+          .join(", ");
+
+        return (
+          <div className="modalOverlay">
+            <div className="modalCard" style={{ maxWidth: 500 }}>
+              <div className="modalHeader">
+                <div className="modalPill" style={{ background: "#22c55e" }}>Reaktivierung</div>
+                <h3>Abzug rückgängig machen?</h3>
+                <p className="muted">
+                  Das Training am {germanDate} um {training.uhrzeitVon} - {training.uhrzeitBis} Uhr wird wieder auf "geplant" gesetzt.
+                </p>
+              </div>
+
+              <div style={{ padding: "0 20px", marginBottom: 16 }}>
+                <p style={{ marginBottom: 12 }}>
+                  Bei der Absage wurden <strong>15€ pro Spieler</strong> als Abzug verbucht.
+                </p>
+                <p>
+                  Sollen diese Abzüge jetzt wieder rückgängig gemacht werden?
+                </p>
+                <div style={{
+                  marginTop: 12,
+                  padding: 12,
+                  background: "var(--bg-inset)",
+                  borderRadius: 6,
+                  fontSize: 13
+                }}>
+                  <strong>Betroffene Spieler:</strong><br />
+                  {spielerNamen}
+                </div>
+              </div>
+
+              <div className="modalActions">
+                <button
+                  className="btn btnGhost"
+                  onClick={() => {
+                    reverseAdjustmentDialog.onConfirm(false);
+                    setReverseAdjustmentDialog(null);
+                  }}
+                >
+                  Nein, Abzug behalten
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    reverseAdjustmentDialog.onConfirm(true);
+                    setReverseAdjustmentDialog(null);
+                  }}
+                >
+                  Ja, +15€ zurückbuchen
                 </button>
               </div>
             </div>
