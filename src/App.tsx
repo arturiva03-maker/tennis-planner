@@ -2460,6 +2460,10 @@ export default function App() {
     setSpielerEmpfaengerName(s.empfaengerName ?? "");
     setSpielerLabels(s.labels ?? []);
     setNewLabelInput("");
+    // Scroll zum Formular
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
   }
 
   function saveSpieler() {
