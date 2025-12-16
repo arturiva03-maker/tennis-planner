@@ -2965,39 +2965,6 @@ export default function App() {
     clearTrainingSelection();
   }
 
-  function executeCancelTrainings(trainingsToCancel: Training[]) {
-    // Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
-    const gruppenTrainingsMonatlich = trainingsToCancel.filter((t) => {
-      if (t.spielerIds.length <= 1) return false;
-      const cfg = getPreisConfig(t, tarifById);
-      return cfg?.abrechnung === "monatlich";
-    });
-
-    if (gruppenTrainingsMonatlich.length > 0) {
-      setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'cancel' });
-      setCancelAdjustmentAmount("15");
-      // Nicht betroffene Trainings direkt auf abgesagt setzen
-      const nichtBetroffen = trainingsToCancel.filter(
-        (t) => !gruppenTrainingsMonatlich.some((gt) => gt.id === t.id)
-      );
-      if (nichtBetroffen.length > 0) {
-        setTrainings((prev) =>
-          prev.map((t) =>
-            nichtBetroffen.some((nb) => nb.id === t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
-          )
-        );
-      }
-      return;
-    }
-
-    // Alle Trainings direkt auf abgesagt setzen
-    setTrainings((prev) =>
-      prev.map((t) =>
-        trainingsToCancel.some((tc) => tc.id === t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
-      )
-    );
-  }
-
   function batchSetDurchgefuehrtUndBarBezahlt() {
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
