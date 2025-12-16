@@ -6432,13 +6432,13 @@ export default function App() {
                             top: "100%",
                             left: 0,
                             right: 0,
-                            background: "var(--surface)",
+                            background: "#ffffff",
                             border: "1px solid var(--border)",
                             borderRadius: 8,
                             maxHeight: 200,
                             overflowY: "auto",
-                            zIndex: 100,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                            zIndex: 9999,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
                           }}>
                             {spieler
                               .filter(s =>
