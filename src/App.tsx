@@ -7795,11 +7795,6 @@ Deine Tennisschule`;
                                     Trainer: {trainerName}
                                   </div>
                                 )}
-                                {abrechnungTab === "spieler" && (
-                                  <div className="muted">
-                                    Preis: {price}
-                                  </div>
-                                )}
                                 {t.notiz ? (
                                   <div className="muted">{t.notiz}</div>
                                 ) : null}
