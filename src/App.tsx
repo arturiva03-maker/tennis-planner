@@ -6453,7 +6453,10 @@ export default function App() {
                                   style={{
                                     padding: "10px 12px",
                                     cursor: "pointer",
-                                    borderBottom: "1px solid var(--border)"
+                                    borderBottom: "1px solid var(--border)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 2
                                   }}
                                   onClick={() => {
                                     setNewsletterSelectedPlayers(prev => [...prev, s.id]);
@@ -6462,8 +6465,8 @@ export default function App() {
                                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
                                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                 >
-                                  <strong>{s.name}</strong>
-                                  <span style={{ color: "var(--text-muted)", marginLeft: 8, fontSize: 13 }}>
+                                  <strong style={{ display: "block" }}>{s.name}</strong>
+                                  <span style={{ color: "var(--text-muted)", fontSize: 12, display: "block" }}>
                                     {s.kontaktEmail}
                                   </span>
                                 </div>
