@@ -7705,9 +7705,7 @@ Deine Tennisschule`;
                 )}
 
 
-                {!isTrainer &&
-                  (abrechnungTab === "spieler" ||
-                    abrechnungTab === "trainer") && (
+                {!isTrainer && abrechnungTab === "trainer" && (
                     <>
                       <div style={{ height: 14 }} />
                       <h2>Trainings im Monat</h2>
