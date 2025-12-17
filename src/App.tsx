@@ -8079,6 +8079,11 @@ Deine Tennisschule`;
 
                               const uniqueDates = Object.keys(groupedByDate).length;
 
+                              // Berechne offene Tage (mindestens ein Training ohne Vertretungstrainer)
+                              const openDates = Object.entries(groupedByDate).filter(([, dateItems]) => {
+                                return dateItems.some(item => !item.vertretung.vertretungTrainerId);
+                              }).length;
+
                               return (
                                 <div key={trainerId} style={{ marginBottom: 20 }}>
                                   <div
@@ -8095,7 +8100,9 @@ Deine Tennisschule`;
                                       gap: 10,
                                       marginBottom: isCollapsed ? 0 : 12,
                                       padding: "10px 14px",
-                                      background: "linear-gradient(135deg, #ef4444 0%, #f97316 100%)",
+                                      background: openDates > 0
+                                        ? "linear-gradient(135deg, #ef4444 0%, #f97316 100%)"
+                                        : "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
                                       borderRadius: isCollapsed ? "var(--radius-md)" : "var(--radius-md) var(--radius-md) 0 0",
                                       color: "white",
                                       cursor: "pointer",
@@ -8109,7 +8116,12 @@ Deine Tennisschule`;
                                     }}>▼</span>
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontWeight: 600, fontSize: 15 }}>{trainerName} fehlt</div>
-                                      <div style={{ fontSize: 12, opacity: 0.9 }}>{uniqueDates} Tag{uniqueDates !== 1 ? "e" : ""} betroffen</div>
+                                      <div style={{ fontSize: 12, opacity: 0.9 }}>
+                                        {uniqueDates} Tag{uniqueDates !== 1 ? "e" : ""} betroffen
+                                        {openDates > 0
+                                          ? ` • ${openDates} offen`
+                                          : " • alle gedeckt ✓"}
+                                      </div>
                                     </div>
                                     <span style={{ fontSize: 12, opacity: 0.8 }}>
                                       {isCollapsed ? "Aufklappen" : "Zuklappen"}
