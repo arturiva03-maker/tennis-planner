@@ -1578,6 +1578,7 @@ export default function App() {
   const [abrechnungTrainerFilter, setAbrechnungTrainerFilter] =
     useState<string>("alle");
   const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
+  const [abrechnungTagFilter, setAbrechnungTagFilter] = useState<string>("alle");
   const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar">("none");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
@@ -3496,6 +3497,24 @@ Deine Tennisschule`;
     [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId, vertretungen]
   );
 
+  // Berechne für jeden Spieler, an welchen Wochentagen er wiederkehrende Trainings hat
+  const spielerWochentage = useMemo(() => {
+    const result = new Map<string, Set<number>>();
+    trainingsInMonth.forEach((t) => {
+      if (t.serieId) {
+        const d = new Date(t.datum);
+        const wochentag = (d.getDay() + 6) % 7; // 0=Montag, 6=Sonntag
+        t.spielerIds.forEach((pid) => {
+          if (!result.has(pid)) {
+            result.set(pid, new Set());
+          }
+          result.get(pid)!.add(wochentag);
+        });
+      }
+    });
+    return result;
+  }, [trainingsInMonth]);
+
   const trainingsForAbrechnung = useMemo(() => {
     let filtered = trainingsInMonth;
 
@@ -4070,6 +4089,15 @@ Deine Tennisschule`;
     const adjustedSum = getAdjustedSum(r.id, r.sum);
     const status = getSpielerStatus(r.id, adjustedSum);
     const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
+
+    // Tagesfilter prüfen
+    if (abrechnungTagFilter !== "alle") {
+      const tagNum = parseInt(abrechnungTagFilter, 10);
+      const spielerTage = spielerWochentage.get(r.id);
+      if (!spielerTage || !spielerTage.has(tagNum)) {
+        return false;
+      }
+    }
 
     if (abrechnungFilter === "alle") return true;
     if (abrechnungFilter === "bezahlt") return isBezahlt;
@@ -6905,6 +6933,24 @@ Deine Tennisschule`;
                         }
                         placeholder="Name oder Email"
                       />
+                    </div>
+                  )}
+                  {!isTrainer && abrechnungTab === "spieler" && (
+                    <div className="field">
+                      <label>Tag (wiederkehrend)</label>
+                      <select
+                        value={abrechnungTagFilter}
+                        onChange={(e) => setAbrechnungTagFilter(e.target.value)}
+                      >
+                        <option value="alle">Alle Tage</option>
+                        <option value="0">Montag</option>
+                        <option value="1">Dienstag</option>
+                        <option value="2">Mittwoch</option>
+                        <option value="3">Donnerstag</option>
+                        <option value="4">Freitag</option>
+                        <option value="5">Samstag</option>
+                        <option value="6">Sonntag</option>
+                      </select>
                     </div>
                   )}
                 </div>
