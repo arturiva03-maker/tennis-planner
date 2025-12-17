@@ -8355,28 +8355,16 @@ Deine Tennisschule`;
 
                       {/* Einzeldatum-Modus */}
                       {vertretungTrainerId && vertretungModus === "einzeln" && (
-                        <div className="row" style={{ gap: 12, flexWrap: "wrap", marginTop: 12 }}>
-                          <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
-                            <label>Datum auswählen</label>
-                            <input
-                              type="date"
-                              value={vertretungDatumPreview}
-                              onChange={(e) => setVertretungDatumPreview(e.target.value)}
-                            />
-                          </div>
-
-                          {vertretungDatumPreview && /^\d{4}-\d{2}-\d{2}$/.test(vertretungDatumPreview) && (
-                            <div className="field" style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end" }}>
-                              <button
-                                className="btn"
-                                style={{
-                                  background: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e",
-                                  borderColor: vertretungDaten.includes(vertretungDatumPreview) ? "#9ca3af" : "#22c55e"
-                                }}
-                                disabled={vertretungDaten.includes(vertretungDatumPreview)}
-                                onClick={() => {
-                                  const datum = vertretungDatumPreview;
-                                  if (!vertretungDaten.includes(datum)) {
+                        <div style={{ marginTop: 12 }}>
+                          <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                            <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
+                              <label>Datum auswählen (klicken zum Hinzufügen)</label>
+                              <input
+                                type="date"
+                                value={vertretungDatumPreview}
+                                onChange={(e) => {
+                                  const datum = e.target.value;
+                                  if (datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) && !vertretungDaten.includes(datum)) {
                                     setVertretungDaten([...vertretungDaten, datum].sort());
                                     // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
                                     const dayTrainings = trainings.filter(
@@ -8396,11 +8384,12 @@ Deine Tennisschule`;
                                   }
                                   setVertretungDatumPreview("");
                                 }}
-                              >
-                                {vertretungDaten.includes(vertretungDatumPreview) ? "Bereits hinzugefügt" : "Datum hinzufügen"}
-                              </button>
+                              />
                             </div>
-                          )}
+                          </div>
+                          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                            Wähle mehrere Tage nacheinander aus. Jedes ausgewählte Datum wird automatisch hinzugefügt.
+                          </p>
                         </div>
                       )}
 
