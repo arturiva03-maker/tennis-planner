@@ -120,6 +120,7 @@ type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
 type TrainerMonthSettledMap = Record<string, boolean>; // key: `${monat}__${trainerId}`
 type MonthlyAdjustments = Record<string, number>; // key: `${monat}__${spielerId}`, value: Anpassungsbetrag in EUR
+type WirdAbgebuchtMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
 
 type Notiz = {
   id: string;
@@ -148,6 +149,7 @@ type AppState = {
   notizen?: Notiz[];
   monthlyAdjustments?: MonthlyAdjustments;
   vertretungen?: Vertretung[];
+  wirdAbgebucht?: WirdAbgebuchtMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung" | "rechnung";
@@ -1345,6 +1347,9 @@ export default function App() {
   const [monthlyAdjustments, setMonthlyAdjustments] = useState<MonthlyAdjustments>(
     initial.state.monthlyAdjustments ?? {}
   );
+  const [wirdAbgebucht, setWirdAbgebucht] = useState<WirdAbgebuchtMap>(
+    initial.state.wirdAbgebucht ?? {}
+  );
   const [vertretungen, setVertretungen] = useState<Vertretung[]>(
     initial.state.vertretungen ?? []
   );
@@ -1640,8 +1645,9 @@ export default function App() {
       notizen,
       monthlyAdjustments,
       vertretungen,
+      wirdAbgebucht,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht]);
 
   useEffect(() => {
     writePlanungState(planungState);
@@ -1893,6 +1899,7 @@ export default function App() {
         setNotizen(cloud.notizen ?? []);
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
+        setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1906,6 +1913,7 @@ export default function App() {
         setNotizen(local.state.notizen ?? []);
         setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
         setVertretungen(local.state.vertretungen ?? []);
+        setWirdAbgebucht(local.state.wirdAbgebucht ?? {});
       }
 
       setInitialSynced(true);
@@ -1950,6 +1958,7 @@ export default function App() {
               setNotizen(cloud.notizen ?? []);
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
+              setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
             }
           }
         }
@@ -7315,6 +7324,28 @@ Deine Tennisschule`;
                                     </option>
                                     <option value="offen">○ Offen</option>
                                   </select>
+                                  <label style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                    marginTop: 6,
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                    color: wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ? "var(--primary)" : "var(--text-muted)"
+                                  }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ?? false}
+                                      onChange={(e) => {
+                                        setWirdAbgebucht((prev) => ({
+                                          ...prev,
+                                          [`${abrechnungMonat}__${r.id}`]: e.target.checked,
+                                        }));
+                                      }}
+                                      style={{ width: "auto" }}
+                                    />
+                                    wird abgebucht
+                                  </label>
                                 </td>
                               </tr>
                             );
