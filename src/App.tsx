@@ -7297,55 +7297,57 @@ Deine Tennisschule`;
                                   </span>
                                 </td>
                                 <td>
-                                  <select
-                                    style={selectStyle}
-                                    value={dropdownValue}
-                                    onChange={(e) => {
-                                      const newVal = e.target.value;
-                                      if (newVal === "abgerechnet") {
-                                        if (!paymentsFlag) {
-                                          togglePaidForPlayer(abrechnungMonat, r.id);
-                                        }
-                                      } else if (newVal === "offen" || newVal === "teilweise_bar") {
-                                        if (paymentsFlag) {
-                                          togglePaidForPlayer(abrechnungMonat, r.id);
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    {status === "komplett_bar" && (
-                                      <option value="komplett_bar">✓ Komplett bar bezahlt</option>
-                                    )}
-                                    {(status === "teilweise_bar") && (
-                                      <option value="teilweise_bar">⚠ Teilweise bar ({euro(sumBarSpieler)})</option>
-                                    )}
-                                    <option value="abgerechnet">
-                                      ✓ Komplett abgerechnet
-                                    </option>
-                                    <option value="offen">○ Offen</option>
-                                  </select>
-                                  <label style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 4,
-                                    marginTop: 6,
-                                    fontSize: 12,
-                                    cursor: "pointer",
-                                    color: wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ? "var(--primary)" : "var(--text-muted)"
-                                  }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ?? false}
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <select
+                                      style={selectStyle}
+                                      value={dropdownValue}
                                       onChange={(e) => {
-                                        setWirdAbgebucht((prev) => ({
-                                          ...prev,
-                                          [`${abrechnungMonat}__${r.id}`]: e.target.checked,
-                                        }));
+                                        const newVal = e.target.value;
+                                        if (newVal === "abgerechnet") {
+                                          if (!paymentsFlag) {
+                                            togglePaidForPlayer(abrechnungMonat, r.id);
+                                          }
+                                        } else if (newVal === "offen" || newVal === "teilweise_bar") {
+                                          if (paymentsFlag) {
+                                            togglePaidForPlayer(abrechnungMonat, r.id);
+                                          }
+                                        }
                                       }}
-                                      style={{ width: "auto" }}
-                                    />
-                                    wird abgebucht
-                                  </label>
+                                    >
+                                      {status === "komplett_bar" && (
+                                        <option value="komplett_bar">✓ Komplett bar bezahlt</option>
+                                      )}
+                                      {(status === "teilweise_bar") && (
+                                        <option value="teilweise_bar">⚠ Teilweise bar ({euro(sumBarSpieler)})</option>
+                                      )}
+                                      <option value="abgerechnet">
+                                        ✓ Komplett abgerechnet
+                                      </option>
+                                      <option value="offen">○ Offen</option>
+                                    </select>
+                                    <label style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      fontSize: 12,
+                                      cursor: "pointer",
+                                      whiteSpace: "nowrap",
+                                      color: wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ? "var(--primary)" : "var(--text-muted)"
+                                    }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ?? false}
+                                        onChange={(e) => {
+                                          setWirdAbgebucht((prev) => ({
+                                            ...prev,
+                                            [`${abrechnungMonat}__${r.id}`]: e.target.checked,
+                                          }));
+                                        }}
+                                        style={{ width: "auto" }}
+                                      />
+                                      abgebucht
+                                    </label>
+                                  </div>
                                 </td>
                               </tr>
                             );
