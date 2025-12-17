@@ -7507,6 +7507,21 @@ Deine Tennisschule`;
                                 onClick={() => {
                                   const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
                                   setTrainerMonthSettled((prev) => ({ ...prev, [key]: true }));
+                                  // Alle nicht-bar Trainings dieses Trainers als abgerechnet markieren
+                                  const trainerTrainings = trainingsInMonth.filter((t) => {
+                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                                    return tid === abrechnungTrainerFilter && !t.barBezahlt;
+                                  });
+                                  if (trainerTrainings.length > 0) {
+                                    setTrainerPayments((prev) => {
+                                      const next = { ...prev };
+                                      trainerTrainings.forEach((t) => {
+                                        next[t.id] = true;
+                                      });
+                                      return next;
+                                    });
+                                  }
                                 }}
                               >
                                 Als abgerechnet markieren
