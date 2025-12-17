@@ -1363,6 +1363,7 @@ export default function App() {
     }
   }, [tab, weiteresTabs]);
   const [vertretungDatumPreview, setVertretungDatumPreview] = useState<string>("");
+  const [vertretungPendingDates, setVertretungPendingDates] = useState<string[]>([]);
   const [vertretungModus, setVertretungModus] = useState<"einzeln" | "zeitraum">("einzeln");
   const [vertretungVon, setVertretungVon] = useState<string>("");
   const [vertretungBis, setVertretungBis] = useState<string>("");
@@ -8356,40 +8357,115 @@ Deine Tennisschule`;
                       {/* Einzeldatum-Modus */}
                       {vertretungTrainerId && vertretungModus === "einzeln" && (
                         <div style={{ marginTop: 12 }}>
-                          <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                          <div className="row" style={{ gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
                             <div className="field" style={{ flex: "1 1 150px", minWidth: 0 }}>
-                              <label>Datum auswählen (klicken zum Hinzufügen)</label>
+                              <label>Datum auswählen</label>
                               <input
                                 type="date"
                                 value={vertretungDatumPreview}
                                 onChange={(e) => {
                                   const datum = e.target.value;
-                                  if (datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) && !vertretungDaten.includes(datum)) {
-                                    setVertretungDaten([...vertretungDaten, datum].sort());
-                                    // Automatisch alle Trainings dieses Trainers an dem Tag als "offen" speichern
-                                    const dayTrainings = trainings.filter(
-                                      (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
-                                    );
-                                    if (dayTrainings.length > 0) {
-                                      setVertretungen((prev) => {
-                                        const newVertretungen = [...prev];
-                                        dayTrainings.forEach((t) => {
-                                          if (!newVertretungen.some((v) => v.trainingId === t.id)) {
-                                            newVertretungen.push({ trainingId: t.id });
-                                          }
-                                        });
-                                        return newVertretungen;
-                                      });
+                                  if (datum && /^\d{4}-\d{2}-\d{2}$/.test(datum)) {
+                                    if (!vertretungDaten.includes(datum) && !vertretungPendingDates.includes(datum)) {
+                                      setVertretungPendingDates(prev => [...prev, datum].sort());
                                     }
+                                    setVertretungDatumPreview("");
                                   }
-                                  setVertretungDatumPreview("");
                                 }}
                               />
                             </div>
                           </div>
-                          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                            Wähle mehrere Tage nacheinander aus. Jedes ausgewählte Datum wird automatisch hinzugefügt.
-                          </p>
+
+                          {/* Ausgewählte Daten anzeigen */}
+                          {vertretungPendingDates.length > 0 && (
+                            <div style={{ marginTop: 12 }}>
+                              <label style={{ fontSize: 13, marginBottom: 8, display: "block" }}>
+                                Ausgewählte Tage ({vertretungPendingDates.length}):
+                              </label>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                                {vertretungPendingDates.map(datum => {
+                                  const d = new Date(datum + "T12:00:00");
+                                  const formatted = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+                                  return (
+                                    <span
+                                      key={datum}
+                                      style={{
+                                        background: "var(--primary)",
+                                        color: "white",
+                                        padding: "4px 10px",
+                                        borderRadius: 16,
+                                        fontSize: 13,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 6
+                                      }}
+                                    >
+                                      {formatted}
+                                      <button
+                                        type="button"
+                                        onClick={() => setVertretungPendingDates(prev => prev.filter(d => d !== datum))}
+                                        style={{
+                                          background: "transparent",
+                                          border: "none",
+                                          color: "white",
+                                          cursor: "pointer",
+                                          padding: 0,
+                                          fontSize: 16,
+                                          lineHeight: 1
+                                        }}
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  className="btn"
+                                  style={{ background: "#22c55e", borderColor: "#22c55e" }}
+                                  onClick={() => {
+                                    // Alle pending dates hinzufügen
+                                    vertretungPendingDates.forEach(datum => {
+                                      if (!vertretungDaten.includes(datum)) {
+                                        setVertretungDaten(prev => [...prev, datum].sort());
+                                        // Trainings als offen markieren
+                                        const dayTrainings = trainings.filter(
+                                          (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                                        );
+                                        if (dayTrainings.length > 0) {
+                                          setVertretungen((prev) => {
+                                            const newVertretungen = [...prev];
+                                            dayTrainings.forEach((t) => {
+                                              if (!newVertretungen.some((v) => v.trainingId === t.id)) {
+                                                newVertretungen.push({ trainingId: t.id });
+                                              }
+                                            });
+                                            return newVertretungen;
+                                          });
+                                        }
+                                      }
+                                    });
+                                    setVertretungPendingDates([]);
+                                  }}
+                                >
+                                  {vertretungPendingDates.length} Tag{vertretungPendingDates.length !== 1 ? "e" : ""} hinzufügen
+                                </button>
+                                <button
+                                  className="btn btnGhost"
+                                  onClick={() => setVertretungPendingDates([])}
+                                >
+                                  Auswahl leeren
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {vertretungPendingDates.length === 0 && (
+                            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                              Wähle einen oder mehrere Tage aus und bestätige dann.
+                            </p>
+                          )}
                         </div>
                       )}
 
