@@ -9555,6 +9555,7 @@ Deine Tennisschule`);
                                     body: JSON.stringify({
                                       to: [selectedSpieler.kontaktEmail],
                                       subject: rechnungEmailBetreff.trim(),
+                                      body: emailBody,
                                       html: emailBody,
                                     }),
                                   });

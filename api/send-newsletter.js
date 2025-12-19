@@ -26,8 +26,8 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { to, subject, body, fromName } = req.body || {};
-    console.log('Request body:', { to, subject, fromName, bodyLength: body?.length });
+    const { to, subject, body, html, fromName } = req.body || {};
+    console.log('Request body:', { to, subject, fromName, bodyLength: body?.length, hasHtml: !!html });
 
     if (!to || to.length === 0) {
       return res.status(400).json({ error: 'Keine Empfänger angegeben' });
@@ -62,10 +62,11 @@ module.exports = async function handler(req, res) {
       try {
         console.log('Sending to:', recipient);
         await transporter.sendMail({
-          from: `${fromName} <${smtpUser}>`,
+          from: `${fromName || 'Tennisschule'} <${smtpUser}>`,
           to: recipient,
           subject: subject,
           text: body,
+          html: html || body,
         });
         successCount++;
         console.log('Sent successfully to:', recipient);
