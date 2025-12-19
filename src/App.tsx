@@ -1521,7 +1521,6 @@ export default function App() {
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
   const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung">("sepa");
-  const [rechnungKorrektur, setRechnungKorrektur] = useState(0);
   const [showRechnungEmailDialog, setShowRechnungEmailDialog] = useState(false);
   const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
   const [rechnungEmailText, setRechnungEmailText] = useState("");
@@ -9092,27 +9091,10 @@ Deine Tennisschule`;
                           </div>
                         )}
 
-                        {/* Korrektur */}
-                        <div className="field" style={{ marginBottom: 16 }}>
-                          <label>Korrektur (€)</label>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={rechnungKorrektur}
-                              onChange={(e) => setRechnungKorrektur(parseFloat(e.target.value) || 0)}
-                              style={{ width: 120 }}
-                            />
-                            <span className="muted" style={{ fontSize: 13 }}>
-                              Positiv = Zusatzgebühr, Negativ = Gutschrift/Rabatt
-                            </span>
-                          </div>
-                        </div>
-
                         <button
                           className="btn"
                           onClick={() => setShowRechnungPreview(true)}
-                          disabled={(gesamtBetrag + rechnungKorrektur) <= 0}
+                          disabled={gesamtBetrag <= 0}
                         >
                           Rechnung erstellen
                         </button>
@@ -9238,16 +9220,6 @@ Deine Tennisschule`;
                   betrag: existingAdjustment
                 });
                 gesamtBetrag = round2(gesamtBetrag + existingAdjustment);
-              }
-
-              // Zusätzliche Korrektur vom Rechnungsformular
-              if (rechnungKorrektur !== 0) {
-                positionen.push({
-                  datum: "",
-                  beschreibung: rechnungKorrektur > 0 ? "Korrektur (Zusatzgebühr)" : "Korrektur (Gutschrift)",
-                  betrag: rechnungKorrektur
-                });
-                gesamtBetrag = round2(gesamtBetrag + rechnungKorrektur);
               }
 
               const monatName = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
