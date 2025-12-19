@@ -8984,7 +8984,7 @@ Deine Tennisschule`;
                     const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
                     if (!selectedSpieler) return null;
 
-                    // Berechne offenen Betrag für den Monat (nur durchgeführte Trainings)
+                    // Berechne offenen Betrag für den Monat (gleiche Logik wie Spieler-Abrechnung)
                     const monatTrainings = trainings.filter((t) => {
                       if (!t.datum.startsWith(rechnungMonat)) return false;
                       if (t.status !== "durchgefuehrt") return false;
@@ -8992,25 +8992,52 @@ Deine Tennisschule`;
                     });
 
                     let gesamtBetrag = 0;
+                    const monthlyProcessedKeys = new Set<string>();
+                    const monthlyWeekdays = new Map<string, Set<number>>();
+
+                    // Erst Wochentage für monatliche Tarife sammeln
+                    monatTrainings.forEach((t) => {
+                      const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                      const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                      if (abrechnungsTyp === "monatlich") {
+                        const tarifKey = t.tarifId || `custom-${t.customPreisProStunde ?? tarif?.preisProStunde}`;
+                        const trainingDate = new Date(t.datum + "T12:00:00");
+                        const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<number>();
+                        weekdays.add(trainingDate.getDay());
+                        monthlyWeekdays.set(tarifKey, weekdays);
+                      }
+                    });
+
+                    // Beträge berechnen
                     monatTrainings.forEach((t) => {
                       const tarif = tarife.find((tf) => tf.id === t.tarifId);
                       const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
-                      const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
-                      const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
-                      const hours = mins / 60;
+                      const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
 
-                      if (abrechnung === "proSpieler") {
-                        gesamtBetrag += preisProStunde * hours;
+                      if (abrechnungsTyp === "monatlich") {
+                        const tarifKey = t.tarifId || `custom-${preisProStunde}`;
+                        if (monthlyProcessedKeys.has(tarifKey)) return;
+                        monthlyProcessedKeys.add(tarifKey);
+                        const weekdayCount = monthlyWeekdays.get(tarifKey)?.size ?? 1;
+                        gesamtBetrag += preisProStunde * weekdayCount;
                       } else {
-                        const anzahlSpieler = t.spielerIds.length || 1;
-                        gesamtBetrag += (preisProStunde * hours) / anzahlSpieler;
+                        const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
+                        const hours = mins / 60;
+                        if (abrechnungsTyp === "proSpieler") {
+                          gesamtBetrag += preisProStunde * hours;
+                        } else {
+                          const anzahlSpieler = t.spielerIds.length || 1;
+                          gesamtBetrag += (preisProStunde * hours) / anzahlSpieler;
+                        }
                       }
                     });
+
+                    gesamtBetrag = round2(gesamtBetrag);
 
                     // Monatliche Anpassung berücksichtigen
                     const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
                     const adjustment = monthlyAdjustments[adjustmentKey] ?? 0;
-                    gesamtBetrag += adjustment;
+                    gesamtBetrag = round2(gesamtBetrag + adjustment);
 
                     const monatName = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
 
@@ -9101,90 +9128,91 @@ Deine Tennisschule`;
               const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
               if (!selectedSpieler) return null;
 
-              let gesamtBetrag = 0;
-              let positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
-
-              // Berechne Betrag (nur durchgeführte Trainings)
-              const monatTrainings = trainings.filter((t) => {
+              // Berechne Summe für den Rechnungsmonat (gleiche Logik wie Spieler-Abrechnung)
+              const rechnungMonatTrainings = trainings.filter((t) => {
                 if (!t.datum.startsWith(rechnungMonat)) return false;
                 if (t.status !== "durchgefuehrt") return false;
                 return t.spielerIds.includes(rechnungSpielerId);
               });
 
-              // Gruppiere nach Tarif-Typ (monatlich vs. normal)
-              const monatlicheTarife = new Map<string, { name: string; rate: number; weekdays: Set<number> }>();
-              const normaleTrainings: Training[] = [];
+              let basisBetrag = 0;
+              const monthlyProcessedKeys = new Set<string>();
+              const monthlyWeekdays = new Map<string, Set<number>>();
 
-              monatTrainings.forEach((t) => {
+              // Erst Wochentage für monatliche Tarife sammeln
+              rechnungMonatTrainings.forEach((t) => {
                 const tarif = tarife.find((tf) => tf.id === t.tarifId);
-                const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
-
-                if (abrechnung === "monatlich") {
-                  const tarifKey = t.tarifId || `custom-${t.customPreisProStunde}`;
-                  const rate = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
-                  const tarifName = tarif?.name || "Monatstarif";
-
-                  if (!monatlicheTarife.has(tarifKey)) {
-                    monatlicheTarife.set(tarifKey, { name: tarifName, rate, weekdays: new Set() });
-                  }
-                  const entry = monatlicheTarife.get(tarifKey)!;
+                const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                if (abrechnungsTyp === "monatlich") {
+                  const tarifKey = t.tarifId || `custom-${t.customPreisProStunde ?? tarif?.preisProStunde}`;
                   const trainingDate = new Date(t.datum + "T12:00:00");
-                  entry.weekdays.add(trainingDate.getDay());
-                } else {
-                  normaleTrainings.push(t);
+                  const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<number>();
+                  weekdays.add(trainingDate.getDay());
+                  monthlyWeekdays.set(tarifKey, weekdays);
                 }
               });
 
-              // Monatstarife als Positionen hinzufügen
-              monatlicheTarife.forEach((entry, _key) => {
-                const betrag = entry.rate * entry.weekdays.size;
-                gesamtBetrag += betrag;
-                const wochentageText = entry.weekdays.size === 1 ? "1 Wochentag" : `${entry.weekdays.size} Wochentage`;
-                positionen.push({
-                  datum: "",
-                  beschreibung: `${entry.name} (${wochentageText} × ${entry.rate.toFixed(2)} €)`,
-                  betrag
-                });
-              });
+              // Beträge berechnen
+              rechnungMonatTrainings.forEach((t) => {
+                const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
 
-              // Normale Trainings einzeln auflisten
-              normaleTrainings
-                .sort((a, b) => a.datum.localeCompare(b.datum))
-                .forEach((t) => {
-                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
-                  const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
-                  const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                if (abrechnungsTyp === "monatlich") {
+                  const tarifKey = t.tarifId || `custom-${preisProStunde}`;
+                  if (monthlyProcessedKeys.has(tarifKey)) return;
+                  monthlyProcessedKeys.add(tarifKey);
+                  const weekdayCount = monthlyWeekdays.get(tarifKey)?.size ?? 1;
+                  basisBetrag += preisProStunde * weekdayCount;
+                } else {
                   const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
                   const hours = mins / 60;
-
-                  let betrag = 0;
-                  if (abrechnung === "proSpieler") {
-                    betrag = preisProStunde * hours;
+                  if (abrechnungsTyp === "proSpieler") {
+                    basisBetrag += preisProStunde * hours;
                   } else {
                     const anzahlSpieler = t.spielerIds.length || 1;
-                    betrag = (preisProStunde * hours) / anzahlSpieler;
+                    basisBetrag += (preisProStunde * hours) / anzahlSpieler;
                   }
+                }
+              });
 
-                  gesamtBetrag += betrag;
+              basisBetrag = round2(basisBetrag);
 
-                  const datumFormatiert = new Date(t.datum).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric"
-                  });
-                  positionen.push({
-                    datum: datumFormatiert,
-                    beschreibung: `Training ${t.uhrzeitVon}-${t.uhrzeitBis} (${hours.toFixed(1)}h)`,
-                    betrag
-                  });
-                });
+              // Vorhandene Anpassung aus monthlyAdjustments holen
+              const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
+              const existingAdjustment = monthlyAdjustments[adjustmentKey] ?? 0;
 
-              // Korrektur hinzufügen
-              if (rechnungKorrektur !== 0) {
-                gesamtBetrag += rechnungKorrektur;
+              // Gesamtbetrag = Basis + vorhandene Anpassung + neue Korrektur
+              const gesamtBetrag = round2(basisBetrag + existingAdjustment + rechnungKorrektur);
+
+              const monatNameLang = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+
+              // Positionen aufbauen
+              const positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
+
+              // Hauptposition: Tennistraining für den Monat
+              if (basisBetrag !== 0) {
                 positionen.push({
                   datum: "",
-                  beschreibung: rechnungKorrektur > 0 ? "Zusatzgebühr" : "Gutschrift/Rabatt",
+                  beschreibung: `Tennistraining ${monatNameLang}`,
+                  betrag: basisBetrag
+                });
+              }
+
+              // Vorhandene Anpassung (aus monthlyAdjustments)
+              if (existingAdjustment !== 0) {
+                positionen.push({
+                  datum: "",
+                  beschreibung: existingAdjustment > 0 ? "Anpassung (Zusatzgebühr)" : "Anpassung (Gutschrift)",
+                  betrag: existingAdjustment
+                });
+              }
+
+              // Zusätzliche Korrektur vom Rechnungsformular
+              if (rechnungKorrektur !== 0) {
+                positionen.push({
+                  datum: "",
+                  beschreibung: rechnungKorrektur > 0 ? "Korrektur (Zusatzgebühr)" : "Korrektur (Gutschrift)",
                   betrag: rechnungKorrektur
                 });
               }
