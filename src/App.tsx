@@ -9341,15 +9341,18 @@ Deine Tennisschule`;
                           className="btn btnGhost"
                           onClick={() => {
                             const monatFormatiert = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-                            setRechnungEmailBetreff(`Rechnung ${rechnungNummer} - Tennisschule Berlin`);
-                            setRechnungEmailText(`Hallo ${selectedSpieler.name.split(" ")[0]},
+                            const empfaengerName = selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName
+                              ? selectedSpieler.empfaengerName.split(" ")[0]
+                              : selectedSpieler.name.split(" ")[0];
+                            setRechnungEmailBetreff(`Rechnung ${rechnungNummer} - Tennisschule A bis Z`);
+                            setRechnungEmailText(`Hallo ${empfaengerName},
 
-anbei erhältst du die Rechnung für ${monatFormatiert}.
+anbei erhältst du die Rechnung für das Tennistraining im ${monatFormatiert}.
 
-Bei Fragen stehe ich dir gerne zur Verfügung.
+Bei Fragen stehen wir dir gerne zur Verfügung.
 
-Mit sportlichen Grüßen,
-Deine Tennisschule`);
+Mit freundlichen Grüßen,
+Tennisschule A bis Z`);
                             setShowRechnungEmailDialog(true);
                           }}
                         >
