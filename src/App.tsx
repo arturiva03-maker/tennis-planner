@@ -9550,27 +9550,48 @@ Deine Tennisschule`);
                                   const html2pdf = (await import('html2pdf.js')).default;
                                   const invoiceHTML = generateInvoiceHTML();
 
-                                  // Temporäres Element erstellen
-                                  const container = document.createElement('div');
-                                  container.innerHTML = invoiceHTML;
-                                  container.style.position = 'absolute';
-                                  container.style.left = '-9999px';
-                                  container.style.width = '210mm';
-                                  document.body.appendChild(container);
+                                  // Temporäres iframe erstellen für korrektes Rendering
+                                  const iframe = document.createElement('iframe');
+                                  iframe.style.position = 'fixed';
+                                  iframe.style.top = '0';
+                                  iframe.style.left = '0';
+                                  iframe.style.width = '210mm';
+                                  iframe.style.height = '297mm';
+                                  iframe.style.opacity = '0';
+                                  iframe.style.pointerEvents = 'none';
+                                  iframe.style.zIndex = '-1';
+                                  document.body.appendChild(iframe);
+
+                                  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                                  if (iframeDoc) {
+                                    iframeDoc.open();
+                                    iframeDoc.write(invoiceHTML);
+                                    iframeDoc.close();
+                                  }
+
+                                  // Warten bis iframe gerendert ist
+                                  await new Promise(resolve => setTimeout(resolve, 500));
+
+                                  const container = iframeDoc?.body || iframe.contentDocument?.body;
+                                  if (!container) throw new Error('Container nicht gefunden');
 
                                   // PDF generieren
                                   const pdfBlob = await html2pdf()
                                     .set({
-                                      margin: 10,
+                                      margin: 0,
                                       filename: `Rechnung_${rechnungNummer}.pdf`,
                                       image: { type: 'jpeg', quality: 0.98 },
-                                      html2canvas: { scale: 2 },
+                                      html2canvas: {
+                                        scale: 2,
+                                        useCORS: true,
+                                        logging: false
+                                      },
                                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                                     })
                                     .from(container)
                                     .outputPdf('blob');
 
-                                  document.body.removeChild(container);
+                                  document.body.removeChild(iframe);
 
                                   // Blob zu Base64 konvertieren
                                   const reader = new FileReader();
