@@ -1521,6 +1521,10 @@ export default function App() {
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
   const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung">("sepa");
+  const [showRechnungEmailDialog, setShowRechnungEmailDialog] = useState(false);
+  const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
+  const [rechnungEmailText, setRechnungEmailText] = useState("");
+  const [rechnungEmailSending, setRechnungEmailSending] = useState(false);
 
   const generateRechnungNummer = () => {
     const d = new Date();
@@ -9447,6 +9451,26 @@ Deine Tennisschule`;
                       <button className="btn btnGhost" onClick={() => setShowRechnungPreview(false)}>
                         Zurück
                       </button>
+                      {selectedSpieler.kontaktEmail && (
+                        <button
+                          className="btn btnGhost"
+                          onClick={() => {
+                            const monatFormatiert = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+                            setRechnungEmailBetreff(`Rechnung ${rechnungNummer} - Tennisschule Berlin`);
+                            setRechnungEmailText(`Hallo ${selectedSpieler.name.split(" ")[0]},
+
+anbei erhältst du die Rechnung für ${monatFormatiert}.
+
+Bei Fragen stehe ich dir gerne zur Verfügung.
+
+Mit sportlichen Grüßen,
+Deine Tennisschule`);
+                            setShowRechnungEmailDialog(true);
+                          }}
+                        >
+                          Per E-Mail senden
+                        </button>
+                      )}
                       <button
                         className="btn"
                         onClick={() => {
@@ -9465,6 +9489,99 @@ Deine Tennisschule`;
                         PDF erstellen / Drucken
                       </button>
                     </div>
+
+                    {/* E-Mail Dialog */}
+                    {showRechnungEmailDialog && (
+                      <div className="modal" onClick={() => setShowRechnungEmailDialog(false)}>
+                        <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+                          <h2 style={{ marginBottom: 16 }}>Rechnung per E-Mail senden</h2>
+
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>
+                              An: <strong>{selectedSpieler.kontaktEmail}</strong>
+                            </div>
+                          </div>
+
+                          <div className="field" style={{ marginBottom: 16 }}>
+                            <label>Betreff</label>
+                            <input
+                              value={rechnungEmailBetreff}
+                              onChange={(e) => setRechnungEmailBetreff(e.target.value)}
+                            />
+                          </div>
+
+                          <div className="field" style={{ marginBottom: 16 }}>
+                            <label>Nachricht</label>
+                            <textarea
+                              value={rechnungEmailText}
+                              onChange={(e) => setRechnungEmailText(e.target.value)}
+                              rows={8}
+                              style={{ width: "100%", resize: "vertical" }}
+                            />
+                          </div>
+
+                          <div style={{
+                            background: "var(--bg-card)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-md)",
+                            padding: 12,
+                            marginBottom: 16,
+                            fontSize: 12,
+                            color: "var(--text-muted)"
+                          }}>
+                            <strong>Hinweis:</strong> Die Rechnung wird als HTML im E-Mail-Text angehängt.
+                          </div>
+
+                          <div className="row">
+                            <button
+                              className="btn btnGhost"
+                              onClick={() => setShowRechnungEmailDialog(false)}
+                              disabled={rechnungEmailSending}
+                            >
+                              Abbrechen
+                            </button>
+                            <button
+                              className="btn"
+                              disabled={rechnungEmailSending || !rechnungEmailBetreff.trim() || !rechnungEmailText.trim()}
+                              onClick={async () => {
+                                setRechnungEmailSending(true);
+                                try {
+                                  const invoiceHTML = generateInvoiceHTML();
+                                  const emailBody = `${rechnungEmailText.replace(/\n/g, "<br>")}<br><br><hr style="border: none; border-top: 1px solid #ccc; margin: 24px 0;"><br>${invoiceHTML}`;
+
+                                  const response = await fetch("/api/send-newsletter", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      to: [selectedSpieler.kontaktEmail],
+                                      subject: rechnungEmailBetreff.trim(),
+                                      html: emailBody,
+                                    }),
+                                  });
+
+                                  if (response.ok) {
+                                    alert("Rechnung wurde erfolgreich per E-Mail gesendet!");
+                                    setShowRechnungEmailDialog(false);
+                                    setShowRechnungPreview(false);
+                                    setRechnungNummer(generateRechnungNummer());
+                                  } else {
+                                    const errorData = await response.json();
+                                    alert("Fehler beim Senden: " + (errorData.error || "Unbekannter Fehler"));
+                                  }
+                                } catch (err) {
+                                  console.error("E-Mail senden fehlgeschlagen:", err);
+                                  alert("Fehler beim Senden der E-Mail");
+                                }finally {
+                                  setRechnungEmailSending(false);
+                                }
+                              }}
+                            >
+                              {rechnungEmailSending ? "Wird gesendet..." : "E-Mail senden"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
