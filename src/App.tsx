@@ -1521,6 +1521,7 @@ export default function App() {
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
   const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung">("sepa");
+  const [rechnungKorrektur, setRechnungKorrektur] = useState(0);
   const [showRechnungEmailDialog, setShowRechnungEmailDialog] = useState(false);
   const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
   const [rechnungEmailText, setRechnungEmailText] = useState("");
@@ -8845,14 +8846,14 @@ Deine Tennisschule`;
                     onClick={() => setRechnungVorlage("sepa")}
                     style={{ flex: 1 }}
                   >
-                    Vorlage 1 (SEPA)
+                    SEPA
                   </button>
                   <button
                     className={`btn ${rechnungVorlage === "ueberweisung" ? "" : "btnGhost"}`}
                     onClick={() => setRechnungVorlage("ueberweisung")}
                     style={{ flex: 1 }}
                   >
-                    Vorlage 2 (Überweisung)
+                    Überweisung
                   </button>
                 </div>
 
@@ -9064,10 +9065,27 @@ Deine Tennisschule`;
                           </div>
                         )}
 
+                        {/* Korrektur */}
+                        <div className="field" style={{ marginBottom: 16 }}>
+                          <label>Korrektur (€)</label>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={rechnungKorrektur}
+                              onChange={(e) => setRechnungKorrektur(parseFloat(e.target.value) || 0)}
+                              style={{ width: 120 }}
+                            />
+                            <span className="muted" style={{ fontSize: 13 }}>
+                              Positiv = Zusatzgebühr, Negativ = Gutschrift/Rabatt
+                            </span>
+                          </div>
+                        </div>
+
                         <button
                           className="btn"
                           onClick={() => setShowRechnungPreview(true)}
-                          disabled={gesamtBetrag <= 0}
+                          disabled={(gesamtBetrag + rechnungKorrektur) <= 0}
                         >
                           Rechnung erstellen
                         </button>
@@ -9083,6 +9101,9 @@ Deine Tennisschule`;
               const selectedSpieler = spieler.find((s) => s.id === rechnungSpielerId);
               if (!selectedSpieler) return null;
 
+              let gesamtBetrag = 0;
+              let positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
+
               // Berechne Betrag (nur durchgeführte Trainings)
               const monatTrainings = trainings.filter((t) => {
                 if (!t.datum.startsWith(rechnungMonat)) return false;
@@ -9090,10 +9111,44 @@ Deine Tennisschule`;
                 return t.spielerIds.includes(rechnungSpielerId);
               });
 
-              let gesamtBetrag = 0;
-              const positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
+              // Gruppiere nach Tarif-Typ (monatlich vs. normal)
+              const monatlicheTarife = new Map<string, { name: string; rate: number; weekdays: Set<number> }>();
+              const normaleTrainings: Training[] = [];
 
-              monatTrainings
+              monatTrainings.forEach((t) => {
+                const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                const abrechnung = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+
+                if (abrechnung === "monatlich") {
+                  const tarifKey = t.tarifId || `custom-${t.customPreisProStunde}`;
+                  const rate = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                  const tarifName = tarif?.name || "Monatstarif";
+
+                  if (!monatlicheTarife.has(tarifKey)) {
+                    monatlicheTarife.set(tarifKey, { name: tarifName, rate, weekdays: new Set() });
+                  }
+                  const entry = monatlicheTarife.get(tarifKey)!;
+                  const trainingDate = new Date(t.datum + "T12:00:00");
+                  entry.weekdays.add(trainingDate.getDay());
+                } else {
+                  normaleTrainings.push(t);
+                }
+              });
+
+              // Monatstarife als Positionen hinzufügen
+              monatlicheTarife.forEach((entry, _key) => {
+                const betrag = entry.rate * entry.weekdays.size;
+                gesamtBetrag += betrag;
+                const wochentageText = entry.weekdays.size === 1 ? "1 Wochentag" : `${entry.weekdays.size} Wochentage`;
+                positionen.push({
+                  datum: "",
+                  beschreibung: `${entry.name} (${wochentageText} × ${entry.rate.toFixed(2)} €)`,
+                  betrag
+                });
+              });
+
+              // Normale Trainings einzeln auflisten
+              normaleTrainings
                 .sort((a, b) => a.datum.localeCompare(b.datum))
                 .forEach((t) => {
                   const tarif = tarife.find((tf) => tf.id === t.tarifId);
@@ -9124,14 +9179,13 @@ Deine Tennisschule`;
                   });
                 });
 
-              const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
-              const adjustment = monthlyAdjustments[adjustmentKey] ?? 0;
-              if (adjustment !== 0) {
-                gesamtBetrag += adjustment;
+              // Korrektur hinzufügen
+              if (rechnungKorrektur !== 0) {
+                gesamtBetrag += rechnungKorrektur;
                 positionen.push({
                   datum: "",
-                  beschreibung: adjustment > 0 ? "Zusatzgebühr" : "Gutschrift/Rabatt",
-                  betrag: adjustment
+                  beschreibung: rechnungKorrektur > 0 ? "Zusatzgebühr" : "Gutschrift/Rabatt",
+                  betrag: rechnungKorrektur
                 });
               }
 
