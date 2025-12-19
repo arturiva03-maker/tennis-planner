@@ -4710,7 +4710,7 @@ Deine Tennisschule`;
                                 ? "rgba(239, 68, 68, 0.14)"
                                 : "rgba(59, 130, 246, 0.18)";
                               const border = hasVertretung
-                                ? "rgba(220, 38, 38, 0.8)"
+                                ? isVertretungOffen ? "rgba(220, 38, 38, 0.8)" : "rgba(34, 197, 94, 0.8)"
                                 : isSelected
                                 ? "rgba(139, 92, 246, 0.6)"
                                 : isDone
@@ -4818,12 +4818,12 @@ Deine Tennisschule`;
                                     {hasVertretung && (
                                       <span
                                         style={{
-                                          fontSize: 9,
+                                          fontSize: 8,
                                           fontWeight: 700,
-                                          background: "#dc2626",
+                                          background: isVertretungOffen ? "#dc2626" : "#22c55e",
                                           color: "white",
-                                          padding: "1px 4px",
-                                          borderRadius: 3,
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
                                         }}
                                       >
                                         V
