@@ -4701,24 +4701,22 @@ Deine Tennisschule`;
                               );
 
                               // Ausgewählte Trainings haben eine violette Hintergrundfarbe
-                              // Vertretungen haben eine orange Hintergrundfarbe
+                              // Vertretungen bekommen einen roten Rand + "V"
                               const bg = isSelected
                                 ? "rgba(139, 92, 246, 0.35)"
                                 : isDone
                                 ? "rgba(34, 197, 94, 0.22)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.14)"
-                                : hasVertretung
-                                ? "rgba(249, 115, 22, 0.22)"
                                 : "rgba(59, 130, 246, 0.18)";
-                              const border = isSelected
+                              const border = hasVertretung
+                                ? "rgba(220, 38, 38, 0.8)"
+                                : isSelected
                                 ? "rgba(139, 92, 246, 0.6)"
                                 : isDone
                                 ? "rgba(34, 197, 94, 0.45)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.34)"
-                                : hasVertretung
-                                ? "rgba(249, 115, 22, 0.45)"
                                 : "rgba(59, 130, 246, 0.30)";
 
                               // Position für überlappende Trainings berechnen
@@ -4749,7 +4747,7 @@ Deine Tennisschule`;
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
                                     backgroundColor: bg,
-                                    border: `1px solid ${border}`,
+                                    border: hasVertretung ? `2px solid ${border}` : `1px solid ${border}`,
                                     opacity: isCancel ? 0.85 : 1,
                                     transform: isPulse
                                       ? "scale(1.06)"
@@ -4822,7 +4820,7 @@ Deine Tennisschule`;
                                         style={{
                                           fontSize: 9,
                                           fontWeight: 700,
-                                          background: "#f97316",
+                                          background: "#dc2626",
                                           color: "white",
                                           padding: "1px 4px",
                                           borderRadius: 3,
