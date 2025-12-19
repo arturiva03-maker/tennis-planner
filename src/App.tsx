@@ -969,6 +969,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     notizen: parsed?.notizen ?? [],
     monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
     vertretungen: parsed?.vertretungen ?? [],
+    wirdAbgebucht: parsed?.wirdAbgebucht ?? {},
   };
 }
 
