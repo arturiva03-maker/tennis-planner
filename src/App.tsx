@@ -152,7 +152,7 @@ type AppState = {
   wirdAbgebucht?: WirdAbgebuchtMap;
 };
 
-type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung" | "rechnung";
+type Tab = "dashboard" | "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres" | "planung" | "rechnung";
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -2123,7 +2123,7 @@ export default function App() {
 
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
-    : ["kalender", "training", "verwaltung", "abrechnung", "rechnung", "weiteres", "planung"];
+    : ["dashboard", "kalender", "training", "verwaltung", "abrechnung", "rechnung", "weiteres", "planung"];
 
   const roleLabel = isTrainer ? "Trainer" : "Admin";
 
@@ -4252,6 +4252,7 @@ Deine Tennisschule`;
                   setIsSideNavOpen(false);
                 }}
               >
+                {t === "dashboard" && "Dashboard"}
                 {t === "kalender" && "Kalender"}
                 {t === "training" && "Training"}
                 {t === "verwaltung" && "Verwaltung"}
@@ -4288,6 +4289,238 @@ Deine Tennisschule`;
                 )}
               </div>
             </div>
+
+            {tab === "dashboard" && (() => {
+              // Aktueller Monat
+              const heute = new Date();
+              const aktuellerMonat = `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, '0')}`;
+              const letzterMonat = heute.getMonth() === 0
+                ? `${heute.getFullYear() - 1}-12`
+                : `${heute.getFullYear()}-${String(heute.getMonth()).padStart(2, '0')}`;
+
+              const monatName = heute.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+              const letzterMonatName = new Date(heute.getFullYear(), heute.getMonth() - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+
+              // Trainings im aktuellen Monat
+              const trainingsAktuellerMonat = trainings.filter(t => t.datum.startsWith(aktuellerMonat));
+              const trainingsLetzterMonat = trainings.filter(t => t.datum.startsWith(letzterMonat));
+
+              const durchgefuehrtAktuell = trainingsAktuellerMonat.filter(t => t.status === "durchgefuehrt").length;
+              const abgesagtAktuell = trainingsAktuellerMonat.filter(t => t.status === "abgesagt").length;
+              const geplanteAktuell = trainingsAktuellerMonat.filter(t => t.status === "geplant").length;
+              const durchgefuehrtLetzter = trainingsLetzterMonat.filter(t => t.status === "durchgefuehrt").length;
+
+              // Umsatz berechnen (aus durchgeführten Trainings)
+              const berechneUmsatz = (monatTrainings: Training[]) => {
+                let umsatz = 0;
+                const monthlyProcessed = new Set<string>();
+                const monthlyWeekdays = new Map<string, Set<number>>();
+
+                // Erst Wochentage für monatliche Tarife sammeln
+                monatTrainings.filter(t => t.status === "durchgefuehrt").forEach((t) => {
+                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                  const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                  if (abrechnungsTyp === "monatlich") {
+                    const tarifKey = t.tarifId || `custom-${t.customPreisProStunde ?? tarif?.preisProStunde}`;
+                    const trainingDate = new Date(t.datum + "T12:00:00");
+                    t.spielerIds.forEach(pid => {
+                      const key = `${pid}__${tarifKey}`;
+                      const weekdays = monthlyWeekdays.get(key) ?? new Set<number>();
+                      weekdays.add(trainingDate.getDay());
+                      monthlyWeekdays.set(key, weekdays);
+                    });
+                  }
+                });
+
+                monatTrainings.filter(t => t.status === "durchgefuehrt").forEach((t) => {
+                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                  const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                  const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+
+                  if (abrechnungsTyp === "monatlich") {
+                    const tarifKey = t.tarifId || `custom-${preisProStunde}`;
+                    t.spielerIds.forEach(pid => {
+                      const key = `${pid}__${tarifKey}`;
+                      if (monthlyProcessed.has(key)) return;
+                      monthlyProcessed.add(key);
+                      const weekdayCount = monthlyWeekdays.get(key)?.size ?? 1;
+                      umsatz += preisProStunde * weekdayCount;
+                    });
+                  } else {
+                    const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
+                    const hours = mins / 60;
+                    if (abrechnungsTyp === "proSpieler") {
+                      umsatz += preisProStunde * hours * t.spielerIds.length;
+                    } else {
+                      umsatz += preisProStunde * hours;
+                    }
+                  }
+                });
+                return umsatz;
+              };
+
+              const umsatzAktuell = berechneUmsatz(trainingsAktuellerMonat);
+              const umsatzLetzter = berechneUmsatz(trainingsLetzterMonat);
+              const umsatzDiff = umsatzLetzter > 0 ? ((umsatzAktuell - umsatzLetzter) / umsatzLetzter * 100) : 0;
+
+              // Offene Beträge (Spieler die noch nicht bezahlt haben)
+              const offenerBetrag = abrechnung.spielerRows.reduce((acc, r) => {
+                const adjustedSum = getAdjustedSum(r.id, r.sum);
+                const status = getSpielerStatus(r.id, adjustedSum);
+                const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
+                return acc + (!isBezahlt ? adjustedSum : 0);
+              }, 0);
+
+              const bezahlterBetrag = abrechnung.spielerRows.reduce((acc, r) => {
+                const adjustedSum = getAdjustedSum(r.id, r.sum);
+                const status = getSpielerStatus(r.id, adjustedSum);
+                const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
+                return acc + (isBezahlt ? adjustedSum : 0);
+              }, 0);
+
+              // Vertretungen
+              const offeneVertretungen = vertretungen.filter(v => {
+                const training = trainings.find(t => t.id === v.trainingId);
+                if (!training) return false;
+                if (!training.datum.startsWith(aktuellerMonat)) return false;
+                return !v.vertretungTrainerId;
+              }).length;
+
+              // Aktive Spieler (Spieler mit mindestens einem Training im Monat)
+              const aktiveSpieler = new Set(
+                trainingsAktuellerMonat.flatMap(t => t.spielerIds)
+              ).size;
+
+              return (
+                <div style={{ display: "grid", gap: 24 }}>
+                  <h2>Dashboard – {monatName}</h2>
+
+                  {/* Kennzahlen-Karten */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+                    {/* Umsatz */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Umsatz</div>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "var(--color-primary)" }}>
+                        {umsatzAktuell.toFixed(2).replace('.', ',')} €
+                      </div>
+                      {umsatzLetzter > 0 && (
+                        <div style={{
+                          fontSize: 12,
+                          marginTop: 4,
+                          color: umsatzDiff >= 0 ? "#22c55e" : "#ef4444"
+                        }}>
+                          {umsatzDiff >= 0 ? "↑" : "↓"} {Math.abs(umsatzDiff).toFixed(1)}% vs. {letzterMonatName}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Offene Beträge */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Offen</div>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: offenerBetrag > 0 ? "#f59e0b" : "#22c55e" }}>
+                        {offenerBetrag.toFixed(2).replace('.', ',')} €
+                      </div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        {bezahlterBetrag.toFixed(2).replace('.', ',')} € bezahlt
+                      </div>
+                    </div>
+
+                    {/* Trainings */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Trainings</div>
+                      <div style={{ fontSize: 28, fontWeight: 700 }}>
+                        {durchgefuehrtAktuell}
+                      </div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        {geplanteAktuell} geplant · {abgesagtAktuell} abgesagt
+                      </div>
+                    </div>
+
+                    {/* Spieler */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Aktive Spieler</div>
+                      <div style={{ fontSize: 28, fontWeight: 700 }}>
+                        {aktiveSpieler}
+                      </div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        von {spieler.length} gesamt
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zweite Reihe */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+                    {/* Offene Vertretungen */}
+                    {offeneVertretungen > 0 && (
+                      <div className="card" style={{ padding: 20, borderLeft: "4px solid #ef4444" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#ef4444" }}>
+                              {offeneVertretungen} offene Vertretung{offeneVertretungen !== 1 ? "en" : ""}
+                            </div>
+                            <div className="muted" style={{ fontSize: 13 }}>
+                              Noch kein Trainer zugeordnet
+                            </div>
+                          </div>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setTab("weiteres");
+                              setWeiteresTabs("vertretung");
+                            }}
+                          >
+                            Anzeigen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Trainer-Übersicht */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 12 }}>Trainer-Aktivität</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {trainers.map(trainer => {
+                          const trainerTrainings = trainingsAktuellerMonat.filter(t =>
+                            t.trainerId === trainer.id && t.status === "durchgefuehrt"
+                          ).length;
+                          const vertretungTrainings = trainingsAktuellerMonat.filter(t => {
+                            const v = vertretungen.find(v => v.trainingId === t.id);
+                            return v?.vertretungTrainerId === trainer.id && t.status === "durchgefuehrt";
+                          }).length;
+                          return (
+                            <div key={trainer.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span>{trainer.name}</span>
+                              <span style={{ fontWeight: 600 }}>
+                                {trainerTrainings + vertretungTrainings} Trainings
+                                {vertretungTrainings > 0 && (
+                                  <span className="muted" style={{ fontWeight: 400 }}> ({vertretungTrainings} V)</span>
+                                )}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Schnellzugriff */}
+                    <div className="card" style={{ padding: 20 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 12 }}>Schnellzugriff</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <button className="btn btnGhost" style={{ justifyContent: "flex-start" }} onClick={() => setTab("training")}>
+                          + Neues Training
+                        </button>
+                        <button className="btn btnGhost" style={{ justifyContent: "flex-start" }} onClick={() => setTab("rechnung")}>
+                          Rechnung erstellen
+                        </button>
+                        <button className="btn btnGhost" style={{ justifyContent: "flex-start" }} onClick={() => setTab("abrechnung")}>
+                          Abrechnung öffnen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {tab === "kalender" && (
               <div className="card">
