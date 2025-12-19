@@ -9223,7 +9223,8 @@ Deine Tennisschule`;
   `}
 
   <p style="margin-top: 20px; font-size: 9pt; color: #666;">
-    Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
+    Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).<br>
+    <strong>Steuernummer:</strong> 04616601801
   </p>
 </body>
 </html>`;
