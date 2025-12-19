@@ -9135,7 +9135,6 @@ Deine Tennisschule`;
                 return t.spielerIds.includes(rechnungSpielerId);
               });
 
-              let basisBetrag = 0;
               const monthlyProcessedKeys = new Set<string>();
               const monthlyWeekdays = new Map<string, Set<number>>();
 
@@ -9152,7 +9151,14 @@ Deine Tennisschule`;
                 }
               });
 
-              // Beträge berechnen
+              // Positionen aufbauen und Beträge berechnen
+              const positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
+              let gesamtBetrag = 0;
+
+              const monatNameLang = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+
+              // Monatliche Tarife als eine Position zusammenfassen
+              const monatlicheTarifBetraege = new Map<string, { name: string; betrag: number }>();
               rechnungMonatTrainings.forEach((t) => {
                 const tarif = tarife.find((tf) => tf.id === t.tarifId);
                 const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
@@ -9160,44 +9166,69 @@ Deine Tennisschule`;
 
                 if (abrechnungsTyp === "monatlich") {
                   const tarifKey = t.tarifId || `custom-${preisProStunde}`;
-                  if (monthlyProcessedKeys.has(tarifKey)) return;
-                  monthlyProcessedKeys.add(tarifKey);
-                  const weekdayCount = monthlyWeekdays.get(tarifKey)?.size ?? 1;
-                  basisBetrag += preisProStunde * weekdayCount;
-                } else {
-                  const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
-                  const hours = mins / 60;
-                  if (abrechnungsTyp === "proSpieler") {
-                    basisBetrag += preisProStunde * hours;
-                  } else {
-                    const anzahlSpieler = t.spielerIds.length || 1;
-                    basisBetrag += (preisProStunde * hours) / anzahlSpieler;
+                  if (!monthlyProcessedKeys.has(tarifKey)) {
+                    monthlyProcessedKeys.add(tarifKey);
+                    const weekdayCount = monthlyWeekdays.get(tarifKey)?.size ?? 1;
+                    const betrag = preisProStunde * weekdayCount;
+                    monatlicheTarifBetraege.set(tarifKey, {
+                      name: tarif?.name || "Monatstarif",
+                      betrag
+                    });
                   }
                 }
               });
 
-              basisBetrag = round2(basisBetrag);
+              // Monatstarif-Positionen hinzufügen
+              monatlicheTarifBetraege.forEach((entry) => {
+                positionen.push({
+                  datum: "",
+                  beschreibung: `${entry.name} ${monatNameLang}`,
+                  betrag: entry.betrag
+                });
+                gesamtBetrag += entry.betrag;
+              });
+
+              // Normale Trainings einzeln auflisten
+              rechnungMonatTrainings
+                .filter((t) => {
+                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                  const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                  return abrechnungsTyp !== "monatlich";
+                })
+                .sort((a, b) => a.datum.localeCompare(b.datum))
+                .forEach((t) => {
+                  const tarif = tarife.find((tf) => tf.id === t.tarifId);
+                  const preisProStunde = t.customPreisProStunde ?? tarif?.preisProStunde ?? 0;
+                  const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
+                  const mins = toMinutes(t.uhrzeitBis) - toMinutes(t.uhrzeitVon);
+                  const hours = mins / 60;
+
+                  let betrag = 0;
+                  if (abrechnungsTyp === "proSpieler") {
+                    betrag = preisProStunde * hours;
+                  } else {
+                    const anzahlSpieler = t.spielerIds.length || 1;
+                    betrag = (preisProStunde * hours) / anzahlSpieler;
+                  }
+
+                  const datumFormatiert = new Date(t.datum).toLocaleDateString("de-DE", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  });
+                  positionen.push({
+                    datum: datumFormatiert,
+                    beschreibung: `Training ${t.uhrzeitVon}-${t.uhrzeitBis} (${hours.toFixed(1)}h)`,
+                    betrag
+                  });
+                  gesamtBetrag += betrag;
+                });
+
+              gesamtBetrag = round2(gesamtBetrag);
 
               // Vorhandene Anpassung aus monthlyAdjustments holen
               const adjustmentKey = `${rechnungMonat}__${rechnungSpielerId}`;
               const existingAdjustment = monthlyAdjustments[adjustmentKey] ?? 0;
-
-              // Gesamtbetrag = Basis + vorhandene Anpassung + neue Korrektur
-              const gesamtBetrag = round2(basisBetrag + existingAdjustment + rechnungKorrektur);
-
-              const monatNameLang = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
-
-              // Positionen aufbauen
-              const positionen: { datum: string; beschreibung: string; betrag: number }[] = [];
-
-              // Hauptposition: Tennistraining für den Monat
-              if (basisBetrag !== 0) {
-                positionen.push({
-                  datum: "",
-                  beschreibung: `Tennistraining ${monatNameLang}`,
-                  betrag: basisBetrag
-                });
-              }
 
               // Vorhandene Anpassung (aus monthlyAdjustments)
               if (existingAdjustment !== 0) {
@@ -9206,6 +9237,7 @@ Deine Tennisschule`;
                   beschreibung: existingAdjustment > 0 ? "Anpassung (Zusatzgebühr)" : "Anpassung (Gutschrift)",
                   betrag: existingAdjustment
                 });
+                gesamtBetrag = round2(gesamtBetrag + existingAdjustment);
               }
 
               // Zusätzliche Korrektur vom Rechnungsformular
@@ -9215,6 +9247,7 @@ Deine Tennisschule`;
                   beschreibung: rechnungKorrektur > 0 ? "Korrektur (Zusatzgebühr)" : "Korrektur (Gutschrift)",
                   betrag: rechnungKorrektur
                 });
+                gesamtBetrag = round2(gesamtBetrag + rechnungKorrektur);
               }
 
               const monatName = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
