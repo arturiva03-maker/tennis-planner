@@ -9150,179 +9150,63 @@ Deine Tennisschule`;
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rechnung ${rechnungNummer || "ENTWURF"}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 11pt;
-      line-height: 1.5;
-      color: #1a1a1a;
-      padding: 40px;
-      max-width: 210mm;
-      margin: 0 auto;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #0066cc;
-    }
-    .logo-area h1 {
-      font-size: 14pt;
-      color: #0066cc;
-      font-weight: 600;
-    }
-    .logo-area p { color: #666; font-size: 10pt; }
-    .invoice-info { text-align: right; }
-    .invoice-info h2 {
-      font-size: 14pt;
-      color: #0066cc;
-      margin-bottom: 8px;
-    }
-    .addresses {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 40px;
-    }
-    .address-block { min-width: 200px; }
-    .address-block h3 {
-      font-size: 9pt;
-      color: #666;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
-    }
-    .address-block p { font-size: 11pt; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-    }
-    th {
-      background: #f8f9fa;
-      padding: 12px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 2px solid #dee2e6;
-      font-size: 10pt;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-    }
-    .text-right { text-align: right; }
-    .total-row td {
-      font-weight: 700;
-      font-size: 14pt;
-      border-top: 2px solid #0066cc;
-      border-bottom: none;
-      padding-top: 16px;
-    }
-    .sepa-info {
-      background: linear-gradient(135deg, #f0f7ff 0%, #e8f4ff 100%);
-      border: 1px solid #b3d4fc;
-      border-radius: 8px;
-      padding: 20px;
-      margin-top: 30px;
-    }
-    .sepa-info h3 {
-      color: #0066cc;
-      margin-bottom: 12px;
-      font-size: 12pt;
-    }
-    .sepa-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-    .sepa-item label {
-      font-size: 9pt;
-      color: #666;
-      display: block;
-    }
-    .sepa-item span { font-weight: 500; }
-    .notice {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 20px;
-      font-size: 10pt;
-    }
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
-      font-size: 9pt;
-      color: #666;
-      text-align: center;
-    }
-    @media print {
-      body { padding: 20px; }
-      .no-print { display: none; }
-    }
-  </style>
 </head>
-<body>
-  <div class="header">
-    <div class="logo-area">
-      <h1>${profilFirmenname || "Tennisschule"}</h1>
-      <p>${profilAdresse || ""}</p>
+<body style="margin: 0; padding: 40px; font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; background: #fff;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #0066cc;">
+    <div>
+      <h1 style="margin: 0; font-size: 18pt; color: #0066cc; font-weight: 600;">${profilFirmenname || "Tennisschule"}</h1>
+      <p style="margin: 4px 0 0 0; color: #666; font-size: 10pt;">${profilAdresse || ""}</p>
     </div>
-    <div class="invoice-info">
-      <h2>RECHNUNG</h2>
-      <p><strong>Nr.:</strong> ${rechnungNummer || "ENTWURF"}</p>
-      <p><strong>Datum:</strong> ${heute}</p>
+    <div style="text-align: right;">
+      <h2 style="margin: 0 0 8px 0; font-size: 24pt; color: #0066cc;">RECHNUNG</h2>
+      <p style="margin: 0;"><strong>Nr.:</strong> ${rechnungNummer || "ENTWURF"}</p>
+      <p style="margin: 0;"><strong>Datum:</strong> ${heute}</p>
     </div>
   </div>
 
-  <div class="addresses">
-    <div class="address-block">
-      <h3>Rechnungsempfänger</h3>
+  <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+    <div style="min-width: 250px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Rechnungsempfänger</h3>
       ${selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? `
-        <p><strong>${selectedSpieler.empfaengerName}</strong></p>
-        <p>${selectedSpieler.rechnungsAdresse || ""}</p>
+        <p style="margin: 0; font-size: 11pt;"><strong>${selectedSpieler.empfaengerName}</strong></p>
+        <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
       ` : `
-        <p><strong>${selectedSpieler.name}</strong></p>
-        <p>${selectedSpieler.rechnungsAdresse || ""}</p>
+        <p style="margin: 0; font-size: 11pt;"><strong>${selectedSpieler.name}</strong></p>
+        <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
       `}
     </div>
-    <div class="address-block">
-      <h3>Betreff</h3>
-      <p><strong>Tennistraining ${monatName} ${selectedSpieler.name}</strong></p>
+    <div style="min-width: 250px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Betreff</h3>
+      <p style="margin: 0; font-size: 11pt;"><strong>Tennistraining ${monatName} ${selectedSpieler.name}</strong></p>
     </div>
   </div>
 
-  <table>
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
     <thead>
-      <tr>
-        <th>Datum</th>
-        <th>Beschreibung</th>
-        <th class="text-right">Betrag</th>
+      <tr style="background: #f8f9fa;">
+        <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; font-size: 10pt; text-transform: uppercase;">Datum</th>
+        <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; font-size: 10pt; text-transform: uppercase;">Beschreibung</th>
+        <th style="padding: 12px; text-align: right; font-weight: 600; border-bottom: 2px solid #dee2e6; font-size: 10pt; text-transform: uppercase;">Betrag</th>
       </tr>
     </thead>
     <tbody>
       ${positionen.map(p => `
         <tr>
-          <td>${p.datum}</td>
-          <td>${p.beschreibung}</td>
-          <td class="text-right">${p.betrag.toFixed(2)} €</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">${p.datum}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">${p.beschreibung}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td>
         </tr>
       `).join("")}
-      <tr class="total-row">
-        <td colspan="2">Gesamtbetrag</td>
-        <td class="text-right">${gesamtBetrag.toFixed(2)} €</td>
+      <tr>
+        <td colspan="2" style="padding: 16px 12px 12px 12px; font-weight: 700; font-size: 14pt; border-top: 2px solid #0066cc;">Gesamtbetrag</td>
+        <td style="padding: 16px 12px 12px 12px; font-weight: 700; font-size: 14pt; border-top: 2px solid #0066cc; text-align: right;">${gesamtBetrag.toFixed(2)} €</td>
       </tr>
     </tbody>
   </table>
 
   ${rechnungVorlage === "sepa" ? `
-  <div class="notice">
+  <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 10pt;">
     <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatum}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br><br>
     <strong>IBAN:</strong> ${maskIban(selectedSpieler.iban)}<br>
     <strong>Mandatsreferenz:</strong> ${selectedSpieler.mandatsreferenz || "---"}<br>
@@ -9330,7 +9214,7 @@ Deine Tennisschule`;
     <strong>Gläubiger-ID:</strong> ${profilGlaeubigerId || "---"}
   </div>
   ` : `
-  <div class="notice" style="background: #e8f5e9; border-color: #4caf50;">
+  <div style="background: #e8f5e9; border: 1px solid #4caf50; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 10pt;">
     Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen nach Erhalt der Rechnung auf folgendes Konto:<br><br>
     <strong>Empfänger:</strong> ${profilFirmenname || "---"}<br>
     <strong>IBAN:</strong> ${profilKontoIban || "---"}<br>
