@@ -1585,6 +1585,7 @@ export default function App() {
     useState<string>("alle");
   const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
   const [abrechnungTagFilter, setAbrechnungTagFilter] = useState<string>("alle");
+  const [abrechnungAbgebuchtFilter, setAbrechnungAbgebuchtFilter] = useState<string>("alle");
   const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar">("none");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
@@ -4109,6 +4110,13 @@ Deine Tennisschule`;
       if (!spielerTage || !spielerTage.has(tagNum)) {
         return false;
       }
+    }
+
+    // Abgebucht-Filter prüfen
+    if (abrechnungAbgebuchtFilter !== "alle") {
+      const istAbgebucht = wirdAbgebucht[`${abrechnungMonat}__${r.id}`] ?? false;
+      if (abrechnungAbgebuchtFilter === "abgebucht" && !istAbgebucht) return false;
+      if (abrechnungAbgebuchtFilter === "nicht_abgebucht" && istAbgebucht) return false;
     }
 
     if (abrechnungFilter === "alle") return true;
@@ -6962,6 +6970,19 @@ Deine Tennisschule`;
                         <option value="4">Freitag</option>
                         <option value="5">Samstag</option>
                         <option value="6">Sonntag</option>
+                      </select>
+                    </div>
+                  )}
+                  {!isTrainer && abrechnungTab === "spieler" && (
+                    <div className="field">
+                      <label>Abgebucht</label>
+                      <select
+                        value={abrechnungAbgebuchtFilter}
+                        onChange={(e) => setAbrechnungAbgebuchtFilter(e.target.value)}
+                      >
+                        <option value="alle">Alle</option>
+                        <option value="abgebucht">Abgebucht</option>
+                        <option value="nicht_abgebucht">Nicht abgebucht</option>
                       </select>
                     </div>
                   )}
