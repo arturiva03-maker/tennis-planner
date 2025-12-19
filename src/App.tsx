@@ -2001,6 +2001,7 @@ export default function App() {
         notizen,
         monthlyAdjustments,
         vertretungen,
+        wirdAbgebucht,
       };
 
       const updatedAt = new Date().toISOString();
@@ -2041,6 +2042,7 @@ export default function App() {
     notizen,
     monthlyAdjustments,
     vertretungen,
+    wirdAbgebucht,
   ]);
 
 
@@ -8123,6 +8125,8 @@ Deine Tennisschule`;
                           const groupedByTrainer = vertretungen.reduce((acc, v) => {
                             const training = trainings.find((t) => t.id === v.trainingId);
                             if (!training) return acc;
+                            // Abgesagte Trainings ausblenden
+                            if (training.status === "abgesagt") return acc;
                             // Vergangene Trainings ausblenden (basierend auf Endzeit)
                             const trainingsEnde = new Date(`${training.datum}T${training.uhrzeitBis}:00`);
                             if (trainingsEnde <= jetzt) return acc;
@@ -8525,7 +8529,7 @@ Deine Tennisschule`;
                                         setVertretungDaten(prev => [...prev, datum].sort());
                                         // Trainings als offen markieren
                                         const dayTrainings = trainings.filter(
-                                          (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                                          (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt"
                                         );
                                         if (dayTrainings.length > 0) {
                                           setVertretungen((prev) => {
@@ -8591,7 +8595,7 @@ Deine Tennisschule`;
                                 onClick={() => {
                                   // Alle Trainings des Trainers im Zeitraum als "offen" markieren
                                   const rangeTrainings = trainings.filter(
-                                    (t) => t.datum >= vertretungVon && t.datum <= vertretungBis && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                                    (t) => t.datum >= vertretungVon && t.datum <= vertretungBis && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt"
                                   );
                                   if (rangeTrainings.length > 0) {
                                     // Daten für Anzeige sammeln
@@ -8688,8 +8692,8 @@ Deine Tennisschule`;
                         const jetzt = new Date();
                         const zukuenftigeDaten = vertretungDaten.filter(datum => {
                           const dayTrainings = vertretungTrainerId
-                            ? trainings.filter(t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId)
-                            : trainings.filter(t => t.datum === datum);
+                            ? trainings.filter(t => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt")
+                            : trainings.filter(t => t.datum === datum && t.status !== "abgesagt");
                           if (dayTrainings.length === 0) {
                             return datum >= todayISO();
                           }
@@ -8706,7 +8710,7 @@ Deine Tennisschule`;
                             const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
                             const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
                             const dayTrainings = trainings.filter(
-                              (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId
+                              (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt"
                             );
 
                             if (dayTrainings.length === 0) {
