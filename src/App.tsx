@@ -9546,8 +9546,43 @@ Deine Tennisschule`);
                               onClick={async () => {
                                 setRechnungEmailSending(true);
                                 try {
+                                  // PDF generieren
+                                  const html2pdf = (await import('html2pdf.js')).default;
                                   const invoiceHTML = generateInvoiceHTML();
-                                  const emailBody = `${rechnungEmailText.replace(/\n/g, "<br>")}<br><br><hr style="border: none; border-top: 1px solid #ccc; margin: 24px 0;"><br>${invoiceHTML}`;
+
+                                  // Temporäres Element erstellen
+                                  const container = document.createElement('div');
+                                  container.innerHTML = invoiceHTML;
+                                  container.style.position = 'absolute';
+                                  container.style.left = '-9999px';
+                                  container.style.width = '210mm';
+                                  document.body.appendChild(container);
+
+                                  // PDF generieren
+                                  const pdfBlob = await html2pdf()
+                                    .set({
+                                      margin: 10,
+                                      filename: `Rechnung_${rechnungNummer}.pdf`,
+                                      image: { type: 'jpeg', quality: 0.98 },
+                                      html2canvas: { scale: 2 },
+                                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                    })
+                                    .from(container)
+                                    .outputPdf('blob');
+
+                                  document.body.removeChild(container);
+
+                                  // Blob zu Base64 konvertieren
+                                  const reader = new FileReader();
+                                  const pdfBase64 = await new Promise<string>((resolve) => {
+                                    reader.onloadend = () => {
+                                      const base64 = (reader.result as string).split(',')[1];
+                                      resolve(base64);
+                                    };
+                                    reader.readAsDataURL(pdfBlob);
+                                  });
+
+                                  const emailBody = rechnungEmailText.replace(/\n/g, "<br>");
 
                                   const response = await fetch("/api/send-newsletter", {
                                     method: "POST",
@@ -9555,8 +9590,14 @@ Deine Tennisschule`);
                                     body: JSON.stringify({
                                       to: [selectedSpieler.kontaktEmail],
                                       subject: rechnungEmailBetreff.trim(),
-                                      body: emailBody,
+                                      body: rechnungEmailText,
                                       html: emailBody,
+                                      attachment: {
+                                        filename: `Rechnung_${rechnungNummer}.pdf`,
+                                        content: pdfBase64,
+                                        encoding: 'base64',
+                                        contentType: 'application/pdf'
+                                      }
                                     }),
                                   });
 
@@ -9572,7 +9613,7 @@ Deine Tennisschule`);
                                 } catch (err) {
                                   console.error("E-Mail senden fehlgeschlagen:", err);
                                   alert("Fehler beim Senden der E-Mail");
-                                }finally {
+                                } finally {
                                   setRechnungEmailSending(false);
                                 }
                               }}
