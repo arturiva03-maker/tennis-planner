@@ -1610,9 +1610,13 @@ export default function App() {
   const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
   const [spielerError, setSpielerError] = useState<string | null>(null);
 
-  // TEMPORÄR: Bulk-Nachnamen-Eingabe
-  const [showNachnamenBulkEdit, setShowNachnamenBulkEdit] = useState(false);
-  const [nachnamenBulkEdit, setNachnamenBulkEdit] = useState<Record<string, string>>({});
+  // States für PDF-Export Vorschau
+  const [showPdfExportModal, setShowPdfExportModal] = useState(false);
+  const [pdfExportLabelFilter, setPdfExportLabelFilter] = useState<string>("alle");
+  const [pdfExportExcluded, setPdfExportExcluded] = useState<Set<string>>(new Set());
+
+  // State für Spieler-Label-Filter in Verwaltung
+  const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
 
   // States für Notizen (Weiteres)
   const [showNotizForm, setShowNotizForm] = useState(false);
@@ -5691,8 +5695,8 @@ Sportliche Grüße`
                   <div className="card">
                     <h2>Spieler verwalten</h2>
 
-                    <div className="row" style={{ marginBottom: 12 }}>
-                      <div className="field" style={{ flex: 1 }}>
+                    <div className="row" style={{ marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                      <div className="field" style={{ flex: 1, minWidth: 150 }}>
                         <label>Suche</label>
                         <input
                           value={verwaltungSpielerSuche}
@@ -5700,7 +5704,20 @@ Sportliche Grüße`
                           placeholder="Name oder Email suchen..."
                         />
                       </div>
-                      <span className="pill">
+                      <div className="field" style={{ minWidth: 120 }}>
+                        <label>Label</label>
+                        <select
+                          value={verwaltungLabelFilter}
+                          onChange={(e) => setVerwaltungLabelFilter(e.target.value)}
+                        >
+                          <option value="alle">Alle Labels</option>
+                          <option value="ohne">Ohne Label</option>
+                          {allLabels.map((label) => (
+                            <option key={label} value={label}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="pill" style={{ alignSelf: "flex-end", marginBottom: 4 }}>
                         Gesamt: <strong>{spieler.length}</strong>
                       </span>
                       {!showSpielerForm && !editingSpielerId && (
@@ -5717,78 +5734,9 @@ Sportliche Grüße`
                           <button
                             className="btn btnGhost"
                             onClick={() => {
-                              const ohneNachname = spieler.filter(s => !s.nachname?.trim());
-                              const initial: Record<string, string> = {};
-                              ohneNachname.forEach(s => { initial[s.id] = ""; });
-                              setNachnamenBulkEdit(initial);
-                              setShowNachnamenBulkEdit(true);
-                            }}
-                          >
-                            Nachnamen ergänzen
-                          </button>
-                          <button
-                            className="btn btnGhost"
-                            onClick={async () => {
-                              const sortedSpieler = [...spieler].sort((a, b) =>
-                                getFullName(a).localeCompare(getFullName(b))
-                              );
-
-                              const tableHTML = `
-                                <html>
-                                <head>
-                                  <style>
-                                    body { font-family: Arial, sans-serif; padding: 20px; }
-                                    h1 { font-size: 18px; margin-bottom: 20px; }
-                                    table { width: 100%; border-collapse: collapse; }
-                                    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
-                                    th { background-color: #f5f5f5; font-weight: bold; }
-                                    tr:nth-child(even) { background-color: #fafafa; }
-                                    .footer { margin-top: 20px; font-size: 11px; color: #666; }
-                                  </style>
-                                </head>
-                                <body>
-                                  <h1>Spielerliste (${sortedSpieler.length} Spieler)</h1>
-                                  <table>
-                                    <thead>
-                                      <tr>
-                                        <th style="width: 40px;">#</th>
-                                        <th>Vorname</th>
-                                        <th>Nachname</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      ${sortedSpieler.map((s, idx) => `
-                                        <tr>
-                                          <td>${idx + 1}</td>
-                                          <td>${s.vorname}</td>
-                                          <td>${s.nachname || ""}</td>
-                                        </tr>
-                                      `).join("")}
-                                    </tbody>
-                                  </table>
-                                  <div class="footer">
-                                    Erstellt am ${new Date().toLocaleDateString("de-DE")}
-                                  </div>
-                                </body>
-                                </html>
-                              `;
-
-                              const html2pdf = (await import('html2pdf.js')).default;
-                              const container = document.createElement('div');
-                              container.innerHTML = tableHTML;
-                              document.body.appendChild(container);
-
-                              await html2pdf()
-                                .set({
-                                  margin: 10,
-                                  filename: `Spielerliste_${new Date().toISOString().split('T')[0]}.pdf`,
-                                  html2canvas: { scale: 2 },
-                                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                                })
-                                .from(container)
-                                .save();
-
-                              document.body.removeChild(container);
+                              setPdfExportLabelFilter("alle");
+                              setPdfExportExcluded(new Set());
+                              setShowPdfExportModal(true);
                             }}
                           >
                             PDF exportieren
@@ -6054,6 +6002,13 @@ Sportliche Grüße`
                       {spieler
                         .slice()
                         .filter((s) => {
+                          // Label-Filter
+                          if (verwaltungLabelFilter === "ohne") {
+                            if (s.labels && s.labels.length > 0) return false;
+                          } else if (verwaltungLabelFilter !== "alle") {
+                            if (!s.labels?.includes(verwaltungLabelFilter)) return false;
+                          }
+                          // Suche
                           const q = verwaltungSpielerSuche.trim().toLowerCase();
                           if (!q) return true;
                           return (
@@ -11891,87 +11846,193 @@ Deine Tennisschule`;
         </div>
       )}
 
-      {/* TEMPORÄR: Bulk-Nachnamen-Eingabe Modal */}
-      {showNachnamenBulkEdit && (
-        <div className="modalOverlay" onClick={() => setShowNachnamenBulkEdit(false)}>
-          <div
-            className="modalCard"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 600, maxHeight: "90vh", overflow: "auto" }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0 }}>Nachnamen ergänzen</h2>
-              <button
-                onClick={() => setShowNachnamenBulkEdit(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 24,
-                  cursor: "pointer",
-                  color: "#666",
-                }}
-              >
-                ×
-              </button>
-            </div>
+      {/* PDF-Export Modal mit Vorschau */}
+      {showPdfExportModal && (() => {
+        const filteredSpieler = spieler
+          .filter((s) => {
+            if (pdfExportLabelFilter === "ohne") {
+              return !s.labels || s.labels.length === 0;
+            } else if (pdfExportLabelFilter !== "alle") {
+              return s.labels?.includes(pdfExportLabelFilter);
+            }
+            return true;
+          })
+          .filter((s) => !pdfExportExcluded.has(s.id))
+          .sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
 
-            <div className="muted" style={{ marginBottom: 16 }}>
-              Spieler ohne Nachname: {Object.keys(nachnamenBulkEdit).length}
-            </div>
-
-            {Object.keys(nachnamenBulkEdit).length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", color: "#666" }}>
-                Alle Spieler haben bereits einen Nachnamen.
+        return (
+          <div className="modalOverlay" onClick={() => setShowPdfExportModal(false)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 700, maxHeight: "90vh", overflow: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0 }}>PDF exportieren - Vorschau</h2>
+                <button
+                  onClick={() => setShowPdfExportModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 24,
+                    cursor: "pointer",
+                    color: "#666",
+                  }}
+                >
+                  ×
+                </button>
               </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {spieler
-                  .filter(s => s.id in nachnamenBulkEdit)
-                  .sort((a, b) => a.vorname.localeCompare(b.vorname))
-                  .map(s => (
-                    <div key={s.id} style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <div style={{ width: 150, fontWeight: 500 }}>{s.vorname}</div>
-                      <input
-                        style={{ flex: 1 }}
-                        value={nachnamenBulkEdit[s.id] || ""}
-                        onChange={(e) => setNachnamenBulkEdit(prev => ({
-                          ...prev,
-                          [s.id]: e.target.value
-                        }))}
-                        placeholder="Nachname eingeben..."
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
 
-            <div className="modalActions" style={{ marginTop: 20 }}>
-              <button
-                className="btn btnGhost"
-                onClick={() => setShowNachnamenBulkEdit(false)}
-              >
-                Abbrechen
-              </button>
-              <button
-                className="btn"
-                onClick={() => {
-                  setSpieler(prev => prev.map(s => {
-                    const neuerNachname = nachnamenBulkEdit[s.id]?.trim();
-                    if (neuerNachname) {
-                      return { ...s, nachname: neuerNachname };
-                    }
-                    return s;
-                  }));
-                  setShowNachnamenBulkEdit(false);
-                  setNachnamenBulkEdit({});
-                }}
-              >
-                Speichern
-              </button>
+              <div className="row" style={{ marginBottom: 16, gap: 12, alignItems: "flex-end" }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Nach Label filtern</label>
+                  <select
+                    value={pdfExportLabelFilter}
+                    onChange={(e) => setPdfExportLabelFilter(e.target.value)}
+                  >
+                    <option value="alle">Alle Spieler</option>
+                    <option value="ohne">Ohne Label</option>
+                    {allLabels.map((label) => (
+                      <option key={label} value={label}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <span className="pill">
+                  {filteredSpieler.length} Spieler im PDF
+                </span>
+              </div>
+
+              <div style={{
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                maxHeight: 400,
+                overflow: "auto",
+                marginBottom: 16
+              }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0 }}>
+                      <th style={{ padding: "8px 12px", textAlign: "left", width: 40 }}>#</th>
+                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Vorname</th>
+                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Nachname</th>
+                      <th style={{ padding: "8px 12px", textAlign: "center", width: 80 }}>Entfernen</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSpieler.map((s, idx) => (
+                      <tr key={s.id} style={{ borderTop: "1px solid #eee" }}>
+                        <td style={{ padding: "8px 12px" }}>{idx + 1}</td>
+                        <td style={{ padding: "8px 12px" }}>{s.vorname}</td>
+                        <td style={{ padding: "8px 12px" }}>{s.nachname || ""}</td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <button
+                            className="btn btnGhost"
+                            style={{ padding: "4px 8px", fontSize: 12 }}
+                            onClick={() => setPdfExportExcluded(prev => { const next = new Set(prev); next.add(s.id); return next; })}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredSpieler.length === 0 && (
+                  <div style={{ padding: 20, textAlign: "center", color: "#666" }}>
+                    Keine Spieler für den Export ausgewählt.
+                  </div>
+                )}
+              </div>
+
+              {pdfExportExcluded.size > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <button
+                    className="btn btnGhost"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setPdfExportExcluded(new Set())}
+                  >
+                    Alle {pdfExportExcluded.size} entfernten Spieler wiederherstellen
+                  </button>
+                </div>
+              )}
+
+              <div className="modalActions">
+                <button
+                  className="btn btnGhost"
+                  onClick={() => setShowPdfExportModal(false)}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  className="btn"
+                  disabled={filteredSpieler.length === 0}
+                  onClick={async () => {
+                    const tableHTML = `
+                      <html>
+                      <head>
+                        <style>
+                          body { font-family: Arial, sans-serif; padding: 20px; }
+                          h1 { font-size: 18px; margin-bottom: 20px; }
+                          table { width: 100%; border-collapse: collapse; }
+                          th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+                          th { background-color: #f5f5f5; font-weight: bold; }
+                          tr:nth-child(even) { background-color: #fafafa; }
+                          .footer { margin-top: 20px; font-size: 11px; color: #666; }
+                        </style>
+                      </head>
+                      <body>
+                        <h1>Spielerliste (${filteredSpieler.length} Spieler)${pdfExportLabelFilter !== "alle" ? ` - ${pdfExportLabelFilter === "ohne" ? "Ohne Label" : pdfExportLabelFilter}` : ""}</h1>
+                        <table>
+                          <thead>
+                            <tr>
+                              <th style="width: 40px;">#</th>
+                              <th>Vorname</th>
+                              <th>Nachname</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${filteredSpieler.map((s, idx) => `
+                              <tr>
+                                <td>${idx + 1}</td>
+                                <td>${s.vorname}</td>
+                                <td>${s.nachname || ""}</td>
+                              </tr>
+                            `).join("")}
+                          </tbody>
+                        </table>
+                        <div class="footer">
+                          Erstellt am ${new Date().toLocaleDateString("de-DE")}
+                        </div>
+                      </body>
+                      </html>
+                    `;
+
+                    const html2pdf = (await import('html2pdf.js')).default;
+                    const container = document.createElement('div');
+                    container.innerHTML = tableHTML;
+                    document.body.appendChild(container);
+
+                    await html2pdf()
+                      .set({
+                        margin: 10,
+                        filename: `Spielerliste_${new Date().toISOString().split('T')[0]}.pdf`,
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                      })
+                      .from(container)
+                      .save();
+
+                    document.body.removeChild(container);
+                    setShowPdfExportModal(false);
+                  }}
+                >
+                  PDF erstellen
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </>
   );
 }
