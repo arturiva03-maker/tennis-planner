@@ -1610,6 +1610,10 @@ export default function App() {
   const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
   const [spielerError, setSpielerError] = useState<string | null>(null);
 
+  // TEMPORÄR: Bulk-Nachnamen-Eingabe
+  const [showNachnamenBulkEdit, setShowNachnamenBulkEdit] = useState(false);
+  const [nachnamenBulkEdit, setNachnamenBulkEdit] = useState<Record<string, string>>({});
+
   // States für Notizen (Weiteres)
   const [showNotizForm, setShowNotizForm] = useState(false);
   const [editingNotizId, setEditingNotizId] = useState<string | null>(null);
@@ -5709,6 +5713,18 @@ Sportliche Grüße`
                             }}
                           >
                             Neuen Spieler hinzufügen
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              const ohneNachname = spieler.filter(s => !s.nachname?.trim());
+                              const initial: Record<string, string> = {};
+                              ohneNachname.forEach(s => { initial[s.id] = ""; });
+                              setNachnamenBulkEdit(initial);
+                              setShowNachnamenBulkEdit(true);
+                            }}
+                          >
+                            Nachnamen ergänzen
                           </button>
                           <button
                             className="btn btnGhost"
@@ -11869,6 +11885,88 @@ Deine Tennisschule`;
                 }}
               >
                 {trainingInfoEmailSending ? "Sende..." : "E-Mail senden"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TEMPORÄR: Bulk-Nachnamen-Eingabe Modal */}
+      {showNachnamenBulkEdit && (
+        <div className="modalOverlay" onClick={() => setShowNachnamenBulkEdit(false)}>
+          <div
+            className="modalCard"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 600, maxHeight: "90vh", overflow: "auto" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0 }}>Nachnamen ergänzen</h2>
+              <button
+                onClick={() => setShowNachnamenBulkEdit(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 24,
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="muted" style={{ marginBottom: 16 }}>
+              Spieler ohne Nachname: {Object.keys(nachnamenBulkEdit).length}
+            </div>
+
+            {Object.keys(nachnamenBulkEdit).length === 0 ? (
+              <div style={{ padding: 20, textAlign: "center", color: "#666" }}>
+                Alle Spieler haben bereits einen Nachnamen.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {spieler
+                  .filter(s => s.id in nachnamenBulkEdit)
+                  .sort((a, b) => a.vorname.localeCompare(b.vorname))
+                  .map(s => (
+                    <div key={s.id} style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ width: 150, fontWeight: 500 }}>{s.vorname}</div>
+                      <input
+                        style={{ flex: 1 }}
+                        value={nachnamenBulkEdit[s.id] || ""}
+                        onChange={(e) => setNachnamenBulkEdit(prev => ({
+                          ...prev,
+                          [s.id]: e.target.value
+                        }))}
+                        placeholder="Nachname eingeben..."
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            <div className="modalActions" style={{ marginTop: 20 }}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setShowNachnamenBulkEdit(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setSpieler(prev => prev.map(s => {
+                    const neuerNachname = nachnamenBulkEdit[s.id]?.trim();
+                    if (neuerNachname) {
+                      return { ...s, nachname: neuerNachname };
+                    }
+                    return s;
+                  }));
+                  setShowNachnamenBulkEdit(false);
+                  setNachnamenBulkEdit({});
+                }}
+              >
+                Speichern
               </button>
             </div>
           </div>
