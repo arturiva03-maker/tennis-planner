@@ -7409,13 +7409,54 @@ Deine Tennisschule`;
                         (a, b) => a.datum.localeCompare(b.datum)
                       );
 
+                      // Monatliche Tarife: Berechne Wochentage pro Tarif
+                      const monthlyTarifSummary = new Map<string, {
+                        tarifName: string;
+                        preisProStunde: number;
+                        weekdays: Set<number>;
+                      }>();
+
+                      sortedTrainings.forEach((t) => {
+                        const cfg = getPreisConfig(t, tarifById);
+                        if (cfg?.abrechnung === "monatlich") {
+                          const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+                          const trainingDate = new Date(t.datum + "T12:00:00");
+                          const weekday = trainingDate.getDay();
+
+                          if (!monthlyTarifSummary.has(tarifKey)) {
+                            const tarifData = t.tarifId ? tarifById.get(t.tarifId) : null;
+                            monthlyTarifSummary.set(tarifKey, {
+                              tarifName: tarifData?.name || "Monatlich",
+                              preisProStunde: cfg.preisProStunde,
+                              weekdays: new Set<number>(),
+                            });
+                          }
+                          monthlyTarifSummary.get(tarifKey)!.weekdays.add(weekday);
+                        }
+                      });
+
+                      // Gesamt monatliche Summe berechnen
+                      let monthlyTotal = 0;
+                      monthlyTarifSummary.forEach((entry) => {
+                        monthlyTotal += entry.preisProStunde * entry.weekdays.size;
+                      });
+
+                      // Nicht-monatliche Trainings Summe
+                      let regularTotal = 0;
+                      sortedTrainings.forEach((t) => {
+                        const cfg = getPreisConfig(t, tarifById);
+                        if (cfg && cfg.abrechnung !== "monatlich") {
+                          regularTotal += priceFuerSpieler(t);
+                        }
+                      });
+
                       return (
                         <div
-                          className="modal"
+                          className="modalOverlay"
                           onClick={() => setSelectedSpielerForDetail(null)}
                         >
                           <div
-                            className="modalContent"
+                            className="modalCard"
                             onClick={(e) => e.stopPropagation()}
                             style={{ maxWidth: 700, maxHeight: "85vh", overflow: "auto" }}
                           >
@@ -7443,48 +7484,94 @@ Deine Tennisschule`;
                             {sortedTrainings.length === 0 ? (
                               <p>Keine Trainings in diesem Monat.</p>
                             ) : (
-                              <table className="table">
-                                <thead>
-                                  <tr>
-                                    <th>Datum</th>
-                                    <th>Uhrzeit</th>
-                                    <th>Trainer</th>
-                                    <th>Preis</th>
-                                    <th>Bar</th>
-                                    <th>Status</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {sortedTrainings.map((t) => {
-                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-                                    const trainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-                                    const trainerName = trainerById.get(trainerId)?.name ?? "Unbekannt";
-                                    const preis = priceFuerSpieler(t);
-                                    const datum = new Date(t.datum);
-                                    const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
+                              <>
+                                <table className="table">
+                                  <thead>
+                                    <tr>
+                                      <th>Datum</th>
+                                      <th>Uhrzeit</th>
+                                      <th>Trainer</th>
+                                      <th>Preis</th>
+                                      <th>Bar</th>
+                                      <th>Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {sortedTrainings.map((t) => {
+                                      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                                      const trainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                                      const trainerName = trainerById.get(trainerId)?.name ?? "Unbekannt";
+                                      const cfg = getPreisConfig(t, tarifById);
+                                      const isMonthly = cfg?.abrechnung === "monatlich";
+                                      const preis = isMonthly ? null : priceFuerSpieler(t);
+                                      const datum = new Date(t.datum);
+                                      const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
 
-                                    return (
-                                      <tr key={t.id}>
-                                        <td>{wochentag}, {t.datum.split("-").reverse().join(".")}</td>
-                                        <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
-                                        <td>
-                                          {trainerName}
-                                          {vertretung && (
-                                            <span style={{ color: "#dc2626", marginLeft: 4 }} title="Vertretung">V</span>
-                                          )}
-                                        </td>
-                                        <td>{euro(preis)}</td>
-                                        <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
-                                        <td>
-                                          <span className={`badge ${t.status === "durchgefuehrt" ? "badgeOk" : t.status === "abgesagt" ? "badgeError" : ""}`}>
-                                            {t.status === "durchgefuehrt" ? "durchgeführt" : t.status === "abgesagt" ? "abgesagt" : t.status}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
+                                      return (
+                                        <tr key={t.id}>
+                                          <td>{wochentag}, {t.datum.split("-").reverse().join(".")}</td>
+                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>
+                                            {trainerName}
+                                            {vertretung && (
+                                              <span style={{ color: "#dc2626", marginLeft: 4 }} title="Vertretung">V</span>
+                                            )}
+                                          </td>
+                                          <td>
+                                            {isMonthly ? (
+                                              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>mtl.</span>
+                                            ) : (
+                                              euro(preis ?? 0)
+                                            )}
+                                          </td>
+                                          <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
+                                          <td>
+                                            <span className={`badge ${t.status === "durchgefuehrt" ? "badgeOk" : t.status === "abgesagt" ? "badgeError" : ""}`}>
+                                              {t.status === "durchgefuehrt" ? "durchgeführt" : t.status === "abgesagt" ? "abgesagt" : t.status}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+
+                                {/* Zusammenfassung */}
+                                <div style={{
+                                  marginTop: 16,
+                                  padding: 12,
+                                  background: "var(--bg-inset)",
+                                  borderRadius: "var(--radius-md)"
+                                }}>
+                                  {monthlyTarifSummary.size > 0 && (
+                                    <div style={{ marginBottom: regularTotal > 0 ? 8 : 0 }}>
+                                      {Array.from(monthlyTarifSummary.entries()).map(([key, entry]) => (
+                                        <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                          <span>{entry.tarifName} ({entry.weekdays.size}x Wochentag á {euro(entry.preisProStunde)})</span>
+                                          <strong>{euro(entry.preisProStunde * entry.weekdays.size)}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {regularTotal > 0 && (
+                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                      <span>Einzeltrainings</span>
+                                      <strong>{euro(regularTotal)}</strong>
+                                    </div>
+                                  )}
+                                  <div style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    borderTop: "1px solid var(--border)",
+                                    paddingTop: 8,
+                                    marginTop: 8,
+                                    fontWeight: 600
+                                  }}>
+                                    <span>Gesamt</span>
+                                    <span style={{ color: "var(--primary)" }}>{euro(monthlyTotal + regularTotal)}</span>
+                                  </div>
+                                </div>
+                              </>
                             )}
                           </div>
                         </div>
