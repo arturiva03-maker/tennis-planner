@@ -1590,6 +1590,7 @@ export default function App() {
   const [abrechnungSpielerSuche, setAbrechnungSpielerSuche] = useState("");
   const [abrechnungTagFilter, setAbrechnungTagFilter] = useState<string>("alle");
   const [abrechnungAbgebuchtFilter, setAbrechnungAbgebuchtFilter] = useState<string>("alle");
+  const [selectedSpielerForDetail, setSelectedSpielerForDetail] = useState<string | null>(null);
   const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar">("none");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
@@ -7207,7 +7208,18 @@ Deine Tennisschule`;
 
                             return (
                               <tr key={r.id}>
-                                <td>{r.name}</td>
+                                <td>
+                                  <span
+                                    style={{
+                                      cursor: "pointer",
+                                      color: "var(--primary)",
+                                      textDecoration: "underline",
+                                    }}
+                                    onClick={() => setSelectedSpielerForDetail(r.id)}
+                                  >
+                                    {r.name}
+                                  </span>
+                                </td>
                                 <td>{breakdownText}</td>
                                 <td>
                                   {isEditingThis ? (
@@ -7381,6 +7393,103 @@ Deine Tennisschule`;
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Detail-Ansicht für ausgewählten Spieler */}
+                    {selectedSpielerForDetail && (() => {
+                      const spielerData = spielerById.get(selectedSpielerForDetail);
+                      const spielerName = spielerData?.name ?? "Unbekannt";
+
+                      // Trainings dieses Spielers im gewählten Monat
+                      const spielerTrainings = trainingsForAbrechnung.filter(
+                        (t) => t.spielerIds.includes(selectedSpielerForDetail)
+                      );
+
+                      // Sortiere nach Datum
+                      const sortedTrainings = [...spielerTrainings].sort(
+                        (a, b) => a.datum.localeCompare(b.datum)
+                      );
+
+                      return (
+                        <div
+                          className="modal"
+                          onClick={() => setSelectedSpielerForDetail(null)}
+                        >
+                          <div
+                            className="modalContent"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ maxWidth: 700, maxHeight: "85vh", overflow: "auto" }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                              <h2 style={{ margin: 0 }}>
+                                Trainings von {spielerName}
+                              </h2>
+                              <button
+                                onClick={() => setSelectedSpielerForDetail(null)}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  fontSize: 24,
+                                  cursor: "pointer",
+                                  color: "#666",
+                                }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <div className="muted" style={{ marginBottom: 12 }}>
+                              {abrechnungMonat} • {sortedTrainings.length} Training{sortedTrainings.length !== 1 ? "s" : ""}
+                            </div>
+
+                            {sortedTrainings.length === 0 ? (
+                              <p>Keine Trainings in diesem Monat.</p>
+                            ) : (
+                              <table className="table">
+                                <thead>
+                                  <tr>
+                                    <th>Datum</th>
+                                    <th>Uhrzeit</th>
+                                    <th>Trainer</th>
+                                    <th>Preis</th>
+                                    <th>Bar</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sortedTrainings.map((t) => {
+                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                                    const trainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                                    const trainerName = trainerById.get(trainerId)?.name ?? "Unbekannt";
+                                    const preis = priceFuerSpieler(t);
+                                    const datum = new Date(t.datum);
+                                    const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
+
+                                    return (
+                                      <tr key={t.id}>
+                                        <td>{wochentag}, {t.datum.split("-").reverse().join(".")}</td>
+                                        <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                        <td>
+                                          {trainerName}
+                                          {vertretung && (
+                                            <span style={{ color: "#dc2626", marginLeft: 4 }} title="Vertretung">V</span>
+                                          )}
+                                        </td>
+                                        <td>{euro(preis)}</td>
+                                        <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
+                                        <td>
+                                          <span className={`badge ${t.status === "durchgefuehrt" ? "badgeOk" : t.status === "abgesagt" ? "badgeError" : ""}`}>
+                                            {t.status === "durchgefuehrt" ? "durchgeführt" : t.status === "abgesagt" ? "abgesagt" : t.status}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 
