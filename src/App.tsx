@@ -25,7 +25,8 @@ type Trainer = {
 
 type Spieler = {
   id: string;
-  name: string;
+  vorname: string;
+  nachname?: string;
   kontaktEmail?: string;
   kontaktTelefon?: string;
   rechnungsAdresse?: string;
@@ -949,9 +950,16 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
   const trainers = ensureTrainerList(parsed || {});
   const defaultTrainerId = trainers[0]?.id || "trainer-1";
 
+  // Migration: name → vorname für Spieler
+  const migratedSpieler = (parsed?.spieler ?? []).map((s: any) => ({
+    ...s,
+    vorname: s.vorname ?? s.name ?? "",
+    nachname: s.nachname ?? "",
+  }));
+
   return {
     trainers,
-    spieler: parsed?.spieler ?? [],
+    spieler: migratedSpieler,
     tarife: parsed?.tarife ?? [],
     trainings: (parsed?.trainings ?? []).map((t, idx) => ({
       ...t,
@@ -1465,7 +1473,8 @@ export default function App() {
   const [trainerKleinunternehmer, setTrainerKleinunternehmer] = useState(false);
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
 
-  const [spielerName, setSpielerName] = useState("");
+  const [spielerVorname, setSpielerVorname] = useState("");
+  const [spielerNachname, setSpielerNachname] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerRechnung, setSpielerRechnung] = useState("");
@@ -2086,6 +2095,42 @@ export default function App() {
     [spieler]
   );
 
+  // Zähle wie oft jeder Vorname vorkommt (für Anzeigename-Logik)
+  const vornameCount = useMemo(() => {
+    const counts = new Map<string, number>();
+    spieler.forEach((s) => {
+      const vn = s.vorname.toLowerCase().trim();
+      counts.set(vn, (counts.get(vn) ?? 0) + 1);
+    });
+    return counts;
+  }, [spieler]);
+
+  // Helper: Vollständiger Name (Vorname + Nachname)
+  const getFullName = (s: Spieler) => {
+    return s.nachname ? `${s.vorname} ${s.nachname}` : s.vorname;
+  };
+
+  // Helper: Anzeigename (nur Vorname, außer bei Duplikaten)
+  const getDisplayName = (s: Spieler) => {
+    const vn = s.vorname.toLowerCase().trim();
+    if ((vornameCount.get(vn) ?? 0) > 1 && s.nachname) {
+      return `${s.vorname} ${s.nachname.charAt(0)}.`;
+    }
+    return s.vorname;
+  };
+
+  // Helper: Name per ID abrufen (für Kalender - kurzer Name)
+  const getSpielerDisplayName = (id: string) => {
+    const s = spielerById.get(id);
+    return s ? getDisplayName(s) : "Unbekannt";
+  };
+
+  // Helper: Vollständiger Name per ID abrufen
+  const getSpielerFullName = (id: string) => {
+    const s = spielerById.get(id);
+    return s ? getFullName(s) : "Unbekannt";
+  };
+
   // Alle verfügbaren Labels aus Spielern sammeln
   const allLabels = useMemo(() => {
     const labelSet = new Set<string>();
@@ -2273,7 +2318,8 @@ export default function App() {
     if (!q) return spieler;
     return spieler.filter(
       (s) =>
-        s.name.toLowerCase().includes(q) ||
+        s.vorname.toLowerCase().includes(q) ||
+        (s.nachname ?? "").toLowerCase().includes(q) ||
         (s.kontaktEmail ?? "").toLowerCase().includes(q)
     );
   }, [spieler, spielerSuche]);
@@ -2388,7 +2434,8 @@ export default function App() {
     );
     if (editingSpielerId === id) {
       setEditingSpielerId(null);
-      setSpielerName("");
+      setSpielerVorname("");
+      setSpielerNachname("");
       setSpielerEmail("");
       setSpielerTelefon("");
       setSpielerRechnung("");
@@ -2422,15 +2469,16 @@ export default function App() {
   }
 
   function addSpieler() {
-    const name = spielerName.trim();
-    if (!name) return;
+    const vorname = spielerVorname.trim();
+    const nachname = spielerNachname.trim();
+    if (!vorname) return;
 
-    // Duplikatscheck: Name muss eindeutig sein (Email darf doppelt sein, z.B. bei Geschwistern)
-    const nameLower = name.toLowerCase();
+    // Duplikatscheck: Vorname+Nachname Kombination muss eindeutig sein
+    const fullNameLower = `${vorname} ${nachname}`.toLowerCase().trim();
 
     const duplicate = spieler.find((s) => {
-      const existingNameLower = s.name.trim().toLowerCase();
-      return existingNameLower === nameLower;
+      const existingFullName = `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim();
+      return existingFullName === fullNameLower;
     });
 
     if (duplicate) {
@@ -2442,7 +2490,8 @@ export default function App() {
 
     const neu: Spieler = {
       id: uid(),
-      name,
+      vorname,
+      nachname: nachname || undefined,
       kontaktEmail: spielerEmail.trim() || undefined,
       kontaktTelefon: spielerTelefon.trim() || undefined,
       rechnungsAdresse: spielerRechnung.trim() || undefined,
@@ -2457,7 +2506,8 @@ export default function App() {
 
     setSpieler((prev) => [...prev, neu]);
     setEditingSpielerId(null);
-    setSpielerName("");
+    setSpielerVorname("");
+    setSpielerNachname("");
     setSpielerEmail("");
     setSpielerTelefon("");
     setSpielerRechnung("");
@@ -2474,7 +2524,8 @@ export default function App() {
 
   function startEditSpieler(s: Spieler) {
     setEditingSpielerId(s.id);
-    setSpielerName(s.name);
+    setSpielerVorname(s.vorname);
+    setSpielerNachname(s.nachname ?? "");
     setSpielerEmail(s.kontaktEmail ?? "");
     setSpielerTelefon(s.kontaktTelefon ?? "");
     setSpielerRechnung(s.rechnungsAdresse ?? "");
@@ -2494,18 +2545,19 @@ export default function App() {
 
   function saveSpieler() {
     if (!editingSpielerId) return;
-    const name = spielerName.trim();
-    if (!name) return;
+    const vorname = spielerVorname.trim();
+    const nachname = spielerNachname.trim();
+    if (!vorname) return;
 
-    // Duplikatscheck: Name muss eindeutig sein (Email darf doppelt sein, z.B. bei Geschwistern)
-    const nameLower = name.toLowerCase();
+    // Duplikatscheck: Vorname+Nachname Kombination muss eindeutig sein
+    const fullNameLower = `${vorname} ${nachname}`.toLowerCase().trim();
 
     const duplicate = spieler.find((s) => {
       // Nicht mit sich selbst vergleichen
       if (s.id === editingSpielerId) return false;
 
-      const existingNameLower = s.name.trim().toLowerCase();
-      return existingNameLower === nameLower;
+      const existingFullName = `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim();
+      return existingFullName === fullNameLower;
     });
 
     if (duplicate) {
@@ -2520,7 +2572,8 @@ export default function App() {
         s.id === editingSpielerId
           ? {
               ...s,
-              name,
+              vorname,
+              nachname: nachname || undefined,
               kontaktEmail: spielerEmail.trim() || undefined,
               kontaktTelefon: spielerTelefon.trim() || undefined,
               rechnungsAdresse: spielerRechnung.trim() || undefined,
@@ -2537,7 +2590,8 @@ export default function App() {
     );
 
     setEditingSpielerId(null);
-    setSpielerName("");
+    setSpielerVorname("");
+    setSpielerNachname("");
     setSpielerEmail("");
     setSpielerTelefon("");
     setSpielerRechnung("");
@@ -3567,7 +3621,8 @@ Deine Tennisschule`;
           const s = spielerById.get(sid);
           return (
             s &&
-            (s.name.toLowerCase().includes(q) ||
+            (s.vorname.toLowerCase().includes(q) ||
+              (s.nachname ?? "").toLowerCase().includes(q) ||
               (s.kontaktEmail ?? "").toLowerCase().includes(q))
           );
         })
@@ -3603,7 +3658,8 @@ Deine Tennisschule`;
       ? spieler
           .filter(
             (s) =>
-              s.name.toLowerCase().includes(searchQuery) ||
+              s.vorname.toLowerCase().includes(searchQuery) ||
+              (s.nachname ?? "").toLowerCase().includes(searchQuery) ||
               (s.kontaktEmail ?? "").toLowerCase().includes(searchQuery)
           )
           .map((s) => s.id)
@@ -3675,7 +3731,7 @@ Deine Tennisschule`;
           if (monthlyProcessed.has(processKey)) return;
           monthlyProcessed.add(processKey);
           
-          const name = spielerById.get(pid)?.name ?? "Unbekannt";
+          const name = getSpielerFullName(pid);
           const weekdayCount = monthlyWeekdayCounts.get(processKey)?.size ?? 1;
           const totalAmount = cfg.preisProStunde * weekdayCount;
           const isBar = monthlyHasBar.get(processKey) ?? false;
@@ -3690,7 +3746,7 @@ Deine Tennisschule`;
         // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
         if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
         
-        const name = spielerById.get(pid)?.name ?? "Unbekannt";
+        const name = getSpielerFullName(pid);
         addShare(pid, name, share, isBar);
       });
     });
@@ -4673,7 +4729,7 @@ Deine Tennisschule`;
                               const sp = t.spielerIds
                                 .map(
                                   (id) =>
-                                    spielerById.get(id)?.name ?? "Spieler"
+                                    getSpielerDisplayName(id)
                                 )
                                 .join(", ");
                               const trainerName =
@@ -5257,7 +5313,7 @@ Sportliche Grüße`
                         {filteredSpielerForPick
                           .filter((s) => !tSpielerIds.includes(s.id))
                           .slice()
-                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                           .map((s) => (
                           <div
                             key={s.id}
@@ -5275,7 +5331,7 @@ Sportliche Grüße`
                             }}
                           >
                             <div>
-                              <strong>{s.name}</strong>
+                              <strong>{getFullName(s)}</strong>
                               {s.kontaktEmail && (
                                 <span className="muted" style={{ marginLeft: 8 }}>
                                   {s.kontaktEmail}
@@ -5311,10 +5367,10 @@ Sportliche Grüße`
                           {spieler
                             .filter((s) => !tSpielerIds.includes(s.id))
                             .slice()
-                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                             .map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}{s.kontaktEmail ? ` (${s.kontaktEmail})` : ""}
+                              {getFullName(s)}{s.kontaktEmail ? ` (${s.kontaktEmail})` : ""}
                             </option>
                           ))}
                         </select>
@@ -5341,7 +5397,7 @@ Sportliche Grüße`
                                   color: "#15803d"
                                 }}
                               >
-                                {s.name}
+                                {getDisplayName(s)}
                                 <button
                                   type="button"
                                   onClick={() => toggleSpielerPick(id)}
@@ -5669,14 +5725,25 @@ Sportliche Grüße`
                         
                         <div className="row">
                           <div className="field">
-                            <label>Name</label>
+                            <label>Vorname</label>
                             <input
-                              value={spielerName}
+                              value={spielerVorname}
                               onChange={(e) => {
-                                setSpielerName(e.target.value);
+                                setSpielerVorname(e.target.value);
                                 setSpielerError(null);
                               }}
-                              placeholder="Name"
+                              placeholder="Vorname"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Nachname</label>
+                            <input
+                              value={spielerNachname}
+                              onChange={(e) => {
+                                setSpielerNachname(e.target.value);
+                                setSpielerError(null);
+                              }}
+                              placeholder="Nachname (optional)"
                             />
                           </div>
                           <div className="field">
@@ -5870,7 +5937,8 @@ Sportliche Grüße`
                             className="btn btnGhost"
                             onClick={() => {
                               setEditingSpielerId(null);
-                              setSpielerName("");
+                              setSpielerVorname("");
+                              setSpielerNachname("");
                               setSpielerEmail("");
                               setSpielerTelefon("");
                               setSpielerRechnung("");
@@ -5897,16 +5965,17 @@ Sportliche Grüße`
                           const q = verwaltungSpielerSuche.trim().toLowerCase();
                           if (!q) return true;
                           return (
-                            s.name.toLowerCase().includes(q) ||
+                            s.vorname.toLowerCase().includes(q) ||
+                            (s.nachname ?? "").toLowerCase().includes(q) ||
                             (s.kontaktEmail ?? "").toLowerCase().includes(q) ||
                             (s.kontaktTelefon ?? "").toLowerCase().includes(q)
                           );
                         })
-                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                         .map((s) => (
                         <li key={s.id} className="listItem">
                           <div>
-                            <strong>{s.name}</strong>
+                            <strong>{getFullName(s)}</strong>
                             <div className="muted">
                               {s.kontaktEmail ?? ""}
                               {s.kontaktTelefon
@@ -6662,7 +6731,8 @@ Sportliche Grüße`
                             {spieler
                               .filter(s =>
                                 s.kontaktEmail &&
-                                s.name.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) &&
+                                (s.vorname.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) ||
+                                  (s.nachname ?? "").toLowerCase().includes(newsletterPlayerSearch.toLowerCase())) &&
                                 !newsletterSelectedPlayers.includes(s.id)
                               )
                               .slice(0, 10)
@@ -6684,7 +6754,7 @@ Sportliche Grüße`
                                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
                                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                 >
-                                  <strong style={{ display: "block" }}>{s.name}</strong>
+                                  <strong style={{ display: "block" }}>{getFullName(s)}</strong>
                                   <span style={{ color: "var(--text-muted)", fontSize: 12, display: "block" }}>
                                     {s.kontaktEmail}
                                   </span>
@@ -6692,7 +6762,8 @@ Sportliche Grüße`
                               ))}
                             {spieler.filter(s =>
                               s.kontaktEmail &&
-                              s.name.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) &&
+                              (s.vorname.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) ||
+                                (s.nachname ?? "").toLowerCase().includes(newsletterPlayerSearch.toLowerCase())) &&
                               !newsletterSelectedPlayers.includes(s.id)
                             ).length === 0 && (
                               <div style={{ padding: "10px 12px", color: "var(--text-muted)" }}>
@@ -6728,7 +6799,7 @@ Sportliche Grüße`
                                   gap: 6
                                 }}
                               >
-                                {s.name}
+                                {getFullName(s)}
                                 <button
                                   type="button"
                                   onClick={() => setNewsletterSelectedPlayers(prev => prev.filter(pid => pid !== id))}
@@ -7437,7 +7508,7 @@ Sportliche Grüße`
                     {/* Detail-Ansicht für ausgewählten Spieler */}
                     {selectedSpielerForDetail && (() => {
                       const spielerData = spielerById.get(selectedSpielerForDetail);
-                      const spielerName = spielerData?.name ?? "Unbekannt";
+                      const spielerName = spielerData ? getFullName(spielerData) : "Unbekannt";
 
                       // Trainings dieses Spielers im gewählten Monat
                       const spielerTrainings = trainingsForAbrechnung.filter(
@@ -7714,7 +7785,7 @@ Sportliche Grüße`
                                       const [y, m, d] = t.datum.split("-");
                                       const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
                                       const spielerNamen = t.spielerIds
-                                        .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                        .map((id) => getSpielerDisplayName(id))
                                         .join(", ");
                                       return (
                                         <tr key={t.id}>
@@ -7967,7 +8038,7 @@ Sportliche Grüße`
                                       const [y, m, d] = t.datum.split("-");
                                       const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
                                       const spielerNamen = t.spielerIds
-                                        .map((id) => spielerById.get(id)?.name ?? "Spieler")
+                                        .map((id) => getSpielerDisplayName(id))
                                         .join(", ");
                                       return (
                                         <tr key={t.id}>
@@ -8085,7 +8156,8 @@ Sportliche Grüße`
                             ? t.spielerIds.filter((sid) => {
                                 const s = spielerById.get(sid);
                                 return s && (
-                                  s.name.toLowerCase().includes(searchQ) ||
+                                  s.vorname.toLowerCase().includes(searchQ) ||
+                                  (s.nachname ?? "").toLowerCase().includes(searchQ) ||
                                   (s.kontaktEmail ?? "").toLowerCase().includes(searchQ)
                                 );
                               })
@@ -8093,7 +8165,7 @@ Sportliche Grüße`
                           
                           const sp = filteredSpielerIds
                             .map(
-                              (id) => spielerById.get(id)?.name ?? "Spieler"
+                              (id) => getSpielerDisplayName(id)
                             )
                             .join(", ");
                           // Vertretungstrainer berücksichtigen
@@ -8529,7 +8601,7 @@ Sportliche Grüße`
                                             }}>
                                               {dateItems.map(({ vertretung: v, training: t }, idx) => {
                                                 const spielerNames = t.spielerIds
-                                                  .map((id) => spielerById.get(id)?.name ?? "?")
+                                                  .map((id) => getSpielerDisplayName(id))
                                                   .join(", ");
                                                 const isOffen = !v.vertretungTrainerId;
 
@@ -8993,7 +9065,7 @@ Sportliche Grüße`
                                 <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>{formatted}</div>
                                 {dayTrainings.map((t) => {
                                   const spielerNames = t.spielerIds
-                                    .map((id) => spielerById.get(id)?.name ?? "?")
+                                    .map((id) => getSpielerDisplayName(id))
                                     .join(", ");
                                   const existingVertretung = vertretungen.find((v) => v.trainingId === t.id);
 
@@ -9176,10 +9248,10 @@ Sportliche Grüße`
                         <option value="">-- Spieler wählen --</option>
                         {spieler
                           .slice()
-                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                           .map((s) => (
                             <option key={s.id} value={s.id}>
-                              {s.name}
+                              {getFullName(s)}
                             </option>
                           ))}
                       </select>
@@ -9285,7 +9357,7 @@ Sportliche Grüße`
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                             <span className="muted">Spieler:</span>
-                            <strong>{selectedSpieler.name}</strong>
+                            <strong>{getFullName(selectedSpieler)}</strong>
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                             <span className="muted">Trainings im {monatName}:</span>
@@ -9493,13 +9565,13 @@ Sportliche Grüße`
         <p style="margin: 0; font-size: 11pt;"><strong>${selectedSpieler.empfaengerName}</strong></p>
         <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
       ` : `
-        <p style="margin: 0; font-size: 11pt;"><strong>${selectedSpieler.name}</strong></p>
+        <p style="margin: 0; font-size: 11pt;"><strong>${getFullName(selectedSpieler)}</strong></p>
         <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
       `}
     </div>
     <div style="min-width: 250px;">
       <h3 style="margin: 0 0 8px 0; font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Betreff</h3>
-      <p style="margin: 0; font-size: 11pt;"><strong>Tennistraining ${monatName} ${selectedSpieler.name}</strong></p>
+      <p style="margin: 0; font-size: 11pt;"><strong>Tennistraining ${monatName} ${getFullName(selectedSpieler)}</strong></p>
     </div>
   </div>
 
@@ -9585,14 +9657,14 @@ Sportliche Grüße`
                             </>
                           ) : (
                             <>
-                              <div><strong>{selectedSpieler.name}</strong></div>
+                              <div><strong>{getFullName(selectedSpieler)}</strong></div>
                               <div>{selectedSpieler.rechnungsAdresse}</div>
                             </>
                           )}
                         </div>
                         <div>
                           <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>BETREFF</div>
-                          <div><strong>Tennistraining {monatName} {selectedSpieler.name}</strong></div>
+                          <div><strong>Tennistraining {monatName} {getFullName(selectedSpieler)}</strong></div>
                         </div>
                       </div>
 
@@ -9664,7 +9736,7 @@ Sportliche Grüße`
                             const monatFormatiert = new Date(rechnungMonat + "-01").toLocaleDateString("de-DE", { month: "long", year: "numeric" });
                             const empfaengerName = selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName
                               ? selectedSpieler.empfaengerName.split(" ")[0]
-                              : selectedSpieler.name.split(" ")[0];
+                              : selectedSpieler.vorname;
                             setRechnungEmailBetreff(`Rechnung ${rechnungNummer} - Tennisschule A bis Z`);
                             setRechnungEmailText(`Hallo ${empfaengerName},
 
@@ -9949,7 +10021,7 @@ Tennisschule A bis Z`);
                 // Build cell text: Spielernamen mit Bullets (ein Name pro Zeile, max 5)
                 const buildCellText = (tr: Training): string => {
                   const spielerNames = tr.spielerIds
-                    .map((sid) => spieler.find((s) => s.id === sid)?.name || "?")
+                    .map((sid) => getSpielerDisplayName(sid))
                     .slice(0, 5) // Max 5 Spieler
                     .map((name) => `• ${name}`);
                   return spielerNames.join("\n");
@@ -10637,7 +10709,7 @@ Tennisschule A bis Z`);
                 <ul style={{ margin: "8px 0", paddingLeft: 20, fontSize: 13 }}>
                   {cancelTrainingDialog.trainings.map((t) => {
                     const spielerNamen = t.spielerIds
-                      .map((id) => spielerById.get(id)?.name ?? "Unbekannt")
+                      .map((id) => getSpielerFullName(id))
                       .join(", ");
                     return (
                       <li key={t.id} style={{ marginBottom: 4 }}>
@@ -10658,7 +10730,7 @@ Tennisschule A bis Z`);
                     });
                     return Array.from(allSpielerIds).map((id) => (
                       <span key={id} className="pill" style={{ fontSize: 12 }}>
-                        {spielerById.get(id)?.name ?? "Unbekannt"}
+                        {getSpielerFullName(id)}
                       </span>
                     ));
                   })()}
@@ -11173,7 +11245,7 @@ Sportliche Grüße,
 Deine Tennisschule`;
 
         // Vorschau mit erstem Empfänger oder Platzhalter
-        const previewName = recipients.length > 0 ? recipients[0].name : "[Name]";
+        const previewName = recipients.length > 0 ? getFullName(recipients[0]) : "[Name]";
         const emailBodyPreview = getEmailBody(previewName);
 
         return (
@@ -11201,7 +11273,7 @@ Deine Tennisschule`;
                     }}>
                       {recipients.map((s, idx) => (
                         <div key={s.id} style={{ marginBottom: idx < recipients.length - 1 ? 4 : 0 }}>
-                          {s.name} <span className="muted">({s.kontaktEmail})</span>
+                          {getFullName(s)} <span className="muted">({s.kontaktEmail})</span>
                         </div>
                       ))}
                     </div>
@@ -11217,7 +11289,7 @@ Deine Tennisschule`;
                       Ohne E-Mail:{" "}
                       {training.spielerIds
                         .filter(id => !spielerById.get(id)?.kontaktEmail)
-                        .map(id => spielerById.get(id)?.name ?? "Unbekannt")
+                        .map(id => getSpielerFullName(id))
                         .join(", ")}
                     </div>
                   )}
@@ -11309,19 +11381,19 @@ Deine Tennisschule`;
                             body: JSON.stringify({
                               to: [recipient.kontaktEmail],
                               subject: emailSubject,
-                              body: getEmailBody(recipient.name),
+                              body: getEmailBody(getFullName(recipient)),
                               fromName: "Tennisschule"
                             })
                           });
 
                           if (!response.ok) {
                             const error = await response.json();
-                            errors.push(`${recipient.name}: ${error.message || "Fehler"}`);
+                            errors.push(`${getFullName(recipient)}: ${error.message || "Fehler"}`);
                           } else {
                             successCount++;
                           }
                         } catch (err) {
-                          errors.push(`${recipient.name}: ${err instanceof Error ? err.message : "Fehler"}`);
+                          errors.push(`${getFullName(recipient)}: ${err instanceof Error ? err.message : "Fehler"}`);
                         }
                       }
 
@@ -11388,7 +11460,7 @@ Deine Tennisschule`;
             datum: germanDate,
             uhrzeit: `${t.uhrzeitVon} - ${t.uhrzeitBis}`,
             trainer: trainer?.name ?? "Unbekannt",
-            spieler: t.spielerIds.map((id) => spielerById.get(id)?.name ?? "Unbekannt").join(", ")
+            spieler: t.spielerIds.map((id) => getSpielerFullName(id)).join(", ")
           };
         });
 
@@ -11426,7 +11498,7 @@ Deine Tennisschule`;
                     }}>
                       {recipients.map((s, idx) => (
                         <div key={s.id} style={{ marginBottom: idx < recipients.length - 1 ? 4 : 0 }}>
-                          {s.name} <span className="muted">({s.kontaktEmail})</span>
+                          {getFullName(s)} <span className="muted">({s.kontaktEmail})</span>
                         </div>
                       ))}
                     </div>
@@ -11511,19 +11583,19 @@ Deine Tennisschule`;
                             body: JSON.stringify({
                               to: [recipient.kontaktEmail],
                               subject: cancelNotifySubject.trim(),
-                              body: getPersonalizedBody(cancelNotifyBody.trim(), recipient.name),
+                              body: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)),
                               fromName: "Tennisschule"
                             })
                           });
 
                           if (!response.ok) {
                             const error = await response.json();
-                            errors.push(`${recipient.name}: ${error.message || "Fehler"}`);
+                            errors.push(`${getFullName(recipient)}: ${error.message || "Fehler"}`);
                           } else {
                             successCount++;
                           }
                         } catch (err) {
-                          errors.push(`${recipient.name}: ${err instanceof Error ? err.message : "Fehler"}`);
+                          errors.push(`${getFullName(recipient)}: ${err instanceof Error ? err.message : "Fehler"}`);
                         }
                       }
 
@@ -11560,7 +11632,7 @@ Deine Tennisschule`;
         const [y, m, d] = training.datum.split("-");
         const germanDate = d && m && y ? `${d}.${m}.${y}` : training.datum;
         const spielerNamen = training.spielerIds
-          .map((id) => spielerById.get(id)?.name ?? "Unbekannt")
+          .map((id) => getSpielerFullName(id))
           .join(", ");
 
         return (
@@ -11646,7 +11718,7 @@ Deine Tennisschule`;
               E-Mail wird gesendet an: {tSpielerIds
                 .map(id => spielerById.get(id))
                 .filter(s => s?.kontaktEmail)
-                .map(s => `${s!.name} (${s!.kontaktEmail})`)
+                .map(s => `${getFullName(s!)} (${s!.kontaktEmail})`)
                 .join(", ") || "Keine Spieler mit E-Mail"}
             </div>
 
