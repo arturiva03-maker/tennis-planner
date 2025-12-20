@@ -2425,6 +2425,13 @@ export default function App() {
   }
 
   function deleteSpieler(id: string) {
+    const spielerToDelete = spieler.find(s => s.id === id);
+    const name = spielerToDelete ? getFullName(spielerToDelete) : "Spieler";
+
+    if (!window.confirm(`Möchtest du "${name}" wirklich löschen? Der Spieler wird auch aus allen Trainings entfernt.`)) {
+      return;
+    }
+
     setSpieler((prev) => prev.filter((s) => s.id !== id));
     setTrainings((prev) =>
       prev.map((t) => ({
