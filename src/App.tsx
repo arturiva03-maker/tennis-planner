@@ -5700,15 +5700,84 @@ Sportliche Grüße`
                         Gesamt: <strong>{spieler.length}</strong>
                       </span>
                       {!showSpielerForm && !editingSpielerId && (
-                        <button
-                          className="btn"
-                          onClick={() => {
-                            setSpielerError(null);
-                            setShowSpielerForm(true);
-                          }}
-                        >
-                          Neuen Spieler hinzufügen
-                        </button>
+                        <>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              setSpielerError(null);
+                              setShowSpielerForm(true);
+                            }}
+                          >
+                            Neuen Spieler hinzufügen
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={async () => {
+                              const sortedSpieler = [...spieler].sort((a, b) =>
+                                getFullName(a).localeCompare(getFullName(b))
+                              );
+
+                              const tableHTML = `
+                                <html>
+                                <head>
+                                  <style>
+                                    body { font-family: Arial, sans-serif; padding: 20px; }
+                                    h1 { font-size: 18px; margin-bottom: 20px; }
+                                    table { width: 100%; border-collapse: collapse; }
+                                    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+                                    th { background-color: #f5f5f5; font-weight: bold; }
+                                    tr:nth-child(even) { background-color: #fafafa; }
+                                    .footer { margin-top: 20px; font-size: 11px; color: #666; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <h1>Spielerliste (${sortedSpieler.length} Spieler)</h1>
+                                  <table>
+                                    <thead>
+                                      <tr>
+                                        <th style="width: 40px;">#</th>
+                                        <th>Vorname</th>
+                                        <th>Nachname</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      ${sortedSpieler.map((s, idx) => `
+                                        <tr>
+                                          <td>${idx + 1}</td>
+                                          <td>${s.vorname}</td>
+                                          <td>${s.nachname || ""}</td>
+                                        </tr>
+                                      `).join("")}
+                                    </tbody>
+                                  </table>
+                                  <div class="footer">
+                                    Erstellt am ${new Date().toLocaleDateString("de-DE")}
+                                  </div>
+                                </body>
+                                </html>
+                              `;
+
+                              const html2pdf = (await import('html2pdf.js')).default;
+                              const container = document.createElement('div');
+                              container.innerHTML = tableHTML;
+                              document.body.appendChild(container);
+
+                              await html2pdf()
+                                .set({
+                                  margin: 10,
+                                  filename: `Spielerliste_${new Date().toISOString().split('T')[0]}.pdf`,
+                                  html2canvas: { scale: 2 },
+                                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                })
+                                .from(container)
+                                .save();
+
+                              document.body.removeChild(container);
+                            }}
+                          >
+                            PDF exportieren
+                          </button>
+                        </>
                       )}
                     </div>
 
