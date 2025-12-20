@@ -1607,6 +1607,12 @@ export default function App() {
   const [notizTitel, setNotizTitel] = useState("");
   const [notizInhalt, setNotizInhalt] = useState("");
 
+  // States für Trainingsinfo-E-Mail
+  const [showTrainingInfoEmail, setShowTrainingInfoEmail] = useState(false);
+  const [trainingInfoEmailSubject, setTrainingInfoEmailSubject] = useState("");
+  const [trainingInfoEmailBody, setTrainingInfoEmailBody] = useState("");
+  const [trainingInfoEmailSending, setTrainingInfoEmailSending] = useState(false);
+
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
@@ -5148,6 +5154,40 @@ Deine Tennisschule`;
                           onClick={() => deleteTraining(selectedTrainingId)}
                         >
                           Training löschen
+                        </button>
+                      )}
+                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#0891b2",
+                            borderColor: "#0891b2",
+                          }}
+                          onClick={() => {
+                            const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
+                            const datum = new Date(tDatum + "T12:00:00");
+                            const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
+                            const startDatum = tDatum.split("-").reverse().join(".");
+
+                            setTrainingInfoEmailSubject(`Dein Tennis-Training - ${wochentag}s ${tVon}-${tBis} Uhr`);
+                            setTrainingInfoEmailBody(
+`Hallo,
+
+hiermit informiere ich dich über dein Tennis-Training:
+
+Tag: ${wochentag}
+Uhrzeit: ${tVon} - ${tBis} Uhr
+Trainer: ${trainerName}
+Startdatum: ${startDatum}
+
+Bei Fragen melde dich gerne.
+
+Sportliche Grüße`
+                            );
+                            setShowTrainingInfoEmail(true);
+                          }}
+                        >
+                          Spieler informieren
                         </button>
                       )}
                       {selectedTrainingId && tStatus === "geplant" && (
@@ -11577,6 +11617,115 @@ Deine Tennisschule`;
           </div>
         );
       })()}
+
+      {/* Trainingsinfo E-Mail Modal */}
+      {showTrainingInfoEmail && (
+        <div className="modalOverlay" onClick={() => setShowTrainingInfoEmail(false)}>
+          <div
+            className="modalCard"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 600, maxHeight: "90vh", overflow: "auto" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0 }}>Spieler per E-Mail informieren</h2>
+              <button
+                onClick={() => setShowTrainingInfoEmail(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 24,
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="muted" style={{ marginBottom: 16 }}>
+              E-Mail wird gesendet an: {tSpielerIds
+                .map(id => spielerById.get(id))
+                .filter(s => s?.kontaktEmail)
+                .map(s => `${s!.name} (${s!.kontaktEmail})`)
+                .join(", ") || "Keine Spieler mit E-Mail"}
+            </div>
+
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label>Betreff</label>
+              <input
+                value={trainingInfoEmailSubject}
+                onChange={(e) => setTrainingInfoEmailSubject(e.target.value)}
+                placeholder="E-Mail-Betreff"
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: 16 }}>
+              <label>Nachricht</label>
+              <textarea
+                value={trainingInfoEmailBody}
+                onChange={(e) => setTrainingInfoEmailBody(e.target.value)}
+                rows={12}
+                style={{ width: "100%", fontFamily: "inherit", fontSize: 14 }}
+                placeholder="E-Mail-Text"
+              />
+            </div>
+
+            <div className="modalActions">
+              <button
+                className="btn btnGhost"
+                onClick={() => setShowTrainingInfoEmail(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="btn"
+                disabled={trainingInfoEmailSending}
+                onClick={async () => {
+                  const recipients = tSpielerIds
+                    .map(id => spielerById.get(id)?.kontaktEmail)
+                    .filter((email): email is string => !!email);
+
+                  if (recipients.length === 0) {
+                    alert("Keine Spieler mit E-Mail-Adresse gefunden.");
+                    return;
+                  }
+
+                  setTrainingInfoEmailSending(true);
+
+                  try {
+                    const resp = await fetch("/api/send-newsletter", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        to: recipients,
+                        subject: trainingInfoEmailSubject,
+                        body: trainingInfoEmailBody,
+                        html: trainingInfoEmailBody.replace(/\n/g, "<br>"),
+                        fromName: "Tennisschule",
+                      }),
+                    });
+
+                    const result = await resp.json();
+
+                    if (resp.ok && result.success) {
+                      alert(`E-Mail erfolgreich an ${result.sent} Spieler gesendet!`);
+                      setShowTrainingInfoEmail(false);
+                    } else {
+                      alert(`Fehler beim Senden: ${result.error || "Unbekannter Fehler"}`);
+                    }
+                  } catch (err) {
+                    alert(`Fehler beim Senden: ${err instanceof Error ? err.message : "Unbekannter Fehler"}`);
+                  } finally {
+                    setTrainingInfoEmailSending(false);
+                  }
+                }}
+              >
+                {trainingInfoEmailSending ? "Sende..." : "E-Mail senden"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
