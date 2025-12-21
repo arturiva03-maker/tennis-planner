@@ -1552,6 +1552,7 @@ export default function App() {
   const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
 
   const [sepaMandates, setSepaMandates] = useState<SepaMandate[]>([]);
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
@@ -6381,6 +6382,180 @@ Sportliche Grüße`
                           </div>
                         </div>
 
+                        {/* Auswahl-Toolbar */}
+                        {registrationRequests.length > 0 && (
+                          <div style={{
+                            marginBottom: 16,
+                            display: "flex",
+                            gap: 12,
+                            alignItems: "center",
+                            padding: "8px 12px",
+                            background: "var(--bg-inset)",
+                            borderRadius: 8
+                          }}>
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                              <input
+                                type="checkbox"
+                                checked={(() => {
+                                  const filtered = registrationRequests.filter(r => {
+                                    if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
+                                    if (anmeldungNameSuche && !r.name.toLowerCase().includes(anmeldungNameSuche.toLowerCase())) return false;
+                                    if (anmeldungTagFilter !== "alle" && r.verfuegbarkeit) {
+                                      const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
+                                      if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                                    }
+                                    if (anmeldungStatusFilter === "offen" && r.status === "erledigt") return false;
+                                    if (anmeldungStatusFilter === "erledigt" && r.status !== "erledigt") return false;
+                                    return true;
+                                  });
+                                  return filtered.length > 0 && filtered.every(r => selectedRequestIds.has(r.id));
+                                })()}
+                                onChange={(e) => {
+                                  const filtered = registrationRequests.filter(r => {
+                                    if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
+                                    if (anmeldungNameSuche && !r.name.toLowerCase().includes(anmeldungNameSuche.toLowerCase())) return false;
+                                    if (anmeldungTagFilter !== "alle" && r.verfuegbarkeit) {
+                                      const tagWert = r.verfuegbarkeit[anmeldungTagFilter];
+                                      if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                                    }
+                                    if (anmeldungStatusFilter === "offen" && r.status === "erledigt") return false;
+                                    if (anmeldungStatusFilter === "erledigt" && r.status !== "erledigt") return false;
+                                    return true;
+                                  });
+                                  if (e.target.checked) {
+                                    setSelectedRequestIds(new Set([...selectedRequestIds, ...filtered.map(r => r.id)]));
+                                  } else {
+                                    const newSet = new Set(selectedRequestIds);
+                                    filtered.forEach(r => newSet.delete(r.id));
+                                    setSelectedRequestIds(newSet);
+                                  }
+                                }}
+                              />
+                              <span style={{ fontSize: 13 }}>Alle auswählen</span>
+                            </label>
+                            {selectedRequestIds.size > 0 && (
+                              <>
+                                <span className="muted" style={{ fontSize: 13 }}>
+                                  {selectedRequestIds.size} ausgewählt
+                                </span>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={async () => {
+                                    const selectedReqs = registrationRequests.filter(r => selectedRequestIds.has(r.id));
+                                    if (selectedReqs.length === 0) return;
+
+                                    const generateCardHTML = (req: typeof selectedReqs[0]) => {
+                                      const trainingsartText = req.trainingsart === "einzel"
+                                        ? "Einzeltraining"
+                                        : req.trainingsart === "gruppe"
+                                        ? "Gruppentraining"
+                                        : req.trainingsart === "beides"
+                                        ? "Beides"
+                                        : "-";
+                                      const erfahrungText = req.erfahrungslevel === "anfaenger"
+                                        ? "Anfänger"
+                                        : req.erfahrungslevel === "fortgeschritten"
+                                        ? "Fortgeschritten"
+                                        : req.erfahrungslevel === "profi"
+                                        ? "Profi"
+                                        : "-";
+                                      const verfuegbarkeitRows = req.verfuegbarkeit ? [
+                                        req.verfuegbarkeit.montag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mo</td><td style="padding:1px 0;">${req.verfuegbarkeit.montag}</td></tr>` : "",
+                                        req.verfuegbarkeit.dienstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Di</td><td style="padding:1px 0;">${req.verfuegbarkeit.dienstag}</td></tr>` : "",
+                                        req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mi</td><td style="padding:1px 0;">${req.verfuegbarkeit.mittwoch}</td></tr>` : "",
+                                        req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Do</td><td style="padding:1px 0;">${req.verfuegbarkeit.donnerstag}</td></tr>` : "",
+                                        req.verfuegbarkeit.freitag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Fr</td><td style="padding:1px 0;">${req.verfuegbarkeit.freitag}</td></tr>` : "",
+                                        req.verfuegbarkeit.samstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Sa</td><td style="padding:1px 0;">${req.verfuegbarkeit.samstag}</td></tr>` : "",
+                                        req.verfuegbarkeit.sonntag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">So</td><td style="padding:1px 0;">${req.verfuegbarkeit.sonntag}</td></tr>` : "",
+                                      ].filter(Boolean).join("") : "";
+
+                                      return `
+                                        <div class="card">
+                                          <div class="header">
+                                            <p class="name">${req.name}</p>
+                                            ${req.anlage ? `<span class="anlage" style="background:${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};">${req.anlage}</span>` : ""}
+                                          </div>
+                                          <div class="info-grid">
+                                            <div class="info-item"><label>Telefon</label><span>${req.telefon || "-"}</span></div>
+                                            <div class="info-item"><label>E-Mail</label><span style="font-size:7pt;word-break:break-all;">${req.email}</span></div>
+                                            <div class="info-item"><label>Alter</label><span>${req.alter_jahre ? req.alter_jahre + " J." : "-"}</span></div>
+                                            <div class="info-item"><label>Art</label><span>${trainingsartText}</span></div>
+                                            <div class="info-item"><label>Level</label><span>${erfahrungText}</span></div>
+                                            <div class="info-item"><label>Pro Woche</label><span>${req.trainings_pro_woche ? req.trainings_pro_woche + "x" : "-"}</span></div>
+                                          </div>
+                                          ${verfuegbarkeitRows ? `<div class="verfuegbarkeit"><h4>Verfügbarkeit</h4><table>${verfuegbarkeitRows}</table></div>` : ""}
+                                          <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
+                                        </div>
+                                      `;
+                                    };
+
+                                    const cardsHTML = `
+                                      <!DOCTYPE html>
+                                      <html>
+                                      <head>
+                                        <style>
+                                          @page { size: A4; margin: 10mm; }
+                                          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+                                          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+                                          .card {
+                                            width: 93mm; height: 70mm;
+                                            border: 1px solid #ccc; border-radius: 3px;
+                                            padding: 3mm; box-sizing: border-box;
+                                            font-size: 8pt; page-break-inside: avoid;
+                                            overflow: hidden;
+                                          }
+                                          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
+                                          .name { font-size: 11pt; font-weight: bold; margin: 0; }
+                                          .anlage { color: white; padding: 1px 5px; border-radius: 2px; font-size: 7pt; }
+                                          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; margin-bottom: 1.5mm; }
+                                          .info-item label { font-size: 6pt; color: #666; display: block; }
+                                          .info-item span { font-size: 8pt; }
+                                          .verfuegbarkeit { margin-top: 1mm; }
+                                          .verfuegbarkeit h4 { font-size: 7pt; margin: 0 0 0.5mm 0; color: #666; }
+                                          .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
+                                          .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
+                                        </style>
+                                      </head>
+                                      <body>
+                                        <div class="grid">
+                                          ${selectedReqs.map(generateCardHTML).join("")}
+                                        </div>
+                                      </body>
+                                      </html>
+                                    `;
+
+                                    const html2pdf = (await import('html2pdf.js')).default;
+                                    const container = document.createElement('div');
+                                    container.innerHTML = cardsHTML;
+                                    document.body.appendChild(container);
+
+                                    await html2pdf()
+                                      .set({
+                                        margin: 10,
+                                        filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
+                                        html2canvas: { scale: 2 },
+                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                      })
+                                      .from(container.querySelector('.grid') as HTMLElement)
+                                      .save();
+
+                                    document.body.removeChild(container);
+                                  }}
+                                >
+                                  Ausgewählte drucken
+                                </button>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => setSelectedRequestIds(new Set())}
+                                >
+                                  Auswahl aufheben
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+
                         {loadingRequests ? (
                           <p className="muted">Laden...</p>
                         ) : registrationRequests.filter(r => {
@@ -6414,9 +6589,24 @@ Sportliche Grüße`
                             }).map((req) => (
                               <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                  <div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                      <strong>{req.name}</strong>
+                                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedRequestIds.has(req.id)}
+                                      onChange={(e) => {
+                                        const newSet = new Set(selectedRequestIds);
+                                        if (e.target.checked) {
+                                          newSet.add(req.id);
+                                        } else {
+                                          newSet.delete(req.id);
+                                        }
+                                        setSelectedRequestIds(newSet);
+                                      }}
+                                      style={{ marginTop: 4 }}
+                                    />
+                                    <div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <strong>{req.name}</strong>
                                       {req.anlage && (
                                         <span style={{
                                           fontSize: 11,
@@ -6438,6 +6628,7 @@ Sportliche Grüße`
                                         hour: "2-digit",
                                         minute: "2-digit"
                                       })}
+                                    </div>
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -6594,7 +6785,7 @@ Sportliche Grüße`
                                                 }
                                                 .card {
                                                   width: 90mm;
-                                                  height: 64mm;
+                                                  min-height: 70mm;
                                                   border: 1px solid #ccc;
                                                   border-radius: 4px;
                                                   padding: 4mm;
@@ -6692,10 +6883,10 @@ Sportliche Grüße`
 
                                           await html2pdf()
                                             .set({
-                                              margin: 0,
+                                              margin: 5,
                                               filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
                                               html2canvas: { scale: 2 },
-                                              jsPDF: { unit: 'mm', format: [100, 74], orientation: 'landscape' }
+                                              jsPDF: { unit: 'mm', format: [100, 85], orientation: 'landscape' }
                                             })
                                             .from(cardEl)
                                             .save();
