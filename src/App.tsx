@@ -6688,6 +6688,7 @@ Sportliche Grüße`
                                           const container = document.createElement('div');
                                           container.innerHTML = cardHTML;
                                           document.body.appendChild(container);
+                                          const cardEl = container.querySelector('.card') as HTMLElement;
 
                                           await html2pdf()
                                             .set({
@@ -6696,7 +6697,7 @@ Sportliche Grüße`
                                               html2canvas: { scale: 2 },
                                               jsPDF: { unit: 'mm', format: [100, 74], orientation: 'landscape' }
                                             })
-                                            .from(container.querySelector('.card'))
+                                            .from(cardEl)
                                             .save();
 
                                           document.body.removeChild(container);
