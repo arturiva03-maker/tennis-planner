@@ -5739,9 +5739,9 @@ Sportliche Grüße`
 
                               // Filter Spieler basierend auf aktuellem Label-Filter
                               const filteredSpieler = spieler.filter(s => {
-                                if (spielerLabelFilter === "alle") return true;
-                                if (spielerLabelFilter === "ohne") return !s.labels || s.labels.length === 0;
-                                return s.labels?.includes(spielerLabelFilter);
+                                if (verwaltungLabelFilter === "alle") return true;
+                                if (verwaltungLabelFilter === "ohne") return !s.labels || s.labels.length === 0;
+                                return s.labels?.includes(verwaltungLabelFilter);
                               });
 
                               const data = filteredSpieler.map((s, idx) => ({
