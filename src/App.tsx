@@ -6534,8 +6534,7 @@ Sportliche Grüße`
                                         margin: 10,
                                         filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
                                         html2canvas: { scale: 2 },
-                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                                       })
                                       .from(container.querySelector('.grid') as HTMLElement)
                                       .save();
