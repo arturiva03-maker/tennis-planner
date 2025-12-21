@@ -5748,8 +5748,8 @@ Sportliche Grüße`
                                 'Nr.': idx + 1,
                                 'Vorname': s.vorname,
                                 'Nachname': s.nachname || '',
-                                'E-Mail': s.email || '',
-                                'Telefon': s.telefon || '',
+                                'E-Mail': s.kontaktEmail || '',
+                                'Telefon': s.kontaktTelefon || '',
                                 'Labels': s.labels?.join(', ') || ''
                               }));
 
