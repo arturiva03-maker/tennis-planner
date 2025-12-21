@@ -6553,6 +6553,158 @@ Sportliche Grüße`
                                         <option value="erledigt">Erledigt</option>
                                       </select>
                                       <button
+                                        className="btn micro btnGhost"
+                                        onClick={async () => {
+                                          const trainingsartText = req.trainingsart === "einzel"
+                                            ? "Einzeltraining"
+                                            : req.trainingsart === "gruppe"
+                                            ? "Gruppentraining"
+                                            : req.trainingsart === "beides"
+                                            ? "Beides"
+                                            : "-";
+                                          const erfahrungText = req.erfahrungslevel === "anfaenger"
+                                            ? "Anfänger"
+                                            : req.erfahrungslevel === "fortgeschritten"
+                                            ? "Fortgeschritten"
+                                            : req.erfahrungslevel === "profi"
+                                            ? "Profi"
+                                            : "-";
+
+                                          const verfuegbarkeitRows = req.verfuegbarkeit ? [
+                                            req.verfuegbarkeit.montag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mo</td><td style="padding:2px 0;">${req.verfuegbarkeit.montag}</td></tr>` : "",
+                                            req.verfuegbarkeit.dienstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Di</td><td style="padding:2px 0;">${req.verfuegbarkeit.dienstag}</td></tr>` : "",
+                                            req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mi</td><td style="padding:2px 0;">${req.verfuegbarkeit.mittwoch}</td></tr>` : "",
+                                            req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Do</td><td style="padding:2px 0;">${req.verfuegbarkeit.donnerstag}</td></tr>` : "",
+                                            req.verfuegbarkeit.freitag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Fr</td><td style="padding:2px 0;">${req.verfuegbarkeit.freitag}</td></tr>` : "",
+                                            req.verfuegbarkeit.samstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Sa</td><td style="padding:2px 0;">${req.verfuegbarkeit.samstag}</td></tr>` : "",
+                                            req.verfuegbarkeit.sonntag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">So</td><td style="padding:2px 0;">${req.verfuegbarkeit.sonntag}</td></tr>` : "",
+                                          ].filter(Boolean).join("") : "";
+
+                                          const cardHTML = `
+                                            <!DOCTYPE html>
+                                            <html>
+                                            <head>
+                                              <style>
+                                                @page { size: A4; margin: 0; }
+                                                body {
+                                                  font-family: Arial, sans-serif;
+                                                  margin: 0;
+                                                  padding: 10mm;
+                                                  box-sizing: border-box;
+                                                }
+                                                .card {
+                                                  width: 90mm;
+                                                  height: 64mm;
+                                                  border: 1px solid #ccc;
+                                                  border-radius: 4px;
+                                                  padding: 4mm;
+                                                  box-sizing: border-box;
+                                                  font-size: 9pt;
+                                                  page-break-inside: avoid;
+                                                }
+                                                .header {
+                                                  display: flex;
+                                                  justify-content: space-between;
+                                                  align-items: flex-start;
+                                                  border-bottom: 1px solid #ddd;
+                                                  padding-bottom: 2mm;
+                                                  margin-bottom: 2mm;
+                                                }
+                                                .name { font-size: 12pt; font-weight: bold; margin: 0; }
+                                                .anlage {
+                                                  background: ${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};
+                                                  color: white;
+                                                  padding: 2px 6px;
+                                                  border-radius: 3px;
+                                                  font-size: 8pt;
+                                                }
+                                                .info-grid {
+                                                  display: grid;
+                                                  grid-template-columns: 1fr 1fr;
+                                                  gap: 2mm;
+                                                  margin-bottom: 2mm;
+                                                }
+                                                .info-item label { font-size: 7pt; color: #666; display: block; }
+                                                .info-item span { font-size: 9pt; }
+                                                .verfuegbarkeit { margin-top: 2mm; }
+                                                .verfuegbarkeit h4 { font-size: 8pt; margin: 0 0 1mm 0; color: #666; }
+                                                .verfuegbarkeit table { font-size: 8pt; border-collapse: collapse; }
+                                                .nachricht {
+                                                  margin-top: 2mm;
+                                                  font-size: 8pt;
+                                                  color: #333;
+                                                  border-top: 1px dashed #ddd;
+                                                  padding-top: 2mm;
+                                                }
+                                                .footer { font-size: 7pt; color: #999; margin-top: 2mm; text-align: right; }
+                                              </style>
+                                            </head>
+                                            <body>
+                                              <div class="card">
+                                                <div class="header">
+                                                  <p class="name">${req.name}</p>
+                                                  ${req.anlage ? `<span class="anlage">${req.anlage}</span>` : ""}
+                                                </div>
+                                                <div class="info-grid">
+                                                  <div class="info-item">
+                                                    <label>Telefon</label>
+                                                    <span>${req.telefon || "-"}</span>
+                                                  </div>
+                                                  <div class="info-item">
+                                                    <label>E-Mail</label>
+                                                    <span>${req.email}</span>
+                                                  </div>
+                                                  <div class="info-item">
+                                                    <label>Alter</label>
+                                                    <span>${req.alter_jahre ? req.alter_jahre + " Jahre" : "-"}</span>
+                                                  </div>
+                                                  <div class="info-item">
+                                                    <label>Trainingsart</label>
+                                                    <span>${trainingsartText}</span>
+                                                  </div>
+                                                  <div class="info-item">
+                                                    <label>Level</label>
+                                                    <span>${erfahrungText}</span>
+                                                  </div>
+                                                  <div class="info-item">
+                                                    <label>Pro Woche</label>
+                                                    <span>${req.trainings_pro_woche ? req.trainings_pro_woche + "x" : "-"}</span>
+                                                  </div>
+                                                </div>
+                                                ${verfuegbarkeitRows ? `
+                                                  <div class="verfuegbarkeit">
+                                                    <h4>Verfügbarkeit</h4>
+                                                    <table>${verfuegbarkeitRows}</table>
+                                                  </div>
+                                                ` : ""}
+                                                ${req.nachricht ? `<div class="nachricht"><strong>Nachricht:</strong> ${req.nachricht}</div>` : ""}
+                                                <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
+                                              </div>
+                                            </body>
+                                            </html>
+                                          `;
+
+                                          const html2pdf = (await import('html2pdf.js')).default;
+                                          const container = document.createElement('div');
+                                          container.innerHTML = cardHTML;
+                                          document.body.appendChild(container);
+
+                                          await html2pdf()
+                                            .set({
+                                              margin: 0,
+                                              filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
+                                              html2canvas: { scale: 2 },
+                                              jsPDF: { unit: 'mm', format: [100, 74], orientation: 'landscape' }
+                                            })
+                                            .from(container.querySelector('.card'))
+                                            .save();
+
+                                          document.body.removeChild(container);
+                                        }}
+                                      >
+                                        Drucken
+                                      </button>
+                                      <button
                                         className="btn micro btnWarn"
                                         onClick={() => {
                                           if (window.confirm("Anmeldung wirklich löschen?")) {
