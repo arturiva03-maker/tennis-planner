@@ -5734,13 +5734,43 @@ Sportliche Grüße`
                           </button>
                           <button
                             className="btn btnGhost"
-                            onClick={() => {
-                              setPdfExportLabelFilter("alle");
-                              setPdfExportExcluded(new Set());
-                              setShowPdfExportModal(true);
+                            onClick={async () => {
+                              const XLSX = await import('xlsx');
+
+                              // Filter Spieler basierend auf aktuellem Label-Filter
+                              const filteredSpieler = spieler.filter(s => {
+                                if (spielerLabelFilter === "alle") return true;
+                                if (spielerLabelFilter === "ohne") return !s.labels || s.labels.length === 0;
+                                return s.labels?.includes(spielerLabelFilter);
+                              });
+
+                              const data = filteredSpieler.map((s, idx) => ({
+                                'Nr.': idx + 1,
+                                'Vorname': s.vorname,
+                                'Nachname': s.nachname || '',
+                                'E-Mail': s.email || '',
+                                'Telefon': s.telefon || '',
+                                'Labels': s.labels?.join(', ') || ''
+                              }));
+
+                              const ws = XLSX.utils.json_to_sheet(data);
+                              const wb = XLSX.utils.book_new();
+                              XLSX.utils.book_append_sheet(wb, ws, 'Spieler');
+
+                              // Spaltenbreiten anpassen
+                              ws['!cols'] = [
+                                { wch: 5 },   // Nr.
+                                { wch: 15 },  // Vorname
+                                { wch: 15 },  // Nachname
+                                { wch: 25 },  // E-Mail
+                                { wch: 15 },  // Telefon
+                                { wch: 20 }   // Labels
+                              ];
+
+                              XLSX.writeFile(wb, `Spielerliste_${new Date().toISOString().split('T')[0]}.xlsx`);
                             }}
                           >
-                            PDF exportieren
+                            Excel exportieren
                           </button>
                         </>
                       )}
