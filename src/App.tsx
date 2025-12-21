@@ -6423,7 +6423,7 @@ Sportliche Grüße`
                                     return true;
                                   });
                                   if (e.target.checked) {
-                                    setSelectedRequestIds(new Set([...selectedRequestIds, ...filtered.map(r => r.id)]));
+                                    setSelectedRequestIds(new Set([...Array.from(selectedRequestIds), ...filtered.map(r => r.id)]));
                                   } else {
                                     const newSet = new Set(selectedRequestIds);
                                     filtered.forEach(r => newSet.delete(r.id));
