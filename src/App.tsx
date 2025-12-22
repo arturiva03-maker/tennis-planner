@@ -7367,6 +7367,7 @@ Sportliche Grüße`
                                 to: recipients.map(r => r.kontaktEmail),
                                 subject: newsletterSubject.trim(),
                                 body: newsletterBody.trim(),
+                                html: newsletterBody.trim().replace(/\n/g, "<br>"),
                                 fromName: "Tennisschule"
                               })
                             });
@@ -11802,6 +11803,7 @@ Deine Tennisschule`;
                               to: [recipient.kontaktEmail],
                               subject: emailSubject,
                               body: getEmailBody(getFullName(recipient)),
+                              html: getEmailBody(getFullName(recipient)).replace(/\n/g, "<br>"),
                               fromName: "Tennisschule"
                             })
                           });
@@ -12004,6 +12006,7 @@ Deine Tennisschule`;
                               to: [recipient.kontaktEmail],
                               subject: cancelNotifySubject.trim(),
                               body: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)),
+                              html: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)).replace(/\n/g, "<br>"),
                               fromName: "Tennisschule"
                             })
                           });
