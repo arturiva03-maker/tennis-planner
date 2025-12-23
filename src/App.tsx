@@ -8869,6 +8869,78 @@ Sportliche Grüße`
                 {/* Vertretung Tab */}
                 {weiteresTabs === "vertretung" && (
                   <>
+                    {/* Excel Export Button */}
+                    <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        className="btn btnGhost"
+                        onClick={async () => {
+                          const XLSX = await import('xlsx');
+
+                          const jetzt = new Date();
+                          const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+                          // Sammle alle offenen Vertretungen (zukünftig, nicht abgesagt)
+                          const exportData = vertretungen
+                            .map(v => {
+                              const training = trainings.find(t => t.id === v.trainingId);
+                              if (!training) return null;
+                              if (training.status === "abgesagt") return null;
+                              const trainingsEnde = new Date(`${training.datum}T${training.uhrzeitBis}:00`);
+                              if (trainingsEnde <= jetzt) return null;
+                              return { vertretung: v, training };
+                            })
+                            .filter((item): item is { vertretung: Vertretung; training: Training } => item !== null)
+                            .sort((a, b) => {
+                              const dateComp = a.training.datum.localeCompare(b.training.datum);
+                              if (dateComp !== 0) return dateComp;
+                              return a.training.uhrzeitVon.localeCompare(b.training.uhrzeitVon);
+                            })
+                            .map(({ vertretung: v, training: t }) => {
+                              const d = new Date(t.datum + "T12:00:00");
+                              const ursprTrainer = trainerById.get(t.trainerId || defaultTrainerId)?.name ?? "Unbekannt";
+                              const vertretungTrainer = v.vertretungTrainerId
+                                ? trainerById.get(v.vertretungTrainerId)?.name ?? "Unbekannt"
+                                : "offen";
+                              const spielerNames = t.spielerIds
+                                .map(id => getSpielerDisplayName(id))
+                                .join(", ");
+
+                              return {
+                                'Datum': `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`,
+                                'Wochentag': dayNames[d.getDay()],
+                                'Uhrzeit': `${t.uhrzeitVon}–${t.uhrzeitBis}`,
+                                'Urspr. Trainer': ursprTrainer,
+                                'Spieler': spielerNames,
+                                'Vertretung': vertretungTrainer
+                              };
+                            });
+
+                          if (exportData.length === 0) {
+                            alert("Keine offenen Vertretungen zum Exportieren.");
+                            return;
+                          }
+
+                          const ws = XLSX.utils.json_to_sheet(exportData);
+                          const wb = XLSX.utils.book_new();
+                          XLSX.utils.book_append_sheet(wb, ws, 'Vertretungen');
+
+                          // Spaltenbreiten anpassen
+                          ws['!cols'] = [
+                            { wch: 12 },  // Datum
+                            { wch: 12 },  // Wochentag
+                            { wch: 12 },  // Uhrzeit
+                            { wch: 15 },  // Urspr. Trainer
+                            { wch: 30 },  // Spieler
+                            { wch: 15 }   // Vertretung
+                          ];
+
+                          XLSX.writeFile(wb, `Vertretungen_${new Date().toISOString().split('T')[0]}.xlsx`);
+                        }}
+                      >
+                        Excel exportieren
+                      </button>
+                    </div>
+
                     {/* Moderne Tabellen-Übersicht aller Vertretungen */}
                     {vertretungen.length > 0 ? (
                       <div style={{ marginBottom: 24 }}>
