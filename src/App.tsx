@@ -8869,15 +8869,13 @@ Sportliche Grüße`
                 {/* Vertretung Tab */}
                 {weiteresTabs === "vertretung" && (
                   <>
-                    {/* Excel Export Button */}
+                    {/* PDF Export Button */}
                     <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
                       <button
                         className="btn btnGhost"
                         onClick={async () => {
-                          const XLSX = await import('xlsx');
-
                           const jetzt = new Date();
-                          const dayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+                          const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
                           // Sammle alle offenen Vertretungen (zukünftig, nicht abgesagt)
                           const exportData = vertretungen
@@ -8894,25 +8892,6 @@ Sportliche Grüße`
                               const dateComp = a.training.datum.localeCompare(b.training.datum);
                               if (dateComp !== 0) return dateComp;
                               return a.training.uhrzeitVon.localeCompare(b.training.uhrzeitVon);
-                            })
-                            .map(({ vertretung: v, training: t }) => {
-                              const d = new Date(t.datum + "T12:00:00");
-                              const ursprTrainer = trainerById.get(t.trainerId || defaultTrainerId)?.name ?? "Unbekannt";
-                              const vertretungTrainer = v.vertretungTrainerId
-                                ? trainerById.get(v.vertretungTrainerId)?.name ?? "Unbekannt"
-                                : "offen";
-                              const spielerNames = t.spielerIds
-                                .map(id => getSpielerDisplayName(id))
-                                .join(", ");
-
-                              return {
-                                'Datum': `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`,
-                                'Wochentag': dayNames[d.getDay()],
-                                'Uhrzeit': `${t.uhrzeitVon}–${t.uhrzeitBis}`,
-                                'Urspr. Trainer': ursprTrainer,
-                                'Spieler': spielerNames,
-                                'Vertretung': vertretungTrainer
-                              };
                             });
 
                           if (exportData.length === 0) {
@@ -8920,24 +8899,66 @@ Sportliche Grüße`
                             return;
                           }
 
-                          const ws = XLSX.utils.json_to_sheet(exportData);
-                          const wb = XLSX.utils.book_new();
-                          XLSX.utils.book_append_sheet(wb, ws, 'Vertretungen');
+                          const rows = exportData.map(({ vertretung: v, training: t }) => {
+                            const d = new Date(t.datum + "T12:00:00");
+                            const ursprTrainer = trainerById.get(t.trainerId || defaultTrainerId)?.name ?? "Unbekannt";
+                            const vertretungTrainer = v.vertretungTrainerId
+                              ? trainerById.get(v.vertretungTrainerId)?.name ?? ""
+                              : "";
+                            const spielerNames = t.spielerIds
+                              .map(id => getSpielerDisplayName(id))
+                              .join(", ");
 
-                          // Spaltenbreiten anpassen
-                          ws['!cols'] = [
-                            { wch: 12 },  // Datum
-                            { wch: 12 },  // Wochentag
-                            { wch: 12 },  // Uhrzeit
-                            { wch: 15 },  // Urspr. Trainer
-                            { wch: 30 },  // Spieler
-                            { wch: 15 }   // Vertretung
-                          ];
+                            return `
+                              <tr>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${t.uhrzeitVon}-${t.uhrzeitBis}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${ursprTrainer}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${spielerNames}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${vertretungTrainer}</td>
+                              </tr>
+                            `;
+                          }).join('');
 
-                          XLSX.writeFile(wb, `Vertretungen_${new Date().toISOString().split('T')[0]}.xlsx`);
+                          const tableHTML = `
+                            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                              <h2 style="margin-bottom: 16px; font-size: 18px;">Offene Vertretungen</h2>
+                              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                  <tr style="background: #f3f4f6;">
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Datum</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Uhrzeit</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Trainer fehlt</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Spieler</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Vertretung</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  ${rows}
+                                </tbody>
+                              </table>
+                            </div>
+                          `;
+
+                          const html2pdf = (await import('html2pdf.js')).default;
+                          const container = document.createElement('div');
+                          container.innerHTML = tableHTML;
+                          document.body.appendChild(container);
+
+                          await html2pdf()
+                            .set({
+                              margin: 10,
+                              filename: `Vertretungen_${new Date().toISOString().split('T')[0]}.pdf`,
+                              html2canvas: { scale: 2 },
+                              jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                            })
+                            .from(container)
+                            .save();
+
+                          document.body.removeChild(container);
                         }}
                       >
-                        Excel exportieren
+                        PDF exportieren
                       </button>
                     </div>
 
