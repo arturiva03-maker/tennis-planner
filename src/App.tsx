@@ -8877,8 +8877,9 @@ Sportliche Grüße`
                           const jetzt = new Date();
                           const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
-                          // Sammle alle offenen Vertretungen (zukünftig, nicht abgesagt)
+                          // Sammle nur offene Vertretungen (ohne Vertretungstrainer, zukünftig, nicht abgesagt)
                           const exportData = vertretungen
+                            .filter(v => !v.vertretungTrainerId) // Nur offene Vertretungen
                             .map(v => {
                               const training = trainings.find(t => t.id === v.trainingId);
                               if (!training) return null;
