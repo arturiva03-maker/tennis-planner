@@ -3471,7 +3471,10 @@ Deine Tennisschule`;
       }
 
       // Vertretung löschen wenn Datum, Trainer oder Uhrzeit geändert wurde
-      const trainerChanged = (existing.trainerId || defaultTrainerId) !== trainerIdForSave;
+      // Prüfe den effektiven Trainer (inkl. Vertretung), nicht nur den Original-Trainer
+      const existingVertretung = vertretungen.find(v => v.trainingId === selectedTrainingId);
+      const effectiveExistingTrainerId = existingVertretung?.vertretungTrainerId || existing.trainerId || defaultTrainerId;
+      const trainerChanged = effectiveExistingTrainerId !== trainerIdForSave;
       const datumChanged = existing.datum !== tDatum;
       const uhrzeitChanged = existing.uhrzeitVon !== tVon || existing.uhrzeitBis !== tBis;
 
