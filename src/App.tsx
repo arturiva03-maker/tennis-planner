@@ -1387,6 +1387,63 @@ export default function App() {
     training: Training | null;
   } | null>(null);
   const [vertretungNotifySending, setVertretungNotifySending] = useState(false);
+
+  // Undo-Funktion: Speichert Snapshot des States vor Änderungen
+  const [undoSnapshot, setUndoSnapshot] = useState<{
+    trainings: Training[];
+    spieler: Spieler[];
+    trainers: Trainer[];
+    tarife: Tarif[];
+    payments: PaymentsMap;
+    trainerPayments: TrainerPaymentsMap;
+    vertretungen: Vertretung[];
+    monthlyAdjustments: MonthlyAdjustments;
+    wirdAbgebucht: WirdAbgebuchtMap;
+    message: string;
+    timestamp: number;
+  } | null>(null);
+
+  // Undo ausführen
+  const undo = () => {
+    if (!undoSnapshot) return;
+    setTrainings(undoSnapshot.trainings);
+    setSpieler(undoSnapshot.spieler);
+    setTrainers(undoSnapshot.trainers);
+    setTarife(undoSnapshot.tarife);
+    setPayments(undoSnapshot.payments);
+    setTrainerPayments(undoSnapshot.trainerPayments);
+    setVertretungen(undoSnapshot.vertretungen);
+    setMonthlyAdjustments(undoSnapshot.monthlyAdjustments);
+    setWirdAbgebucht(undoSnapshot.wirdAbgebucht);
+    setUndoSnapshot(null);
+  };
+
+  // Snapshot speichern vor wichtigen Aktionen
+  const saveUndoSnapshot = (message: string) => {
+    setUndoSnapshot({
+      trainings,
+      spieler,
+      trainers,
+      tarife,
+      payments,
+      trainerPayments,
+      vertretungen,
+      monthlyAdjustments,
+      wirdAbgebucht,
+      message,
+      timestamp: Date.now(),
+    });
+  };
+
+  // Undo nach 60 Sekunden automatisch entfernen
+  useEffect(() => {
+    if (!undoSnapshot) return;
+    const timeout = setTimeout(() => {
+      setUndoSnapshot(null);
+    }, 60000);
+    return () => clearTimeout(timeout);
+  }, [undoSnapshot]);
+
   const [cancelNotifyDialog, setCancelNotifyDialog] = useState<{
     trainings: Training[];
     onConfirm: () => void;
@@ -2419,6 +2476,8 @@ export default function App() {
 
   function deleteTrainer(id: string) {
     if (trainers.length <= 1) return;
+    const trainerName = trainerById.get(id)?.name ?? "Trainer";
+    saveUndoSnapshot(`Trainer "${trainerName}" gelöscht`);
     const remaining = trainers.filter((t) => t.id !== id);
     const fallbackId = remaining[0]?.id ?? id;
     setTrainers(remaining);
@@ -2441,6 +2500,7 @@ export default function App() {
       return;
     }
 
+    saveUndoSnapshot(`Spieler "${name}" gelöscht`);
     setSpieler((prev) => prev.filter((s) => s.id !== id));
     setTrainings((prev) =>
       prev.map((t) => ({
@@ -2465,6 +2525,8 @@ export default function App() {
   }
 
   function deleteTarif(id: string) {
+    const tarifName = tarifById.get(id)?.name ?? "Tarif";
+    saveUndoSnapshot(`Tarif "${tarifName}" gelöscht`);
     setTarife((prev) => prev.filter((t) => t.id !== id));
     setTrainings((prev) =>
       prev.map((t) => ({
@@ -2934,6 +2996,8 @@ export default function App() {
     const existing = trainings.find((t) => t.id === id);
     if (!existing) return;
 
+    saveUndoSnapshot("Training gelöscht");
+
     // Bei Gruppentraining (mehr als 1 Spieler) mit monatlichem Tarif: Dialog öffnen
     const cfg = getPreisConfig(existing, tarifById);
     if (existing.spielerIds.length > 1 && cfg?.abrechnung === "monatlich") {
@@ -2958,6 +3022,7 @@ export default function App() {
   }
 
   function executeDeleteTrainings(trainingsList: Training[]) {
+    saveUndoSnapshot(`${trainingsList.length} Training(s) gelöscht`);
     const idsToDelete = new Set(trainingsList.map((t) => t.id));
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
@@ -3316,6 +3381,7 @@ Deine Tennisschule`;
       : undefined;
 
     if (selectedTrainingId && existing) {
+      saveUndoSnapshot("Training geändert");
       // Prüfen ob Status von "abgesagt" auf "geplant" geändert wird - Rücknahme des Abzugs anbieten
       if (
         !skipCancelCheck &&
@@ -12523,6 +12589,59 @@ Deine Tennisschule`;
           </div>
         );
       })()}
+
+      {/* Undo Toast */}
+      {undoSnapshot && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#1f2937",
+            color: "white",
+            padding: "12px 20px",
+            borderRadius: 8,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            zIndex: 9999,
+            fontSize: 14,
+          }}
+        >
+          <span>{undoSnapshot.message}</span>
+          <button
+            onClick={undo}
+            style={{
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              padding: "6px 14px",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            Rückgängig
+          </button>
+          <button
+            onClick={() => setUndoSnapshot(null)}
+            style={{
+              background: "transparent",
+              color: "#9ca3af",
+              border: "none",
+              padding: "4px 8px",
+              cursor: "pointer",
+              fontSize: 18,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </>
   );
 }
