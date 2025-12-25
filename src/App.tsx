@@ -3470,6 +3470,23 @@ Deine Tennisschule`;
         );
       }
 
+      // Vertretung löschen wenn Datum, Trainer oder Uhrzeit geändert wurde
+      const trainerChanged = (existing.trainerId || defaultTrainerId) !== trainerIdForSave;
+      const datumChanged = existing.datum !== tDatum;
+      const uhrzeitChanged = existing.uhrzeitVon !== tVon || existing.uhrzeitBis !== tBis;
+
+      if (datumChanged || trainerChanged || uhrzeitChanged) {
+        if (existing.serieId && applySerieScope === "abHeute") {
+          // Bei Serienänderung alle betroffenen Trainings
+          const serieTrainingIds = trainings
+            .filter((x) => x.serieId === existing.serieId && x.datum >= existing.datum)
+            .map((x) => x.id);
+          setVertretungen((prev) => prev.filter((v) => !serieTrainingIds.includes(v.trainingId)));
+        } else {
+          setVertretungen((prev) => prev.filter((v) => v.trainingId !== selectedTrainingId));
+        }
+      }
+
       resetTrainingForm();
       setTab("kalender");
       return;
