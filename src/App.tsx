@@ -1597,6 +1597,7 @@ export default function App() {
   const [manuellRechnungEmailBetreff, setManuellRechnungEmailBetreff] = useState("");
   const [showManuellRechnungPreview, setShowManuellRechnungPreview] = useState(false);
   const [manuellRechnungSending, setManuellRechnungSending] = useState(false);
+  const [manuellRechnungMitSepa, setManuellRechnungMitSepa] = useState(false);
   const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
   const [rechnungEmailText, setRechnungEmailText] = useState("");
   const [rechnungEmailSending, setRechnungEmailSending] = useState(false);
@@ -9863,6 +9864,18 @@ Sportliche Grüße`
                       </div>
                     </div>
 
+                    {/* SEPA-Daten Option */}
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={manuellRechnungMitSepa}
+                          onChange={(e) => setManuellRechnungMitSepa(e.target.checked)}
+                        />
+                        <span>SEPA-Daten einbinden (Bankverbindung für Überweisung)</span>
+                      </label>
+                    </div>
+
                     {/* E-Mail */}
                     <div style={{ marginBottom: 16 }}>
                       <div className="field" style={{ marginBottom: 12 }}>
@@ -9911,6 +9924,17 @@ Mit freundlichen Grüßen`}
                               .map(p => `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${p.beschreibung}</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td></tr>`)
                               .join("");
 
+                            const sepaHtml = manuellRechnungMitSepa ? `
+                                <div style="margin-top: 24px; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                                  <div style="font-weight: 600; margin-bottom: 12px;">Bankverbindung für Überweisung:</div>
+                                  <table style="font-size: 14px;">
+                                    ${profilFirmenname ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Empfänger:</td><td>${profilFirmenname}</td></tr>` : ""}
+                                    ${profilKontoIban ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">IBAN:</td><td>${profilKontoIban}</td></tr>` : ""}
+                                    ${profilAdresse ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Adresse:</td><td>${profilAdresse}</td></tr>` : ""}
+                                  </table>
+                                </div>
+                            ` : "";
+
                             const htmlBody = `
                               <div style="font-family: Arial, sans-serif; max-width: 600px;">
                                 <p>${manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)).replace(/\n/g, "<br>")}</p>
@@ -9931,6 +9955,7 @@ Mit freundlichen Grüßen`}
                                     </tr>
                                   </tfoot>
                                 </table>
+                                ${sepaHtml}
                               </div>
                             `;
 
@@ -10793,6 +10818,35 @@ Tennisschule A bis Z`);
                           </tr>
                         </tfoot>
                       </table>
+
+                      {/* SEPA-Daten wenn aktiviert */}
+                      {manuellRechnungMitSepa && (profilFirmenname || profilKontoIban) && (
+                        <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 8 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 12 }}>Bankverbindung für Überweisung:</div>
+                          <table style={{ fontSize: 14 }}>
+                            <tbody>
+                              {profilFirmenname && (
+                                <tr>
+                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Empfänger:</td>
+                                  <td>{profilFirmenname}</td>
+                                </tr>
+                              )}
+                              {profilKontoIban && (
+                                <tr>
+                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>IBAN:</td>
+                                  <td>{profilKontoIban}</td>
+                                </tr>
+                              )}
+                              {profilAdresse && (
+                                <tr>
+                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Adresse:</td>
+                                  <td>{profilAdresse}</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
 
                     <div className="row">
