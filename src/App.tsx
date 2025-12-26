@@ -9961,56 +9961,76 @@ Mit freundlichen Grüßen`}
                                 </div>
                             ` : "";
 
-                            // PDF HTML erstellen
+                            // Rechnungsnummer und Datum generieren
+                            const manuellRechnungNummer = `RE-${new Date().getFullYear()}${pad2(new Date().getMonth() + 1)}${pad2(new Date().getDate())}-${pad2(new Date().getHours())}${pad2(new Date().getMinutes())}${pad2(new Date().getSeconds())}`;
+                            const heute = new Date().toLocaleDateString("de-DE");
+
+                            // PDF HTML erstellen (gleiches Format wie SEPA/Überweisung)
                             const invoiceHTML = `
-                              <!DOCTYPE html>
-                              <html>
-                              <head>
-                                <meta charset="utf-8">
-                                <style>
-                                  body { font-family: Arial, sans-serif; padding: 40px; color: #1a1a1a; }
-                                  .header { margin-bottom: 40px; }
-                                  .recipient { margin-bottom: 30px; }
-                                  table { width: 100%; border-collapse: collapse; }
-                                  th { background: #f5f5f5; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
-                                  th:last-child { text-align: right; }
-                                  td { padding: 12px; border-bottom: 1px solid #eee; }
-                                  td:last-child { text-align: right; }
-                                  .total td { font-weight: bold; border-top: 2px solid #333; border-bottom: none; }
-                                  .sepa-box { margin-top: 30px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; }
-                                  .sepa-title { font-weight: 600; margin-bottom: 12px; color: #0369a1; }
-                                </style>
-                              </head>
-                              <body>
-                                <div class="header">
-                                  ${profilFirmenname ? `<div style="font-weight: bold; font-size: 18px;">${profilFirmenname}</div>` : ""}
-                                  ${profilAdresse ? `<div style="color: #666; font-size: 13px;">${profilAdresse}</div>` : ""}
-                                </div>
-                                <div class="recipient">
-                                  <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Rechnung an:</div>
-                                  <div style="font-weight: 600;">${getFullName(selectedSpieler)}</div>
-                                </div>
-                                <table>
-                                  <thead>
-                                    <tr>
-                                      <th>Beschreibung</th>
-                                      <th>Betrag</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    ${positionenHtml}
-                                  </tbody>
-                                  <tbody>
-                                    <tr class="total">
-                                      <td>Gesamt</td>
-                                      <td>${gesamtBetrag.toFixed(2)} €</td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                                ${sepaHtml}
-                              </body>
-                              </html>
-                            `;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Rechnung ${manuellRechnungNummer}</title>
+</head>
+<body style="margin: 0; padding: 40px; font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; background: #fff;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #0066cc;">
+    <div>
+      <h1 style="margin: 0; font-size: 18pt; color: #0066cc; font-weight: 600;">${profilFirmenname || "Tennisschule"}</h1>
+      <p style="margin: 4px 0 0 0; color: #666; font-size: 10pt;">${profilAdresse || ""}</p>
+    </div>
+    <div style="text-align: right;">
+      <h2 style="margin: 0 0 8px 0; font-size: 24pt; color: #0066cc;">RECHNUNG</h2>
+      <p style="margin: 0;"><strong>Nr.:</strong> ${manuellRechnungNummer}</p>
+      <p style="margin: 0;"><strong>Datum:</strong> ${heute}</p>
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+    <div style="min-width: 250px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Rechnungsempfänger</h3>
+      ${selectedSpieler.abweichenderEmpfaenger && selectedSpieler.empfaengerName ? `
+        <p style="margin: 0; font-size: 11pt;"><strong>${selectedSpieler.empfaengerName}</strong></p>
+        <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
+      ` : `
+        <p style="margin: 0; font-size: 11pt;"><strong>${getFullName(selectedSpieler)}</strong></p>
+        <p style="margin: 0; font-size: 11pt;">${selectedSpieler.rechnungsAdresse || ""}</p>
+      `}
+    </div>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+    <thead>
+      <tr style="background: #f8f9fa;">
+        <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; font-size: 10pt; text-transform: uppercase;">Beschreibung</th>
+        <th style="padding: 12px; text-align: right; font-weight: 600; border-bottom: 2px solid #dee2e6; font-size: 10pt; text-transform: uppercase;">Betrag</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${positionenHtml}
+      <tr>
+        <td style="padding: 16px 12px 12px 12px; font-weight: 700; font-size: 14pt; border-top: 2px solid #0066cc;">Gesamtbetrag</td>
+        <td style="padding: 16px 12px 12px 12px; font-weight: 700; font-size: 14pt; border-top: 2px solid #0066cc; text-align: right;">${gesamtBetrag.toFixed(2)} €</td>
+      </tr>
+    </tbody>
+  </table>
+
+  ${manuellRechnungMitSepa ? `
+  <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-top: 20px; font-size: 10pt;">
+    <strong>SEPA-Lastschrift:</strong> Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatumFormatted}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.<br><br>
+    <strong>IBAN:</strong> ${maskedIban}<br>
+    ${selectedSpieler.mandatsreferenz ? `<strong>Mandatsreferenz:</strong> ${selectedSpieler.mandatsreferenz}<br>` : ""}
+    ${selectedSpieler.unterschriftsdatum ? `<strong>Mandatsdatum:</strong> ${new Date(selectedSpieler.unterschriftsdatum).toLocaleDateString("de-DE")}<br>` : ""}
+    ${profilGlaeubigerId ? `<strong>Gläubiger-ID:</strong> ${profilGlaeubigerId}` : ""}
+  </div>
+  ` : ""}
+
+  <p style="margin-top: 20px; font-size: 9pt; color: #666;">
+    Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).<br>
+    <strong>Steuernummer:</strong> 04616601801
+  </p>
+</body>
+</html>`;
 
                             // PDF generieren
                             const html2pdf = (await import('html2pdf.js')).default;
@@ -10033,7 +10053,7 @@ Mit freundlichen Grüßen`}
                             const pdfBlob = await html2pdf()
                               .set({
                                 margin: 10,
-                                filename: `Rechnung_Manuell.pdf`,
+                                filename: `Rechnung_${manuellRechnungNummer}.pdf`,
                                 image: { type: 'jpeg', quality: 0.98 },
                                 html2canvas: { scale: 2, useCORS: true, logging: false },
                                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -10064,7 +10084,7 @@ Mit freundlichen Grüßen`}
                                 body: manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)),
                                 html: emailBody,
                                 attachment: {
-                                  filename: `Rechnung_Manuell.pdf`,
+                                  filename: `Rechnung_${manuellRechnungNummer}.pdf`,
                                   content: pdfBase64,
                                   encoding: 'base64',
                                   contentType: 'application/pdf'
