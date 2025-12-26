@@ -1586,8 +1586,17 @@ export default function App() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   });
   const [showRechnungPreview, setShowRechnungPreview] = useState(false);
-  const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung">("sepa");
+  const [rechnungVorlage, setRechnungVorlage] = useState<"sepa" | "ueberweisung" | "manuell">("sepa");
   const [showRechnungEmailDialog, setShowRechnungEmailDialog] = useState(false);
+
+  // Manuelle Rechnung States
+  const [manuellRechnungSpielerId, setManuellRechnungSpielerId] = useState<string>("");
+  const [manuellRechnungPositionen, setManuellRechnungPositionen] = useState<{beschreibung: string; betrag: number}[]>([]);
+  const [manuellRechnungNeuePosition, setManuellRechnungNeuePosition] = useState({beschreibung: "", betrag: ""});
+  const [manuellRechnungEmailText, setManuellRechnungEmailText] = useState("");
+  const [manuellRechnungEmailBetreff, setManuellRechnungEmailBetreff] = useState("");
+  const [showManuellRechnungPreview, setShowManuellRechnungPreview] = useState(false);
+  const [manuellRechnungSending, setManuellRechnungSending] = useState(false);
   const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
   const [rechnungEmailText, setRechnungEmailText] = useState("");
   const [rechnungEmailSending, setRechnungEmailSending] = useState(false);
@@ -9761,9 +9770,206 @@ Sportliche Grüße`
                   >
                     Überweisung
                   </button>
+                  <button
+                    className={`btn ${rechnungVorlage === "manuell" ? "" : "btnGhost"}`}
+                    onClick={() => setRechnungVorlage("manuell")}
+                    style={{ flex: 1 }}
+                  >
+                    Manuell
+                  </button>
                 </div>
 
-                {/* Profil SEPA-Einstellungen */}
+                {/* Manuelle Rechnung */}
+                {rechnungVorlage === "manuell" && (
+                  <div className="card cardInset" style={{ marginBottom: 24 }}>
+                    <h3>Manuelle Rechnung erstellen</h3>
+
+                    {/* Spieler-Auswahl */}
+                    <div className="field" style={{ marginBottom: 16 }}>
+                      <label>Spieler</label>
+                      <select
+                        value={manuellRechnungSpielerId}
+                        onChange={(e) => setManuellRechnungSpielerId(e.target.value)}
+                      >
+                        <option value="">-- Spieler wählen --</option>
+                        {spieler
+                          .filter(s => s.kontaktEmail)
+                          .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {getFullName(s)} ({s.kontaktEmail})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    {/* Positionen */}
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontWeight: 600, marginBottom: 8, display: "block" }}>Positionen</label>
+
+                      {manuellRechnungPositionen.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                          {manuellRechnungPositionen.map((pos, idx) => (
+                            <div key={idx} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "8px 12px", background: "var(--bg-card)", borderRadius: 6 }}>
+                              <span style={{ flex: 1 }}>{pos.beschreibung}</span>
+                              <span style={{ fontWeight: 600 }}>{pos.betrag.toFixed(2)} €</span>
+                              <button
+                                className="btn btnGhost"
+                                style={{ padding: "4px 8px", fontSize: 12 }}
+                                onClick={() => setManuellRechnungPositionen(prev => prev.filter((_, i) => i !== idx))}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                          <div style={{ display: "flex", justifyContent: "flex-end", fontWeight: 600, marginTop: 8 }}>
+                            Gesamt: {manuellRechnungPositionen.reduce((sum, p) => sum + p.betrag, 0).toFixed(2)} €
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Neue Position hinzufügen */}
+                      <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                        <div className="field" style={{ flex: 2 }}>
+                          <label>Beschreibung</label>
+                          <input
+                            value={manuellRechnungNeuePosition.beschreibung}
+                            onChange={(e) => setManuellRechnungNeuePosition(prev => ({ ...prev, beschreibung: e.target.value }))}
+                            placeholder="z.B. Trainerstunde Januar"
+                          />
+                        </div>
+                        <div className="field" style={{ flex: 1 }}>
+                          <label>Betrag (€)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={manuellRechnungNeuePosition.betrag}
+                            onChange={(e) => setManuellRechnungNeuePosition(prev => ({ ...prev, betrag: e.target.value }))}
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <button
+                          className="btn"
+                          disabled={!manuellRechnungNeuePosition.beschreibung || !manuellRechnungNeuePosition.betrag}
+                          onClick={() => {
+                            const betrag = parseFloat(manuellRechnungNeuePosition.betrag);
+                            if (isNaN(betrag)) return;
+                            setManuellRechnungPositionen(prev => [...prev, { beschreibung: manuellRechnungNeuePosition.beschreibung, betrag }]);
+                            setManuellRechnungNeuePosition({ beschreibung: "", betrag: "" });
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* E-Mail */}
+                    <div style={{ marginBottom: 16 }}>
+                      <div className="field" style={{ marginBottom: 12 }}>
+                        <label>E-Mail Betreff</label>
+                        <input
+                          value={manuellRechnungEmailBetreff}
+                          onChange={(e) => setManuellRechnungEmailBetreff(e.target.value)}
+                          placeholder="Rechnung für Tennisunterricht"
+                        />
+                      </div>
+                      <div className="field">
+                        <label>E-Mail Text</label>
+                        <textarea
+                          value={manuellRechnungEmailText}
+                          onChange={(e) => setManuellRechnungEmailText(e.target.value)}
+                          rows={6}
+                          placeholder={`Hallo [Name],
+
+anbei erhältst du deine Rechnung.
+
+Mit freundlichen Grüßen`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Aktionen */}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn"
+                        disabled={!manuellRechnungSpielerId || manuellRechnungPositionen.length === 0}
+                        onClick={() => setShowManuellRechnungPreview(true)}
+                      >
+                        Vorschau
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={!manuellRechnungSpielerId || manuellRechnungPositionen.length === 0 || !manuellRechnungEmailBetreff || !manuellRechnungEmailText || manuellRechnungSending}
+                        onClick={async () => {
+                          const selectedSpieler = spielerById.get(manuellRechnungSpielerId);
+                          if (!selectedSpieler?.kontaktEmail) return;
+
+                          setManuellRechnungSending(true);
+                          try {
+                            const gesamtBetrag = manuellRechnungPositionen.reduce((sum, p) => sum + p.betrag, 0);
+                            const positionenHtml = manuellRechnungPositionen
+                              .map(p => `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${p.beschreibung}</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td></tr>`)
+                              .join("");
+
+                            const htmlBody = `
+                              <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                                <p>${manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)).replace(/\n/g, "<br>")}</p>
+                                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                                  <thead>
+                                    <tr style="background: #f5f5f5;">
+                                      <th style="padding: 8px; text-align: left;">Beschreibung</th>
+                                      <th style="padding: 8px; text-align: right;">Betrag</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    ${positionenHtml}
+                                  </tbody>
+                                  <tfoot>
+                                    <tr style="font-weight: bold;">
+                                      <td style="padding: 8px;">Gesamt</td>
+                                      <td style="padding: 8px; text-align: right;">${gesamtBetrag.toFixed(2)} €</td>
+                                    </tr>
+                                  </tfoot>
+                                </table>
+                              </div>
+                            `;
+
+                            const res = await fetch("/api/send-newsletter", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                recipients: [{ email: selectedSpieler.kontaktEmail, name: getFullName(selectedSpieler) }],
+                                subject: manuellRechnungEmailBetreff,
+                                body: manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)),
+                                html: htmlBody,
+                              }),
+                            });
+
+                            if (res.ok) {
+                              alert("Rechnung erfolgreich per E-Mail versendet!");
+                              setManuellRechnungSpielerId("");
+                              setManuellRechnungPositionen([]);
+                              setManuellRechnungEmailBetreff("");
+                              setManuellRechnungEmailText("");
+                            } else {
+                              alert("Fehler beim Versenden der E-Mail");
+                            }
+                          } catch (err) {
+                            alert("Fehler beim Versenden der E-Mail");
+                          } finally {
+                            setManuellRechnungSending(false);
+                          }
+                        }}
+                      >
+                        {manuellRechnungSending ? "Wird gesendet..." : "Per E-Mail senden"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Profil SEPA-Einstellungen - nur bei SEPA/Überweisung */}
+                {rechnungVorlage !== "manuell" && (
+                  <>
                 <div className="card cardInset" style={{ marginBottom: 24 }}>
                   <h3>Meine SEPA-Daten (Gläubiger)</h3>
                   <div className="row">
@@ -10009,6 +10215,8 @@ Sportliche Grüße`
                     );
                   })()}
                 </div>
+                </>
+                )}
               </div>
             )}
 
@@ -10527,6 +10735,71 @@ Tennisschule A bis Z`);
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Manuelle Rechnungs-Vorschau Modal */}
+            {showManuellRechnungPreview && manuellRechnungSpielerId && (() => {
+              const selectedSpieler = spielerById.get(manuellRechnungSpielerId);
+              if (!selectedSpieler) return null;
+
+              const gesamtBetrag = manuellRechnungPositionen.reduce((sum, p) => sum + p.betrag, 0);
+
+              return (
+                <div className="modal" onClick={() => setShowManuellRechnungPreview(false)}>
+                  <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
+                    <h2 style={{ marginBottom: 16 }}>Manuelle Rechnungsvorschau</h2>
+
+                    <div style={{
+                      background: "white",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: 24,
+                      marginBottom: 16,
+                      fontFamily: "Arial, sans-serif",
+                      color: "#1a1a1a"
+                    }}>
+                      {/* Header */}
+                      <div style={{ marginBottom: 24 }}>
+                        <div style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Rechnung an:</div>
+                        <div style={{ fontWeight: 600 }}>{getFullName(selectedSpieler)}</div>
+                        {selectedSpieler.kontaktEmail && (
+                          <div style={{ fontSize: 13, color: "#666" }}>{selectedSpieler.kontaktEmail}</div>
+                        )}
+                      </div>
+
+                      {/* Positionen Tabelle */}
+                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
+                        <thead>
+                          <tr style={{ background: "#f5f5f5" }}>
+                            <th style={{ padding: 10, textAlign: "left", borderBottom: "2px solid #ddd" }}>Beschreibung</th>
+                            <th style={{ padding: 10, textAlign: "right", borderBottom: "2px solid #ddd", width: 100 }}>Betrag</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {manuellRechnungPositionen.map((pos, idx) => (
+                            <tr key={idx}>
+                              <td style={{ padding: 10, borderBottom: "1px solid #eee" }}>{pos.beschreibung}</td>
+                              <td style={{ padding: 10, borderBottom: "1px solid #eee", textAlign: "right" }}>{pos.betrag.toFixed(2)} €</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ fontWeight: 600 }}>
+                            <td style={{ padding: 10, borderTop: "2px solid #333" }}>Gesamt</td>
+                            <td style={{ padding: 10, borderTop: "2px solid #333", textAlign: "right" }}>{gesamtBetrag.toFixed(2)} €</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+
+                    <div className="row">
+                      <button className="btn btnGhost" onClick={() => setShowManuellRechnungPreview(false)}>
+                        Schließen
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
