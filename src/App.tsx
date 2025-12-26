@@ -9936,7 +9936,7 @@ Mit freundlichen Grüßen`}
                           try {
                             const gesamtBetrag = manuellRechnungPositionen.reduce((sum, p) => sum + p.betrag, 0);
                             const positionenHtml = manuellRechnungPositionen
-                              .map(p => `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${p.beschreibung}</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td></tr>`)
+                              .map(p => `<tr><td style="padding: 12px; border-bottom: 1px solid #eee;">${p.beschreibung}</td><td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td></tr>`)
                               .join("");
 
                             const abbuchungsDatumFormatted = (() => {
@@ -9961,29 +9961,99 @@ Mit freundlichen Grüßen`}
                                 </div>
                             ` : "";
 
-                            const htmlBody = `
-                              <div style="font-family: Arial, sans-serif; max-width: 600px;">
-                                <p>${manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)).replace(/\n/g, "<br>")}</p>
-                                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                            // PDF HTML erstellen
+                            const invoiceHTML = `
+                              <!DOCTYPE html>
+                              <html>
+                              <head>
+                                <meta charset="utf-8">
+                                <style>
+                                  body { font-family: Arial, sans-serif; padding: 40px; color: #1a1a1a; }
+                                  .header { margin-bottom: 40px; }
+                                  .recipient { margin-bottom: 30px; }
+                                  table { width: 100%; border-collapse: collapse; }
+                                  th { background: #f5f5f5; padding: 12px; text-align: left; border-bottom: 2px solid #ddd; }
+                                  th:last-child { text-align: right; }
+                                  td { padding: 12px; border-bottom: 1px solid #eee; }
+                                  td:last-child { text-align: right; }
+                                  .total td { font-weight: bold; border-top: 2px solid #333; border-bottom: none; }
+                                  .sepa-box { margin-top: 30px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; }
+                                  .sepa-title { font-weight: 600; margin-bottom: 12px; color: #0369a1; }
+                                </style>
+                              </head>
+                              <body>
+                                <div class="header">
+                                  ${profilFirmenname ? `<div style="font-weight: bold; font-size: 18px;">${profilFirmenname}</div>` : ""}
+                                  ${profilAdresse ? `<div style="color: #666; font-size: 13px;">${profilAdresse}</div>` : ""}
+                                </div>
+                                <div class="recipient">
+                                  <div style="color: #666; font-size: 12px; margin-bottom: 4px;">Rechnung an:</div>
+                                  <div style="font-weight: 600;">${getFullName(selectedSpieler)}</div>
+                                </div>
+                                <table>
                                   <thead>
-                                    <tr style="background: #f5f5f5;">
-                                      <th style="padding: 8px; text-align: left;">Beschreibung</th>
-                                      <th style="padding: 8px; text-align: right;">Betrag</th>
+                                    <tr>
+                                      <th>Beschreibung</th>
+                                      <th>Betrag</th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     ${positionenHtml}
                                   </tbody>
-                                  <tfoot>
-                                    <tr style="font-weight: bold;">
-                                      <td style="padding: 8px;">Gesamt</td>
-                                      <td style="padding: 8px; text-align: right;">${gesamtBetrag.toFixed(2)} €</td>
+                                  <tbody>
+                                    <tr class="total">
+                                      <td>Gesamt</td>
+                                      <td>${gesamtBetrag.toFixed(2)} €</td>
                                     </tr>
-                                  </tfoot>
+                                  </tbody>
                                 </table>
                                 ${sepaHtml}
-                              </div>
+                              </body>
+                              </html>
                             `;
+
+                            // PDF generieren
+                            const html2pdf = (await import('html2pdf.js')).default;
+                            const iframe = document.createElement('iframe');
+                            iframe.style.cssText = 'position:fixed;top:0;left:0;width:210mm;height:297mm;opacity:0;pointer-events:none;z-index:-1';
+                            document.body.appendChild(iframe);
+
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                            if (iframeDoc) {
+                              iframeDoc.open();
+                              iframeDoc.write(invoiceHTML);
+                              iframeDoc.close();
+                            }
+
+                            await new Promise(resolve => setTimeout(resolve, 500));
+
+                            const container = iframeDoc?.body || iframe.contentDocument?.body;
+                            if (!container) throw new Error('Container nicht gefunden');
+
+                            const pdfBlob = await html2pdf()
+                              .set({
+                                margin: 10,
+                                filename: `Rechnung_Manuell.pdf`,
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { scale: 2, useCORS: true, logging: false },
+                                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                              })
+                              .from(container)
+                              .outputPdf('blob');
+
+                            document.body.removeChild(iframe);
+
+                            // Blob zu Base64 konvertieren
+                            const reader = new FileReader();
+                            const pdfBase64 = await new Promise<string>((resolve) => {
+                              reader.onloadend = () => {
+                                const base64 = (reader.result as string).split(',')[1];
+                                resolve(base64);
+                              };
+                              reader.readAsDataURL(pdfBlob);
+                            });
+
+                            const emailBody = manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)).replace(/\n/g, "<br>");
 
                             const res = await fetch("/api/send-newsletter", {
                               method: "POST",
@@ -9992,7 +10062,13 @@ Mit freundlichen Grüßen`}
                                 to: [selectedSpieler.kontaktEmail],
                                 subject: manuellRechnungEmailBetreff,
                                 body: manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)),
-                                html: htmlBody,
+                                html: emailBody,
+                                attachment: {
+                                  filename: `Rechnung_Manuell.pdf`,
+                                  content: pdfBase64,
+                                  encoding: 'base64',
+                                  contentType: 'application/pdf'
+                                }
                               }),
                             });
 
@@ -10003,9 +10079,11 @@ Mit freundlichen Grüßen`}
                               setManuellRechnungEmailBetreff("");
                               setManuellRechnungEmailText("");
                             } else {
-                              alert("Fehler beim Versenden der E-Mail");
+                              const errorData = await res.json();
+                              alert("Fehler beim Versenden: " + (errorData.error || "Unbekannter Fehler"));
                             }
                           } catch (err) {
+                            console.error("E-Mail senden fehlgeschlagen:", err);
                             alert("Fehler beim Versenden der E-Mail");
                           } finally {
                             setManuellRechnungSending(false);
