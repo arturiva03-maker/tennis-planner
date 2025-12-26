@@ -9989,7 +9989,7 @@ Mit freundlichen Grüßen`}
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({
-                                recipients: [{ email: selectedSpieler.kontaktEmail, name: getFullName(selectedSpieler) }],
+                                to: [selectedSpieler.kontaktEmail],
                                 subject: manuellRechnungEmailBetreff,
                                 body: manuellRechnungEmailText.replace(/\[Name\]/g, getFullName(selectedSpieler)),
                                 html: htmlBody,
