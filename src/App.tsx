@@ -1598,6 +1598,11 @@ export default function App() {
   const [showManuellRechnungPreview, setShowManuellRechnungPreview] = useState(false);
   const [manuellRechnungSending, setManuellRechnungSending] = useState(false);
   const [manuellRechnungMitSepa, setManuellRechnungMitSepa] = useState(false);
+  const [manuellRechnungAbbuchungsDatum, setManuellRechnungAbbuchungsDatum] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split("T")[0];
+  });
   const [rechnungEmailBetreff, setRechnungEmailBetreff] = useState("");
   const [rechnungEmailText, setRechnungEmailText] = useState("");
   const [rechnungEmailSending, setRechnungEmailSending] = useState(false);
@@ -9864,16 +9869,26 @@ Sportliche Grüße`
                       </div>
                     </div>
 
-                    {/* SEPA-Daten Option */}
+                    {/* SEPA-Lastschrift Option */}
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8 }}>
                         <input
                           type="checkbox"
                           checked={manuellRechnungMitSepa}
                           onChange={(e) => setManuellRechnungMitSepa(e.target.checked)}
                         />
-                        <span>SEPA-Daten einbinden (Bankverbindung für Überweisung)</span>
+                        <span>SEPA-Lastschrift-Informationen einbinden</span>
                       </label>
+                      {manuellRechnungMitSepa && (
+                        <div className="field" style={{ marginLeft: 24, maxWidth: 200 }}>
+                          <label>Abbuchungsdatum</label>
+                          <input
+                            type="date"
+                            value={manuellRechnungAbbuchungsDatum}
+                            onChange={(e) => setManuellRechnungAbbuchungsDatum(e.target.value)}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* E-Mail */}
@@ -9924,13 +9939,24 @@ Mit freundlichen Grüßen`}
                               .map(p => `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;">${p.beschreibung}</td><td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${p.betrag.toFixed(2)} €</td></tr>`)
                               .join("");
 
+                            const abbuchungsDatumFormatted = (() => {
+                              const [y, m, d] = manuellRechnungAbbuchungsDatum.split("-");
+                              return d && m && y ? `${d}.${m}.${y}` : manuellRechnungAbbuchungsDatum;
+                            })();
+                            const maskedIban = selectedSpieler.iban
+                              ? selectedSpieler.iban.replace(/\s/g, "").replace(/(.{4})(.*)(.{4})/, (_, start, middle, end) => start + middle.replace(/./g, "*") + end)
+                              : "---";
+
                             const sepaHtml = manuellRechnungMitSepa ? `
-                                <div style="margin-top: 24px; padding: 16px; background: #f9fafb; border-radius: 8px;">
-                                  <div style="font-weight: 600; margin-bottom: 12px;">Bankverbindung für Überweisung:</div>
+                                <div style="margin-top: 24px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px;">
+                                  <div style="font-weight: 600; margin-bottom: 12px; color: #0369a1;">SEPA-Lastschrift</div>
+                                  <p style="margin: 0 0 12px 0;">
+                                    Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatumFormatted}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.
+                                  </p>
                                   <table style="font-size: 14px;">
-                                    ${profilFirmenname ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Empfänger:</td><td>${profilFirmenname}</td></tr>` : ""}
-                                    ${profilKontoIban ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">IBAN:</td><td>${profilKontoIban}</td></tr>` : ""}
-                                    ${profilAdresse ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Adresse:</td><td>${profilAdresse}</td></tr>` : ""}
+                                    <tr><td style="padding: 2px 12px 2px 0; color: #666;">Ihre IBAN:</td><td>${maskedIban}</td></tr>
+                                    ${selectedSpieler.mandatsreferenz ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Mandatsreferenz:</td><td>${selectedSpieler.mandatsreferenz}</td></tr>` : ""}
+                                    ${profilGlaeubigerId ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Gläubiger-ID:</td><td>${profilGlaeubigerId}</td></tr>` : ""}
                                   </table>
                                 </div>
                             ` : "";
@@ -10819,34 +10845,43 @@ Tennisschule A bis Z`);
                         </tfoot>
                       </table>
 
-                      {/* SEPA-Daten wenn aktiviert */}
-                      {manuellRechnungMitSepa && (profilFirmenname || profilKontoIban) && (
-                        <div style={{ marginTop: 24, padding: 16, background: "#f9fafb", borderRadius: 8 }}>
-                          <div style={{ fontWeight: 600, marginBottom: 12 }}>Bankverbindung für Überweisung:</div>
-                          <table style={{ fontSize: 14 }}>
-                            <tbody>
-                              {profilFirmenname && (
+                      {/* SEPA-Lastschrift wenn aktiviert */}
+                      {manuellRechnungMitSepa && (() => {
+                        const [y, m, d] = manuellRechnungAbbuchungsDatum.split("-");
+                        const abbuchungsDatumFormatted = d && m && y ? `${d}.${m}.${y}` : manuellRechnungAbbuchungsDatum;
+                        const maskedIban = selectedSpieler.iban
+                          ? selectedSpieler.iban.replace(/\s/g, "").replace(/(.{4})(.*)(.{4})/, (_, start, middle, end) => start + middle.replace(/./g, "*") + end)
+                          : "---";
+
+                        return (
+                          <div style={{ marginTop: 24, padding: 16, background: "#f0f9ff", border: "1px solid #0ea5e9", borderRadius: 8 }}>
+                            <div style={{ fontWeight: 600, marginBottom: 12, color: "#0369a1" }}>SEPA-Lastschrift</div>
+                            <p style={{ margin: "0 0 12px 0" }}>
+                              Der Betrag von <strong>{gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>{abbuchungsDatumFormatted}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.
+                            </p>
+                            <table style={{ fontSize: 14 }}>
+                              <tbody>
                                 <tr>
-                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Empfänger:</td>
-                                  <td>{profilFirmenname}</td>
+                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Ihre IBAN:</td>
+                                  <td>{maskedIban}</td>
                                 </tr>
-                              )}
-                              {profilKontoIban && (
-                                <tr>
-                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>IBAN:</td>
-                                  <td>{profilKontoIban}</td>
-                                </tr>
-                              )}
-                              {profilAdresse && (
-                                <tr>
-                                  <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Adresse:</td>
-                                  <td>{profilAdresse}</td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
+                                {selectedSpieler.mandatsreferenz && (
+                                  <tr>
+                                    <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Mandatsreferenz:</td>
+                                    <td>{selectedSpieler.mandatsreferenz}</td>
+                                  </tr>
+                                )}
+                                {profilGlaeubigerId && (
+                                  <tr>
+                                    <td style={{ padding: "2px 12px 2px 0", color: "#666" }}>Gläubiger-ID:</td>
+                                    <td>{profilGlaeubigerId}</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="row">
