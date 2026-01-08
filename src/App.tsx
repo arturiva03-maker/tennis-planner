@@ -3397,6 +3397,7 @@ Deine Tennisschule`;
 
     if (selectedTrainingId && existing) {
       saveUndoSnapshot("Training geändert");
+      
       // Prüfen ob Status von "abgesagt" auf "geplant" geändert wird - Rücknahme des Abzugs anbieten
       if (
         !skipCancelCheck &&
@@ -3509,9 +3510,24 @@ Deine Tennisschule`;
         }
       }
 
+      // Vertretungs-Logik prüfen
+      const existingVertretung = vertretungen.find(v => v.trainingId === selectedTrainingId);
+      const effectiveExistingTrainerId = existingVertretung?.vertretungTrainerId || existing.trainerId || defaultTrainerId;
+      
+      // Hat sich der Trainer gegenüber dem *aktuell angezeigten* (effektiven) Trainer geändert?
+      const hasTrainerChanged = effectiveExistingTrainerId !== trainerIdForSave;
+
+      // Bestimme die Trainer-ID für das Update
+      // Wenn eine Vertretung existiert UND der Trainer im Formular nicht geändert wurde:
+      // Behalte den ORIGINALEN Trainer bei (nicht den Vertretungstrainer in das Training-Objekt schreiben)
+      let finalTrainerId = trainerIdForSave;
+      if (existingVertretung && !hasTrainerChanged) {
+        finalTrainerId = existing.trainerId || defaultTrainerId;
+      }
+
       const payload: Training = {
         ...existing,
-        trainerId: trainerIdForSave,
+        trainerId: finalTrainerId,
         datum: tDatum,
         uhrzeitVon: tVon,
         uhrzeitBis: tBis,
@@ -3530,11 +3546,17 @@ Deine Tennisschule`;
           prev.map((x) => {
             if (!x.serieId || x.serieId !== sid) return x;
             if (x.datum < existing.datum) return x;
+            
+            // Delta-Logik für Serie: Nur ändern was sich geändert hat
+            // Besonders wichtig für Trainer: Nur überschreiben wenn explizit geändert
+            
             return {
               ...x,
+              // Trainer nur ändern wenn er explizit geändert wurde, sonst den jeweiligen Original-Trainer behalten
+              trainerId: hasTrainerChanged ? payload.trainerId : x.trainerId, 
+              
               uhrzeitVon: payload.uhrzeitVon,
               uhrzeitBis: payload.uhrzeitBis,
-              trainerId: payload.trainerId,
               tarifId: payload.tarifId,
               spielerIds: payload.spielerIds,
               status: payload.status,
@@ -3552,14 +3574,10 @@ Deine Tennisschule`;
       }
 
       // Vertretung löschen wenn Datum, Trainer oder Uhrzeit geändert wurde
-      // Prüfe den effektiven Trainer (inkl. Vertretung), nicht nur den Original-Trainer
-      const existingVertretung = vertretungen.find(v => v.trainingId === selectedTrainingId);
-      const effectiveExistingTrainerId = existingVertretung?.vertretungTrainerId || existing.trainerId || defaultTrainerId;
-      const trainerChanged = effectiveExistingTrainerId !== trainerIdForSave;
       const datumChanged = existing.datum !== tDatum;
       const uhrzeitChanged = existing.uhrzeitVon !== tVon || existing.uhrzeitBis !== tBis;
 
-      if (datumChanged || trainerChanged || uhrzeitChanged) {
+      if (datumChanged || hasTrainerChanged || uhrzeitChanged) {
         if (existing.serieId && applySerieScope === "abHeute") {
           // Bei Serienänderung alle betroffenen Trainings
           const serieTrainingIds = trainings
