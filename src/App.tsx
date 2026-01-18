@@ -332,282 +332,44 @@ function trainerMonthSettledKey(monat: string, trainerId: string) {
   return `${monat}__${trainerId}`;
 }
 
-function generateInvoiceHTML(data: {
-  trainerName: string;
-  trainerAdresse: string;
-  ustIdNr: string;
-  stundenAnzahl: number;
-  stundensatz: number;
-  kleinunternehmer: boolean;
-  iban: string;
-  leistungszeitraum: string;
-}): string {
-  const {
-    trainerName,
-    trainerAdresse,
-    ustIdNr,
-    stundenAnzahl,
-    stundensatz,
-    kleinunternehmer,
-    iban,
-    leistungszeitraum,
-  } = data;
+function durationMin(von: string, bis: string) {
+  const a = toMinutes(von);
+  const b = toMinutes(bis);
+  return Math.max(0, b - a);
+}
 
-  const rechnungsnummer = `RG-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
-  const rechnungsdatum = new Date().toLocaleDateString('de-DE');
-  const zwischensumme = stundenAnzahl * stundensatz;
-  const mwst = kleinunternehmer ? 0 : zwischensumme * 0.19;
-  const gesamtbetrag = zwischensumme + mwst;
+function getFullName(s: Spieler) {
+  return s.nachname ? `${s.vorname} ${s.nachname}` : s.vorname;
+}
 
-  const formatEuro = (amount: number) => amount.toFixed(2).replace('.', ',') + ' €';
-  const adresseHtml = trainerAdresse.split('\n').map(line => `${line}`).join('<br>');
+function getPreisConfig(
+  t: Training,
+  tarifByIdMap: Map<string, Tarif>
+): {
+  preisProStunde: number;
+  abrechnung: "proTraining" | "proSpieler" | "monatlich";
+} | null {
+  if (t.tarifId) {
+    const tarif = tarifByIdMap.get(t.tarifId);
+    if (tarif) {
+      return {
+        preisProStunde: tarif.preisProStunde,
+        abrechnung: tarif.abrechnung,
+      };
+    }
+  }
 
-  return `<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rechnung ${rechnungsnummer}</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 12pt;
-      line-height: 1.5;
-      color: #333;
-      padding: 2cm;
-      max-width: 21cm;
-      margin: 0 auto;
-    }
-    .header {
-      margin-bottom: 2cm;
-    }
-    .title {
-      font-size: 24pt;
-      font-weight: bold;
-      margin-bottom: 1.5cm;
-      color: #1a1a1a;
-    }
-    .addresses {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1cm;
-    }
-    .address-block {
-      width: 45%;
-    }
-    .address-label {
-      font-size: 10pt;
-      color: #666;
-      margin-bottom: 0.3cm;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .address-content {
-      font-size: 11pt;
-    }
-    .meta-info {
-      margin-top: 1cm;
-      margin-bottom: 1cm;
-      padding: 0.5cm;
-      background-color: #f8f8f8;
-      border-radius: 4px;
-    }
-    .meta-row {
-      display: flex;
-      margin-bottom: 0.2cm;
-    }
-    .meta-label {
-      width: 160px;
-      font-weight: bold;
-    }
-    .content {
-      margin-top: 1cm;
-      margin-bottom: 1cm;
-    }
-    .intro {
-      margin-bottom: 1cm;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1cm 0;
-    }
-    th, td {
-      padding: 0.3cm 0.5cm;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    th {
-      background-color: #f5f5f5;
-      font-weight: bold;
-    }
-    .text-right {
-      text-align: right;
-    }
-    .summary-table {
-      width: 50%;
-      margin-left: auto;
-      margin-top: 0.5cm;
-    }
-    .summary-table td {
-      border-bottom: none;
-      padding: 0.2cm 0.5cm;
-    }
-    .summary-table .total-row td {
-      border-top: 2px solid #333;
-      font-weight: bold;
-      font-size: 14pt;
-      padding-top: 0.4cm;
-    }
-    .kleinunternehmer-note {
-      margin-top: 0.5cm;
-      font-size: 10pt;
-      color: #666;
-      font-style: italic;
-    }
-    .payment-info {
-      margin-top: 1.5cm;
-      padding: 0.5cm;
-      background-color: #f0f7ff;
-      border-radius: 4px;
-    }
-    .payment-info strong {
-      display: block;
-      margin-bottom: 0.3cm;
-    }
-    .footer {
-      margin-top: 2cm;
-    }
-    .signature {
-      margin-top: 1.5cm;
-    }
-    @media print {
-      body {
-        padding: 0;
-      }
-      @page {
-        margin: 2cm;
-        size: A4;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="title">RECHNUNG</div>
+  if (
+    typeof t.customPreisProStunde === "number" &&
+    t.customPreisProStunde > 0
+  ) {
+    return {
+      preisProStunde: t.customPreisProStunde,
+      abrechnung: t.customAbrechnung ?? "proTraining",
+    };
+  }
 
-    <div class="addresses">
-      <div class="address-block">
-        <div class="address-label">Rechnungssteller</div>
-        <div class="address-content">
-          <strong>${trainerName}</strong><br>
-          ${adresseHtml}
-          ${ustIdNr ? `<br>Steuernummer: ${ustIdNr}` : ''}
-        </div>
-      </div>
-      <div class="address-block">
-        <div class="address-label">Rechnungsempfänger</div>
-        <div class="address-content">
-          <strong>Tennisschule Zlatan Palazov und<br>Artur Ivanenko GbR</strong><br>
-          Ricarda-Huch-Straße 40<br>
-          14480 Potsdam
-        </div>
-      </div>
-    </div>
-
-    <div class="meta-info">
-      <div class="meta-row">
-        <span class="meta-label">Rechnungsnummer:</span>
-        <span>${rechnungsnummer}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Rechnungsdatum:</span>
-        <span>${rechnungsdatum}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Leistungszeitraum:</span>
-        <span>${leistungszeitraum}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="content">
-    <div class="intro">
-      <p>Sehr geehrte Damen und Herren,</p>
-      <p>für die im Leistungszeitraum erbrachten Trainerstunden erlaube ich mir, folgende Rechnung zu stellen:</p>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Position</th>
-          <th class="text-right">Anzahl</th>
-          <th class="text-right">Preis</th>
-          <th class="text-right">Gesamt</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Trainerstunden</td>
-          <td class="text-right">${stundenAnzahl}</td>
-          <td class="text-right">${formatEuro(stundensatz)}</td>
-          <td class="text-right">${formatEuro(zwischensumme)}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <table class="summary-table">
-      <tbody>
-        <tr>
-          <td>Zwischensumme:</td>
-          <td class="text-right">${formatEuro(zwischensumme)}</td>
-        </tr>
-        ${!kleinunternehmer ? `
-        <tr>
-          <td>MwSt. 19%:</td>
-          <td class="text-right">${formatEuro(mwst)}</td>
-        </tr>
-        ` : ''}
-        <tr class="total-row">
-          <td>Gesamtbetrag:</td>
-          <td class="text-right">${formatEuro(gesamtbetrag)}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    ${kleinunternehmer ? `
-    <div class="kleinunternehmer-note">
-      Gemäß §19 UStG wird keine Umsatzsteuer berechnet.
-    </div>
-    ` : ''}
-
-    <div class="payment-info">
-      <strong>Bitte überweisen Sie den Betrag innerhalb von 14 Tagen auf folgendes Konto:</strong>
-      <div class="meta-row">
-        <span class="meta-label">IBAN:</span>
-        <span>${maskIban(iban)}</span>
-      </div>
-      <div class="meta-row">
-        <span class="meta-label">Kontoinhaber:</span>
-        <span>${trainerName}</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <p>Vielen Dank für die Zusammenarbeit.</p>
-    <div class="signature">
-      <p>Mit freundlichen Grüßen</p>
-      <p><strong>${trainerName}</strong></p>
-    </div>
-  </div>
-</body>
-</html>`;
+  return null;
 }
 
 function generateFinalInvoiceHTML(data: {
@@ -2186,10 +1948,7 @@ export default function App() {
     return counts;
   }, [spieler]);
 
-  // Helper: Vollständiger Name (Vorname + Nachname)
-  const getFullName = (s: Spieler) => {
-    return s.nachname ? `${s.vorname} ${s.nachname}` : s.vorname;
-  };
+
 
   // Helper: Anzeigename (nur Vorname, außer bei Duplikaten)
   const getDisplayName = (s: Spieler) => {
@@ -2207,10 +1966,10 @@ export default function App() {
   };
 
   // Helper: Vollständiger Name per ID abrufen
-  const getSpielerFullName = (id: string) => {
+  const getSpielerFullName = useCallback((id: string) => {
     const s = spielerById.get(id);
     return s ? getFullName(s) : "Unbekannt";
-  };
+  }, [spielerById]);
 
   // Alle verfügbaren Labels aus Spielern sammeln
   const allLabels = useMemo(() => {
@@ -2888,43 +2647,11 @@ export default function App() {
     );
   }
 
-  function durationMin(von: string, bis: string) {
-    const a = toMinutes(von);
-    const b = toMinutes(bis);
-    return Math.max(0, b - a);
-  }
 
-  function getPreisConfig(
-    t: Training,
-    tarifByIdMap: Map<string, Tarif>
-  ): {
-    preisProStunde: number;
-    abrechnung: "proTraining" | "proSpieler" | "monatlich";
-  } | null {
-    if (t.tarifId) {
-      const tarif = tarifByIdMap.get(t.tarifId);
-      if (tarif) {
-        return {
-          preisProStunde: tarif.preisProStunde,
-          abrechnung: tarif.abrechnung,
-        };
-      }
-    }
 
-    if (
-      typeof t.customPreisProStunde === "number" &&
-      t.customPreisProStunde > 0
-    ) {
-      return {
-        preisProStunde: t.customPreisProStunde,
-        abrechnung: t.customAbrechnung ?? "proTraining",
-      };
-    }
 
-    return null;
-  }
 
-  function trainingPreisGesamt(t: Training) {
+  const trainingPreisGesamt = useCallback((t: Training) => {
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -2937,9 +2664,9 @@ export default function App() {
       return basis * t.spielerIds.length;
     }
     return basis;
-  }
+  }, [tarifById]);
 
-  function priceFuerSpieler(t: Training) {
+  const priceFuerSpieler = useCallback((t: Training) => {
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -2951,7 +2678,7 @@ export default function App() {
     if (cfg.abrechnung === "proSpieler") return basis;
     const n = Math.max(1, t.spielerIds.length);
     return basis / n;
-  }
+  }, [tarifById]);
 
   function trainerHonorarFuerTraining(t: Training) {
     // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
@@ -3695,6 +3422,7 @@ Deine Tennisschule`;
     tarifById,
     tTrainerId,
     defaultTrainerId,
+    trainingPreisGesamt,
   ]);
 
   const trainingsInMonth = useMemo(
@@ -3963,6 +3691,7 @@ Deine Tennisschule`;
     priceFuerSpieler,
     tarifById,
     abrechnungSpielerSuche,
+    getSpielerFullName,
   ]);
 
   const abrechnungTrainer = useMemo(() => {
@@ -4074,8 +3803,8 @@ Deine Tennisschule`;
     trainingsForAbrechnung,
     tarifById,
     trainerHonorarFuerTraining,
-    trainerPayments,
     trainingPreisGesamt,
+    vertretungen,
   ]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
@@ -4087,14 +3816,7 @@ Deine Tennisschule`;
     }));
   }
 
-  function openPayConfirm(
-    monat: string,
-    spielerId: string,
-    spielerName: string,
-    amount: number
-  ) {
-    setPayConfirm({ monat, spielerId, spielerName, amount });
-  }
+
 
   function closePayConfirm() {
     setPayConfirm(null);
@@ -4244,7 +3966,7 @@ Deine Tennisschule`;
       
       return sumBar;
     },
-    [trainingsInMonth, tarifById]
+    [trainingsInMonth, tarifById, priceFuerSpieler]
   );
 
   // Bar/Nicht-Bar Trainings für Admin-Ansicht (wenn ein Trainer gefiltert ist)
@@ -4357,7 +4079,7 @@ Deine Tennisschule`;
   const eigeneTrainerRow = abrechnungTrainer.rows.find(
     (r) => r.id === ownTrainerId
   );
-  const eigenerHonorarGesamt = eigeneTrainerRow?.honorar ?? 0;
+
   const eigenerHonorarBezahlt = eigeneTrainerRow?.honorarBezahlt ?? 0;
   const eigenerHonorarOffen = eigeneTrainerRow?.honorarOffen ?? 0;
 
@@ -7413,7 +7135,7 @@ Sportliche Grüße`
                                   s.kontaktEmail &&
                                   (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
                                 );
-                            const selectedSet = new Set(newsletterSelectedPlayers);
+
                             const combined = new Set([
                               ...labelFiltered.map(s => s.id),
                               ...newsletterSelectedPlayers
@@ -8718,7 +8440,7 @@ Sportliche Grüße`
                           const effectiveTrainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
                           const trainerName = trainerById.get(effectiveTrainerId)?.name ?? "Trainer";
                           const priceNum = round2(trainingPreisGesamt(t));
-                          const price = euro(priceNum);
+
                           const honorarNum = trainerHonorarFuerTraining(t);
                           const honorarBadge = euro(honorarNum);
                           const trainerPaid =
@@ -9970,19 +9692,7 @@ Mit freundlichen Grüßen`}
                               ? selectedSpieler.iban.replace(/\s/g, "").replace(/(.{4})(.*)(.{4})/, (_, start, middle, end) => start + middle.replace(/./g, "*") + end)
                               : "---";
 
-                            const sepaHtml = manuellRechnungMitSepa ? `
-                                <div style="margin-top: 24px; padding: 16px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px;">
-                                  <div style="font-weight: 600; margin-bottom: 12px; color: #0369a1;">SEPA-Lastschrift</div>
-                                  <p style="margin: 0 0 12px 0;">
-                                    Der Betrag von <strong>${gesamtBetrag.toFixed(2)} €</strong> wird zum <strong>${abbuchungsDatumFormatted}</strong> mittels SEPA-Lastschrift von Ihrem Konto abgebucht.
-                                  </p>
-                                  <table style="font-size: 14px;">
-                                    <tr><td style="padding: 2px 12px 2px 0; color: #666;">Ihre IBAN:</td><td>${maskedIban}</td></tr>
-                                    ${selectedSpieler.mandatsreferenz ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Mandatsreferenz:</td><td>${selectedSpieler.mandatsreferenz}</td></tr>` : ""}
-                                    ${profilGlaeubigerId ? `<tr><td style="padding: 2px 12px 2px 0; color: #666;">Gläubiger-ID:</td><td>${profilGlaeubigerId}</td></tr>` : ""}
-                                  </table>
-                                </div>
-                            ` : "";
+
 
                             // Rechnungsnummer und Datum generieren
                             const manuellRechnungNummer = `RE-${new Date().getFullYear()}${pad2(new Date().getMonth() + 1)}${pad2(new Date().getDate())}-${pad2(new Date().getHours())}${pad2(new Date().getMinutes())}${pad2(new Date().getSeconds())}`;
