@@ -2784,18 +2784,27 @@ export default function App() {
   function applyAdjustmentsForTrainings(trainingsList: Training[], amountPerPlayer: number) {
     const newAdjustments = { ...monthlyAdjustments };
 
-    trainingsList.forEach((training) => {
-      if (!training.datum || training.datum.length < 7) return;
-      const monat = training.datum.substring(0, 7); // YYYY-MM
-      
-      // Safety check: ensure monat is valid YYYY-MM
-      if (!/^\d{4}-\d{2}$/.test(monat)) return;
+    // Ermittle den Monat des ersten Trainings in der Liste
+    // Bei monatlichen Tarifen sollte die Erstattung nur für diesen einen Monat gelten
+    const firstTraining = trainingsList[0];
+    if (!firstTraining || !firstTraining.datum || firstTraining.datum.length < 7) return;
 
-      training.spielerIds.forEach((spielerId) => {
-        const key = `${monat}__${spielerId}`;
-        const currentValue = newAdjustments[key] ?? 0;
-        newAdjustments[key] = round2(currentValue - amountPerPlayer);
-      });
+    const targetMonat = firstTraining.datum.substring(0, 7); // YYYY-MM
+
+    // Safety check: ensure monat is valid YYYY-MM
+    if (!/^\d{4}-\d{2}$/.test(targetMonat)) return;
+
+    // Sammle alle einzigartigen Spieler-IDs aus allen Trainings
+    const uniqueSpielerIds = new Set<string>();
+    trainingsList.forEach((training) => {
+      training.spielerIds.forEach((spielerId) => uniqueSpielerIds.add(spielerId));
+    });
+
+    // Wende die Anpassung nur einmal pro Spieler für den Zielmonat an
+    uniqueSpielerIds.forEach((spielerId) => {
+      const key = `${targetMonat}__${spielerId}`;
+      const currentValue = newAdjustments[key] ?? 0;
+      newAdjustments[key] = round2(currentValue - amountPerPlayer);
     });
 
     setMonthlyAdjustments(newAdjustments);
