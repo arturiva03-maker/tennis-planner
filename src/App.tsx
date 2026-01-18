@@ -3058,7 +3058,12 @@ export default function App() {
     const newAdjustments = { ...monthlyAdjustments };
 
     trainingsList.forEach((training) => {
+      if (!training.datum || training.datum.length < 7) return;
       const monat = training.datum.substring(0, 7); // YYYY-MM
+      
+      // Safety check: ensure monat is valid YYYY-MM
+      if (!/^\d{4}-\d{2}$/.test(monat)) return;
+
       training.spielerIds.forEach((spielerId) => {
         const key = `${monat}__${spielerId}`;
         const currentValue = newAdjustments[key] ?? 0;
