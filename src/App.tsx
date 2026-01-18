@@ -2680,7 +2680,7 @@ export default function App() {
     return basis / n;
   }, [tarifById]);
 
-  function trainerHonorarFuerTraining(t: Training) {
+  const trainerHonorarFuerTraining = useCallback((t: Training) => {
     // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
     const vertretung = vertretungen.find(v => v.trainingId === t.id);
     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
@@ -2688,7 +2688,7 @@ export default function App() {
     const rate = trainer?.stundensatz ?? 0;
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     return round2(rate * (mins / 60));
-  }
+  }, [vertretungen, trainerById, defaultTrainerId]);
 
   function fillTrainingFromSelected(t: Training) {
     if (isTrainer) return;
