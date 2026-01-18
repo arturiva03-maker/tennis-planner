@@ -3419,7 +3419,6 @@ Deine Tennisschule`;
     tNotiz,
     tCustomPreisProStunde,
     tCustomAbrechnung,
-    tarifById,
     tTrainerId,
     defaultTrainerId,
     trainingPreisGesamt,
@@ -3686,7 +3685,6 @@ Deine Tennisschule`;
     return { total, spielerRows, barTotal, totalMitBar };
   }, [
     trainingsForAbrechnung,
-    spielerById,
     spieler,
     priceFuerSpieler,
     tarifById,
@@ -3805,6 +3803,7 @@ Deine Tennisschule`;
     trainerHonorarFuerTraining,
     trainingPreisGesamt,
     vertretungen,
+    trainerPayments,
   ]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
