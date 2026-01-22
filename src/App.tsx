@@ -3949,28 +3949,6 @@ Deine Tennisschule`;
 
   /* ::::: Notiz-Funktionen ::::: */
 
-  function setAllPlayersToWedding() {
-    if (!window.confirm("Möchtest du wirklich allen Spielern ohne Standort das Label 'Wedding' zuweisen?")) return;
-    
-    saveUndoSnapshot("Allen Spielern 'Wedding' zugewiesen");
-    
-    let changedCount = 0;
-    setSpieler(prev => prev.map(s => {
-      // Prüfen ob schon ein Standort gesetzt ist
-      const hasLocation = s.labels?.some(l => l === "Wedding" || l === "Britz");
-      if (hasLocation) return s;
-      
-      // "Wedding" hinzufügen
-      changedCount++;
-      const newLabels = s.labels ? [...s.labels, "Wedding"] : ["Wedding"];
-      return { ...s, labels: newLabels };
-    }));
-    
-    // Kleines Feedback wäre gut, aber window.alert ist blockierend. 
-    // Console log reicht erstmal, da wir Undo haben.
-    console.log(`Updated ${changedCount} players.`);
-  }
-
   function addNotiz() {
     const titel = notizTitel.trim();
     if (!titel) return;
@@ -5734,13 +5712,6 @@ Sportliche Grüße`
                             }}
                           >
                             Excel exportieren
-                          </button>
-                          <button
-                            className="btn btnGhost"
-                            onClick={setAllPlayersToWedding}
-                            title="Setzt bei allen Spielern ohne Standort das Label 'Wedding'"
-                          >
-                            Alle auf "Wedding" setzen
                           </button>
                         </>
                       )}
