@@ -1505,6 +1505,7 @@ export default function App() {
 
   const skipSaveRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
+  const lastKnownUpdatedAtRef = useRef<string | null>(null);
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1782,6 +1783,11 @@ export default function App() {
       }
 
       if (data && data.data) {
+        // Speichere den initialen Timestamp
+        if (data.updated_at) {
+          lastKnownUpdatedAtRef.current = data.updated_at;
+        }
+
         const cloud = normalizeState(data.data as Partial<AppState>);
         setTrainers(cloud.trainers);
         setSpieler(cloud.spieler);
@@ -1839,6 +1845,17 @@ export default function App() {
             const newRow = payload.new as any;
 
             if (newRow?.data) {
+              // Prüfe ob das Update neuer ist als unser letztes bekanntes Update
+              const incomingUpdatedAt = newRow.updated_at;
+              if (lastKnownUpdatedAtRef.current && incomingUpdatedAt) {
+                if (incomingUpdatedAt <= lastKnownUpdatedAtRef.current) {
+                  // Ignoriere ältere oder gleiche Updates
+                  return;
+                }
+              }
+
+              // Update ist neuer, also übernehmen
+              lastKnownUpdatedAtRef.current = incomingUpdatedAt;
               skipSaveRef.current = true;
 
               const cloud = normalizeState(newRow.data as Partial<AppState>);
@@ -1900,6 +1917,7 @@ export default function App() {
       };
 
       const updatedAt = new Date().toISOString();
+      lastKnownUpdatedAtRef.current = updatedAt;
 
       supabase
         .from("account_state")
@@ -3553,8 +3571,8 @@ Deine Tennisschule`;
       countsBar: Map<number, number>;      // Beträge für bar bezahlte Trainings
       countsNichtBar: Map<number, number>; // Beträge für nicht bar bezahlte Trainings
     }>();
-    // Für monatliche Tarife: Zähle die Anzahl verschiedener Wochentage pro Spieler+Tarif
-    const monthlyWeekdayCounts = new Map<string, Set<number>>(); // key: `${pid}__${tarifKey}`, value: Set von Wochentagen (0-6)
+    // Für monatliche Tarife: Zähle die Anzahl wöchentlicher Trainings pro Spieler+Tarif
+    const monthlyWeekdayCounts = new Map<string, Set<string>>(); // key: `${pid}__${tarifKey}`, value: Set von "weekday_timeFrom_timeTo"
     // Für monatliche Tarife: Tracke ob es Bar-Trainings gibt
     const monthlyHasBar = new Map<string, boolean>(); // key: `${pid}__${tarifKey}`
 
@@ -3602,14 +3620,15 @@ Deine Tennisschule`;
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
         const trainingDate = new Date(t.datum + "T12:00:00");
         const weekday = trainingDate.getDay(); // 0 = Sonntag, 1 = Montag, etc.
-        
+
         t.spielerIds.forEach((pid) => {
           // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
           if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
-          
+
           const key = `${pid}__${tarifKey}`;
-          const weekdays = monthlyWeekdayCounts.get(key) ?? new Set<number>();
-          weekdays.add(weekday);
+          const weekdays = monthlyWeekdayCounts.get(key) ?? new Set<string>();
+          // Zähle Trainings nach Wochentag UND Uhrzeit (2 Trainings am selben Wochentag = 2 wöchentliche Trainings)
+          weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
           monthlyWeekdayCounts.set(key, weekdays);
           
           // Tracke ob mindestens ein monatliches Training bar ist
@@ -3742,8 +3761,8 @@ Deine Tennisschule`;
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
-    // Für monatliche Tarife: Zähle die Anzahl verschiedener Wochentage pro Trainer+Spieler+Tarif
-    const monthlyTrainerWeekdays = new Map<string, Set<number>>(); // key: `${tid}__${pid}__${tarifKey}`
+    // Für monatliche Tarife: Zähle die Anzahl wöchentlicher Trainings pro Trainer+Spieler+Tarif
+    const monthlyTrainerWeekdays = new Map<string, Set<string>>(); // key: `${tid}__${pid}__${tarifKey}`
 
     // Erst alle monatlichen Trainings sammeln um Wochentage zu zählen
     trainingsForAbrechnung.forEach((t) => {
@@ -3756,11 +3775,12 @@ Deine Tennisschule`;
       const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
       const trainingDate = new Date(t.datum + "T12:00:00");
       const weekday = trainingDate.getDay();
-      
+
       t.spielerIds.forEach((pid) => {
         const key = `${tid}__${pid}__${tarifKey}`;
-        const weekdays = monthlyTrainerWeekdays.get(key) ?? new Set<number>();
-        weekdays.add(weekday);
+        const weekdays = monthlyTrainerWeekdays.get(key) ?? new Set<string>();
+        // Zähle Trainings nach Wochentag UND Uhrzeit
+        weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
         monthlyTrainerWeekdays.set(key, weekdays);
       });
     });
@@ -3982,8 +4002,8 @@ Deine Tennisschule`;
           if (monthlyProcessedForBar.has(processKey)) return;
           monthlyProcessedForBar.add(processKey);
           
-          // Für monatliche Tarife: Anzahl verschiedener Wochentage ermitteln
-          const weekdays = new Set<number>();
+          // Für monatliche Tarife: Anzahl wöchentlicher Trainings ermitteln
+          const weekdays = new Set<string>();
           trainingsInMonth.forEach((t2) => {
             if (!t2.spielerIds.includes(spielerId)) return;
             const cfg2 = getPreisConfig(t2, tarifById);
@@ -3991,7 +4011,8 @@ Deine Tennisschule`;
             const tarifKey2 = t2.tarifId || `custom-${cfg2.preisProStunde}`;
             if (tarifKey2 !== tarifKey) return;
             const trainingDate = new Date(t2.datum + "T12:00:00");
-            weekdays.add(trainingDate.getDay());
+            // Zähle Trainings nach Wochentag UND Uhrzeit
+            weekdays.add(`${trainingDate.getDay()}_${t2.uhrzeitVon}_${t2.uhrzeitBis}`);
           });
           
           sumBar = round2(sumBar + cfg.preisProStunde * weekdays.size);
@@ -7892,7 +7913,7 @@ Sportliche Grüße`
                       const monthlyTarifSummary = new Map<string, {
                         tarifName: string;
                         preisProStunde: number;
-                        weekdays: Set<number>;
+                        weekdays: Set<string>;
                       }>();
 
                       sortedTrainings.forEach((t) => {
@@ -7907,10 +7928,11 @@ Sportliche Grüße`
                             monthlyTarifSummary.set(tarifKey, {
                               tarifName: tarifData?.name || "Monatlich",
                               preisProStunde: cfg.preisProStunde,
-                              weekdays: new Set<number>(),
+                              weekdays: new Set<string>(),
                             });
                           }
-                          monthlyTarifSummary.get(tarifKey)!.weekdays.add(weekday);
+                          // Zähle Trainings nach Wochentag UND Uhrzeit
+                          monthlyTarifSummary.get(tarifKey)!.weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
                         }
                       });
 
@@ -10088,17 +10110,18 @@ Mit freundlichen Grüßen`}
 
                     let gesamtBetrag = 0;
                     const monthlyProcessedKeys = new Set<string>();
-                    const monthlyWeekdays = new Map<string, Set<number>>();
+                    const monthlyWeekdays = new Map<string, Set<string>>();
 
-                    // Erst Wochentage für monatliche Tarife sammeln
+                    // Erst wöchentliche Trainings für monatliche Tarife sammeln
                     monatTrainings.forEach((t) => {
                       const tarif = tarife.find((tf) => tf.id === t.tarifId);
                       const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
                       if (abrechnungsTyp === "monatlich") {
                         const tarifKey = t.tarifId || `custom-${t.customPreisProStunde ?? tarif?.preisProStunde}`;
                         const trainingDate = new Date(t.datum + "T12:00:00");
-                        const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<number>();
-                        weekdays.add(trainingDate.getDay());
+                        const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<string>();
+                        // Zähle Trainings nach Wochentag UND Uhrzeit
+                        weekdays.add(`${trainingDate.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
                         monthlyWeekdays.set(tarifKey, weekdays);
                       }
                     });
@@ -10216,17 +10239,18 @@ Mit freundlichen Grüßen`}
               });
 
               const monthlyProcessedKeys = new Set<string>();
-              const monthlyWeekdays = new Map<string, Set<number>>();
+              const monthlyWeekdays = new Map<string, Set<string>>();
 
-              // Erst Wochentage für monatliche Tarife sammeln
+              // Erst wöchentliche Trainings für monatliche Tarife sammeln
               rechnungMonatTrainings.forEach((t) => {
                 const tarif = tarife.find((tf) => tf.id === t.tarifId);
                 const abrechnungsTyp = t.customAbrechnung ?? tarif?.abrechnung ?? "proTraining";
                 if (abrechnungsTyp === "monatlich") {
                   const tarifKey = t.tarifId || `custom-${t.customPreisProStunde ?? tarif?.preisProStunde}`;
                   const trainingDate = new Date(t.datum + "T12:00:00");
-                  const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<number>();
-                  weekdays.add(trainingDate.getDay());
+                  const weekdays = monthlyWeekdays.get(tarifKey) ?? new Set<string>();
+                  // Zähle Trainings nach Wochentag UND Uhrzeit
+                  weekdays.add(`${trainingDate.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
                   monthlyWeekdays.set(tarifKey, weekdays);
                 }
               });
