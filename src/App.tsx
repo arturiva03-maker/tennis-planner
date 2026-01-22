@@ -1094,6 +1094,7 @@ export default function App() {
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
   const [newsletterSelectedPlayers, setNewsletterSelectedPlayers] = useState<string[]>([]);
   const [newsletterPlayerSearch, setNewsletterPlayerSearch] = useState("");
+  const [newsletterExcludedPlayers, setNewsletterExcludedPlayers] = useState<string[]>([]);
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -1196,6 +1197,35 @@ export default function App() {
       timestamp: Date.now(),
     });
   };
+
+  // Newsletter: Finale Empfängerliste berechnen
+  const getNewsletterRecipients = useCallback(() => {
+    // Label-gefilterte Spieler
+    const labelFiltered = newsletterLabelFilter === "keine"
+      ? []
+      : spieler.filter(s =>
+          s.kontaktEmail &&
+          (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
+        );
+
+    // Manuell ausgewählte Spieler
+    const selectedPlayers = spieler.filter(s =>
+      s.kontaktEmail && newsletterSelectedPlayers.includes(s.id)
+    );
+
+    // Merge + Deduplizierung
+    const recipientMap = new Map<string, Spieler>();
+    [...labelFiltered, ...selectedPlayers].forEach(s => {
+      recipientMap.set(s.id, s);
+    });
+
+    // Ausschlüsse anwenden
+    newsletterExcludedPlayers.forEach(id => {
+      recipientMap.delete(id);
+    });
+
+    return Array.from(recipientMap.values());
+  }, [spieler, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
 
   // Undo nach 60 Sekunden automatisch entfernen
   useEffect(() => {
@@ -7136,21 +7166,112 @@ Sportliche Grüße`
                           borderRadius: 8,
                           fontSize: 14
                         }}>
-                          {(() => {
-                            const labelFiltered = newsletterLabelFilter === "keine"
-                              ? []
-                              : spieler.filter(s =>
-                                  s.kontaktEmail &&
-                                  (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
-                                );
-
-                            const combined = new Set([
-                              ...labelFiltered.map(s => s.id),
-                              ...newsletterSelectedPlayers
-                            ]);
-                            return combined.size;
-                          })()} Empfänger
+                          {getNewsletterRecipients().length} Empfänger
                         </span>
+                      </div>
+                    </div>
+
+                    {/* Empfänger-Vorschau */}
+                    <div style={{ marginBottom: 24 }}>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 12
+                      }}>
+                        <label style={{ margin: 0 }}>
+                          Empfänger-Vorschau ({getNewsletterRecipients().length})
+                        </label>
+                        {newsletterExcludedPlayers.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn-text"
+                            onClick={() => setNewsletterExcludedPlayers([])}
+                            style={{ fontSize: 14 }}
+                          >
+                            Alle zurücksetzen
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{
+                        background: "var(--bg-inset)",
+                        borderRadius: 8,
+                        maxHeight: 300,
+                        overflowY: "auto",
+                        border: "1px solid var(--border-light)"
+                      }}>
+                        {(() => {
+                          const recipients = getNewsletterRecipients();
+                          if (recipients.length === 0) {
+                            return (
+                              <div style={{
+                                padding: 24,
+                                textAlign: "center",
+                                color: "var(--text-muted)"
+                              }}>
+                                Keine Empfänger ausgewählt...
+                              </div>
+                            );
+                          }
+
+                          // Alphabetisch sortieren
+                          const sortedRecipients = [...recipients].sort((a, b) => {
+                            const nameA = `${a.vorname} ${a.nachname || ""}`.trim();
+                            const nameB = `${b.vorname} ${b.nachname || ""}`.trim();
+                            return nameA.localeCompare(nameB);
+                          });
+
+                          return sortedRecipients.map((recipient, idx) => (
+                            <div
+                              key={recipient.id}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "12px 16px",
+                                borderBottom: idx < sortedRecipients.length - 1
+                                  ? "1px solid var(--border-light)"
+                                  : "none"
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                                  {recipient.vorname} {recipient.nachname || ""}
+                                </div>
+                                <div style={{
+                                  fontSize: 13,
+                                  color: "var(--text-muted)",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap"
+                                }}>
+                                  {recipient.kontaktEmail}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewsletterExcludedPlayers(prev => [...prev, recipient.id]);
+                                }}
+                                style={{
+                                  marginLeft: 12,
+                                  padding: "4px 8px",
+                                  background: "transparent",
+                                  border: "1px solid var(--border-light)",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                  fontSize: 18,
+                                  lineHeight: 1,
+                                  color: "var(--text-muted)"
+                                }}
+                                title="Empfänger entfernen"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ));
+                        })()}
                       </div>
                     </div>
 
@@ -7177,26 +7298,9 @@ Sportliche Grüße`
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       <button
                         className="btn"
-                        disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim()}
+                        disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim() || getNewsletterRecipients().length === 0}
                         onClick={async () => {
-                          // Kombiniere Label-gefilterte Spieler und manuell ausgewählte
-                          const labelFiltered = newsletterLabelFilter === "keine"
-                            ? []
-                            : spieler.filter(s =>
-                                s.kontaktEmail &&
-                                (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
-                              );
-
-                          const selectedPlayers = spieler.filter(s =>
-                            s.kontaktEmail && newsletterSelectedPlayers.includes(s.id)
-                          );
-
-                          // Merge und Duplikate entfernen
-                          const recipientMap = new Map<string, Spieler>();
-                          [...labelFiltered, ...selectedPlayers].forEach(s => {
-                            recipientMap.set(s.id, s);
-                          });
-                          const recipients = Array.from(recipientMap.values());
+                          const recipients = getNewsletterRecipients();
 
                           if (recipients.length === 0) {
                             setNewsletterError("Keine Empfänger mit E-Mail-Adresse gefunden.");
@@ -7235,6 +7339,7 @@ Sportliche Grüße`
                             setNewsletterSubject("");
                             setNewsletterBody("");
                             setNewsletterSelectedPlayers([]);
+                            setNewsletterExcludedPlayers([]);
                           } catch (err) {
                             setNewsletterError(err instanceof Error ? err.message : "Unbekannter Fehler");
                           } finally {
@@ -7245,19 +7350,7 @@ Sportliche Grüße`
                         {newsletterSending ? "Wird gesendet..." : "Newsletter senden"}
                       </button>
 
-                      {(() => {
-                        const labelFiltered = newsletterLabelFilter === "keine"
-                          ? []
-                          : spieler.filter(s =>
-                              s.kontaktEmail &&
-                              (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
-                            );
-                        const combined = new Set([
-                          ...labelFiltered.map(s => s.id),
-                          ...newsletterSelectedPlayers
-                        ]);
-                        return combined.size === 0;
-                      })() && (
+                      {getNewsletterRecipients().length === 0 && (
                         <span className="muted">Keine Empfänger ausgewählt.</span>
                       )}
                     </div>
