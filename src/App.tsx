@@ -2689,6 +2689,42 @@ export default function App() {
     }
   }
 
+  function adoptPlayerFromRequest(req: RegistrationRequest) {
+    // Name splitten (einfache Heuristik: letztes Wort ist Nachname)
+    const parts = req.name.trim().split(/\s+/);
+    let vorname = "";
+    let nachname = "";
+    
+    if (parts.length === 1) {
+      vorname = parts[0];
+    } else {
+      nachname = parts.pop() || "";
+      vorname = parts.join(" ");
+    }
+
+    setSpielerVorname(vorname);
+    setSpielerNachname(nachname);
+    setSpielerEmail(req.email);
+    setSpielerTelefon(req.telefon || "");
+    setSpielerNotizen(req.nachricht || "");
+    
+    // Labels vorbereiten
+    const newLabels: string[] = [];
+    if (req.anlage) {
+      newLabels.push(req.anlage); // "Wedding" oder "Britz"
+    }
+    setSpielerLabels(newLabels);
+    
+    // UI-State setzen
+    setVerwaltungTab("spieler");
+    setShowSpielerForm(true);
+    setEditingSpielerId(null);
+    setSpielerError(null);
+    
+    // Nach oben scrollen
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function toggleSpielerPick(id: string) {
     setTSpielerIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -5765,6 +5801,36 @@ Sportliche Grüße`
                           </div>
                         </div>
 
+                        <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Standort</h4>
+                        <div className="row">
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="standort"
+                              checked={spielerLabels.includes("Wedding")}
+                              onChange={() => {
+                                const newLabels = spielerLabels.filter(l => l !== "Britz" && l !== "Wedding");
+                                newLabels.push("Wedding");
+                                setSpielerLabels(newLabels);
+                              }}
+                            />
+                            Wedding
+                          </label>
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginLeft: 16 }}>
+                            <input
+                              type="radio"
+                              name="standort"
+                              checked={spielerLabels.includes("Britz")}
+                              onChange={() => {
+                                const newLabels = spielerLabels.filter(l => l !== "Britz" && l !== "Wedding");
+                                newLabels.push("Britz");
+                                setSpielerLabels(newLabels);
+                              }}
+                            />
+                            Britz
+                          </label>
+                        </div>
+
                         <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Labels (für Newsletter)</h4>
                         <div className="row" style={{ alignItems: "flex-start" }}>
                           <div className="field" style={{ flex: 1 }}>
@@ -6669,6 +6735,13 @@ Sportliche Grüße`
                                       </div>
                                     )}
                                     <div className="smallActions">
+                                      <button
+                                        className="btn micro"
+                                        style={{ backgroundColor: "#059669", borderColor: "#059669" }}
+                                        onClick={() => adoptPlayerFromRequest(req)}
+                                      >
+                                        Als Spieler übernehmen
+                                      </button>
                                       <select
                                         value={req.status === "erledigt" ? "erledigt" : "offen"}
                                         onChange={(e) => updateRequestStatus(req.id, e.target.value)}
