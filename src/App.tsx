@@ -5760,14 +5760,37 @@ Sportliche Grüße`
                           </div>
                           <div className="field">
                             <label>Email</label>
-                            <input
-                              value={spielerEmail}
-                              onChange={(e) => {
-                                setSpielerEmail(e.target.value);
-                                setSpielerError(null);
-                              }}
-                              placeholder="Kontakt Email"
-                            />
+                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                              <input
+                                value={spielerEmail}
+                                onChange={(e) => {
+                                  setSpielerEmail(e.target.value);
+                                  setSpielerError(null);
+                                }}
+                                placeholder="Kontakt Email"
+                                style={{ flex: 1 }}
+                              />
+                              {spielerEmail && (
+                                <a
+                                  href={`mailto:${spielerEmail}?subject=${encodeURIComponent("Anfrage zum Tennistraining")}`}
+                                  title="E-Mail senden"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: "var(--radius-md)",
+                                    background: "var(--primary)",
+                                    color: "#fff",
+                                    textDecoration: "none",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  ✉
+                                </a>
+                              )}
+                            </div>
                           </div>
                           <div className="field">
                             <label>Telefon</label>
