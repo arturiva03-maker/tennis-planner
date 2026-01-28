@@ -6642,7 +6642,28 @@ Sportliche Grüße`
                                         </span>
                                       )}
                                     </div>
-                                    <div className="muted">{req.email}</div>
+                                    <div className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                      {req.email}
+                                      <a
+                                        href={`mailto:${req.email}?subject=${encodeURIComponent("Anfrage zum Tennistraining")}`}
+                                        title="E-Mail senden"
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{
+                                          display: "inline-flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          width: 22,
+                                          height: 22,
+                                          borderRadius: 4,
+                                          background: "var(--primary)",
+                                          color: "#fff",
+                                          textDecoration: "none",
+                                          fontSize: 12,
+                                        }}
+                                      >
+                                        ✉
+                                      </a>
+                                    </div>
                                     <div className="muted" style={{ fontSize: 12 }}>
                                       {new Date(req.created_at).toLocaleDateString("de-DE", {
                                         day: "2-digit",
