@@ -1095,6 +1095,7 @@ export default function App() {
   const [newsletterSelectedPlayers, setNewsletterSelectedPlayers] = useState<string[]>([]);
   const [newsletterPlayerSearch, setNewsletterPlayerSearch] = useState("");
   const [newsletterExcludedPlayers, setNewsletterExcludedPlayers] = useState<string[]>([]);
+  const [newsletterExtraEmails, setNewsletterExtraEmails] = useState<{email: string, name: string}[]>([]);
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -5771,9 +5772,20 @@ Sportliche Grüße`
                                 style={{ flex: 1 }}
                               />
                               {spielerEmail && (
-                                <a
-                                  href={`mailto:${spielerEmail}?subject=${encodeURIComponent("Anfrage zum Tennistraining")}`}
+                                <button
+                                  type="button"
                                   title="E-Mail senden"
+                                  onClick={() => {
+                                    const name = `${spielerVorname}${spielerNachname ? " " + spielerNachname : ""}`;
+                                    setNewsletterExtraEmails(prev =>
+                                      prev.some(e => e.email === spielerEmail)
+                                        ? prev
+                                        : [...prev, { email: spielerEmail, name }]
+                                    );
+                                    setNewsletterSubject("Anfrage zum Tennistraining");
+                                    setNewsletterLabelFilter("keine");
+                                    setVerwaltungTab("newsletter");
+                                  }}
                                   style={{
                                     display: "flex",
                                     alignItems: "center",
@@ -5783,12 +5795,13 @@ Sportliche Grüße`
                                     borderRadius: "var(--radius-md)",
                                     background: "var(--primary)",
                                     color: "#fff",
-                                    textDecoration: "none",
+                                    border: "none",
+                                    cursor: "pointer",
                                     flexShrink: 0,
                                   }}
                                 >
                                   ✉
-                                </a>
+                                </button>
                               )}
                             </div>
                           </div>
@@ -6644,10 +6657,20 @@ Sportliche Grüße`
                                     </div>
                                     <div className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                       {req.email}
-                                      <a
-                                        href={`mailto:${req.email}?subject=${encodeURIComponent("Anfrage zum Tennistraining")}`}
+                                      <button
+                                        type="button"
                                         title="E-Mail senden"
-                                        onClick={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setNewsletterExtraEmails(prev =>
+                                            prev.some(em => em.email === req.email)
+                                              ? prev
+                                              : [...prev, { email: req.email, name: req.name }]
+                                          );
+                                          setNewsletterSubject("Anfrage zum Tennistraining");
+                                          setNewsletterLabelFilter("keine");
+                                          setVerwaltungTab("newsletter");
+                                        }}
                                         style={{
                                           display: "inline-flex",
                                           alignItems: "center",
@@ -6657,12 +6680,13 @@ Sportliche Grüße`
                                           borderRadius: 4,
                                           background: "var(--primary)",
                                           color: "#fff",
-                                          textDecoration: "none",
+                                          border: "none",
+                                          cursor: "pointer",
                                           fontSize: 12,
                                         }}
                                       >
                                         ✉
-                                      </a>
+                                      </button>
                                     </div>
                                     <div className="muted" style={{ fontSize: 12 }}>
                                       {new Date(req.created_at).toLocaleDateString("de-DE", {
@@ -7272,11 +7296,62 @@ Sportliche Grüße`
                       </div>
                     )}
 
+                    {/* Extra E-Mails anzeigen (nicht-Spieler) */}
+                    {newsletterExtraEmails.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <label style={{ display: "block", marginBottom: 8 }}>
+                          Weitere Empfänger ({newsletterExtraEmails.length})
+                        </label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          {newsletterExtraEmails.map((item, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                background: "#059669",
+                                color: "white",
+                                padding: "4px 10px",
+                                borderRadius: 16,
+                                fontSize: 13,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6
+                              }}
+                            >
+                              {item.name || item.email}
+                              <button
+                                type="button"
+                                onClick={() => setNewsletterExtraEmails(prev => prev.filter((_, i) => i !== idx))}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  fontSize: 16,
+                                  lineHeight: 1
+                                }}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                          <button
+                            type="button"
+                            className="btn btnGhost"
+                            style={{ fontSize: 12, padding: "4px 10px" }}
+                            onClick={() => setNewsletterExtraEmails([])}
+                          >
+                            Alle entfernen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div style={{
                       borderTop: "1px solid var(--border)",
                       paddingTop: 16,
                       marginBottom: 16,
-                      display: newsletterSelectedPlayers.length > 0 ? "block" : "none"
+                      display: (newsletterSelectedPlayers.length > 0 || newsletterExtraEmails.length > 0) ? "block" : "none"
                     }}>
                       <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
                         — oder zusätzlich per Label filtern —
@@ -7436,16 +7511,20 @@ Sportliche Grüße`
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       <button
                         className="btn"
-                        disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim() || getNewsletterRecipients().length === 0}
+                        disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim() || (getNewsletterRecipients().length === 0 && newsletterExtraEmails.length === 0)}
                         onClick={async () => {
                           const recipients = getNewsletterRecipients();
+                          const allEmails = [
+                            ...recipients.map(r => r.kontaktEmail),
+                            ...newsletterExtraEmails.map(e => e.email)
+                          ];
 
-                          if (recipients.length === 0) {
+                          if (allEmails.length === 0) {
                             setNewsletterError("Keine Empfänger mit E-Mail-Adresse gefunden.");
                             return;
                           }
 
-                          if (!window.confirm(`Newsletter an ${recipients.length} Empfänger senden?`)) {
+                          if (!window.confirm(`Newsletter an ${allEmails.length} Empfänger senden?`)) {
                             return;
                           }
 
@@ -7460,7 +7539,7 @@ Sportliche Grüße`
                                 "Content-Type": "application/json",
                               },
                               body: JSON.stringify({
-                                to: recipients.map(r => r.kontaktEmail),
+                                to: allEmails,
                                 subject: newsletterSubject.trim(),
                                 body: newsletterBody.trim(),
                                 html: newsletterBody.trim().replace(/\n/g, "<br>"),
@@ -7478,6 +7557,7 @@ Sportliche Grüße`
                             setNewsletterBody("");
                             setNewsletterSelectedPlayers([]);
                             setNewsletterExcludedPlayers([]);
+                            setNewsletterExtraEmails([]);
                           } catch (err) {
                             setNewsletterError(err instanceof Error ? err.message : "Unbekannter Fehler");
                           } finally {
@@ -7488,7 +7568,7 @@ Sportliche Grüße`
                         {newsletterSending ? "Wird gesendet..." : "Newsletter senden"}
                       </button>
 
-                      {getNewsletterRecipients().length === 0 && (
+                      {getNewsletterRecipients().length === 0 && newsletterExtraEmails.length === 0 && (
                         <span className="muted">Keine Empfänger ausgewählt.</span>
                       )}
                     </div>
