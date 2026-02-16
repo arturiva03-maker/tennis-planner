@@ -88,7 +88,13 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
   function handleZeitVonChange(tag: Wochentag, value: string) {
     setZeitVon((prev) => ({ ...prev, [tag]: value }));
-    updateVerfuegbarkeit(tag, value, zeitBis[tag], nichtVerfuegbar[tag]);
+    // Wenn Startzeit gewählt aber keine Endzeit, automatisch letzte Zeit setzen
+    let bisValue = zeitBis[tag];
+    if (value && !bisValue) {
+      bisValue = UHRZEITEN[UHRZEITEN.length - 1]; // 21:00
+      setZeitBis((prev) => ({ ...prev, [tag]: bisValue }));
+    }
+    updateVerfuegbarkeit(tag, value, bisValue, nichtVerfuegbar[tag]);
   }
 
   function handleZeitBisChange(tag: Wochentag, value: string) {
@@ -164,6 +170,14 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
     setLoading(true);
 
+    // Leere Tage als "nicht verfügbar" behandeln
+    const verfuegbarkeitFinal: Record<Wochentag, string> = { ...formData.verfuegbarkeit };
+    for (const tag of WOCHENTAGE) {
+      if (!verfuegbarkeitFinal[tag.key]) {
+        verfuegbarkeitFinal[tag.key] = "nicht verfügbar";
+      }
+    }
+
     try {
       const { error: insertError } = await supabase
         .from("registration_requests")
@@ -172,7 +186,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
           name: formData.name.trim(),
           email: formData.email.trim(),
           telefon: formData.telefon.trim() || null,
-          verfuegbarkeit: formData.verfuegbarkeit,
+          verfuegbarkeit: verfuegbarkeitFinal,
           trainingsart: formData.trainingsart || null,
           trainings_pro_woche: formData.trainings_pro_woche
             ? parseInt(formData.trainings_pro_woche, 10)
