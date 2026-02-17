@@ -197,8 +197,9 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
           alter_jahre: formData.alter_jahre
             ? parseInt(formData.alter_jahre, 10)
             : null,
-          nachricht: formData.nachricht.trim() || null,
-          gruppenwuensche: formData.gruppenwuensche.trim() || null,
+          nachricht: formData.gruppenwuensche.trim()
+            ? `${formData.nachricht.trim()}\n\nGruppenwünsche: ${formData.gruppenwuensche.trim()}`.trim()
+            : formData.nachricht.trim() || null,
           anlage: anlage,
         });
 
