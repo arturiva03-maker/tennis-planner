@@ -302,6 +302,81 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
       const textVersion = `Trainingsanmeldung ${anlage}\n\nName: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.telefon}\nAlter: ${formData.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${formData.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${verfuegbarkeitFinal[key]}`).join("\n")}${formData.nachricht ? `\n\nNachricht:\n${formData.nachricht}` : ""}${formData.gruppenwuensche ? `\n\nGruppenwünsche:\n${formData.gruppenwuensche}` : ""}`;
 
       // Bestätigungsmail an den Ausfüller senden
+      const bestatigungHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+    .greeting { font-size: 18px; margin-bottom: 16px; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 24px;">Anmeldung bestätigt</h1>
+    </div>
+    <div class="content">
+      <p class="greeting">Hallo <strong>${formData.name}</strong>,</p>
+      <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule ${anlage}!</p>
+      <p>Wir haben folgende Daten erhalten:</p>
+
+      <div class="section">
+        <div class="section-title">Kontaktdaten</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${formData.name}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${formData.email}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${formData.telefon}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${formData.alter_jahre} Jahre</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Trainingswünsche</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Pro Woche</td><td style="padding: 8px 0; font-weight: 500;">${formData.trainings_pro_woche}x Training</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Erfahrung</td><td style="padding: 8px 0; font-weight: 500;">${erfahrungText}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Verfügbarkeit</div>
+        <table>${verfuegbarkeitRows}</table>
+      </div>
+
+      ${formData.nachricht ? `
+      <div class="section">
+        <div class="section-title">Nachricht</div>
+        <p style="margin: 0; white-space: pre-wrap;">${formData.nachricht}</p>
+      </div>
+      ` : ""}
+
+      ${formData.gruppenwuensche ? `
+      <div class="section">
+        <div class="section-title">Gruppenwünsche</div>
+        <p style="margin: 0; white-space: pre-wrap;">${formData.gruppenwuensche}</p>
+      </div>
+      ` : ""}
+
+      <p style="margin-top: 20px; color: #6b7280;">Wir werden uns in Kürze bei Ihnen melden.</p>
+    </div>
+    <div class="footer">
+      Mit sportlichen Grüßen<br>
+      <strong>Ihr Tennistrainer-Team</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+
       try {
         await fetch("/api/send-newsletter", {
           method: "POST",
@@ -310,21 +385,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             to: [formData.email.trim()],
             subject: `Bestätigung Ihrer Trainingsanmeldung - ${anlage}`,
             body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhr Tennistrainer-Team`,
-            html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <p style="font-size: 18px;">Hallo <strong>${formData.name}</strong>,</p>
-  <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule ${anlage}!</p>
-  <p>Wir haben folgende Daten erhalten:</p>
-  ${emailHtml.split('<div class="container">')[1].split('<div class="footer">')[0]}
-  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-    <p style="color: #6b7280;">Wir werden uns in Kürze bei Ihnen melden.</p>
-    <p>Mit sportlichen Grüßen,<br><strong>Ihr Tennistrainer-Team</strong></p>
-  </div>
-</body>
-</html>`,
+            html: bestatigungHtml,
             fromName: "Tennisschule",
           }),
         });
