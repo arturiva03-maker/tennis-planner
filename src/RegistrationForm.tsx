@@ -210,6 +210,67 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
         return;
       }
 
+      // E-Mail-Zusammenfassung erstellen
+      const trainingsartText = formData.trainingsart === "einzel" ? "Einzeltraining" :
+        formData.trainingsart === "gruppe" ? "Gruppentraining" : "Beides möglich";
+      const erfahrungText = formData.erfahrungslevel === "anfaenger" ? "Anfänger" :
+        formData.erfahrungslevel === "fortgeschritten" ? "Fortgeschritten" :
+        formData.erfahrungslevel === "profi" ? "Profi / Wettkampfspieler" : "Nicht angegeben";
+
+      const verfuegbarkeitText = WOCHENTAGE.map(({ key, label }) =>
+        `${label}: ${verfuegbarkeitFinal[key]}`
+      ).join("\n");
+
+      const zusammenfassung = `
+Trainingsanmeldung ${anlage}
+
+Name: ${formData.name}
+E-Mail: ${formData.email}
+Telefon: ${formData.telefon}
+Alter: ${formData.alter_jahre} Jahre
+
+Trainingsart: ${trainingsartText}
+Trainings pro Woche: ${formData.trainings_pro_woche}x
+Erfahrungslevel: ${erfahrungText}
+
+Gewünschte Trainingszeiten:
+${verfuegbarkeitText}
+${formData.nachricht ? `\nNachricht:\n${formData.nachricht}` : ""}
+${anlage === "Britz" && formData.gruppenwuensche ? `\nGruppenwünsche:\n${formData.gruppenwuensche}` : ""}
+      `.trim();
+
+      // Bestätigungsmail an den Ausfüller senden
+      try {
+        await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: [formData.email.trim()],
+            subject: `Bestätigung Ihrer Trainingsanmeldung - ${anlage}`,
+            body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule ${anlage}!\n\nWir haben folgende Daten erhalten:\n\n${zusammenfassung}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhr Tennistrainer-Team`,
+            fromName: "Tennisschule",
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Bestätigungsmail-Fehler:", emailErr);
+      }
+
+      // Benachrichtigung an Trainer senden
+      try {
+        await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: ["tennisabisz@gmail.com"],
+            subject: `Neue Trainingsanmeldung - ${anlage} - ${formData.name}`,
+            body: `Neue Trainingsanmeldung eingegangen!\n\n${zusammenfassung}`,
+            fromName: "Tennisschule Anmeldung",
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Trainer-Benachrichtigung-Fehler:", emailErr);
+      }
+
       setSuccess(true);
     } catch (err) {
       console.error("Submit error:", err);
