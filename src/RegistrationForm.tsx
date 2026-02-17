@@ -293,7 +293,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     </div>
     <div class="footer">
       Mit sportlichen Grüßen<br>
-      <strong>Ihr Tennistrainer-Team</strong>
+      <strong>Ihre Tennisschule A bis Z</strong>
     </div>
   </div>
 </body>
@@ -326,7 +326,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     </div>
     <div class="content">
       <p class="greeting">Hallo <strong>${formData.name}</strong>,</p>
-      <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule ${anlage}!</p>
+      <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!</p>
       <p>Wir haben folgende Daten erhalten:</p>
 
       <div class="section">
@@ -371,7 +371,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     </div>
     <div class="footer">
       Mit sportlichen Grüßen<br>
-      <strong>Ihr Tennistrainer-Team</strong>
+      <strong>Ihre Tennisschule A bis Z</strong>
     </div>
   </div>
 </body>
@@ -384,7 +384,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
           body: JSON.stringify({
             to: [formData.email.trim()],
             subject: `Bestätigung Ihrer Trainingsanmeldung - ${anlage}`,
-            body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhr Tennistrainer-Team`,
+            body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
             html: bestatigungHtml,
             fromName: "Tennisschule",
           }),
