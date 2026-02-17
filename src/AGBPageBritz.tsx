@@ -24,10 +24,6 @@ export default function AGBPageBritz() {
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>60 EUR pro Monat</strong></td>
               </tr>
               <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Privattraining 2er-Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR pro Person/Stunde</strong></td>
-              </tr>
-              <tr>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Einzeltraining</td>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>40 EUR pro Stunde</strong></td>
               </tr>
