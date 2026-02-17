@@ -284,7 +284,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
       </div>
       ` : ""}
 
-      ${anlage === "Britz" && formData.gruppenwuensche ? `
+      ${formData.gruppenwuensche ? `
       <div class="section">
         <div class="section-title">Gruppenwünsche</div>
         <p style="margin: 0; white-space: pre-wrap;">${formData.gruppenwuensche}</p>
@@ -299,7 +299,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 </body>
 </html>`;
 
-      const textVersion = `Trainingsanmeldung ${anlage}\n\nName: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.telefon}\nAlter: ${formData.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${formData.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${verfuegbarkeitFinal[key]}`).join("\n")}${formData.nachricht ? `\n\nNachricht:\n${formData.nachricht}` : ""}${anlage === "Britz" && formData.gruppenwuensche ? `\n\nGruppenwünsche:\n${formData.gruppenwuensche}` : ""}`;
+      const textVersion = `Trainingsanmeldung ${anlage}\n\nName: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.telefon}\nAlter: ${formData.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${formData.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${verfuegbarkeitFinal[key]}`).join("\n")}${formData.nachricht ? `\n\nNachricht:\n${formData.nachricht}` : ""}${formData.gruppenwuensche ? `\n\nGruppenwünsche:\n${formData.gruppenwuensche}` : ""}`;
 
       // Bestätigungsmail an den Ausfüller senden
       try {
@@ -598,7 +598,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
               />
             </div>
 
-            {anlage === "Britz" && (formData.trainingsart === "gruppe" || formData.trainingsart === "beides") && (
+            {(formData.trainingsart === "gruppe" || formData.trainingsart === "beides") && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <label>Bei Gruppentraining: Gruppenwünsche</label>
                 <textarea
