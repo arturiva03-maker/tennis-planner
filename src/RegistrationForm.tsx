@@ -101,7 +101,13 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
   function handleZeitBisChange(tag: Wochentag, value: string) {
     setZeitBis((prev) => ({ ...prev, [tag]: value }));
-    updateVerfuegbarkeit(tag, zeitVon[tag], value, nichtVerfuegbar[tag]);
+    // Wenn Endzeit gewählt aber keine Startzeit, automatisch früheste Zeit setzen
+    let vonValue = zeitVon[tag];
+    if (value && !vonValue) {
+      vonValue = UHRZEITEN[0]; // 08:00
+      setZeitVon((prev) => ({ ...prev, [tag]: vonValue }));
+    }
+    updateVerfuegbarkeit(tag, vonValue, value, nichtVerfuegbar[tag]);
   }
 
   function handleNichtVerfuegbarChange(tag: Wochentag, checked: boolean) {
