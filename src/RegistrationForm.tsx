@@ -15,6 +15,7 @@ type RegistrationData = {
   erfahrungslevel: string;
   alter_jahre: string;
   nachricht: string;
+  gruppenwuensche: string;
 };
 
 const WOCHENTAGE: { key: Wochentag; label: string }[] = [
@@ -58,6 +59,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     erfahrungslevel: "",
     alter_jahre: "",
     nachricht: "",
+    gruppenwuensche: "",
   });
 
   const [zeitVon, setZeitVon] = useState<Record<Wochentag, string>>({
@@ -196,6 +198,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             ? parseInt(formData.alter_jahre, 10)
             : null,
           nachricht: formData.nachricht.trim() || null,
+          gruppenwuensche: formData.gruppenwuensche.trim() || null,
           anlage: anlage,
         });
 
@@ -456,6 +459,23 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
               />
             </div>
 
+            {anlage === "Britz" && (formData.trainingsart === "gruppe" || formData.trainingsart === "beides") && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>Bei Gruppentraining: Gruppenwünsche</label>
+                <textarea
+                  name="gruppenwuensche"
+                  value={formData.gruppenwuensche}
+                  onChange={handleChange}
+                  placeholder="Mit wem möchten Sie gerne in einer Gruppe trainieren?"
+                  rows={3}
+                  style={{
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                    fontSize: "inherit",
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 16 }}>
