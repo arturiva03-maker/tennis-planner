@@ -51,7 +51,7 @@ export default function AGBPage() {
             <li><strong>Sommersaison:</strong> Mitte April bis Mitte Oktober</li>
             <li><strong>Wintersaison:</strong> Mitte Oktober bis Mitte April</li>
             <li style={{ color: "#dc2626" }}>Die Anmeldung ist <strong>verbindlich für die gesamte Saison</strong> – ein vorzeitiges Aussteigen ist nicht möglich</li>
-            <li>Training findet auch in den Berliner Schulferien statt</li>
+            <li>In den Berliner offiziellen Sommerferien findet das Training nur nach vorheriger Absprache statt. Dazu wird es eine separate Anmeldemöglichkeit für Einzeltraining oder auch vereinbartes Gruppentraining geben.</li>
             <li>Bei unter-saisonalem Beitritt wird anteilig berechnet</li>
             <li>Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt)</li>
             <li>Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung</li>
