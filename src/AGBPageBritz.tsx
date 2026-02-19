@@ -9,7 +9,7 @@ export default function AGBPageBritz() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            1. Trainingspreise (Honorar)
+            1. Trainingspreise
           </h2>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
@@ -30,7 +30,7 @@ export default function AGBPageBritz() {
             </tbody>
           </table>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam.
+            Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für einen besonders kleinen Gruppenwunsch zu einer beliebten Trainingszeit (z.B. 2er oder 3er Gruppe an einem Wochentag ab 16 Uhr) kann ein Aufpreis erforderlich sein. Weitere Details sind mit dem Trainerteam zu besprechen.
