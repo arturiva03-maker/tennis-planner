@@ -7550,7 +7550,7 @@ Sportliche Grüße`
                                 subject: newsletterSubject.trim(),
                                 body: newsletterBody.trim(),
                                 html: newsletterBody.trim().replace(/\n/g, "<br>"),
-                                fromName: "Tennisschule"
+                                fromName: "Tennisschule A bis Z"
                               })
                             });
 
@@ -12506,7 +12506,7 @@ Deine Tennisschule`;
                               subject: emailSubject,
                               body: getEmailBody(getFullName(recipient)),
                               html: getEmailBody(getFullName(recipient)).replace(/\n/g, "<br>"),
-                              fromName: "Tennisschule"
+                              fromName: "Tennisschule A bis Z"
                             })
                           });
 
@@ -12709,7 +12709,7 @@ Deine Tennisschule`;
                               subject: cancelNotifySubject.trim(),
                               body: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)),
                               html: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)).replace(/\n/g, "<br>"),
-                              fromName: "Tennisschule"
+                              fromName: "Tennisschule A bis Z"
                             })
                           });
 
@@ -12898,7 +12898,7 @@ Deine Tennisschule`;
                         subject: trainingInfoEmailSubject,
                         body: trainingInfoEmailBody,
                         html: trainingInfoEmailBody.replace(/\n/g, "<br>"),
-                        fromName: "Tennisschule",
+                        fromName: "Tennisschule A bis Z",
                       }),
                     });
 

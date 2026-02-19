@@ -386,7 +386,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             subject: `Bestätigung Ihrer Trainingsanmeldung - ${anlage}`,
             body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
             html: bestatigungHtml,
-            fromName: "Tennisschule",
+            fromName: "Tennisschule A bis Z",
           }),
         });
       } catch (emailErr) {
@@ -403,7 +403,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             subject: `Neue Anmeldung ${anlage}: ${formData.name}`,
             body: `Neue Trainingsanmeldung!\n\n${textVersion}`,
             html: emailHtml,
-            fromName: "Tennisschule Anmeldung",
+            fromName: "Tennisschule A bis Z",
           }),
         });
       } catch (emailErr) {
