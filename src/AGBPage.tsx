@@ -24,14 +24,6 @@ export default function AGBPage() {
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>60 EUR pro Monat</strong></td>
               </tr>
               <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Privattraining 3er-Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR pro Person/Stunde</strong></td>
-              </tr>
-              <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Privattraining 2er-Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR pro Person/Stunde</strong></td>
-              </tr>
-              <tr>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Einzeltraining</td>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>40 EUR pro Stunde</strong></td>
               </tr>
@@ -39,6 +31,9 @@ export default function AGBPage() {
           </table>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam.
+          </p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für einen besonders kleinen Gruppenwunsch zu einer beliebten Trainingszeit (z.B. 2er oder 3er Gruppe an einem Wochentag ab 16 Uhr) kann ein Aufpreis erforderlich sein. Weitere Details sind mit dem Trainerteam zu besprechen.
           </p>
         </section>
 
