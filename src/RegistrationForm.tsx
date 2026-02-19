@@ -594,8 +594,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
               <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
                 Wählen Sie für jeden Tag Ihre verfügbare Zeit aus
               </p>
-              {anlage === "Wedding" && (
-                <p style={{
+              <p style={{
                   fontSize: 15,
                   marginBottom: 12,
                   color: "#dc2626",
@@ -607,7 +606,6 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
                 }}>
                   Bitte geben Sie möglichst viele verfügbare Zeiten an, um die Chance auf eine passende Einteilung zu ermöglichen.
                 </p>
-              )}
               <table className="verfuegbarkeitTable">
                 <tbody>
                   {WOCHENTAGE.map(({ key, label }) => (
