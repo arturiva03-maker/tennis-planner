@@ -32,77 +32,95 @@ export default function AGBPageBritz() {
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam.
           </p>
+          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für einen besonders kleinen Gruppenwunsch zu einer beliebten Trainingszeit (z.B. 2er oder 3er Gruppe an einem Wochentag ab 16 Uhr) kann ein Aufpreis erforderlich sein. Weitere Details sind mit dem Trainerteam zu besprechen.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
             2. Saisonbedingungen
           </h2>
-          <p style={{ marginBottom: 16, lineHeight: 1.8 }}>
-            Der Saisonzeitraum kann je nach Wetter variieren. Der genaue Trainingsbeginn und das Ende einer Saison wird den Teilnehmern mitgeteilt.
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Der Saisonzeitraum kann je nach Wetter variieren. Der genaue Trainingsbeginn und das Ende einer Saison wird den Teilnehmern mitgeteilt. Die Sommersaison läuft von Mitte April bis Mitte Oktober, die Wintersaison von Mitte Oktober bis Mitte April.
           </p>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li><strong>Sommersaison:</strong> Mitte April bis Mitte Oktober</li>
-            <li><strong>Wintersaison:</strong> Mitte Oktober bis Mitte April</li>
-            <li style={{ color: "#dc2626" }}>Die Anmeldung ist <strong>verbindlich für die gesamte Saison</strong> – ein vorzeitiges Aussteigen ist nicht möglich</li>
-            <li>Training findet in den Berliner Schulferien nur nach Absprache statt</li>
-            <li>Bei unter-saisonalem Beitritt wird anteilig berechnet</li>
-            <li>Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt)</li>
-            <li>Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung</li>
-          </ul>
+          <p style={{ marginBottom: 12, lineHeight: 1.8, color: "#dc2626" }}>
+            <strong>Die Anmeldung ist verbindlich für die gesamte Saison – ein vorzeitiges Aussteigen ist nicht möglich.</strong>
+          </p>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            In den Berliner offiziellen Sommerferien findet das Training nur nach vorheriger Absprache statt. Dazu wird es eine separate Anmeldemöglichkeit für Einzeltraining oder auch vereinbartes Gruppentraining geben.
+          </p>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Bei unter-saisonalem Beitritt wird anteilig berechnet. In diesem Fall wird die genaue Hallengebühr mitgeteilt. Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt). Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            3. Zahlung und Absageregelungen
+            3. Hallengebühren (nur in der Wintersaison)
           </h2>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li>Zahlung erfolgt zum <strong>Monatsende per SEPA-Lastschrift</strong></li>
-            <li>Rechnungen werden auf Wunsch elektronisch versandt</li>
-            <li><strong>Gruppentraining:</strong> Gebühr wird auch bei Nichtteilnahme fällig</li>
-            <li><strong>Einzeltraining:</strong> Absage spätestens 24 Stunden vorher, sonst wird das Honorar fällig</li>
-            <li>Versäumte Stunden können nicht nachgeholt oder erstattet werden</li>
-            <li>Bei trainerbedingtem Ausfall: Ersatztermin oder Kostenerstattung</li>
-            <li>Bei erheblichen Regenunterbrechungen: Ersatztermin oder 50% Gutschrift</li>
-          </ul>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Im Sommer fallen keine zusätzlichen Platzgebühren an. Die genauen Hallengebühren werden vor der Wintersaison bekannt gegeben.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            4. Ausnahmeregelungen
+            4. Zahlung und Absageregelungen
           </h2>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li>Bei mehrmonatiger Krankheit, Schwangerschaft oder Verletzung kann der Vertrag vorzeitig beendet werden</li>
-            <li>Kein genereller Anspruch auf Änderung oder Unterbrechung</li>
-            <li>Bei grobem Fehlverhalten: Ausschluss ohne Erstattung</li>
-            <li>Zahlungsverzug oder Rücklastschriften können zum Trainingsausschluss führen</li>
-          </ul>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Zahlung erfolgt zum Monatsende per SEPA-Lastschrift. Rechnungen werden auf Wunsch elektronisch versandt.
+          </p>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Beim Gruppentraining wird die Gebühr auch bei Nichtteilnahme fällig. Beim Einzeltraining muss die Absage spätestens 24 Stunden vorher erfolgen, sonst wird das Honorar fällig. Bei Einzeltraining-Absage (nur in der Hallensaison) kann die Hallenstunde ohne Rückerstattung auf einen anderen Spieler übertragen werden.
+          </p>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Die Hallengebühr kann in keinem Fall erstattet werden. Versäumte Stunden können nicht nachgeholt oder erstattet werden. Bei trainerbedingtem Ausfall gibt es einen Ersatztermin oder Kostenerstattung. Bei erheblichen Regenunterbrechungen gibt es einen Ersatztermin oder 50% Gutschrift.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            5. Haftung und Aufsichtspflicht
+            5. Ausnahmeregelungen
           </h2>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li><strong>Teilnahme erfolgt auf eigene Gefahr</strong></li>
-            <li>Haftung der Trainer nur bei Vorsatz und grober Fahrlässigkeit</li>
-            <li>Eltern haften für ihre Kinder</li>
-            <li><strong>Aufsichtspflicht der Trainer besteht nur während der Trainingszeit</strong></li>
-            <li>Eltern müssen Kinder pünktlich bringen und abholen</li>
-            <li>Gesundheitliche Einschränkungen müssen vor dem Training mitgeteilt werden</li>
-          </ul>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Bei mehrmonatiger Krankheit, Schwangerschaft oder Verletzung kann der Vertrag vorzeitig beendet werden. Es besteht kein genereller Anspruch auf Änderung oder Unterbrechung. Bei grobem Fehlverhalten erfolgt Ausschluss ohne Erstattung. Zahlungsverzug oder Rücklastschriften können zum Trainingsausschluss führen.
+          </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            6. Datenschutz
+            6. Haftung und Aufsichtspflicht
           </h2>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li>Erhobene Daten werden ausschließlich für Organisation und Training genutzt</li>
-            <li>Daten werden vertraulich behandelt</li>
-            <li>Fotos und Videos können zu Dokumentations- und Werbezwecken erstellt werden</li>
-            <li>Schriftlicher Widerspruch ist jederzeit möglich</li>
-          </ul>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            <strong>Die Teilnahme erfolgt auf eigene Gefahr.</strong> Die Haftung der Trainer besteht nur bei Vorsatz und grober Fahrlässigkeit. Eltern haften für ihre Kinder.
+          </p>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            <strong>Die Aufsichtspflicht der Trainer besteht nur während der Trainingszeit.</strong> Eltern müssen Kinder pünktlich bringen und abholen. Gesundheitliche Einschränkungen müssen vor dem Training mitgeteilt werden.
+          </p>
+        </section>
+
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
+            7. Vereinsmitgliedschaft (TC Britz)
+          </h2>
+          <p style={{ marginBottom: 12, color: "#dc2626" }}>
+            Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich
+            (Ausnahmen: Probetraining, Tenniscamps, Wintertraining).
+          </p>
+          <p style={{ marginTop: 12, fontStyle: "italic" }}>
+            Gebühren und Konditionen für Vereinsmitgliedschaften können sich ändern.
+            Aktuelle Informationen bitte direkt der Vereinswebsite entnehmen (Link siehe unten).
+          </p>
+        </section>
+
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
+            8. Datenschutz
+          </h2>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Erhobene Daten werden ausschließlich für Organisation und Training genutzt. Daten werden vertraulich behandelt. Fotos und Videos können zu Dokumentations- und Werbezwecken erstellt werden. Schriftlicher Widerspruch ist jederzeit möglich.
+          </p>
         </section>
 
         <div style={{
@@ -110,13 +128,10 @@ export default function AGBPageBritz() {
           padding: 16,
           borderRadius: 8,
           fontSize: 13,
+          color: "var(--text-muted)"
         }}>
-          <p style={{ margin: 0, color: "#dc2626" }}>
-            Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich
-            (Ausnahmen: Probetraining, Tenniscamps, Wintertraining).
-          </p>
-          <p style={{ margin: "8px 0 0 0", color: "var(--text-muted)" }}>
-            Weitere Infos direkt auf der Vereinshomepage:{" "}
+          <p style={{ margin: 0 }}>
+            Weitere Informationen zur Vereinsmitgliedschaft unter:{" "}
             <a
               href="https://tc-britz.de/"
               target="_blank"
