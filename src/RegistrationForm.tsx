@@ -595,7 +595,16 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
                 Wählen Sie für jeden Tag Ihre verfügbare Zeit aus
               </p>
               {anlage === "Wedding" && (
-                <p style={{ fontSize: 13, marginBottom: 12, color: "#dc2626", fontWeight: 600 }}>
+                <p style={{
+                  fontSize: 15,
+                  marginBottom: 12,
+                  color: "#dc2626",
+                  fontWeight: 700,
+                  background: "#fef2f2",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #fecaca"
+                }}>
                   Bitte geben Sie möglichst viele verfügbare Zeiten an, um die Chance auf eine passende Einteilung zu ermöglichen.
                 </p>
               )}
