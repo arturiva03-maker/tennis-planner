@@ -60,28 +60,11 @@ export default function AGBPage() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            3. Hallengebühren (Wintersaison)
+            3. Hallengebühren (nur in der Wintersaison)
           </h2>
           <p style={{ marginBottom: 12 }}>Im Sommer fallen keine zusätzlichen Platzgebühren an.</p>
-
-          <h3 style={{ fontSize: 15, marginBottom: 8 }}>Kinder/Jugendliche im Gruppentraining:</h3>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8, marginBottom: 16 }}>
-            <li>Mitglied, 1x pro Woche: <strong>Wird vom Verein bezahlt</strong></li>
-            <li>Mitglied, 2. Training/Woche: <strong>112 EUR zusätzlich (pauschal)</strong></li>
-            <li>Nicht-Mitglied: <strong>140 EUR einmalig (pauschal)</strong></li>
-          </ul>
-
-          <h3 style={{ fontSize: 15, marginBottom: 8 }}>Einzel-/Privattraining & Erwachsene:</h3>
-          <ul style={{ paddingLeft: 20, lineHeight: 1.8 }}>
-            <li>Mitglieder: <strong>16 EUR pro Stunde</strong></li>
-            <li>Nicht-Mitglieder: <strong>18 EUR pro Stunde</strong></li>
-          </ul>
-          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Die Hallengebühr wird im Gruppentraining auf die Anzahl der Schüler aufgeteilt.
-          </p>
-
-          <p style={{ marginTop: 16, fontStyle: "italic" }}>
-            Die Hallengebühr wird bei unter-saisonalem Beitritt anteilig berechnet.
+          <p className="muted" style={{ fontSize: 13 }}>
+            Die genauen Hallengebühren werden vor der Wintersaison bekannt gegeben.
           </p>
         </section>
 
