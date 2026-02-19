@@ -6622,14 +6622,18 @@ Sportliche Grüße`
                               if (anmeldungStatusFilter === "offen" && r.status === "erledigt") return false;
                               if (anmeldungStatusFilter === "erledigt" && r.status !== "erledigt") return false;
                               return true;
-                            }).map((req) => (
-                              <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                            }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((req) => (
+                              <li key={req.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedRequestId === req.id ? undefined : "8px 12px" }}>
+                                <div
+                                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+                                  onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                     <input
                                       type="checkbox"
                                       checked={selectedRequestIds.has(req.id)}
                                       onChange={(e) => {
+                                        e.stopPropagation();
                                         const newSet = new Set(selectedRequestIds);
                                         if (e.target.checked) {
                                           newSet.add(req.id);
@@ -6638,90 +6642,93 @@ Sportliche Grüße`
                                         }
                                         setSelectedRequestIds(newSet);
                                       }}
-                                      style={{ marginTop: 4 }}
+                                      onClick={(e) => e.stopPropagation()}
                                     />
-                                    <div>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <strong>{req.name}</strong>
-                                      {req.anlage && (
-                                        <span style={{
-                                          fontSize: 11,
-                                          background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
-                                          color: req.anlage === "Britz" ? "#000" : "#fff",
-                                          padding: "2px 6px",
-                                          borderRadius: 4
-                                        }}>
-                                          {req.anlage}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <div className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                      {req.email}
-                                      <button
-                                        type="button"
-                                        title="E-Mail senden"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setNewsletterExtraEmails(prev =>
-                                            prev.some(em => em.email === req.email)
-                                              ? prev
-                                              : [...prev, { email: req.email, name: req.name }]
-                                          );
-                                          setNewsletterSubject("Anfrage zum Tennistraining");
-                                          setNewsletterLabelFilter("keine");
-                                          setVerwaltungTab("newsletter");
-                                        }}
-                                        style={{
-                                          display: "inline-flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          width: 22,
-                                          height: 22,
-                                          borderRadius: 4,
-                                          background: "var(--primary)",
-                                          color: "#fff",
-                                          border: "none",
-                                          cursor: "pointer",
-                                          fontSize: 12,
-                                        }}
-                                      >
-                                        ✉
-                                      </button>
-                                    </div>
-                                    <div className="muted" style={{ fontSize: 12 }}>
-                                      {new Date(req.created_at).toLocaleDateString("de-DE", {
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit"
-                                      })}
-                                    </div>
-                                    </div>
+                                    <span style={{ fontWeight: 500 }}>{req.name}</span>
+                                    {req.alter_jahre && (
+                                      <span className="muted" style={{ fontSize: 13 }}>
+                                        {req.alter_jahre}J
+                                      </span>
+                                    )}
+                                    {req.anlage && (
+                                      <span style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                                        color: req.anlage === "Britz" ? "#000" : "#fff",
+                                        padding: "2px 6px",
+                                        borderRadius: 4,
+                                        minWidth: 16,
+                                        textAlign: "center"
+                                      }}>
+                                        {req.anlage === "Britz" ? "B" : "W"}
+                                      </span>
+                                    )}
                                   </div>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span
-                                      className="pill"
-                                      style={{
-                                        background: req.status === "erledigt" ? "var(--success)" : "var(--danger)",
-                                        color: "white",
-                                        fontSize: 12,
-                                        padding: "4px 10px"
-                                      }}
-                                    >
-                                      {req.status === "erledigt" ? "Erledigt" : "Offen"}
-                                    </span>
-                                    <button
-                                      className="btn micro btnGhost"
-                                      onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
-                                    >
-                                      {expandedRequestId === req.id ? "Weniger" : "Details"}
-                                    </button>
-                                  </div>
+                                  <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedRequestId === req.id ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                    ▶
+                                  </span>
                                 </div>
 
                                 {expandedRequestId === req.id && (
                                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span className="muted">{req.email}</span>
+                                        <button
+                                          type="button"
+                                          title="E-Mail senden"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewsletterExtraEmails(prev =>
+                                              prev.some(em => em.email === req.email)
+                                                ? prev
+                                                : [...prev, { email: req.email, name: req.name }]
+                                            );
+                                            setNewsletterSubject("Anfrage zum Tennistraining");
+                                            setNewsletterLabelFilter("keine");
+                                            setVerwaltungTab("newsletter");
+                                          }}
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 4,
+                                            background: "var(--primary)",
+                                            color: "#fff",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            fontSize: 12,
+                                          }}
+                                        >
+                                          ✉
+                                        </button>
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span className="muted" style={{ fontSize: 12 }}>
+                                          {new Date(req.created_at).toLocaleDateString("de-DE", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit"
+                                          })}
+                                        </span>
+                                        <span
+                                          className="pill"
+                                          style={{
+                                            background: req.status === "erledigt" ? "var(--success)" : "var(--danger)",
+                                            color: "white",
+                                            fontSize: 12,
+                                            padding: "4px 10px"
+                                          }}
+                                        >
+                                          {req.status === "erledigt" ? "Erledigt" : "Offen"}
+                                        </span>
+                                      </div>
+                                    </div>
                                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                                       {req.telefon && (
                                         <div>
