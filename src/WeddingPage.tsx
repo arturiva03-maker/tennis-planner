@@ -224,7 +224,9 @@ export default function WeddingPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
+          backgroundImage: `linear-gradient(rgba(27, 71, 27, 0.75), rgba(27, 71, 27, 0.85)), url(/images/hero-new.jpg)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         <div style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "100px 24px 60px" }}>
