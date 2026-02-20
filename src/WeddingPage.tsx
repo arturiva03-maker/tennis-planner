@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import "./App.css";
 
 export default function WeddingPage() {
@@ -108,8 +107,8 @@ export default function WeddingPage() {
                   {item}
                 </button>
               ))}
-              <Link
-                to="/anmeldung-wedding"
+              <a
+                href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
                 style={{
                   background: "var(--primary)",
                   color: "#fff",
@@ -121,7 +120,7 @@ export default function WeddingPage() {
                 }}
               >
                 Training buchen
-              </Link>
+              </a>
             </div>
           </div>
         </div>
@@ -313,8 +312,8 @@ export default function WeddingPage() {
               </a>
             </div>
 
-            <Link
-              to="/anmeldung-wedding"
+            <a
+              href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
               style={{
                 display: "inline-block",
                 background: "var(--primary)",
@@ -329,7 +328,7 @@ export default function WeddingPage() {
               }}
             >
               Training buchen
-            </Link>
+            </a>
           </div>
         </div>
       </section>
