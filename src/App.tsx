@@ -1232,6 +1232,10 @@ export default function App() {
   const [pdfExportLabelFilter, setPdfExportLabelFilter] = useState<string>("alle");
   const [pdfExportExcluded, setPdfExportExcluded] = useState<Set<string>>(new Set());
 
+  // States für Wochenplan PDF-Export
+  const [showWeekPdfModal, setShowWeekPdfModal] = useState(false);
+  const [weekPdfDate, setWeekPdfDate] = useState<string>(todayISO());
+
   // State für Spieler-Label-Filter in Verwaltung
   const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
 
@@ -4133,6 +4137,16 @@ Deine Tennisschule`;
                         Neues Training
                       </button>
                     )}
+
+                    <button
+                      className="btn btnGhost"
+                      onClick={() => {
+                        setWeekPdfDate(weekStart);
+                        setShowWeekPdfModal(true);
+                      }}
+                    >
+                      Wochenplan PDF
+                    </button>
                   </div>
                 </div>
 
@@ -10721,6 +10735,249 @@ Deine Tennisschule`;
           </div>
         </div>
       )}
+
+      {/* Wochenplan PDF Export Modal */}
+      {showWeekPdfModal && (() => {
+        const pdfWeekStart = startOfWeekISO(weekPdfDate);
+        const pdfWeekDays = Array.from({ length: 7 }, (_, i) => addDaysISO(pdfWeekStart, i));
+        const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+
+        const weekTrainings = trainings.filter(t => {
+          return t.datum >= pdfWeekStart && t.datum <= pdfWeekDays[6];
+        }).sort((a, b) => {
+          if (a.datum !== b.datum) return a.datum.localeCompare(b.datum);
+          return a.uhrzeitVon.localeCompare(b.uhrzeitVon);
+        });
+
+        const trainingsByDay = pdfWeekDays.map(day =>
+          weekTrainings.filter(t => t.datum === day)
+        );
+
+        const formatDateFull = (dateISO: string) => {
+          const d = new Date(dateISO + "T12:00:00");
+          return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+        };
+
+        return (
+          <div className="modalOverlay" onClick={() => setShowWeekPdfModal(false)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 800, maxHeight: "90vh", overflow: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0 }}>Wochenplan als PDF exportieren</h2>
+                <button
+                  onClick={() => setShowWeekPdfModal(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: 24,
+                    cursor: "pointer",
+                    color: "#666",
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="row" style={{ marginBottom: 16, gap: 12, alignItems: "flex-end" }}>
+                <div className="field" style={{ flex: 1 }}>
+                  <label>Woche auswählen (Montag)</label>
+                  <input
+                    type="date"
+                    value={weekPdfDate}
+                    onChange={(e) => setWeekPdfDate(e.target.value)}
+                  />
+                </div>
+                <span className="pill">
+                  {formatWeekRange(pdfWeekStart)}
+                </span>
+                <span className="pill">
+                  {weekTrainings.length} Trainings
+                </span>
+              </div>
+
+              <div style={{
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                maxHeight: 400,
+                overflow: "auto",
+                marginBottom: 16
+              }}>
+                {pdfWeekDays.map((day, dayIdx) => (
+                  <div key={day} style={{ borderBottom: dayIdx < 6 ? "1px solid #eee" : "none" }}>
+                    <div style={{
+                      background: "#f5f5f5",
+                      padding: "8px 12px",
+                      fontWeight: "bold",
+                      position: "sticky",
+                      top: 0
+                    }}>
+                      {dayNames[dayIdx]}, {formatDateFull(day)}
+                    </div>
+                    {trainingsByDay[dayIdx].length === 0 ? (
+                      <div style={{ padding: "8px 12px", color: "#999", fontStyle: "italic" }}>
+                        Keine Trainings
+                      </div>
+                    ) : (
+                      trainingsByDay[dayIdx].map(t => {
+                        const trainer = trainerById.get(t.trainerId || "");
+                        const spielerNames = t.spielerIds
+                          .map(id => spielerById.get(id))
+                          .filter(Boolean)
+                          .map(s => getFullName(s!))
+                          .join(", ");
+                        return (
+                          <div key={t.id} style={{
+                            padding: "8px 12px",
+                            display: "flex",
+                            gap: 12,
+                            borderTop: "1px solid #f0f0f0"
+                          }}>
+                            <span style={{ fontWeight: 500, minWidth: 100 }}>
+                              {t.uhrzeitVon} - {t.uhrzeitBis}
+                            </span>
+                            <span style={{ color: "#666", minWidth: 120 }}>
+                              {trainer?.name || "Kein Trainer"}
+                            </span>
+                            <span style={{ flex: 1 }}>
+                              {spielerNames || "Keine Spieler"}
+                            </span>
+                            <span style={{
+                              fontSize: 12,
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: t.status === "durchgefuehrt" ? "#dcfce7" :
+                                         t.status === "abgesagt" ? "#fee2e2" : "#dbeafe",
+                              color: t.status === "durchgefuehrt" ? "#166534" :
+                                    t.status === "abgesagt" ? "#991b1b" : "#1e40af"
+                            }}>
+                              {statusLabel(t.status)}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+                <button
+                  className="btn btnGhost"
+                  onClick={() => setShowWeekPdfModal(false)}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    const tableRows = pdfWeekDays.map((day, dayIdx) => {
+                      const dayTrainings = trainingsByDay[dayIdx];
+                      if (dayTrainings.length === 0) {
+                        return `
+                          <tr>
+                            <td style="padding: 8px 12px; font-weight: bold; background: #f9fafb; border: 1px solid #e5e7eb;">
+                              ${dayNames[dayIdx]}<br/><span style="font-weight: normal; font-size: 12px;">${formatDateFull(day)}</span>
+                            </td>
+                            <td colspan="4" style="padding: 8px 12px; color: #9ca3af; font-style: italic; border: 1px solid #e5e7eb;">
+                              Keine Trainings
+                            </td>
+                          </tr>
+                        `;
+                      }
+                      return dayTrainings.map((t, tIdx) => {
+                        const trainer = trainerById.get(t.trainerId || "");
+                        const spielerNames = t.spielerIds
+                          .map(id => spielerById.get(id))
+                          .filter(Boolean)
+                          .map(s => getFullName(s!))
+                          .join(", ");
+                        return `
+                          <tr>
+                            ${tIdx === 0 ? `
+                              <td rowspan="${dayTrainings.length}" style="padding: 8px 12px; font-weight: bold; background: #f9fafb; border: 1px solid #e5e7eb; vertical-align: top;">
+                                ${dayNames[dayIdx]}<br/><span style="font-weight: normal; font-size: 12px;">${formatDateFull(day)}</span>
+                              </td>
+                            ` : ""}
+                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; white-space: nowrap;">
+                              ${t.uhrzeitVon} - ${t.uhrzeitBis}
+                            </td>
+                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
+                              ${trainer?.name || "-"}
+                            </td>
+                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
+                              ${spielerNames || "-"}
+                            </td>
+                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">
+                              <span style="
+                                font-size: 11px;
+                                padding: 2px 6px;
+                                border-radius: 4px;
+                                background: ${t.status === "durchgefuehrt" ? "#dcfce7" : t.status === "abgesagt" ? "#fee2e2" : "#dbeafe"};
+                                color: ${t.status === "durchgefuehrt" ? "#166534" : t.status === "abgesagt" ? "#991b1b" : "#1e40af"};
+                              ">
+                                ${statusLabel(t.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+                      }).join("");
+                    }).join("");
+
+                    const tableHTML = `
+                      <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h1 style="margin: 0 0 8px 0; font-size: 20px; color: #111;">Wochenplan Tennis</h1>
+                        <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
+                          ${formatWeekRange(pdfWeekStart)} (${weekTrainings.length} Trainings)
+                        </p>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                          <thead>
+                            <tr style="background: #1e3a5f; color: white;">
+                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Tag</th>
+                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Uhrzeit</th>
+                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Trainer</th>
+                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Spieler</th>
+                              <th style="padding: 10px 12px; text-align: center; border: 1px solid #1e3a5f;">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${tableRows}
+                          </tbody>
+                        </table>
+                        <p style="margin-top: 20px; font-size: 11px; color: #999; text-align: right;">
+                          Erstellt am ${formatDateFull(todayISO())}
+                        </p>
+                      </div>
+                    `;
+
+                    const html2pdf = (await import('html2pdf.js')).default;
+                    const container = document.createElement('div');
+                    container.innerHTML = tableHTML;
+                    document.body.appendChild(container);
+
+                    await html2pdf()
+                      .set({
+                        margin: 10,
+                        filename: `Wochenplan_${pdfWeekStart}.pdf`,
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                      })
+                      .from(container)
+                      .save();
+
+                    document.body.removeChild(container);
+                    setShowWeekPdfModal(false);
+                  }}
+                >
+                  PDF erstellen
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* PDF-Export Modal mit Vorschau */}
       {showPdfExportModal && (() => {
