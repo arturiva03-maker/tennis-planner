@@ -3,6 +3,7 @@ import "./App.css";
 
 export default function WeddingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showImpressum, setShowImpressum] = useState(false);
   const [showDatenschutz, setShowDatenschutz] = useState(false);
 
@@ -14,6 +15,18 @@ export default function WeddingPage() {
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    setMobileMenuOpen(false);
+  };
+
+  // Vereinsfarben BSC Rehberge
+  const colors = {
+    primary: "#1b471b",
+    primaryLight: "#418231",
+    white: "#ffffff",
+    bgLight: "#f6f6f6",
+    text: "#333333",
+    textMuted: "#666666",
+    border: "#d2d2d2",
   };
 
   const news = [
@@ -68,7 +81,12 @@ export default function WeddingPage() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-main)", fontFamily: "inherit" }}>
+    <div style={{
+      minHeight: "100vh",
+      background: colors.white,
+      fontFamily: "'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      color: colors.text,
+    }}>
       {/* Navigation */}
       <nav
         style={{
@@ -78,18 +96,25 @@ export default function WeddingPage() {
           right: 0,
           zIndex: 50,
           transition: "all 0.3s ease",
-          background: scrolled ? "rgba(255,255,255,0.95)" : "transparent",
-          backdropFilter: scrolled ? "blur(8px)" : "none",
-          boxShadow: scrolled ? "var(--shadow-md)" : "none",
+          background: scrolled ? colors.white : "transparent",
+          boxShadow: scrolled ? "0 2px 10px rgba(0,0,0,0.1)" : "none",
+          borderBottom: scrolled ? `1px solid ${colors.border}` : "none",
         }}
       >
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 72 }}>
-            <span style={{ fontWeight: 700, fontSize: 20, color: scrolled ? "var(--text-primary)" : "#fff" }}>
-              Tennisschule <span style={{ color: "var(--primary)" }}>A bis Z</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 70 }}>
+            <span style={{
+              fontWeight: 700,
+              fontSize: 18,
+              color: scrolled ? colors.primary : "#fff",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}>
+              Tennisschule A bis Z
             </span>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            {/* Desktop Menu */}
+            <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
               {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
@@ -98,10 +123,84 @@ export default function WeddingPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    fontWeight: 500,
-                    fontSize: 15,
-                    color: scrolled ? "var(--text-secondary)" : "rgba(255,255,255,0.9)",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    color: scrolled ? colors.text : "rgba(255,255,255,0.95)",
                     transition: "color 0.2s",
+                    padding: "8px 0",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = colors.primaryLight}
+                  onMouseLeave={(e) => e.currentTarget.style.color = scrolled ? colors.text : "rgba(255,255,255,0.95)"}
+                >
+                  {item}
+                </button>
+              ))}
+              <a
+                href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
+                style={{
+                  background: colors.primary,
+                  color: "#fff",
+                  padding: "11px 23px",
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  textDecoration: "none",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Training buchen
+              </a>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              style={{
+                display: "none",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 8,
+                color: scrolled ? colors.text : "#fff",
+              }}
+              className="mobile-menu-btn"
+            >
+              <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div style={{
+              background: colors.white,
+              padding: 16,
+              borderTop: `1px solid ${colors.border}`,
+            }}>
+              {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => scrollToSection(item.toLowerCase())}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    color: colors.text,
+                    padding: "12px 0",
+                    borderBottom: `1px solid ${colors.border}`,
                   }}
                 >
                   {item}
@@ -110,19 +209,22 @@ export default function WeddingPage() {
               <a
                 href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
                 style={{
-                  background: "var(--primary)",
+                  display: "block",
+                  background: colors.primary,
                   color: "#fff",
-                  padding: "10px 24px",
-                  borderRadius: "var(--radius-md)",
-                  fontWeight: 600,
+                  padding: "12px 20px",
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  fontSize: 14,
                   textDecoration: "none",
-                  boxShadow: "var(--shadow-md)",
+                  textAlign: "center",
+                  marginTop: 16,
                 }}
               >
                 Training buchen
               </a>
             </div>
-          </div>
+          )}
         </div>
       </nav>
 
@@ -130,71 +232,81 @@ export default function WeddingPage() {
       <header
         style={{
           position: "relative",
-          minHeight: "100vh",
+          minHeight: "70vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
-          background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, #1e3a5f 100%)",
+          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
         }}
       >
-        {/* Animated Lines */}
-        <div style={{ position: "absolute", inset: 0, opacity: 0.1 }}>
-          <div style={{ position: "absolute", top: "25%", left: 0, right: 0, height: 1, background: "#fff" }} />
-          <div style={{ position: "absolute", top: "75%", left: 0, right: 0, height: 1, background: "#fff" }} />
-          <div style={{ position: "absolute", left: "25%", top: 0, bottom: 0, width: 1, background: "#fff" }} />
-          <div style={{ position: "absolute", right: "25%", top: 0, bottom: 0, width: 1, background: "#fff" }} />
-        </div>
-
-        {/* Content */}
-        <div style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "0 24px", maxWidth: 900 }}>
+        <div style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "100px 24px 60px" }}>
           <h1
             style={{
-              fontSize: "clamp(48px, 10vw, 96px)",
-              fontWeight: 900,
+              fontSize: "clamp(32px, 6vw, 56px)",
+              fontWeight: 700,
               color: "#fff",
               marginBottom: 16,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.1,
+              lineHeight: 1.2,
             }}
           >
-            Tennisschule
-            <span style={{ display: "block", color: "#93c5fd" }}>A bis Z</span>
+            Tennisschule A bis Z
           </h1>
-          <p style={{ fontSize: 20, color: "rgba(255,255,255,0.8)", marginBottom: 8 }}>
-            Standort Wedding
+          <p style={{
+            fontSize: 18,
+            color: "rgba(255,255,255,0.9)",
+            marginBottom: 8,
+            fontWeight: 400,
+          }}>
+            Standort Wedding · BSC Rehberge
           </p>
+          <div style={{
+            width: 60,
+            height: 3,
+            background: "rgba(255,255,255,0.5)",
+            margin: "24px auto 0",
+          }} />
         </div>
       </header>
 
       {/* Aktuelles Section */}
-      <section id="aktuelles" style={{ padding: "96px 24px", background: "var(--bg-main)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
+            <h2 style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.primary,
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}>
               Aktuelles
             </h2>
+            <div style={{
+              width: 50,
+              height: 3,
+              background: colors.primary,
+              margin: "16px auto 0",
+            }} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
             {news.map((item, i) => (
               <div
                 key={i}
                 style={{
-                  background: "var(--bg-card)",
-                  borderRadius: "var(--radius-lg)",
+                  background: colors.bgLight,
                   padding: 24,
-                  boxShadow: "var(--shadow-md)",
-                  border: "1px solid var(--border)",
+                  borderLeft: `4px solid ${colors.primary}`,
                 }}
               >
-                <div style={{ fontSize: 13, color: "var(--primary)", fontWeight: 600, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: colors.primaryLight, fontWeight: 700, marginBottom: 8, textTransform: "uppercase" }}>
                   {item.date}
                 </div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 12 }}>
                   {item.title}
                 </h3>
-                <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6 }}>
                   {item.excerpt}
                 </p>
               </div>
@@ -204,47 +316,60 @@ export default function WeddingPage() {
       </section>
 
       {/* Trainer Section */}
-      <section id="trainer" style={{ padding: "96px 24px", background: "var(--bg-card)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <section id="trainer" style={{ padding: "80px 24px", background: colors.bgLight }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, color: "var(--text-primary)", marginBottom: 8 }}>
+            <h2 style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.primary,
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}>
               Unsere Trainer
             </h2>
+            <div style={{
+              width: 50,
+              height: 3,
+              background: colors.primary,
+              margin: "16px auto 0",
+            }} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
             {trainers.map((trainer, i) => (
               <div
                 key={i}
                 style={{
-                  background: "var(--bg-main)",
-                  borderRadius: "var(--radius-lg)",
+                  background: colors.white,
+                  border: `1px solid ${colors.border}`,
                   overflow: "hidden",
-                  border: "1px solid var(--border)",
                 }}
               >
                 <div
                   style={{
-                    aspectRatio: "3/4",
-                    background: "var(--bg-inset)",
+                    aspectRatio: "1",
+                    background: colors.bgLight,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    borderBottom: `1px solid ${colors.border}`,
                   }}
                 >
-                  <span style={{ fontSize: 48, fontWeight: 700, color: "var(--border)" }}>
+                  <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
                     {trainer.name.split(" ").map((n) => n[0]).join("")}
                   </span>
                 </div>
-                <div style={{ padding: 20 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", marginBottom: 4 }}>
+                <div style={{ padding: 16 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
                     {trainer.name}
                   </h3>
-                  <p style={{ fontSize: 14, color: "var(--primary)", marginBottom: 8 }}>
+                  <p style={{ fontSize: 13, color: colors.primary, marginBottom: 8, fontWeight: 700 }}>
                     {trainer.qualification}
                   </p>
                   {trainer.bio && (
-                    <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.5 }}>
                       {trainer.bio}
                     </p>
                   )}
@@ -256,98 +381,85 @@ export default function WeddingPage() {
       </section>
 
       {/* Kontakt Section */}
-      <section id="kontakt" style={{ padding: "96px 24px", background: "var(--bg-main)" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, color: "var(--text-primary)", marginBottom: 16 }}>
-              Kontakt
-            </h2>
-            <p style={{ fontSize: 18, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              Sie möchten ein Training buchen oder haben Fragen? Wir antworten meistens innerhalb von 24 Stunden.
-            </p>
-          </div>
+      <section id="kontakt" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+          <h2 style={{
+            fontSize: 28,
+            fontWeight: 700,
+            color: colors.primary,
+            marginBottom: 8,
+            textTransform: "uppercase",
+            letterSpacing: "1px",
+          }}>
+            Kontakt
+          </h2>
+          <div style={{
+            width: 50,
+            height: 3,
+            background: colors.primary,
+            margin: "16px auto 32px",
+          }} />
 
-          <div
-            style={{
-              background: "var(--bg-card)",
-              borderRadius: "var(--radius-xl)",
-              padding: 40,
-              boxShadow: "var(--shadow-lg)",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ marginBottom: 32 }}>
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  background: "rgba(37, 99, 235, 0.1)",
-                  borderRadius: "var(--radius-lg)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 16px",
-                }}
-              >
-                <svg
-                  style={{ width: 32, height: 32, color: "var(--primary)" }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <div style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 4 }}>E-Mail</div>
-              <a
-                href="mailto:tennisabisz@gmail.com"
-                style={{ fontSize: 18, fontWeight: 600, color: "var(--text-primary)", textDecoration: "none" }}
-              >
-                tennisabisz@gmail.com
-              </a>
-            </div>
+          <p style={{ fontSize: 16, color: colors.textMuted, lineHeight: 1.7, marginBottom: 32 }}>
+            Sie möchten ein Training buchen oder haben Fragen? Wir antworten meistens innerhalb von 24 Stunden.
+          </p>
 
+          <div style={{
+            background: colors.bgLight,
+            padding: 32,
+            marginBottom: 32,
+            borderLeft: `4px solid ${colors.primary}`,
+          }}>
+            <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 8 }}>E-Mail</div>
             <a
-              href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
+              href="mailto:tennisabisz@gmail.com"
               style={{
-                display: "inline-block",
-                background: "var(--primary)",
-                color: "#fff",
-                padding: "16px 48px",
-                borderRadius: "var(--radius-md)",
-                fontWeight: 600,
                 fontSize: 18,
+                fontWeight: 700,
+                color: colors.primary,
                 textDecoration: "none",
-                boxShadow: "var(--shadow-md)",
-                transition: "transform 0.2s, box-shadow 0.2s",
               }}
             >
-              Training buchen
+              tennisabisz@gmail.com
             </a>
           </div>
+
+          <a
+            href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
+            style={{
+              display: "inline-block",
+              background: colors.primary,
+              color: "#fff",
+              padding: "14px 40px",
+              borderRadius: 2,
+              fontWeight: 700,
+              fontSize: 14,
+              textDecoration: "none",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Training buchen
+          </a>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ background: "var(--text-primary)", color: "#fff", padding: "64px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 48, marginBottom: 48 }}>
+      <footer style={{ background: colors.primary, color: "#fff", padding: "48px 24px" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginBottom: 32 }}>
             <div>
-              <span style={{ fontWeight: 700, fontSize: 18 }}>
-                Tennisschule <span style={{ color: "var(--primary-light)" }}>A bis Z</span>
+              <span style={{ fontWeight: 700, fontSize: 16, textTransform: "uppercase" }}>
+                Tennisschule A bis Z
               </span>
-              <p style={{ marginTop: 12, fontSize: 14, color: "rgba(255,255,255,0.6)" }}>
-                Standort Wedding
+              <p style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.7)" }}>
+                Standort Wedding<br />
+                BSC Rehberge
               </p>
             </div>
 
             <div>
-              <h4 style={{ fontWeight: 600, marginBottom: 16 }}>Navigation</h4>
+              <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
                   <button
@@ -357,7 +469,7 @@ export default function WeddingPage() {
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: "rgba(255,255,255,0.6)",
+                      color: "rgba(255,255,255,0.7)",
                       fontSize: 14,
                       textAlign: "left",
                       padding: 0,
@@ -370,7 +482,7 @@ export default function WeddingPage() {
             </div>
 
             <div>
-              <h4 style={{ fontWeight: 600, marginBottom: 16 }}>Rechtliches</h4>
+              <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Rechtliches</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button
                   onClick={() => setShowImpressum(true)}
@@ -378,7 +490,7 @@ export default function WeddingPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "rgba(255,255,255,0.6)",
+                    color: "rgba(255,255,255,0.7)",
                     fontSize: 14,
                     textAlign: "left",
                     padding: 0,
@@ -392,7 +504,7 @@ export default function WeddingPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "rgba(255,255,255,0.6)",
+                    color: "rgba(255,255,255,0.7)",
                     fontSize: 14,
                     textAlign: "left",
                     padding: 0,
@@ -404,8 +516,8 @@ export default function WeddingPage() {
             </div>
           </div>
 
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 32, textAlign: "center", fontSize: 14, color: "rgba(255,255,255,0.5)" }}>
-            <p>&copy; 2025 Tennisschule <span style={{ color: "var(--primary-light)" }}>A bis Z</span>. Alle Rechte vorbehalten.</p>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
+            <p>&copy; 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
@@ -417,7 +529,6 @@ export default function WeddingPage() {
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -429,7 +540,6 @@ export default function WeddingPage() {
           <div
             style={{
               background: "#fff",
-              borderRadius: "var(--radius-xl)",
               maxWidth: 600,
               width: "100%",
               maxHeight: "85vh",
@@ -439,15 +549,14 @@ export default function WeddingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h2 style={{ fontSize: 24, fontWeight: 800 }}>Impressum</h2>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.primary }}>Impressum</h2>
               <button
                 onClick={() => setShowImpressum(false)}
                 style={{
-                  width: 40,
-                  height: 40,
-                  background: "var(--bg-inset)",
+                  width: 36,
+                  height: 36,
+                  background: colors.bgLight,
                   border: "none",
-                  borderRadius: "50%",
                   cursor: "pointer",
                   fontSize: 20,
                 }}
@@ -455,7 +564,7 @@ export default function WeddingPage() {
                 &times;
               </button>
             </div>
-            <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.8 }}>
               <p><strong>Angaben gemäß § 5 TMG</strong></p>
               <p>Tennisschule Zlatan Palazov und Artur Ivanenko GbR<br />
               Ricarda-Huch-Straße 40<br />
@@ -477,7 +586,6 @@ export default function WeddingPage() {
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -489,7 +597,6 @@ export default function WeddingPage() {
           <div
             style={{
               background: "#fff",
-              borderRadius: "var(--radius-xl)",
               maxWidth: 600,
               width: "100%",
               maxHeight: "85vh",
@@ -499,15 +606,14 @@ export default function WeddingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h2 style={{ fontSize: 24, fontWeight: 800 }}>Datenschutzerklärung</h2>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.primary }}>Datenschutzerklärung</h2>
               <button
                 onClick={() => setShowDatenschutz(false)}
                 style={{
-                  width: 40,
-                  height: 40,
-                  background: "var(--bg-inset)",
+                  width: 36,
+                  height: 36,
+                  background: colors.bgLight,
                   border: "none",
-                  borderRadius: "50%",
                   cursor: "pointer",
                   fontSize: 20,
                 }}
@@ -515,7 +621,7 @@ export default function WeddingPage() {
                 &times;
               </button>
             </div>
-            <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.8 }}>
               <p><strong>1. Verantwortlicher</strong></p>
               <p>Tennisschule Zlatan Palazov und Artur Ivanenko GbR<br />
               Ricarda-Huch-Straße 40, 14480 Potsdam<br />
@@ -528,6 +634,17 @@ export default function WeddingPage() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-menu {
+            display: none !important;
+          }
+          .mobile-menu-btn {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
