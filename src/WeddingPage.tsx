@@ -29,18 +29,6 @@ export default function WeddingPage() {
     border: "#d2d2d2",
   };
 
-  const news = [
-    {
-      title: "Sommer Tenniscamps",
-      date: "26. Dezember 2025",
-      excerpt: "Sommerferiencamps für Kinder und Erwachsene",
-    },
-    {
-      title: "Wintertraining läuft",
-      date: "20. November 2025",
-      excerpt: "Auch in der kalten Jahreszeit geht das Training weiter! Unsere Hallenplätze stehen bereit.",
-    },
-  ];
 
   const trainers = [
     {
@@ -270,7 +258,7 @@ export default function WeddingPage() {
 
       {/* Aktuelles Section */}
       <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{
               fontSize: 28,
@@ -290,27 +278,37 @@ export default function WeddingPage() {
             }} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-            {news.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  background: colors.bgLight,
-                  padding: 24,
-                  borderLeft: `4px solid ${colors.primary}`,
-                }}
-              >
-                <div style={{ fontSize: 12, color: colors.primaryLight, fontWeight: 700, marginBottom: 8, textTransform: "uppercase" }}>
-                  {item.date}
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 12 }}>
-                  {item.title}
-                </h3>
-                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6 }}>
-                  {item.excerpt}
-                </p>
-              </div>
-            ))}
+          <div
+            style={{
+              background: colors.bgLight,
+              padding: 32,
+              borderLeft: `4px solid ${colors.primary}`,
+              textAlign: "center",
+            }}
+          >
+            <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 16 }}>
+              Anmeldung für das Sommertraining läuft
+            </h3>
+            <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.6, marginBottom: 24 }}>
+              Sichern Sie sich jetzt Ihren Platz für die Sommersaison!
+            </p>
+            <a
+              href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
+              style={{
+                display: "inline-block",
+                background: colors.primary,
+                color: "#fff",
+                padding: "12px 32px",
+                borderRadius: 2,
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Jetzt anmelden
+            </a>
           </div>
         </div>
       </section>
