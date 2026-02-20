@@ -220,13 +220,11 @@ export default function WeddingPage() {
       <header
         style={{
           position: "relative",
-          minHeight: "70vh",
+          minHeight: "60vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundImage: `linear-gradient(rgba(27, 71, 27, 0.75), rgba(27, 71, 27, 0.85)), url(/images/hero-new.jpg)`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          background: colors.primary,
         }}
       >
         <div style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "100px 24px 60px" }}>

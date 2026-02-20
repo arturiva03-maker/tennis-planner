@@ -66,7 +66,13 @@
       "Bash(git -C \"C:\\\\Users\\\\artur\\\\tennis-planner\" commit -m \"$\\(cat <<''EOF''\nfix: wrap trainerHonorarFuerTraining in useCallback\n\nFixes ESLint react-hooks/exhaustive-deps error by wrapping the\nfunction in useCallback to prevent it from changing on every render.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git reset:*)",
       "Bash(vercel:*)",
-      "Bash(npx vercel --prod)"
+      "Bash(npx vercel --prod)",
+      "Bash(powershell:*)",
+      "Bash(del \"C:\\\\Users\\\\artur\\\\tennis-planner\\\\remove_block.ps1\")",
+      "Bash(Remove-Item \"C:\\\\Users\\\\artur\\\\tennis-planner\\\\remove_block.ps1\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Done\")",
+      "Bash(npx vercel:*)",
+      "WebFetch(domain:bscrehberge-tennis.de)"
     ],
     "deny": [],
     "ask": []
