@@ -6280,6 +6280,7 @@ Sportliche Grüße`
                                             <div class="info-item"><label>Pro Woche</label><span>${req.trainings_pro_woche ? req.trainings_pro_woche + "x" : "-"}</span></div>
                                           </div>
                                           ${verfuegbarkeitRows ? `<div class="verfuegbarkeit"><h4>Verfügbarkeit</h4><table>${verfuegbarkeitRows}</table></div>` : ""}
+                                          ${req.nachricht ? `<div class="nachricht"><label>Nachricht</label><span>${req.nachricht}</span></div>` : ""}
                                           <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
                                         </div>
                                       `;
@@ -6294,11 +6295,10 @@ Sportliche Grüße`
                                           body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
                                           .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
                                           .card {
-                                            width: 93mm; height: 70mm;
+                                            width: 93mm; min-height: 70mm;
                                             border: 1px solid #ccc; border-radius: 3px;
                                             padding: 3mm; box-sizing: border-box;
                                             font-size: 8pt; page-break-inside: avoid;
-                                            overflow: hidden;
                                           }
                                           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
                                           .name { font-size: 11pt; font-weight: bold; margin: 0; }
@@ -6309,6 +6309,9 @@ Sportliche Grüße`
                                           .verfuegbarkeit { margin-top: 1mm; }
                                           .verfuegbarkeit h4 { font-size: 7pt; margin: 0 0 0.5mm 0; color: #666; }
                                           .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
+                                          .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
+                                          .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
+                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 12mm; overflow: hidden; }
                                           .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
                                         </style>
                                       </head>
