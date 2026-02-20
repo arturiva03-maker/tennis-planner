@@ -7,6 +7,7 @@ import RegistrationForm from './RegistrationForm';
 import SepaForm from './SepaForm';
 import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
+import WeddingPage from './WeddingPage';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -23,6 +24,7 @@ root.render(
         <Route path="/sepa" element={<SepaForm />} />
         <Route path="/agb" element={<AGBPage />} />
         <Route path="/agb-britz" element={<AGBPageBritz />} />
+        <Route path="/wedding" element={<WeddingPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
