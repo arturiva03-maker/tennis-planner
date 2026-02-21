@@ -767,56 +767,97 @@ export default function WeddingPage() {
 
       {/* Aktuelles Section */}
       <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 600, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: colors.primary,
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}>
-              Aktuelles
-            </h2>
-            <div style={{
-              width: 50,
-              height: 3,
-              background: colors.primary,
-              margin: "16px auto 0",
-            }} />
-          </div>
-
+        <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <div
             style={{
-              background: colors.bgLight,
-              padding: 32,
-              borderLeft: `4px solid ${colors.primary}`,
+              background: `linear-gradient(135deg, ${colors.primary} 0%, #2d5a2d 100%)`,
+              borderRadius: 16,
+              padding: "48px 40px",
               textAlign: "center",
+              boxShadow: "0 12px 40px rgba(27, 71, 27, 0.25)",
+              position: "relative",
+              overflow: "hidden",
             }}
           >
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 16 }}>
-              Anmeldung für das Sommertraining läuft
-            </h3>
-            <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.6, marginBottom: 24 }}>
-              Sichern Sie sich jetzt Ihren Platz für die Sommersaison!
+            {/* Decorative tennis ball */}
+            <div style={{
+              position: "absolute",
+              top: -30,
+              right: -30,
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+            }} />
+            <div style={{
+              position: "absolute",
+              bottom: -40,
+              left: -40,
+              width: 150,
+              height: 150,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.05)",
+            }} />
+
+            <div style={{
+              display: "inline-block",
+              background: "rgba(255,255,255,0.2)",
+              padding: "8px 20px",
+              borderRadius: 20,
+              marginBottom: 20,
+            }}>
+              <span style={{ color: "#fff", fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                ☀️ Sommer 2025
+              </span>
+            </div>
+
+            <h2 style={{
+              fontSize: 32,
+              fontWeight: 700,
+              color: "#fff",
+              marginBottom: 16,
+              lineHeight: 1.2,
+            }}>
+              Anmeldung für das<br />Sommertraining läuft!
+            </h2>
+
+            <p style={{
+              fontSize: 17,
+              color: "rgba(255,255,255,0.9)",
+              lineHeight: 1.6,
+              marginBottom: 28,
+              maxWidth: 450,
+              margin: "0 auto 28px",
+            }}>
+              Sichern Sie sich jetzt Ihren Platz für die Sommersaison auf unserer Anlage im Wedding.
             </p>
+
             <a
               href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
               style={{
                 display: "inline-block",
-                background: colors.primary,
-                color: "#fff",
-                padding: "12px 32px",
-                borderRadius: 2,
+                background: "#fff",
+                color: colors.primary,
+                padding: "16px 40px",
+                borderRadius: 8,
                 fontWeight: 700,
-                fontSize: 14,
+                fontSize: 15,
                 textDecoration: "none",
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
               }}
             >
-              Jetzt anmelden
+              Jetzt anmelden →
             </a>
           </div>
         </div>
