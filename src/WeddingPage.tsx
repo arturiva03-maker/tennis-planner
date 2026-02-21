@@ -192,6 +192,10 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
+      const preisHtml = selectedSlot.customPreisProStunde
+        ? `<br><strong>Preis:</strong> ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR`
+        : "";
+
       const confirmationHtml = `
 <!DOCTYPE html>
 <html>
@@ -204,13 +208,17 @@ export default function WeddingPage() {
     <div style="background: #f6f6f6; padding: 16px; border-left: 4px solid #1b471b; margin: 20px 0;">
       <strong>Termin:</strong> ${datumFormatted}<br>
       <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
-      <strong>Ort:</strong> BSC Rehberge, Wedding
+      <strong>Ort:</strong> BSC Rehberge, Wedding${preisHtml}
     </div>
     <p>Falls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.</p>
     <p>Sportliche Grüße,<br>Tennisschule A bis Z</p>
   </div>
 </body>
 </html>`;
+
+      const preisText = selectedSlot.customPreisProStunde
+        ? `\nPreis: ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR`
+        : "";
 
       try {
         await fetch("/api/send-newsletter", {
@@ -219,7 +227,9 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
+            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
+            fromName: "Tennisschule A bis Z",
           }),
         });
       } catch (emailErr) {
@@ -241,7 +251,7 @@ export default function WeddingPage() {
       <hr style="border: none; border-top: 1px solid #ddd; margin: 12px 0;">
       <strong>Termin:</strong> ${datumFormatted}<br>
       <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
-      <strong>Anlage:</strong> ${selectedSlot.anlage}
+      <strong>Anlage:</strong> ${selectedSlot.anlage}${selectedSlot.customPreisProStunde ? `<br><strong>Preis:</strong> ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR` : ""}
     </div>
   </div>
 </body>
@@ -254,7 +264,9 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: ["tennisabisz@gmail.com"],
             subject: `Neue Spontanbuchung: ${name} – ${datumFormatted}`,
+            body: `Neue Spontanbuchung!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}`,
             html: adminHtml,
+            fromName: "Tennisschule A bis Z",
           }),
         });
       } catch (emailErr) {
@@ -719,11 +731,16 @@ export default function WeddingPage() {
                               borderRadius: 2,
                               cursor: isPast ? "not-allowed" : "pointer",
                               fontWeight: 600,
-                              fontSize: 13,
+                              fontSize: 12,
                               textAlign: "center",
                             }}
                           >
-                            {slot.uhrzeitVon} – {slot.uhrzeitBis}
+                            <div>{slot.uhrzeitVon} – {slot.uhrzeitBis}</div>
+                            {slot.customPreisProStunde && (
+                              <div style={{ fontSize: 11, opacity: 0.9, marginTop: 2 }}>
+                                {slot.customPreisProStunde.toFixed(0)} EUR
+                              </div>
+                            )}
                           </button>
                         ))
                       )}
@@ -1172,6 +1189,11 @@ export default function WeddingPage() {
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon} – {selectedSlot.uhrzeitBis} Uhr
                   </div>
+                  {selectedSlot.customPreisProStunde && (
+                    <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
+                      {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
+                    </div>
+                  )}
                 </div>
 
                 {bookingError && (
