@@ -344,7 +344,7 @@ export default function WeddingPage() {
 
         <!-- Footer Text -->
         <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
-          © 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.
+          © 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
     </tr>
@@ -807,7 +807,7 @@ export default function WeddingPage() {
               marginBottom: 20,
             }}>
               <span style={{ color: "#fff", fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
-                ☀️ Sommer 2025
+                ☀️ Sommer 2026
               </span>
             </div>
 
