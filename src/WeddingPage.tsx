@@ -26,22 +26,37 @@ type SpontaneStunde = {
 
 const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-function startOfWeekISO(dateISO: string) {
-  const d = new Date(dateISO + "T12:00:00");
-  const day = (d.getDay() + 6) % 7;
-  d.setDate(d.getDate() - day);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function addDaysISO(dateISO: string, days: number) {
-  const d = new Date(dateISO + "T12:00:00");
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function getMonthStart(year: number, month: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-01`;
+}
+
+function getMonthEnd(year: number, month: number) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}
+
+function getCalendarDays(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startWeekDay = (firstDay.getDay() + 6) % 7; // Monday = 0
+  const days: (string | null)[] = [];
+
+  // Add empty cells for days before the 1st
+  for (let i = 0; i < startWeekDay; i++) {
+    days.push(null);
+  }
+
+  // Add all days of the month
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    days.push(`${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  }
+
+  return days;
 }
 
 export default function WeddingPage() {
@@ -54,7 +69,11 @@ export default function WeddingPage() {
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [hasAnySlots, setHasAnySlots] = useState(false);
-  const [weekStart, setWeekStart] = useState(() => startOfWeekISO(todayISO()));
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SpontaneStunde | null>(null);
   const [bookingName, setBookingName] = useState("");
@@ -67,7 +86,8 @@ export default function WeddingPage() {
   const fetchSpontaneStunden = useCallback(async () => {
     setLoadingSlots(true);
     try {
-      const weekEnd = addDaysISO(weekStart, 6);
+      const monthStart = getMonthStart(currentMonth.year, currentMonth.month);
+      const monthEnd = getMonthEnd(currentMonth.year, currentMonth.month);
       const { data, error } = await supabase
         .from("spontane_stunden")
         .select("*")
@@ -75,8 +95,8 @@ export default function WeddingPage() {
         .eq("anlage", "Wedding")
         .eq("veroeffentlicht", true)
         .eq("status", "offen")
-        .gte("datum", weekStart)
-        .lte("datum", weekEnd)
+        .gte("datum", monthStart)
+        .lte("datum", monthEnd)
         .order("datum", { ascending: true })
         .order("uhrzeit_von", { ascending: true });
 
@@ -116,7 +136,7 @@ export default function WeddingPage() {
     } finally {
       setLoadingSlots(false);
     }
-  }, [weekStart]);
+  }, [currentMonth]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -487,12 +507,15 @@ export default function WeddingPage() {
     }
   };
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i));
+  const calendarDays = getCalendarDays(currentMonth.year, currentMonth.month);
   const slotsByDate = spontaneStunden.reduce((acc, slot) => {
     if (!acc[slot.datum]) acc[slot.datum] = [];
     acc[slot.datum].push(slot);
     return acc;
   }, {} as Record<string, SpontaneStunde[]>);
+  const selectedDateSlots = selectedDate ? (slotsByDate[selectedDate] || []) : [];
+  const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
   // Vereinsfarben BSC Rehberge
   const colors = {
@@ -802,7 +825,7 @@ export default function WeddingPage() {
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
       {!loadingSlots && hasAnySlots && (
         <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
-          <div style={{ maxWidth: 700, margin: "0 auto" }}>
+          <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <p style={{
                 fontSize: 12,
@@ -823,134 +846,205 @@ export default function WeddingPage() {
                 Spontane Trainingsstunden
               </h2>
               <p style={{ fontSize: 14, color: colors.textMuted }}>
-                Buchen Sie einen freien Termin direkt online
+                Wählen Sie einen Tag mit verfügbaren Terminen
               </p>
             </div>
 
-            {/* Week Navigation */}
             <div style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              display: "grid",
+              gridTemplateColumns: selectedDate ? "1fr 1fr" : "1fr",
               gap: 24,
-              marginBottom: 24,
+              maxWidth: selectedDate ? 800 : 400,
+              margin: "0 auto",
             }}>
-              <button
-                onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
-                style={{
-                  background: "none",
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  cursor: "pointer",
-                  fontSize: 16,
-                  color: colors.textMuted,
+              {/* Calendar Grid */}
+              <div style={{
+                background: colors.white,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 12,
+                padding: 20,
+              }}>
+                {/* Month Navigation */}
+                <div style={{
                   display: "flex",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                ←
-              </button>
-              <span style={{ fontWeight: 600, color: colors.text, fontSize: 14 }}>
-                {(() => {
-                  const start = new Date(weekStart + "T12:00:00");
-                  const end = new Date(addDaysISO(weekStart, 6) + "T12:00:00");
-                  const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-                  if (start.getMonth() === end.getMonth()) {
-                    return `${start.getDate()}. – ${end.getDate()}. ${months[end.getMonth()]} ${end.getFullYear()}`;
-                  }
-                  return `${start.getDate()}. ${months[start.getMonth()]} – ${end.getDate()}. ${months[end.getMonth()]}`;
-                })()}
-              </span>
-              <button
-                onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
-                style={{
-                  background: "none",
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  cursor: "pointer",
-                  fontSize: 16,
-                  color: colors.textMuted,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                →
-              </button>
-            </div>
+                  marginBottom: 20,
+                }}>
+                  <button
+                    onClick={() => setCurrentMonth(prev => {
+                      const newMonth = prev.month - 1;
+                      if (newMonth < 0) return { year: prev.year - 1, month: 11 };
+                      return { ...prev, month: newMonth };
+                    })}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 20,
+                      color: colors.textMuted,
+                      padding: 8,
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <span style={{ fontWeight: 600, color: colors.text, fontSize: 16 }}>
+                    {monthNames[currentMonth.month]} {currentMonth.year}
+                  </span>
+                  <button
+                    onClick={() => setCurrentMonth(prev => {
+                      const newMonth = prev.month + 1;
+                      if (newMonth > 11) return { year: prev.year + 1, month: 0 };
+                      return { ...prev, month: newMonth };
+                    })}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 20,
+                      color: colors.textMuted,
+                      padding: 8,
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
 
-            {/* Slots als Liste statt Grid */}
-            <div style={{
-              background: colors.bgLight,
-              borderRadius: 8,
-              padding: 20,
-            }}>
-              {weekDays.map((day) => {
-                const slots = slotsByDate[day] || [];
-                const dayDate = new Date(day + "T12:00:00");
-                const weekDayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-                const isPast = day < todayISO();
-
-                if (slots.length === 0) return null;
-
-                return (
-                  <div key={day} style={{ marginBottom: 16 }}>
-                    <div style={{
-                      fontSize: 13,
+                {/* Weekday Headers */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  gap: 4,
+                  marginBottom: 8,
+                }}>
+                  {weekDayLabels.map(day => (
+                    <div key={day} style={{
+                      textAlign: "center",
+                      fontSize: 12,
                       fontWeight: 600,
-                      color: isPast ? colors.textMuted : colors.text,
-                      marginBottom: 8,
-                      opacity: isPast ? 0.5 : 1,
+                      color: colors.textMuted,
+                      padding: "8px 0",
                     }}>
-                      {weekDayNames[dayDate.getDay()]}, {dayDate.getDate()}.{dayDate.getMonth() + 1}.
+                      {day}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {slots.map((slot) => (
+                  ))}
+                </div>
+
+                {/* Calendar Days */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  gap: 4,
+                }}>
+                  {calendarDays.map((day, i) => {
+                    if (!day) {
+                      return <div key={`empty-${i}`} style={{ aspectRatio: "1" }} />;
+                    }
+
+                    const dayNum = parseInt(day.split("-")[2]);
+                    const hasSlots = (slotsByDate[day] || []).length > 0;
+                    const isPast = day < todayISO();
+                    const isSelected = day === selectedDate;
+                    const isToday = day === todayISO();
+
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => hasSlots && !isPast && setSelectedDate(day)}
+                        disabled={!hasSlots || isPast}
+                        style={{
+                          aspectRatio: "1",
+                          border: isSelected ? `2px solid ${colors.primary}` : isToday ? `1px solid ${colors.primary}` : "1px solid transparent",
+                          borderRadius: 8,
+                          background: isSelected ? colors.primary : hasSlots && !isPast ? "#e8f5e8" : "transparent",
+                          color: isSelected ? "#fff" : isPast ? colors.border : hasSlots ? colors.primary : colors.textMuted,
+                          cursor: hasSlots && !isPast ? "pointer" : "default",
+                          fontWeight: hasSlots && !isPast ? 600 : 400,
+                          fontSize: 14,
+                          transition: "all 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {dayNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {spontaneStunden.length === 0 && (
+                  <p style={{ textAlign: "center", color: colors.textMuted, fontSize: 13, marginTop: 16 }}>
+                    Keine Termine in diesem Monat
+                  </p>
+                )}
+              </div>
+
+              {/* Time Slots Panel */}
+              {selectedDate && (
+                <div style={{
+                  background: colors.bgLight,
+                  borderRadius: 12,
+                  padding: 20,
+                }}>
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: colors.text,
+                    marginBottom: 16,
+                  }}>
+                    {(() => {
+                      const d = new Date(selectedDate + "T12:00:00");
+                      const weekDayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+                      return `${weekDayNames[d.getDay()]}, ${d.getDate()}. ${monthNames[d.getMonth()]}`;
+                    })()}
+                  </div>
+
+                  {selectedDateSlots.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {selectedDateSlots.map((slot) => (
                         <button
                           key={slot.id}
-                          onClick={() => !isPast && openBookingModal(slot)}
-                          disabled={isPast}
+                          onClick={() => openBookingModal(slot)}
                           style={{
-                            padding: "10px 16px",
-                            background: isPast ? colors.bgLight : colors.white,
-                            color: isPast ? colors.textMuted : colors.text,
-                            border: `1px solid ${isPast ? colors.border : colors.primary}`,
-                            borderRadius: 6,
-                            cursor: isPast ? "not-allowed" : "pointer",
+                            padding: "14px 16px",
+                            background: colors.white,
+                            color: colors.text,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 8,
+                            cursor: "pointer",
                             fontWeight: 500,
-                            fontSize: 14,
-                            opacity: isPast ? 0.5 : 1,
-                            transition: "all 0.2s",
+                            fontSize: 15,
+                            textAlign: "left",
+                            transition: "all 0.15s",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
                           }}
                           onMouseEnter={(e) => {
-                            if (!isPast) {
-                              e.currentTarget.style.background = colors.primary;
-                              e.currentTarget.style.color = "#fff";
-                            }
+                            e.currentTarget.style.borderColor = colors.primary;
+                            e.currentTarget.style.background = "#f8fdf8";
                           }}
                           onMouseLeave={(e) => {
-                            if (!isPast) {
-                              e.currentTarget.style.background = colors.white;
-                              e.currentTarget.style.color = colors.text;
-                            }
+                            e.currentTarget.style.borderColor = colors.border;
+                            e.currentTarget.style.background = colors.white;
                           }}
                         >
-                          {slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)}
+                          <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
+                          {slot.customPreisProStunde && (
+                            <span style={{ color: colors.primary, fontWeight: 600 }}>
+                              {slot.customPreisProStunde.toFixed(0)} €
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
-                  </div>
-                );
-              })}
-              {spontaneStunden.length === 0 && (
-                <p style={{ textAlign: "center", color: colors.textMuted, fontSize: 14 }}>
-                  Diese Woche keine Termine verfügbar
-                </p>
+                  ) : (
+                    <p style={{ color: colors.textMuted, fontSize: 14 }}>
+                      Keine Termine an diesem Tag
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
