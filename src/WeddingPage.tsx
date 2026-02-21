@@ -199,20 +199,122 @@ export default function WeddingPage() {
       const confirmationHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h2 style="color: #1b471b;">Buchungsbestätigung</h2>
-    <p>Hallo ${name},</p>
-    <p>Ihre spontane Trainingsstunde wurde erfolgreich gebucht!</p>
-    <div style="background: #f6f6f6; padding: 16px; border-left: 4px solid #1b471b; margin: 20px 0;">
-      <strong>Termin:</strong> ${datumFormatted}<br>
-      <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
-      <strong>Ort:</strong> BSC Rehberge, Wedding${preisHtml}
-    </div>
-    <p>Falls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.</p>
-    <p>Sportliche Grüße,<br>Tennisschule A bis Z</p>
-  </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Buchungsbestätigung</h1>
+            </td>
+          </tr>
+
+          <!-- Success Icon -->
+          <tr>
+            <td align="center" style="padding: 40px 40px 20px;">
+              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+                <span style="color: #ffffff; font-size: 32px;">✓</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 0 40px 24px; text-align: center;">
+              <h2 style="margin: 0 0 8px; color: #333333; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
+              <p style="margin: 0; color: #666666; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
+            </td>
+          </tr>
+
+          <!-- Booking Details -->
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
+
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">📅</td>
+                              <td style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">🕐</td>
+                              <td style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">📍</td>
+                              <td style="color: #333333; font-size: 15px;">BSC Rehberge, Wedding</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      ${selectedSlot.customPreisProStunde ? `
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">💰</td>
+                              <td style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Contact Info -->
+          <tr>
+            <td style="padding: 0 40px 32px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #666666; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
+              <a href="mailto:tennisabisz@gmail.com" style="color: #1b471b; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
+              <p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+              <p style="margin: 12px 0 0; color: #999999; font-size: 12px;">Standort Wedding · BSC Rehberge</p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Footer Text -->
+        <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
+          © 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.
+        </p>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 
@@ -240,20 +342,108 @@ export default function WeddingPage() {
       const adminHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h2 style="color: #1b471b;">Neue Spontanbuchung</h2>
-    <div style="background: #f6f6f6; padding: 16px; border-left: 4px solid #1b471b; margin: 20px 0;">
-      <strong>Name:</strong> ${name}<br>
-      <strong>E-Mail:</strong> ${email}<br>
-      ${telefon ? `<strong>Telefon:</strong> ${telefon}<br>` : ""}
-      <hr style="border: none; border-top: 1px solid #ddd; margin: 12px 0;">
-      <strong>Termin:</strong> ${datumFormatted}<br>
-      <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
-      <strong>Anlage:</strong> ${selectedSlot.anlage}${selectedSlot.customPreisProStunde ? `<br><strong>Preis:</strong> ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR` : ""}
-    </div>
-  </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
+            </td>
+          </tr>
+
+          <!-- Customer Info -->
+          <tr>
+            <td style="padding: 32px 40px 24px;">
+              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">Name:</span>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">E-Mail:</span>
+                          <a href="mailto:${email}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
+                        </td>
+                      </tr>
+                      ${telefon ? `
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">Telefon:</span>
+                          <a href="tel:${telefon}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Booking Details -->
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="font-size: 16px; margin-right: 8px;">📅</span>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="font-size: 16px; margin-right: 8px;">🕐</span>
+                          <span style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="font-size: 16px; margin-right: 8px;">📍</span>
+                          <span style="color: #333333; font-size: 15px;">${selectedSlot.anlage}</span>
+                        </td>
+                      </tr>
+                      ${selectedSlot.customPreisProStunde ? `
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="font-size: 16px; margin-right: 8px;">💰</span>
+                          <span style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Action Note -->
+          <tr>
+            <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="margin: 0; color: #666666; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 
@@ -307,6 +497,8 @@ export default function WeddingPage() {
       name: "Zlatan Palazov",
       qualification: "B-Lizenz Leistungssport | Organisator",
       bio: "Ehemaliger Profispieler. Trainiert Kinder, Jugendliche und Erwachsene.",
+      image: "/zlatan-palazov.jpg",
+      imagePosition: "center 20%",
     },
     {
       name: "Artur Ivanenko",
