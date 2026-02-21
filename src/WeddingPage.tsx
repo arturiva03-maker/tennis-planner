@@ -58,7 +58,7 @@ export default function WeddingPage() {
       qualification: "C-Lizenz Leistungssport",
       bio: "Trainiert Spieler aller Alters- und Leistungsstufen. Fokus auf Technik, Taktik und mentale Stärke.",
       image: "/marc-erdogan.jpg",
-      imagePosition: "40% center",
+      imagePosition: "30% center",
     },
     {
       name: "Konstantin Klein",
