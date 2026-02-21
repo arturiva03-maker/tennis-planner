@@ -1770,6 +1770,126 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
 
+  // Supabase Realtime: Spontane Buchungen erkennen und Training erstellen
+  useEffect(() => {
+    if (!authUser?.accountId) return;
+
+    const channel = supabase
+      .channel("spontane_stunden_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "spontane_stunden",
+          filter: `account_id=eq.${authUser.accountId}`,
+        },
+        async (payload) => {
+          const newData = payload.new as {
+            id: string;
+            status: string;
+            buchung?: SpontaneStundeBuchung;
+            datum: string;
+            uhrzeit_von: string;
+            uhrzeit_bis: string;
+            trainer_id: string;
+            tarif_id?: string;
+            custom_preis_pro_stunde?: number;
+            anlage: string;
+            training_id?: string;
+          };
+
+          // Nur reagieren wenn: Status = gebucht, Buchung vorhanden, noch kein Training erstellt
+          if (newData.status === "gebucht" && newData.buchung && !newData.training_id) {
+            await processSpontanBuchung(newData);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.accountId]);
+
+  // Verarbeite Spontanbuchung: Spieler + Training erstellen
+  async function processSpontanBuchung(buchungData: {
+    id: string;
+    buchung?: SpontaneStundeBuchung;
+    datum: string;
+    uhrzeit_von: string;
+    uhrzeit_bis: string;
+    trainer_id: string;
+    tarif_id?: string;
+    custom_preis_pro_stunde?: number;
+    anlage: string;
+  }) {
+    if (!buchungData.buchung) return;
+
+    const { name, email, telefon } = buchungData.buchung;
+
+    // Name splitten
+    const parts = name.trim().split(/\s+/);
+    const vorname = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || "Unbekannt";
+    const nachname = parts.length > 1 ? parts[parts.length - 1] : undefined;
+
+    // Prüfe ob Spieler mit gleicher Email existiert
+    let spielerId: string | null = null;
+    const existingSpieler = spieler.find(
+      (s) => s.kontaktEmail?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingSpieler) {
+      spielerId = existingSpieler.id;
+    } else {
+      // Neuen Spieler erstellen
+      const neuerSpieler: Spieler = {
+        id: uid(),
+        vorname,
+        nachname,
+        kontaktEmail: email,
+        kontaktTelefon: telefon,
+        notizen: "Spontanbuchung",
+      };
+      setSpieler((prev) => [...prev, neuerSpieler]);
+      spielerId = neuerSpieler.id;
+    }
+
+    // Training erstellen
+    const neuesTraining: Training = {
+      id: uid(),
+      trainerId: buchungData.trainer_id,
+      datum: buchungData.datum,
+      uhrzeitVon: buchungData.uhrzeit_von.slice(0, 5),
+      uhrzeitBis: buchungData.uhrzeit_bis.slice(0, 5),
+      spielerIds: [spielerId],
+      tarifId: buchungData.tarif_id,
+      customPreisProStunde: buchungData.custom_preis_pro_stunde,
+      status: "geplant",
+      anlage: buchungData.anlage,
+      isSpontanBuchung: true,
+    };
+    setTrainings((prev) => [...prev, neuesTraining]);
+
+    // Spontane Stunde mit Training-ID aktualisieren
+    try {
+      await supabase
+        .from("spontane_stunden")
+        .update({ training_id: neuesTraining.id })
+        .eq("id", buchungData.id);
+
+      // Lokalen State aktualisieren
+      setSpontaneStunden((prev) =>
+        prev.map((s) =>
+          s.id === buchungData.id ? { ...s, trainingId: neuesTraining.id } : s
+        )
+      );
+    } catch (err) {
+      console.error("Error updating spontane_stunde with training_id:", err);
+    }
+  }
+
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
     [trainers]

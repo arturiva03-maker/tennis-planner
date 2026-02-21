@@ -731,16 +731,11 @@ export default function WeddingPage() {
                               borderRadius: 2,
                               cursor: isPast ? "not-allowed" : "pointer",
                               fontWeight: 600,
-                              fontSize: 12,
+                              fontSize: 13,
                               textAlign: "center",
                             }}
                           >
-                            <div>{slot.uhrzeitVon} – {slot.uhrzeitBis}</div>
-                            {slot.customPreisProStunde && (
-                              <div style={{ fontSize: 11, opacity: 0.9, marginTop: 2 }}>
-                                {slot.customPreisProStunde.toFixed(0)} EUR
-                              </div>
-                            )}
+                            {slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)}
                           </button>
                         ))
                       )}
@@ -1187,7 +1182,7 @@ export default function WeddingPage() {
                     })}
                   </div>
                   <div style={{ color: colors.textMuted }}>
-                    {selectedSlot.uhrzeitVon} – {selectedSlot.uhrzeitBis} Uhr
+                    {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
                   {selectedSlot.customPreisProStunde && (
                     <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
