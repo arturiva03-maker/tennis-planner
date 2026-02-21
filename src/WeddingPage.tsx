@@ -51,12 +51,14 @@ export default function WeddingPage() {
       qualification: "Trainer",
       bio: "",
       image: "/jesper-fremuth.jpg",
+      imageZoom: 1.3,
     },
     {
       name: "Marc Erdogan",
       qualification: "C-Lizenz Leistungssport",
       bio: "Trainiert Spieler aller Alters- und Leistungsstufen. Fokus auf Technik, Taktik und mentale Stärke.",
       image: "/marc-erdogan.jpg",
+      imagePosition: "40% center",
     },
     {
       name: "Konstantin Klein",
@@ -366,6 +368,8 @@ export default function WeddingPage() {
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",
+                        objectPosition: ("imagePosition" in trainer && trainer.imagePosition) || "center",
+                        transform: "imageZoom" in trainer ? `scale(${trainer.imageZoom})` : undefined,
                       }}
                     />
                   ) : (
