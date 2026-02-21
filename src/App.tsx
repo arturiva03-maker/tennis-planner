@@ -1770,6 +1770,14 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
 
+  // Beim App-Start: Prüfe auf unverarbeitete Spontanbuchungen
+  useEffect(() => {
+    if (authUser?.accountId) {
+      fetchSpontaneStunden();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.accountId]);
+
   // Supabase Realtime: Spontane Buchungen erkennen und Training erstellen
   useEffect(() => {
     if (!authUser?.accountId) return;
@@ -2647,6 +2655,23 @@ export default function App() {
         trainingId: row.training_id,
       }));
       setSpontaneStunden(mapped);
+
+      // Verarbeite gebuchte Einträge ohne Training
+      for (const row of data || []) {
+        if (row.status === "gebucht" && row.buchung && !row.training_id) {
+          await processSpontanBuchung({
+            id: row.id,
+            buchung: row.buchung,
+            datum: row.datum,
+            uhrzeit_von: row.uhrzeit_von,
+            uhrzeit_bis: row.uhrzeit_bis,
+            trainer_id: row.trainer_id,
+            tarif_id: row.tarif_id,
+            custom_preis_pro_stunde: row.custom_preis_pro_stunde,
+            anlage: row.anlage,
+          });
+        }
+      }
     } catch (err) {
       console.error("Error fetching spontane stunden:", err);
     } finally {
