@@ -954,20 +954,33 @@ export default function WeddingPage() {
                         disabled={!hasSlots || isPast}
                         style={{
                           aspectRatio: "1",
-                          border: isSelected ? `2px solid ${colors.primary}` : isToday ? `1px solid ${colors.primary}` : "1px solid transparent",
+                          border: isToday ? `2px solid ${colors.primary}` : isSelected ? `2px solid ${colors.primary}` : "1px solid transparent",
                           borderRadius: 8,
-                          background: isSelected ? colors.primary : hasSlots && !isPast ? "#e8f5e8" : "transparent",
-                          color: isSelected ? "#fff" : isPast ? colors.border : hasSlots ? colors.primary : colors.textMuted,
+                          background: isSelected ? colors.primary : "transparent",
+                          color: isSelected ? "#fff" : isPast ? colors.border : colors.text,
                           cursor: hasSlots && !isPast ? "pointer" : "default",
-                          fontWeight: hasSlots && !isPast ? 600 : 400,
+                          fontWeight: isToday || isSelected ? 600 : 400,
                           fontSize: 14,
                           transition: "all 0.15s",
                           display: "flex",
+                          flexDirection: "column",
                           alignItems: "center",
                           justifyContent: "center",
+                          gap: 2,
+                          position: "relative",
                         }}
                       >
                         {dayNum}
+                        {hasSlots && !isPast && !isSelected && (
+                          <span style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: "50%",
+                            background: colors.primary,
+                            position: "absolute",
+                            bottom: 4,
+                          }} />
+                        )}
                       </button>
                     );
                   })}
