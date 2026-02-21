@@ -50,11 +50,14 @@ export default function WeddingPage() {
       name: "Jesper Fremuth",
       qualification: "Trainer",
       bio: "",
+      image: "/jesper-fremuth.jpg",
     },
     {
       name: "Marc Erdogan",
       qualification: "C-Lizenz Leistungssport",
       bio: "Trainiert Spieler aller Alters- und Leistungsstufen. Fokus auf Technik, Taktik und mentale Stärke.",
+      image: "/marc-erdogan.jpg",
+      imagePosition: "40% 20%",
     },
     {
       name: "Konstantin Klein",
@@ -353,11 +356,26 @@ export default function WeddingPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     borderBottom: `1px solid ${colors.border}`,
+                    overflow: "hidden",
                   }}
                 >
-                  <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
-                    {trainer.name.split(" ").map((n) => n[0]).join("")}
-                  </span>
+                  {"image" in trainer && trainer.image ? (
+                    <img
+                      src={trainer.image}
+                      alt={trainer.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: ("imagePosition" in trainer && trainer.imagePosition) || "center",
+                        transform: "scale(1.4)",
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
+                      {trainer.name.split(" ").map((n) => n[0]).join("")}
+                    </span>
+                  )}
                 </div>
                 <div style={{ padding: 16 }}>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
