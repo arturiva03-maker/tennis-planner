@@ -353,26 +353,11 @@ export default function WeddingPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     borderBottom: `1px solid ${colors.border}`,
-                    overflow: "hidden",
                   }}
                 >
-                  {trainer.image ? (
-                    <img
-                      src={trainer.image}
-                      alt={trainer.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        objectPosition: trainer.imagePosition || "center",
-                        transform: "scale(1.4)",
-                      }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
-                      {trainer.name.split(" ").map((n) => n[0]).join("")}
-                    </span>
-                  )}
+                  <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
+                    {trainer.name.split(" ").map((n) => n[0]).join("")}
+                  </span>
                 </div>
                 <div style={{ padding: 16 }}>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
