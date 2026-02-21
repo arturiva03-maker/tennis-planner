@@ -612,7 +612,7 @@ export default function WeddingPage() {
 
             {/* Desktop Menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
-              {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
+              {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -682,7 +682,7 @@ export default function WeddingPage() {
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
             }}>
-              {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
+              {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -1225,7 +1225,7 @@ export default function WeddingPage() {
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
+                {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
