@@ -1212,7 +1212,6 @@ export default function WeddingPage() {
           <div style={{
             background: colors.bgLight,
             padding: 32,
-            marginBottom: 32,
             borderLeft: `4px solid ${colors.primary}`,
           }}>
             <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 8 }}>E-Mail</div>
@@ -1228,24 +1227,6 @@ export default function WeddingPage() {
               tennisabisz@gmail.com
             </a>
           </div>
-
-          <a
-            href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
-            style={{
-              display: "inline-block",
-              background: colors.primary,
-              color: "#fff",
-              padding: "14px 40px",
-              borderRadius: 2,
-              fontWeight: 700,
-              fontSize: 14,
-              textDecoration: "none",
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Training buchen
-          </a>
         </div>
       </section>
 
