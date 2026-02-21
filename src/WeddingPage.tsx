@@ -512,12 +512,13 @@ export default function WeddingPage() {
       qualification: "B-Lizenz Leistungssport | Organisator",
       bio: "Ehemaliger Profispieler. Trainiert Kinder, Jugendliche und Erwachsene.",
       image: "/zlatan-palazov.jpg",
-      imagePosition: "center 20%",
+      imagePosition: "70% 20%",
     },
     {
       name: "Artur Ivanenko",
       qualification: "B-Lizenz Leistungssport | Organisator",
       bio: "Spielt seit der Kindheit Tennis. Trainiert im Breiten- und Leistungssport.",
+      image: "/artur-ivanenko.jpg",
     },
     {
       name: "Joshua Kugel",
