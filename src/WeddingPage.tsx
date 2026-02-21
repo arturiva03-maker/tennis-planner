@@ -50,14 +50,11 @@ export default function WeddingPage() {
       name: "Jesper Fremuth",
       qualification: "Trainer",
       bio: "",
-      image: "/jesper-fremuth.jpg",
     },
     {
       name: "Marc Erdogan",
       qualification: "C-Lizenz Leistungssport",
       bio: "Trainiert Spieler aller Alters- und Leistungsstufen. Fokus auf Technik, Taktik und mentale Stärke.",
-      image: "/marc-erdogan.jpg",
-      imagePosition: "40% 20%",
     },
     {
       name: "Konstantin Klein",
