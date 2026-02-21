@@ -52,7 +52,8 @@ export default function WeddingPage() {
 
   // Spontane Stunden Buchung
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(true);
+  const [hasAnySlots, setHasAnySlots] = useState(false);
   const [weekStart, setWeekStart] = useState(() => startOfWeekISO(todayISO()));
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SpontaneStunde | null>(null);
@@ -126,6 +127,23 @@ export default function WeddingPage() {
   useEffect(() => {
     fetchSpontaneStunden();
   }, [fetchSpontaneStunden]);
+
+  // Check if there are ANY slots available (for showing/hiding the section)
+  useEffect(() => {
+    async function checkAnySlots() {
+      const { data } = await supabase
+        .from("spontane_stunden")
+        .select("id")
+        .eq("account_id", WEDDING_ACCOUNT_ID)
+        .eq("anlage", "Wedding")
+        .eq("veroeffentlicht", true)
+        .eq("status", "offen")
+        .gte("datum", todayISO())
+        .limit(1);
+      setHasAnySlots((data || []).length > 0);
+    }
+    checkAnySlots();
+  }, []);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -784,8 +802,8 @@ export default function WeddingPage() {
         </div>
       </section>
 
-      {/* Spontane Stunden Buchung Section - nur anzeigen wenn Slots vorhanden */}
-      {!loadingSlots && spontaneStunden.length > 0 && (
+      {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
+      {!loadingSlots && hasAnySlots && (
         <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
