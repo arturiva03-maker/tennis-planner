@@ -1770,134 +1770,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
 
-  // Beim App-Start: Prüfe auf unverarbeitete Spontanbuchungen
-  useEffect(() => {
-    if (authUser?.accountId) {
-      fetchSpontaneStunden();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser?.accountId]);
-
-  // Supabase Realtime: Spontane Buchungen erkennen und Training erstellen
-  useEffect(() => {
-    if (!authUser?.accountId) return;
-
-    const channel = supabase
-      .channel("spontane_stunden_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "spontane_stunden",
-          filter: `account_id=eq.${authUser.accountId}`,
-        },
-        async (payload) => {
-          const newData = payload.new as {
-            id: string;
-            status: string;
-            buchung?: SpontaneStundeBuchung;
-            datum: string;
-            uhrzeit_von: string;
-            uhrzeit_bis: string;
-            trainer_id: string;
-            tarif_id?: string;
-            custom_preis_pro_stunde?: number;
-            anlage: string;
-            training_id?: string;
-          };
-
-          // Nur reagieren wenn: Status = gebucht, Buchung vorhanden, noch kein Training erstellt
-          if (newData.status === "gebucht" && newData.buchung && !newData.training_id) {
-            await processSpontanBuchung(newData);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser?.accountId]);
-
-  // Verarbeite Spontanbuchung: Spieler + Training erstellen
-  async function processSpontanBuchung(buchungData: {
-    id: string;
-    buchung?: SpontaneStundeBuchung;
-    datum: string;
-    uhrzeit_von: string;
-    uhrzeit_bis: string;
-    trainer_id: string;
-    tarif_id?: string;
-    custom_preis_pro_stunde?: number;
-    anlage: string;
-  }) {
-    if (!buchungData.buchung) return;
-
-    const { name, email, telefon } = buchungData.buchung;
-
-    // Name splitten
-    const parts = name.trim().split(/\s+/);
-    const vorname = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || "Unbekannt";
-    const nachname = parts.length > 1 ? parts[parts.length - 1] : undefined;
-
-    // Prüfe ob Spieler mit gleicher Email existiert
-    let spielerId: string | null = null;
-    const existingSpieler = spieler.find(
-      (s) => s.kontaktEmail?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existingSpieler) {
-      spielerId = existingSpieler.id;
-    } else {
-      // Neuen Spieler erstellen
-      const neuerSpieler: Spieler = {
-        id: uid(),
-        vorname,
-        nachname,
-        kontaktEmail: email,
-        kontaktTelefon: telefon,
-        notizen: "Spontanbuchung",
-      };
-      setSpieler((prev) => [...prev, neuerSpieler]);
-      spielerId = neuerSpieler.id;
-    }
-
-    // Training erstellen
-    const neuesTraining: Training = {
-      id: uid(),
-      trainerId: buchungData.trainer_id,
-      datum: buchungData.datum,
-      uhrzeitVon: buchungData.uhrzeit_von.slice(0, 5),
-      uhrzeitBis: buchungData.uhrzeit_bis.slice(0, 5),
-      spielerIds: [spielerId],
-      tarifId: buchungData.tarif_id,
-      customPreisProStunde: buchungData.custom_preis_pro_stunde,
-      status: "geplant",
-      anlage: buchungData.anlage,
-      isSpontanBuchung: true,
-    };
-    setTrainings((prev) => [...prev, neuesTraining]);
-
-    // Spontane Stunde mit Training-ID aktualisieren
-    try {
-      await supabase
-        .from("spontane_stunden")
-        .update({ training_id: neuesTraining.id })
-        .eq("id", buchungData.id);
-
-      // Lokalen State aktualisieren
-      setSpontaneStunden((prev) =>
-        prev.map((s) =>
-          s.id === buchungData.id ? { ...s, trainingId: neuesTraining.id } : s
-        )
-      );
-    } catch (err) {
-      console.error("Error updating spontane_stunde with training_id:", err);
-    }
-  }
-
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
     [trainers]
@@ -2655,23 +2527,6 @@ export default function App() {
         trainingId: row.training_id,
       }));
       setSpontaneStunden(mapped);
-
-      // Verarbeite gebuchte Einträge ohne Training
-      for (const row of data || []) {
-        if (row.status === "gebucht" && row.buchung && !row.training_id) {
-          await processSpontanBuchung({
-            id: row.id,
-            buchung: row.buchung,
-            datum: row.datum,
-            uhrzeit_von: row.uhrzeit_von,
-            uhrzeit_bis: row.uhrzeit_bis,
-            trainer_id: row.trainer_id,
-            tarif_id: row.tarif_id,
-            custom_preis_pro_stunde: row.custom_preis_pro_stunde,
-            anlage: row.anlage,
-          });
-        }
-      }
     } catch (err) {
       console.error("Error fetching spontane stunden:", err);
     } finally {
@@ -2856,6 +2711,75 @@ export default function App() {
     setSpontanCustomPreis("");
     setSpontanAnlage("Wedding");
     setSpontanVeroeffentlicht(false);
+  }
+
+  async function uebernehmenSpontanBuchung(s: SpontaneStunde) {
+    if (!s.buchung) return;
+
+    const { name, email, telefon } = s.buchung;
+
+    // Name splitten
+    const parts = name.trim().split(/\s+/);
+    const vorname = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0] || "Unbekannt";
+    const nachname = parts.length > 1 ? parts[parts.length - 1] : undefined;
+
+    // Prüfe ob Spieler mit gleicher Email existiert
+    let spielerId: string;
+    const existingSpieler = spieler.find(
+      (sp) => sp.kontaktEmail?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingSpieler) {
+      spielerId = existingSpieler.id;
+    } else {
+      // Neuen Spieler erstellen
+      const neuerSpieler: Spieler = {
+        id: uid(),
+        vorname,
+        nachname,
+        kontaktEmail: email,
+        kontaktTelefon: telefon,
+        notizen: "Spontanbuchung",
+      };
+      setSpieler((prev) => [...prev, neuerSpieler]);
+      spielerId = neuerSpieler.id;
+    }
+
+    // Training erstellen
+    const trainingId = uid();
+    const neuesTraining: Training = {
+      id: trainingId,
+      trainerId: s.trainerId,
+      datum: s.datum,
+      uhrzeitVon: s.uhrzeitVon.slice(0, 5),
+      uhrzeitBis: s.uhrzeitBis.slice(0, 5),
+      spielerIds: [spielerId],
+      tarifId: s.tarifId,
+      customPreisProStunde: s.customPreisProStunde,
+      status: "geplant",
+      anlage: s.anlage,
+      isSpontanBuchung: true,
+    };
+    setTrainings((prev) => [...prev, neuesTraining]);
+
+    // Spontane Stunde mit Training-ID aktualisieren
+    try {
+      await supabase
+        .from("spontane_stunden")
+        .update({ training_id: trainingId })
+        .eq("id", s.id);
+    } catch (err) {
+      console.error("Error updating training_id:", err);
+    }
+
+    // Lokalen State aktualisieren
+    setSpontaneStunden((prev) =>
+      prev.map((item) =>
+        item.id === s.id ? { ...item, trainingId } : item
+      )
+    );
+
+    alert(`Training für "${name}" wurde erstellt!`);
   }
 
   function adoptPlayerFromRequest(req: RegistrationRequest) {
@@ -7973,6 +7897,20 @@ Sportliche Grüße`
                                     </div>
                                   </div>
                                   <div className="smallActions" style={{ justifyContent: "flex-end" }}>
+                                    {s.status === "gebucht" && s.buchung && !s.trainingId && (
+                                      <button
+                                        className="btn micro"
+                                        style={{ background: "#eab308" }}
+                                        onClick={() => uebernehmenSpontanBuchung(s)}
+                                      >
+                                        In Kalender übernehmen
+                                      </button>
+                                    )}
+                                    {s.trainingId && (
+                                      <span className="muted" style={{ fontSize: 12 }}>
+                                        ✓ Im Kalender
+                                      </span>
+                                    )}
                                     {s.status !== "gebucht" && (
                                       <button
                                         className="btn micro btnGhost"
