@@ -1,5 +1,48 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./App.css";
+import { supabase } from "./supabaseClient";
+
+type SpontaneStundeBuchung = {
+  name: string;
+  email: string;
+  telefon?: string;
+  gebuchtAm: string;
+};
+
+type SpontaneStunde = {
+  id: string;
+  datum: string;
+  uhrzeitVon: string;
+  uhrzeitBis: string;
+  trainerId: string;
+  trainerName?: string;
+  tarifId?: string;
+  customPreisProStunde?: number;
+  status: "offen" | "gebucht";
+  anlage: "Wedding" | "Britz";
+  veroeffentlicht: boolean;
+  buchung?: SpontaneStundeBuchung;
+};
+
+const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
+
+function startOfWeekISO(dateISO: string) {
+  const d = new Date(dateISO + "T12:00:00");
+  const day = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - day);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function addDaysISO(dateISO: string, days: number) {
+  const d = new Date(dateISO + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export default function WeddingPage() {
   const [scrolled, setScrolled] = useState(false);
@@ -7,16 +50,233 @@ export default function WeddingPage() {
   const [showImpressum, setShowImpressum] = useState(false);
   const [showDatenschutz, setShowDatenschutz] = useState(false);
 
+  // Spontane Stunden Buchung
+  const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [weekStart, setWeekStart] = useState(() => startOfWeekISO(todayISO()));
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<SpontaneStunde | null>(null);
+  const [bookingName, setBookingName] = useState("");
+  const [bookingEmail, setBookingEmail] = useState("");
+  const [bookingTelefon, setBookingTelefon] = useState("");
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const fetchSpontaneStunden = useCallback(async () => {
+    setLoadingSlots(true);
+    try {
+      const weekEnd = addDaysISO(weekStart, 6);
+      const { data, error } = await supabase
+        .from("spontane_stunden")
+        .select("*")
+        .eq("account_id", WEDDING_ACCOUNT_ID)
+        .eq("anlage", "Wedding")
+        .eq("veroeffentlicht", true)
+        .eq("status", "offen")
+        .gte("datum", weekStart)
+        .lte("datum", weekEnd)
+        .order("datum", { ascending: true })
+        .order("uhrzeit_von", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching slots:", error);
+        return;
+      }
+
+      const mapped: SpontaneStunde[] = (data || []).map((row: {
+        id: string;
+        datum: string;
+        uhrzeit_von: string;
+        uhrzeit_bis: string;
+        trainer_id: string;
+        tarif_id?: string;
+        custom_preis_pro_stunde?: number;
+        status: string;
+        anlage: string;
+        veroeffentlicht: boolean;
+        buchung?: SpontaneStundeBuchung;
+      }) => ({
+        id: row.id,
+        datum: row.datum,
+        uhrzeitVon: row.uhrzeit_von,
+        uhrzeitBis: row.uhrzeit_bis,
+        trainerId: row.trainer_id,
+        tarifId: row.tarif_id,
+        customPreisProStunde: row.custom_preis_pro_stunde,
+        status: row.status as "offen" | "gebucht",
+        anlage: row.anlage as "Wedding" | "Britz",
+        veroeffentlicht: row.veroeffentlicht,
+        buchung: row.buchung,
+      }));
+      setSpontaneStunden(mapped);
+    } catch (err) {
+      console.error("Error fetching slots:", err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [weekStart]);
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    fetchSpontaneStunden();
+  }, [fetchSpontaneStunden]);
+
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setMobileMenuOpen(false);
   };
+
+  const openBookingModal = (slot: SpontaneStunde) => {
+    setSelectedSlot(slot);
+    setBookingName("");
+    setBookingEmail("");
+    setBookingTelefon("");
+    setBookingError(null);
+    setBookingSuccess(false);
+    setShowBookingModal(true);
+  };
+
+  const submitBooking = async () => {
+    if (!selectedSlot) return;
+
+    const name = bookingName.trim();
+    const email = bookingEmail.trim();
+    const telefon = bookingTelefon.trim();
+
+    if (!name) {
+      setBookingError("Bitte geben Sie Ihren Namen ein.");
+      return;
+    }
+    if (!email || !email.includes("@")) {
+      setBookingError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
+      return;
+    }
+
+    setBookingSubmitting(true);
+    setBookingError(null);
+
+    try {
+      const buchung: SpontaneStundeBuchung = {
+        name,
+        email,
+        telefon: telefon || undefined,
+        gebuchtAm: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({
+          status: "gebucht",
+          buchung,
+        })
+        .eq("id", selectedSlot.id)
+        .eq("status", "offen");
+
+      if (error) {
+        console.error("Booking error:", error);
+        setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
+        return;
+      }
+
+      // Send confirmation email to customer
+      const datumFormatted = new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+
+      const confirmationHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #1b471b;">Buchungsbestätigung</h2>
+    <p>Hallo ${name},</p>
+    <p>Ihre spontane Trainingsstunde wurde erfolgreich gebucht!</p>
+    <div style="background: #f6f6f6; padding: 16px; border-left: 4px solid #1b471b; margin: 20px 0;">
+      <strong>Termin:</strong> ${datumFormatted}<br>
+      <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
+      <strong>Ort:</strong> BSC Rehberge, Wedding
+    </div>
+    <p>Falls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.</p>
+    <p>Sportliche Grüße,<br>Tennisschule A bis Z</p>
+  </div>
+</body>
+</html>`;
+
+      try {
+        await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: [email],
+            subject: `Buchungsbestätigung – ${datumFormatted}`,
+            html: confirmationHtml,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Email error:", emailErr);
+      }
+
+      // Send notification to admin
+      const adminHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #1b471b;">Neue Spontanbuchung</h2>
+    <div style="background: #f6f6f6; padding: 16px; border-left: 4px solid #1b471b; margin: 20px 0;">
+      <strong>Name:</strong> ${name}<br>
+      <strong>E-Mail:</strong> ${email}<br>
+      ${telefon ? `<strong>Telefon:</strong> ${telefon}<br>` : ""}
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 12px 0;">
+      <strong>Termin:</strong> ${datumFormatted}<br>
+      <strong>Uhrzeit:</strong> ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr<br>
+      <strong>Anlage:</strong> ${selectedSlot.anlage}
+    </div>
+  </div>
+</body>
+</html>`;
+
+      try {
+        await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: ["tennisabisz@gmail.com"],
+            subject: `Neue Spontanbuchung: ${name} – ${datumFormatted}`,
+            html: adminHtml,
+          }),
+        });
+      } catch (emailErr) {
+        console.error("Admin email error:", emailErr);
+      }
+
+      setBookingSuccess(true);
+      setSpontaneStunden((prev) => prev.filter((s) => s.id !== selectedSlot.id));
+    } catch (err) {
+      console.error("Booking error:", err);
+      setBookingError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDaysISO(weekStart, i));
+  const slotsByDate = spontaneStunden.reduce((acc, slot) => {
+    if (!acc[slot.datum]) acc[slot.datum] = [];
+    acc[slot.datum].push(slot);
+    return acc;
+  }, {} as Record<string, SpontaneStunde[]>);
 
   // Vereinsfarben BSC Rehberge
   const colors = {
@@ -110,7 +370,7 @@ export default function WeddingPage() {
 
             {/* Desktop Menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
-              {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
+              {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -180,7 +440,7 @@ export default function WeddingPage() {
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
             }}>
-              {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
+              {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -320,8 +580,164 @@ export default function WeddingPage() {
         </div>
       </section>
 
+      {/* Spontane Stunden Buchung Section */}
+      <section id="spontan" style={{ padding: "80px 24px", background: colors.bgLight }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <h2 style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.primary,
+              marginBottom: 8,
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}>
+              Spontane Stunden
+            </h2>
+            <div style={{
+              width: 50,
+              height: 3,
+              background: colors.primary,
+              margin: "16px auto 0",
+            }} />
+            <p style={{ marginTop: 20, fontSize: 15, color: colors.textMuted }}>
+              Buchen Sie eine freie Trainingsstunde direkt online
+            </p>
+          </div>
+
+          {/* Week Navigation */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 24,
+            background: colors.white,
+            padding: "12px 20px",
+            border: `1px solid ${colors.border}`,
+          }}>
+            <button
+              onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 24,
+                color: colors.primary,
+                padding: "4px 12px",
+              }}
+            >
+              &larr;
+            </button>
+            <span style={{ fontWeight: 700, color: colors.text }}>
+              {(() => {
+                const start = new Date(weekStart + "T12:00:00");
+                const end = new Date(addDaysISO(weekStart, 6) + "T12:00:00");
+                const months = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
+                return `${start.getDate()}. ${months[start.getMonth()]} – ${end.getDate()}. ${months[end.getMonth()]} ${end.getFullYear()}`;
+              })()}
+            </span>
+            <button
+              onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 24,
+                color: colors.primary,
+                padding: "4px 12px",
+              }}
+            >
+              &rarr;
+            </button>
+          </div>
+
+          {/* Week Calendar */}
+          {loadingSlots ? (
+            <div style={{ textAlign: "center", padding: 40, color: colors.textMuted }}>
+              Lade verfügbare Termine...
+            </div>
+          ) : spontaneStunden.length === 0 ? (
+            <div style={{
+              textAlign: "center",
+              padding: 40,
+              background: colors.white,
+              border: `1px solid ${colors.border}`,
+              color: colors.textMuted,
+            }}>
+              In dieser Woche sind keine spontanen Stunden verfügbar.
+            </div>
+          ) : (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+              gap: 12,
+            }}>
+              {weekDays.map((day) => {
+                const slots = slotsByDate[day] || [];
+                const dayDate = new Date(day + "T12:00:00");
+                const weekDayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                const isPast = day < todayISO();
+
+                return (
+                  <div
+                    key={day}
+                    style={{
+                      background: colors.white,
+                      border: `1px solid ${colors.border}`,
+                      opacity: isPast ? 0.5 : 1,
+                    }}
+                  >
+                    <div style={{
+                      padding: "10px 12px",
+                      background: colors.primary,
+                      color: "#fff",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      textAlign: "center",
+                    }}>
+                      {weekDayNames[dayDate.getDay()]} {dayDate.getDate()}.{dayDate.getMonth() + 1}.
+                    </div>
+                    <div style={{ padding: 8, minHeight: 80 }}>
+                      {slots.length === 0 ? (
+                        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: "center", paddingTop: 20 }}>
+                          –
+                        </div>
+                      ) : (
+                        slots.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => !isPast && openBookingModal(slot)}
+                            disabled={isPast}
+                            style={{
+                              display: "block",
+                              width: "100%",
+                              padding: "8px 10px",
+                              marginBottom: 6,
+                              background: isPast ? colors.bgLight : colors.primary,
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 2,
+                              cursor: isPast ? "not-allowed" : "pointer",
+                              fontWeight: 600,
+                              fontSize: 13,
+                              textAlign: "center",
+                            }}
+                          >
+                            {slot.uhrzeitVon} – {slot.uhrzeitBis}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Trainer Section */}
-      <section id="trainer" style={{ padding: "80px 24px", background: colors.bgLight }}>
+      <section id="trainer" style={{ padding: "80px 24px", background: colors.white }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <h2 style={{
@@ -481,7 +897,7 @@ export default function WeddingPage() {
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Aktuelles", "Trainer", "Kontakt"].map((item) => (
+                {["Aktuelles", "Spontan", "Trainer", "Kontakt"].map((item) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
@@ -651,6 +1067,211 @@ export default function WeddingPage() {
               <p style={{ marginTop: 16 }}><strong>3. Hosting</strong></p>
               <p>Diese Website wird extern gehostet. Erfasste Daten werden auf den Servern des Hosters gespeichert.</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Modal */}
+      {showBookingModal && selectedSlot && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: 16,
+          }}
+          onClick={() => !bookingSubmitting && setShowBookingModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              maxWidth: 500,
+              width: "100%",
+              maxHeight: "85vh",
+              overflow: "auto",
+              padding: 32,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {bookingSuccess ? (
+              <>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: "50%",
+                    background: "#22c55e",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 20px",
+                  }}>
+                    <span style={{ color: "#fff", fontSize: 30 }}>✓</span>
+                  </div>
+                  <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.primary, marginBottom: 12 }}>
+                    Buchung erfolgreich!
+                  </h2>
+                  <p style={{ color: colors.textMuted, marginBottom: 20 }}>
+                    Sie erhalten in Kürze eine Bestätigungs-E-Mail.
+                  </p>
+                  <button
+                    onClick={() => setShowBookingModal(false)}
+                    style={{
+                      background: colors.primary,
+                      color: "#fff",
+                      border: "none",
+                      padding: "12px 32px",
+                      borderRadius: 2,
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Schließen
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                  <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.primary }}>Termin buchen</h2>
+                  <button
+                    onClick={() => setShowBookingModal(false)}
+                    disabled={bookingSubmitting}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      background: colors.bgLight,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 20,
+                    }}
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                <div style={{
+                  background: colors.bgLight,
+                  padding: 16,
+                  borderLeft: `4px solid ${colors.primary}`,
+                  marginBottom: 24,
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                    {new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric"
+                    })}
+                  </div>
+                  <div style={{ color: colors.textMuted }}>
+                    {selectedSlot.uhrzeitVon} – {selectedSlot.uhrzeitBis} Uhr
+                  </div>
+                </div>
+
+                {bookingError && (
+                  <div style={{
+                    background: "#fee2e2",
+                    color: "#dc2626",
+                    padding: 12,
+                    borderRadius: 4,
+                    marginBottom: 16,
+                    fontSize: 14,
+                  }}>
+                    {bookingError}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={bookingName}
+                    onChange={(e) => setBookingName(e.target.value)}
+                    placeholder="Ihr Name"
+                    disabled={bookingSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 2,
+                      fontSize: 15,
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                    E-Mail *
+                  </label>
+                  <input
+                    type="email"
+                    value={bookingEmail}
+                    onChange={(e) => setBookingEmail(e.target.value)}
+                    placeholder="ihre@email.de"
+                    disabled={bookingSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 2,
+                      fontSize: 15,
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                    Telefon (optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={bookingTelefon}
+                    onChange={(e) => setBookingTelefon(e.target.value)}
+                    placeholder="Ihre Telefonnummer"
+                    disabled={bookingSubmitting}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 2,
+                      fontSize: 15,
+                    }}
+                  />
+                </div>
+
+                <button
+                  onClick={submitBooking}
+                  disabled={bookingSubmitting}
+                  style={{
+                    width: "100%",
+                    background: bookingSubmitting ? colors.textMuted : colors.primary,
+                    color: "#fff",
+                    border: "none",
+                    padding: "14px 24px",
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    cursor: bookingSubmitting ? "not-allowed" : "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {bookingSubmitting ? "Wird gebucht..." : "Jetzt buchen"}
+                </button>
+
+                <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
+                  Mit der Buchung akzeptieren Sie unsere Datenschutzerklärung.
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}

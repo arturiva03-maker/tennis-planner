@@ -52,7 +52,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter" | "spontan";
 type FormulareTab = "anmeldung" | "sepa";
 
 type Verfuegbarkeit = {
@@ -115,6 +115,29 @@ type Training = {
   customAbrechnung?: "proTraining" | "proSpieler";
   barBezahlt?: boolean;
   anlage?: string;
+  isSpontanBuchung?: boolean;
+};
+
+type SpontaneStundeBuchung = {
+  name: string;
+  email: string;
+  telefon?: string;
+  gebuchtAm: string;
+};
+
+type SpontaneStunde = {
+  id: string;
+  datum: string;
+  uhrzeitVon: string;
+  uhrzeitBis: string;
+  trainerId: string;
+  tarifId?: string;
+  customPreisProStunde?: number;
+  status: "offen" | "gebucht";
+  anlage: "Wedding" | "Britz";
+  veroeffentlicht: boolean;
+  buchung?: SpontaneStundeBuchung;
+  trainingId?: string;
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
@@ -961,6 +984,8 @@ export default function App() {
   const [vertretungen, setVertretungen] = useState<Vertretung[]>(
     initial.state.vertretungen ?? []
   );
+  const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
+  const [loadingSpontaneStunden, setLoadingSpontaneStunden] = useState(false);
   const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("notizen");
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
@@ -1173,6 +1198,17 @@ export default function App() {
   const [sepaMandates, setSepaMandates] = useState<SepaMandate[]>([]);
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
   const [expandedSepaMandateId, setExpandedSepaMandateId] = useState<string | null>(null);
+
+  // Spontane Stunden Form
+  const [spontanDatum, setSpontanDatum] = useState(todayISO());
+  const [spontanVon, setSpontanVon] = useState("14:00");
+  const [spontanBis, setSpontanBis] = useState("15:00");
+  const [spontanTrainerId, setSpontanTrainerId] = useState("");
+  const [spontanTarifId, setSpontanTarifId] = useState("");
+  const [spontanCustomPreis, setSpontanCustomPreis] = useState<number | "">("");
+  const [spontanAnlage, setSpontanAnlage] = useState<"Wedding" | "Britz">("Wedding");
+  const [spontanVeroeffentlicht, setSpontanVeroeffentlicht] = useState(false);
+  const [editingSpontanId, setEditingSpontanId] = useState<string | null>(null);
 
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
@@ -1724,6 +1760,12 @@ export default function App() {
     if (tab === "verwaltung" && verwaltungTab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
       fetchSepaMandates();
+    }
+    if (tab === "verwaltung" && verwaltungTab === "spontan" && authUser?.accountId) {
+      fetchSpontaneStunden();
+      if (!spontanTrainerId && trainers.length > 0) {
+        setSpontanTrainerId(trainers[0].id);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
@@ -2439,6 +2481,236 @@ export default function App() {
     } catch (err) {
       console.error("Error deleting request:", err);
     }
+  }
+
+  // Spontane Stunden CRUD
+  async function fetchSpontaneStunden() {
+    if (!authUser?.accountId) return;
+    setLoadingSpontaneStunden(true);
+    try {
+      const { data, error } = await supabase
+        .from("spontane_stunden")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .order("datum", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching spontane stunden:", error);
+        return;
+      }
+
+      const mapped: SpontaneStunde[] = (data || []).map((row: {
+        id: string;
+        datum: string;
+        uhrzeit_von: string;
+        uhrzeit_bis: string;
+        trainer_id: string;
+        tarif_id?: string;
+        custom_preis_pro_stunde?: number;
+        status: string;
+        anlage: string;
+        veroeffentlicht: boolean;
+        buchung?: SpontaneStundeBuchung;
+        training_id?: string;
+      }) => ({
+        id: row.id,
+        datum: row.datum,
+        uhrzeitVon: row.uhrzeit_von,
+        uhrzeitBis: row.uhrzeit_bis,
+        trainerId: row.trainer_id,
+        tarifId: row.tarif_id,
+        customPreisProStunde: row.custom_preis_pro_stunde,
+        status: row.status as "offen" | "gebucht",
+        anlage: row.anlage as "Wedding" | "Britz",
+        veroeffentlicht: row.veroeffentlicht,
+        buchung: row.buchung,
+        trainingId: row.training_id,
+      }));
+      setSpontaneStunden(mapped);
+    } catch (err) {
+      console.error("Error fetching spontane stunden:", err);
+    } finally {
+      setLoadingSpontaneStunden(false);
+    }
+  }
+
+  async function createSpontaneStunde() {
+    if (!authUser?.accountId) return;
+    if (!spontanTrainerId) {
+      alert("Bitte Trainer auswählen");
+      return;
+    }
+
+    const neu: Omit<SpontaneStunde, "id"> = {
+      datum: spontanDatum,
+      uhrzeitVon: spontanVon,
+      uhrzeitBis: spontanBis,
+      trainerId: spontanTrainerId,
+      tarifId: spontanTarifId || undefined,
+      customPreisProStunde: spontanCustomPreis === "" ? undefined : spontanCustomPreis,
+      status: "offen",
+      anlage: spontanAnlage,
+      veroeffentlicht: spontanVeroeffentlicht,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from("spontane_stunden")
+        .insert({
+          account_id: authUser.accountId,
+          datum: neu.datum,
+          uhrzeit_von: neu.uhrzeitVon,
+          uhrzeit_bis: neu.uhrzeitBis,
+          trainer_id: neu.trainerId,
+          tarif_id: neu.tarifId || null,
+          custom_preis_pro_stunde: neu.customPreisProStunde ?? null,
+          status: neu.status,
+          anlage: neu.anlage,
+          veroeffentlicht: neu.veroeffentlicht,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating spontane stunde:", error);
+        alert("Fehler beim Erstellen: " + error.message);
+        return;
+      }
+
+      const created: SpontaneStunde = {
+        id: data.id,
+        datum: data.datum,
+        uhrzeitVon: data.uhrzeit_von,
+        uhrzeitBis: data.uhrzeit_bis,
+        trainerId: data.trainer_id,
+        tarifId: data.tarif_id,
+        customPreisProStunde: data.custom_preis_pro_stunde,
+        status: data.status,
+        anlage: data.anlage,
+        veroeffentlicht: data.veroeffentlicht,
+        buchung: data.buchung,
+        trainingId: data.training_id,
+      };
+      setSpontaneStunden((prev) => [...prev, created]);
+      resetSpontanForm();
+    } catch (err) {
+      console.error("Error creating spontane stunde:", err);
+    }
+  }
+
+  async function updateSpontaneStunde() {
+    if (!editingSpontanId || !authUser?.accountId) return;
+
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({
+          datum: spontanDatum,
+          uhrzeit_von: spontanVon,
+          uhrzeit_bis: spontanBis,
+          trainer_id: spontanTrainerId,
+          tarif_id: spontanTarifId || null,
+          custom_preis_pro_stunde: spontanCustomPreis === "" ? null : spontanCustomPreis,
+          anlage: spontanAnlage,
+          veroeffentlicht: spontanVeroeffentlicht,
+        })
+        .eq("id", editingSpontanId);
+
+      if (error) {
+        console.error("Error updating spontane stunde:", error);
+        alert("Fehler beim Aktualisieren: " + error.message);
+        return;
+      }
+
+      setSpontaneStunden((prev) =>
+        prev.map((s) =>
+          s.id === editingSpontanId
+            ? {
+                ...s,
+                datum: spontanDatum,
+                uhrzeitVon: spontanVon,
+                uhrzeitBis: spontanBis,
+                trainerId: spontanTrainerId,
+                tarifId: spontanTarifId || undefined,
+                customPreisProStunde: spontanCustomPreis === "" ? undefined : spontanCustomPreis,
+                anlage: spontanAnlage,
+                veroeffentlicht: spontanVeroeffentlicht,
+              }
+            : s
+        )
+      );
+      resetSpontanForm();
+    } catch (err) {
+      console.error("Error updating spontane stunde:", err);
+    }
+  }
+
+  async function deleteSpontaneStunde(id: string) {
+    if (!window.confirm("Möchten Sie diese spontane Stunde wirklich löschen?")) {
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error deleting spontane stunde:", error);
+        return;
+      }
+
+      setSpontaneStunden((prev) => prev.filter((s) => s.id !== id));
+      if (editingSpontanId === id) {
+        resetSpontanForm();
+      }
+    } catch (err) {
+      console.error("Error deleting spontane stunde:", err);
+    }
+  }
+
+  async function toggleSpontanVeroeffentlicht(id: string, current: boolean) {
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({ veroeffentlicht: !current })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error toggling veroeffentlicht:", error);
+        return;
+      }
+
+      setSpontaneStunden((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, veroeffentlicht: !current } : s))
+      );
+    } catch (err) {
+      console.error("Error toggling veroeffentlicht:", err);
+    }
+  }
+
+  function startEditSpontaneStunde(s: SpontaneStunde) {
+    setEditingSpontanId(s.id);
+    setSpontanDatum(s.datum);
+    setSpontanVon(s.uhrzeitVon);
+    setSpontanBis(s.uhrzeitBis);
+    setSpontanTrainerId(s.trainerId);
+    setSpontanTarifId(s.tarifId || "");
+    setSpontanCustomPreis(s.customPreisProStunde ?? "");
+    setSpontanAnlage(s.anlage);
+    setSpontanVeroeffentlicht(s.veroeffentlicht);
+  }
+
+  function resetSpontanForm() {
+    setEditingSpontanId(null);
+    setSpontanDatum(todayISO());
+    setSpontanVon("14:00");
+    setSpontanBis("15:00");
+    setSpontanTrainerId(trainers[0]?.id ?? "");
+    setSpontanTarifId("");
+    setSpontanCustomPreis("");
+    setSpontanAnlage("Wedding");
+    setSpontanVeroeffentlicht(false);
   }
 
   function adoptPlayerFromRequest(req: RegistrationRequest) {
@@ -4595,6 +4867,20 @@ Deine Tennisschule`;
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
+                                    {t.isSpontanBuchung && (
+                                      <span
+                                        style={{
+                                          fontSize: 8,
+                                          fontWeight: 700,
+                                          background: "#eab308",
+                                          color: "white",
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
+                                        }}
+                                      >
+                                        S
+                                      </span>
+                                    )}
                                     {hasVertretung && (
                                       <span
                                         style={{
@@ -5199,6 +5485,14 @@ Sportliche Grüße`
                     onClick={() => setVerwaltungTab("newsletter")}
                   >
                     Newsletter
+                  </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "spontan" ? "tabBtnActive" : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("spontan")}
+                  >
+                    Spontan
                   </button>
                 </div>
 
@@ -7348,6 +7642,213 @@ Sportliche Grüße`
                         um Newsletter gezielt an bestimmte Gruppen zu senden.
                       </p>
                     )}
+                  </div>
+                )}
+
+                {verwaltungTab === "spontan" && (
+                  <div className="card">
+                    <h2>{editingSpontanId ? "Spontane Stunde bearbeiten" : "Spontane Stunde erstellen"}</h2>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Datum</label>
+                        <input
+                          type="date"
+                          value={spontanDatum}
+                          onChange={(e) => setSpontanDatum(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Von</label>
+                        <input
+                          type="time"
+                          value={spontanVon}
+                          onChange={(e) => setSpontanVon(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Bis</label>
+                        <input
+                          type="time"
+                          value={spontanBis}
+                          onChange={(e) => setSpontanBis(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Trainer</label>
+                        <select
+                          value={spontanTrainerId}
+                          onChange={(e) => setSpontanTrainerId(e.target.value)}
+                        >
+                          <option value="">Trainer auswählen...</option>
+                          {trainers.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Anlage</label>
+                        <select
+                          value={spontanAnlage}
+                          onChange={(e) => setSpontanAnlage(e.target.value as "Wedding" | "Britz")}
+                        >
+                          <option value="Wedding">Wedding</option>
+                          <option value="Britz">Britz</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Tarif (optional)</label>
+                        <select
+                          value={spontanTarifId}
+                          onChange={(e) => setSpontanTarifId(e.target.value)}
+                        >
+                          <option value="">Kein Tarif / Individuell</option>
+                          {tarife.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({euro(t.preisProStunde)}/h)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Preis/Stunde (optional)</label>
+                        <input
+                          type="number"
+                          placeholder="z.B. 50"
+                          value={spontanCustomPreis}
+                          onChange={(e) =>
+                            setSpontanCustomPreis(
+                              e.target.value === "" ? "" : Number(e.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={spontanVeroeffentlicht}
+                          onChange={(e) => setSpontanVeroeffentlicht(e.target.checked)}
+                        />
+                        Auf Wedding-Seite veröffentlichen
+                      </label>
+                    </div>
+
+                    <div className="row" style={{ marginTop: 16 }}>
+                      {editingSpontanId ? (
+                        <>
+                          <button className="btn" onClick={updateSpontaneStunde}>
+                            Speichern
+                          </button>
+                          <button className="btn btnGhost" onClick={resetSpontanForm}>
+                            Abbrechen
+                          </button>
+                        </>
+                      ) : (
+                        <button className="btn" onClick={createSpontaneStunde}>
+                          Erstellen
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 32 }}>
+                      <h3>Spontane Stunden</h3>
+                      {loadingSpontaneStunden ? (
+                        <p className="muted">Lade...</p>
+                      ) : spontaneStunden.length === 0 ? (
+                        <p className="muted">Keine spontanen Stunden vorhanden.</p>
+                      ) : (
+                        <ul className="list">
+                          {spontaneStunden
+                            .sort((a, b) => {
+                              const dateA = new Date(a.datum + "T" + a.uhrzeitVon);
+                              const dateB = new Date(b.datum + "T" + b.uhrzeitVon);
+                              return dateA.getTime() - dateB.getTime();
+                            })
+                            .map((s) => {
+                              const trainer = trainers.find((t) => t.id === s.trainerId);
+                              const tarif = tarife.find((t) => t.id === s.tarifId);
+                              const preis = s.customPreisProStunde ?? tarif?.preisProStunde;
+                              const datumFormatted = new Date(s.datum + "T12:00:00").toLocaleDateString("de-DE", {
+                                weekday: "short",
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric"
+                              });
+
+                              return (
+                                <li key={s.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div>
+                                      <strong>{datumFormatted}</strong>
+                                      <span style={{ marginLeft: 8 }}>{s.uhrzeitVon} – {s.uhrzeitBis}</span>
+                                      <div className="muted" style={{ fontSize: 13 }}>
+                                        Trainer: {trainer?.name ?? "–"} | Anlage: {s.anlage}
+                                        {preis && ` | ${euro(preis)}/h`}
+                                      </div>
+                                      {s.buchung && (
+                                        <div style={{ marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
+                                          <strong>Gebucht von:</strong> {s.buchung.name} ({s.buchung.email})
+                                          {s.buchung.telefon && ` | Tel: ${s.buchung.telefon}`}
+                                          <br />
+                                          <span className="muted">am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE")}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                      <span
+                                        style={{
+                                          padding: "3px 8px",
+                                          borderRadius: 4,
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          background: s.status === "gebucht" ? "#22c55e" : "#3b82f6",
+                                          color: "white"
+                                        }}
+                                      >
+                                        {s.status === "gebucht" ? "Gebucht" : "Offen"}
+                                      </span>
+                                      <button
+                                        className={`btn micro ${s.veroeffentlicht ? "btnPrimary" : "btnGhost"}`}
+                                        onClick={() => toggleSpontanVeroeffentlicht(s.id, s.veroeffentlicht)}
+                                        title={s.veroeffentlicht ? "Veröffentlicht" : "Nicht veröffentlicht"}
+                                      >
+                                        {s.veroeffentlicht ? "Online" : "Offline"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="smallActions" style={{ justifyContent: "flex-end" }}>
+                                    {s.status !== "gebucht" && (
+                                      <button
+                                        className="btn micro btnGhost"
+                                        onClick={() => startEditSpontaneStunde(s)}
+                                      >
+                                        Bearbeiten
+                                      </button>
+                                    )}
+                                    <button
+                                      className="btn micro btnWarn"
+                                      onClick={() => deleteSpontaneStunde(s.id)}
+                                    >
+                                      Löschen
+                                    </button>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 )}
 
