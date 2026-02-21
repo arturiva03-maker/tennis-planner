@@ -58,13 +58,14 @@ export default function WeddingPage() {
       qualification: "C-Lizenz Leistungssport",
       bio: "Trainiert Spieler aller Alters- und Leistungsstufen. Fokus auf Technik, Taktik und mentale Stärke.",
       image: "/marc-erdogan.jpg",
-      imagePosition: "20% center",
+      imagePosition: "10% center",
     },
     {
       name: "Konstantin Klein",
       qualification: "C-Lizenz Leistungssport (in Ausbildung)",
       bio: "",
       image: "/konstantin-klein.jpg",
+      imageZoom: 1.5,
     },
     {
       name: "Sascha Ivanenko",
