@@ -69,6 +69,7 @@ export default function WeddingPage() {
       name: "Sascha Ivanenko",
       qualification: "Trainer",
       bio: "30 Jahre Erfahrung im Training seiner Söhne – bis in den Berliner und deutschen Spitzensport.",
+      image: "/sascha-ivanenko.jpg",
     },
   ];
 
