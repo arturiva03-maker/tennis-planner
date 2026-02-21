@@ -210,10 +210,6 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
-      const preisHtml = selectedSlot.customPreisProStunde
-        ? `<br><strong>Preis:</strong> ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR`
-        : "";
-
       const confirmationHtml = `
 <!DOCTYPE html>
 <html>
