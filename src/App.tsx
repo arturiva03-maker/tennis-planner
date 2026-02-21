@@ -52,7 +52,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter" | "spontan";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter";
 type FormulareTab = "anmeldung" | "sepa";
 
 type Verfuegbarkeit = {
@@ -159,7 +159,7 @@ type Vertretung = {
   vertretungTrainerId?: string; // Optional - wenn leer, dann "Vertretung offen"
 };
 
-type WeiteresTabs = "notizen" | "vertretung";
+type WeiteresTabs = "notizen" | "vertretung" | "spontan";
 
 type AppState = {
   trainers: Trainer[];
@@ -1761,7 +1761,7 @@ export default function App() {
       fetchRegistrationRequests();
       fetchSepaMandates();
     }
-    if (tab === "verwaltung" && verwaltungTab === "spontan" && authUser?.accountId) {
+    if (tab === "weiteres" && weiteresTabs === "spontan" && authUser?.accountId) {
       fetchSpontaneStunden();
       if (!spontanTrainerId && trainers.length > 0) {
         setSpontanTrainerId(trainers[0].id);
@@ -5555,14 +5555,6 @@ Sportliche Grüße`
                   >
                     Newsletter
                   </button>
-                  <button
-                    className={`tabBtn ${
-                      verwaltungTab === "spontan" ? "tabBtnActive" : ""
-                    }`}
-                    onClick={() => setVerwaltungTab("spontan")}
-                  >
-                    Spontan
-                  </button>
                 </div>
 
                 <div style={{ height: 12 }} />
@@ -7714,227 +7706,6 @@ Sportliche Grüße`
                   </div>
                 )}
 
-                {verwaltungTab === "spontan" && (
-                  <div className="card">
-                    <h2>{editingSpontanId ? "Spontane Stunde bearbeiten" : "Spontane Stunde erstellen"}</h2>
-
-                    <div className="row">
-                      <div className="field">
-                        <label>Datum</label>
-                        <input
-                          type="date"
-                          value={spontanDatum}
-                          onChange={(e) => setSpontanDatum(e.target.value)}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Von</label>
-                        <input
-                          type="time"
-                          value={spontanVon}
-                          onChange={(e) => setSpontanVon(e.target.value)}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Bis</label>
-                        <input
-                          type="time"
-                          value={spontanBis}
-                          onChange={(e) => setSpontanBis(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="field">
-                        <label>Trainer</label>
-                        <select
-                          value={spontanTrainerId}
-                          onChange={(e) => setSpontanTrainerId(e.target.value)}
-                        >
-                          <option value="">Trainer auswählen...</option>
-                          {trainers.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label>Anlage</label>
-                        <select
-                          value={spontanAnlage}
-                          onChange={(e) => setSpontanAnlage(e.target.value as "Wedding" | "Britz")}
-                        >
-                          <option value="Wedding">Wedding</option>
-                          <option value="Britz">Britz</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="row">
-                      <div className="field">
-                        <label>Tarif (optional)</label>
-                        <select
-                          value={spontanTarifId}
-                          onChange={(e) => setSpontanTarifId(e.target.value)}
-                        >
-                          <option value="">Kein Tarif / Individuell</option>
-                          {tarife.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {t.name} ({euro(t.preisProStunde)}/h)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="field">
-                        <label>Preis/Stunde (optional)</label>
-                        <input
-                          type="number"
-                          placeholder="z.B. 50"
-                          value={spontanCustomPreis}
-                          onChange={(e) =>
-                            setSpontanCustomPreis(
-                              e.target.value === "" ? "" : Number(e.target.value)
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="row" style={{ marginTop: 12 }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={spontanVeroeffentlicht}
-                          onChange={(e) => setSpontanVeroeffentlicht(e.target.checked)}
-                        />
-                        Auf Wedding-Seite veröffentlichen
-                      </label>
-                    </div>
-
-                    <div className="row" style={{ marginTop: 16 }}>
-                      {editingSpontanId ? (
-                        <>
-                          <button className="btn" onClick={updateSpontaneStunde}>
-                            Speichern
-                          </button>
-                          <button className="btn btnGhost" onClick={resetSpontanForm}>
-                            Abbrechen
-                          </button>
-                        </>
-                      ) : (
-                        <button className="btn" onClick={createSpontaneStunde}>
-                          Erstellen
-                        </button>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: 32 }}>
-                      <h3>Spontane Stunden</h3>
-                      {loadingSpontaneStunden ? (
-                        <p className="muted">Lade...</p>
-                      ) : spontaneStunden.length === 0 ? (
-                        <p className="muted">Keine spontanen Stunden vorhanden.</p>
-                      ) : (
-                        <ul className="list">
-                          {spontaneStunden
-                            .sort((a, b) => {
-                              const dateA = new Date(a.datum + "T" + a.uhrzeitVon);
-                              const dateB = new Date(b.datum + "T" + b.uhrzeitVon);
-                              return dateA.getTime() - dateB.getTime();
-                            })
-                            .map((s) => {
-                              const trainer = trainers.find((t) => t.id === s.trainerId);
-                              const tarif = tarife.find((t) => t.id === s.tarifId);
-                              const preis = s.customPreisProStunde ?? tarif?.preisProStunde;
-                              const datumFormatted = new Date(s.datum + "T12:00:00").toLocaleDateString("de-DE", {
-                                weekday: "short",
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric"
-                              });
-
-                              return (
-                                <li key={s.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                    <div>
-                                      <strong>{datumFormatted}</strong>
-                                      <span style={{ marginLeft: 8 }}>{s.uhrzeitVon} – {s.uhrzeitBis}</span>
-                                      <div className="muted" style={{ fontSize: 13 }}>
-                                        Trainer: {trainer?.name ?? "–"} | Anlage: {s.anlage}
-                                        {preis && ` | ${euro(preis)}/h`}
-                                      </div>
-                                      {s.buchung && (
-                                        <div style={{ marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
-                                          <strong>Gebucht von:</strong> {s.buchung.name} ({s.buchung.email})
-                                          {s.buchung.telefon && ` | Tel: ${s.buchung.telefon}`}
-                                          <br />
-                                          <span className="muted">am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE")}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                      <span
-                                        style={{
-                                          padding: "3px 8px",
-                                          borderRadius: 4,
-                                          fontSize: 12,
-                                          fontWeight: 600,
-                                          background: s.status === "gebucht" ? "#22c55e" : "#3b82f6",
-                                          color: "white"
-                                        }}
-                                      >
-                                        {s.status === "gebucht" ? "Gebucht" : "Offen"}
-                                      </span>
-                                      <button
-                                        className={`btn micro ${s.veroeffentlicht ? "btnPrimary" : "btnGhost"}`}
-                                        onClick={() => toggleSpontanVeroeffentlicht(s.id, s.veroeffentlicht)}
-                                        title={s.veroeffentlicht ? "Veröffentlicht" : "Nicht veröffentlicht"}
-                                      >
-                                        {s.veroeffentlicht ? "Online" : "Offline"}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="smallActions" style={{ justifyContent: "flex-end" }}>
-                                    {s.status === "gebucht" && s.buchung && !s.trainingId && (
-                                      <button
-                                        className="btn micro"
-                                        style={{ background: "#eab308" }}
-                                        onClick={() => uebernehmenSpontanBuchung(s)}
-                                      >
-                                        In Kalender übernehmen
-                                      </button>
-                                    )}
-                                    {s.trainingId && (
-                                      <span className="muted" style={{ fontSize: 12 }}>
-                                        ✓ Im Kalender
-                                      </span>
-                                    )}
-                                    {s.status !== "gebucht" && (
-                                      <button
-                                        className="btn micro btnGhost"
-                                        onClick={() => startEditSpontaneStunde(s)}
-                                      >
-                                        Bearbeiten
-                                      </button>
-                                    )}
-                                    <button
-                                      className="btn micro btnWarn"
-                                      onClick={() => deleteSpontaneStunde(s.id)}
-                                    >
-                                      Löschen
-                                    </button>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                )}
-
               </>
             )}
 
@@ -9249,6 +9020,12 @@ Sportliche Grüße`
                   >
                     Vertretung
                   </button>
+                  <button
+                    className={`tabBtn ${weiteresTabs === "spontan" ? "tabBtnActive" : ""}`}
+                    onClick={() => setWeiteresTabs("spontan")}
+                  >
+                    Spontan
+                  </button>
                 </div>
 
                 {/* Notizen Tab */}
@@ -10171,13 +9948,235 @@ Sportliche Grüße`
                     </div>
                   </>
                 )}
+
+                {/* Spontan Tab */}
+                {weiteresTabs === "spontan" && (
+                  <>
+                    <h2>{editingSpontanId ? "Spontane Stunde bearbeiten" : "Spontane Stunde erstellen"}</h2>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Datum</label>
+                        <input
+                          type="date"
+                          value={spontanDatum}
+                          onChange={(e) => setSpontanDatum(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Von</label>
+                        <input
+                          type="time"
+                          value={spontanVon}
+                          onChange={(e) => setSpontanVon(e.target.value)}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Bis</label>
+                        <input
+                          type="time"
+                          value={spontanBis}
+                          onChange={(e) => setSpontanBis(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Trainer</label>
+                        <select
+                          value={spontanTrainerId}
+                          onChange={(e) => setSpontanTrainerId(e.target.value)}
+                        >
+                          <option value="">Trainer auswählen...</option>
+                          {trainers.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Anlage</label>
+                        <select
+                          value={spontanAnlage}
+                          onChange={(e) => setSpontanAnlage(e.target.value as "Wedding" | "Britz")}
+                        >
+                          <option value="Wedding">Wedding</option>
+                          <option value="Britz">Britz</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="row">
+                      <div className="field">
+                        <label>Tarif (optional)</label>
+                        <select
+                          value={spontanTarifId}
+                          onChange={(e) => setSpontanTarifId(e.target.value)}
+                        >
+                          <option value="">Kein Tarif / Individuell</option>
+                          {tarife.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} ({euro(t.preisProStunde)}/h)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="field">
+                        <label>Preis/Stunde (optional)</label>
+                        <input
+                          type="number"
+                          placeholder="z.B. 50"
+                          value={spontanCustomPreis}
+                          onChange={(e) =>
+                            setSpontanCustomPreis(
+                              e.target.value === "" ? "" : Number(e.target.value)
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="row" style={{ marginTop: 12 }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={spontanVeroeffentlicht}
+                          onChange={(e) => setSpontanVeroeffentlicht(e.target.checked)}
+                        />
+                        Auf Wedding-Seite veröffentlichen
+                      </label>
+                    </div>
+
+                    <div className="row" style={{ marginTop: 16 }}>
+                      {editingSpontanId ? (
+                        <>
+                          <button className="btn" onClick={updateSpontaneStunde}>
+                            Speichern
+                          </button>
+                          <button className="btn btnGhost" onClick={resetSpontanForm}>
+                            Abbrechen
+                          </button>
+                        </>
+                      ) : (
+                        <button className="btn" onClick={createSpontaneStunde}>
+                          Erstellen
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 32 }}>
+                      <h3>Spontane Stunden</h3>
+                      {loadingSpontaneStunden ? (
+                        <p className="muted">Lade...</p>
+                      ) : spontaneStunden.length === 0 ? (
+                        <p className="muted">Keine spontanen Stunden vorhanden.</p>
+                      ) : (
+                        <ul className="list">
+                          {spontaneStunden
+                            .sort((a, b) => {
+                              const dateA = new Date(a.datum + "T" + a.uhrzeitVon);
+                              const dateB = new Date(b.datum + "T" + b.uhrzeitVon);
+                              return dateA.getTime() - dateB.getTime();
+                            })
+                            .map((s) => {
+                              const trainer = trainers.find((t) => t.id === s.trainerId);
+                              const tarif = tarife.find((t) => t.id === s.tarifId);
+                              const preis = s.customPreisProStunde ?? tarif?.preisProStunde;
+                              const datumFormatted = new Date(s.datum + "T12:00:00").toLocaleDateString("de-DE", {
+                                weekday: "short",
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric"
+                              });
+
+                              return (
+                                <li key={s.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                    <div>
+                                      <strong>{datumFormatted}</strong>
+                                      <span style={{ marginLeft: 8 }}>{s.uhrzeitVon} – {s.uhrzeitBis}</span>
+                                      <div className="muted" style={{ fontSize: 13 }}>
+                                        Trainer: {trainer?.name ?? "–"} | Anlage: {s.anlage}
+                                        {preis && ` | ${euro(preis)}/h`}
+                                      </div>
+                                      {s.buchung && (
+                                        <div style={{ marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
+                                          <strong>Gebucht von:</strong> {s.buchung.name} ({s.buchung.email})
+                                          {s.buchung.telefon && ` | Tel: ${s.buchung.telefon}`}
+                                          <br />
+                                          <span className="muted">am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE")}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                      <span
+                                        style={{
+                                          padding: "3px 8px",
+                                          borderRadius: 4,
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          background: s.status === "gebucht" ? "#22c55e" : "#3b82f6",
+                                          color: "white"
+                                        }}
+                                      >
+                                        {s.status === "gebucht" ? "Gebucht" : "Offen"}
+                                      </span>
+                                      <button
+                                        className={`btn micro ${s.veroeffentlicht ? "btnPrimary" : "btnGhost"}`}
+                                        onClick={() => toggleSpontanVeroeffentlicht(s.id, s.veroeffentlicht)}
+                                        title={s.veroeffentlicht ? "Veröffentlicht" : "Nicht veröffentlicht"}
+                                      >
+                                        {s.veroeffentlicht ? "Online" : "Offline"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="smallActions" style={{ justifyContent: "flex-end" }}>
+                                    {s.status === "gebucht" && s.buchung && !s.trainingId && (
+                                      <button
+                                        className="btn micro"
+                                        style={{ background: "#eab308" }}
+                                        onClick={() => uebernehmenSpontanBuchung(s)}
+                                      >
+                                        In Kalender übernehmen
+                                      </button>
+                                    )}
+                                    {s.trainingId && (
+                                      <span className="muted" style={{ fontSize: 12 }}>
+                                        ✓ Im Kalender
+                                      </span>
+                                    )}
+                                    {s.status !== "gebucht" && (
+                                      <button
+                                        className="btn micro btnGhost"
+                                        onClick={() => startEditSpontaneStunde(s)}
+                                      >
+                                        Bearbeiten
+                                      </button>
+                                    )}
+                                    <button
+                                      className="btn micro btnWarn"
+                                      onClick={() => deleteSpontaneStunde(s.id)}
+                                    >
+                                      Löschen
+                                    </button>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                        </ul>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
         </main>
       </div>
 
-      
+
 
       {payConfirm && (
         <div className="modalOverlay">

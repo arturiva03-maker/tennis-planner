@@ -592,161 +592,163 @@ export default function WeddingPage() {
         </div>
       </section>
 
-      {/* Spontane Stunden Buchung Section */}
-      <section id="spontan" style={{ padding: "80px 24px", background: colors.bgLight }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{
-              fontSize: 28,
-              fontWeight: 700,
-              color: colors.primary,
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
-            }}>
-              Spontane Stunden
-            </h2>
-            <div style={{
-              width: 50,
-              height: 3,
-              background: colors.primary,
-              margin: "16px auto 0",
-            }} />
-            <p style={{ marginTop: 20, fontSize: 15, color: colors.textMuted }}>
-              Buchen Sie eine freie Trainingsstunde direkt online
-            </p>
-          </div>
-
-          {/* Week Navigation */}
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-            background: colors.white,
-            padding: "12px 20px",
-            border: `1px solid ${colors.border}`,
-          }}>
-            <button
-              onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 24,
+      {/* Spontane Stunden Buchung Section - nur anzeigen wenn Slots vorhanden */}
+      {!loadingSlots && spontaneStunden.length > 0 && (
+        <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
+          <div style={{ maxWidth: 700, margin: "0 auto" }}>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <p style={{
+                fontSize: 12,
                 color: colors.primary,
-                padding: "4px 12px",
-              }}
-            >
-              &larr;
-            </button>
-            <span style={{ fontWeight: 700, color: colors.text }}>
-              {(() => {
-                const start = new Date(weekStart + "T12:00:00");
-                const end = new Date(addDaysISO(weekStart, 6) + "T12:00:00");
-                const months = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
-                return `${start.getDate()}. ${months[start.getMonth()]} – ${end.getDate()}. ${months[end.getMonth()]} ${end.getFullYear()}`;
-              })()}
-            </span>
-            <button
-              onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                marginBottom: 8,
+                fontWeight: 600,
+              }}>
+                Verfügbare Termine
+              </p>
+              <h2 style={{
                 fontSize: 24,
-                color: colors.primary,
-                padding: "4px 12px",
-              }}
-            >
-              &rarr;
-            </button>
-          </div>
+                fontWeight: 700,
+                color: colors.text,
+                marginBottom: 8,
+              }}>
+                Spontane Trainingsstunden
+              </h2>
+              <p style={{ fontSize: 14, color: colors.textMuted }}>
+                Buchen Sie einen freien Termin direkt online
+              </p>
+            </div>
 
-          {/* Week Calendar */}
-          {loadingSlots ? (
-            <div style={{ textAlign: "center", padding: 40, color: colors.textMuted }}>
-              Lade verfügbare Termine...
-            </div>
-          ) : spontaneStunden.length === 0 ? (
+            {/* Week Navigation */}
             <div style={{
-              textAlign: "center",
-              padding: 40,
-              background: colors.white,
-              border: `1px solid ${colors.border}`,
-              color: colors.textMuted,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 24,
+              marginBottom: 24,
             }}>
-              In dieser Woche sind keine spontanen Stunden verfügbar.
+              <button
+                onClick={() => setWeekStart(addDaysISO(weekStart, -7))}
+                style={{
+                  background: "none",
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: "50%",
+                  width: 36,
+                  height: 36,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  color: colors.textMuted,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ←
+              </button>
+              <span style={{ fontWeight: 600, color: colors.text, fontSize: 14 }}>
+                {(() => {
+                  const start = new Date(weekStart + "T12:00:00");
+                  const end = new Date(addDaysISO(weekStart, 6) + "T12:00:00");
+                  const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+                  if (start.getMonth() === end.getMonth()) {
+                    return `${start.getDate()}. – ${end.getDate()}. ${months[end.getMonth()]} ${end.getFullYear()}`;
+                  }
+                  return `${start.getDate()}. ${months[start.getMonth()]} – ${end.getDate()}. ${months[end.getMonth()]}`;
+                })()}
+              </span>
+              <button
+                onClick={() => setWeekStart(addDaysISO(weekStart, 7))}
+                style={{
+                  background: "none",
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: "50%",
+                  width: 36,
+                  height: 36,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  color: colors.textMuted,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                →
+              </button>
             </div>
-          ) : (
+
+            {/* Slots als Liste statt Grid */}
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-              gap: 12,
+              background: colors.bgLight,
+              borderRadius: 8,
+              padding: 20,
             }}>
               {weekDays.map((day) => {
                 const slots = slotsByDate[day] || [];
                 const dayDate = new Date(day + "T12:00:00");
-                const weekDayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                const weekDayNames = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
                 const isPast = day < todayISO();
 
+                if (slots.length === 0) return null;
+
                 return (
-                  <div
-                    key={day}
-                    style={{
-                      background: colors.white,
-                      border: `1px solid ${colors.border}`,
-                      opacity: isPast ? 0.5 : 1,
-                    }}
-                  >
+                  <div key={day} style={{ marginBottom: 16 }}>
                     <div style={{
-                      padding: "10px 12px",
-                      background: colors.primary,
-                      color: "#fff",
-                      fontWeight: 700,
                       fontSize: 13,
-                      textAlign: "center",
+                      fontWeight: 600,
+                      color: isPast ? colors.textMuted : colors.text,
+                      marginBottom: 8,
+                      opacity: isPast ? 0.5 : 1,
                     }}>
-                      {weekDayNames[dayDate.getDay()]} {dayDate.getDate()}.{dayDate.getMonth() + 1}.
+                      {weekDayNames[dayDate.getDay()]}, {dayDate.getDate()}.{dayDate.getMonth() + 1}.
                     </div>
-                    <div style={{ padding: 8, minHeight: 80 }}>
-                      {slots.length === 0 ? (
-                        <div style={{ fontSize: 12, color: colors.textMuted, textAlign: "center", paddingTop: 20 }}>
-                          –
-                        </div>
-                      ) : (
-                        slots.map((slot) => (
-                          <button
-                            key={slot.id}
-                            onClick={() => !isPast && openBookingModal(slot)}
-                            disabled={isPast}
-                            style={{
-                              display: "block",
-                              width: "100%",
-                              padding: "8px 10px",
-                              marginBottom: 6,
-                              background: isPast ? colors.bgLight : colors.primary,
-                              color: "#fff",
-                              border: "none",
-                              borderRadius: 2,
-                              cursor: isPast ? "not-allowed" : "pointer",
-                              fontWeight: 600,
-                              fontSize: 13,
-                              textAlign: "center",
-                            }}
-                          >
-                            {slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)}
-                          </button>
-                        ))
-                      )}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {slots.map((slot) => (
+                        <button
+                          key={slot.id}
+                          onClick={() => !isPast && openBookingModal(slot)}
+                          disabled={isPast}
+                          style={{
+                            padding: "10px 16px",
+                            background: isPast ? colors.bgLight : colors.white,
+                            color: isPast ? colors.textMuted : colors.text,
+                            border: `1px solid ${isPast ? colors.border : colors.primary}`,
+                            borderRadius: 6,
+                            cursor: isPast ? "not-allowed" : "pointer",
+                            fontWeight: 500,
+                            fontSize: 14,
+                            opacity: isPast ? 0.5 : 1,
+                            transition: "all 0.2s",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isPast) {
+                              e.currentTarget.style.background = colors.primary;
+                              e.currentTarget.style.color = "#fff";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isPast) {
+                              e.currentTarget.style.background = colors.white;
+                              e.currentTarget.style.color = colors.text;
+                            }
+                          }}
+                        >
+                          {slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 );
               })}
+              {spontaneStunden.length === 0 && (
+                <p style={{ textAlign: "center", color: colors.textMuted, fontSize: 14 }}>
+                  Diese Woche keine Termine verfügbar
+                </p>
+              )}
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* Trainer Section */}
       <section id="trainer" style={{ padding: "80px 24px", background: colors.white }}>
@@ -1110,43 +1112,115 @@ export default function WeddingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {bookingSuccess ? (
-              <>
-                <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    background: "#22c55e",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 20px",
-                  }}>
-                    <span style={{ color: "#fff", fontSize: 30 }}>✓</span>
-                  </div>
-                  <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.primary, marginBottom: 12 }}>
-                    Buchung erfolgreich!
-                  </h2>
-                  <p style={{ color: colors.textMuted, marginBottom: 20 }}>
-                    Sie erhalten in Kürze eine Bestätigungs-E-Mail.
-                  </p>
-                  <button
-                    onClick={() => setShowBookingModal(false)}
-                    style={{
-                      background: colors.primary,
-                      color: "#fff",
-                      border: "none",
-                      padding: "12px 32px",
-                      borderRadius: 2,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Schließen
-                  </button>
+              <div style={{ textAlign: "center", padding: "32px 0" }}>
+                <div style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 24px",
+                  boxShadow: "0 8px 24px rgba(34, 197, 94, 0.25)",
+                }}>
+                  <span style={{ color: "#fff", fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>
-              </>
+
+                <h2 style={{
+                  fontSize: 26,
+                  fontWeight: 700,
+                  color: colors.text,
+                  marginBottom: 8,
+                }}>
+                  Buchung erfolgreich!
+                </h2>
+
+                <p style={{
+                  color: colors.textMuted,
+                  marginBottom: 24,
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                }}>
+                  Vielen Dank für Ihre Buchung. Sie erhalten in Kürze eine Bestätigungs-E-Mail an <strong style={{ color: colors.text }}>{bookingEmail}</strong>.
+                </p>
+
+                <div style={{
+                  background: colors.bgLight,
+                  borderRadius: 8,
+                  padding: 20,
+                  marginBottom: 24,
+                  textAlign: "left",
+                }}>
+                  <div style={{
+                    fontSize: 11,
+                    color: colors.primary,
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    fontWeight: 600,
+                    marginBottom: 12,
+                  }}>
+                    Ihre Termindetails
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                    <span style={{ fontSize: 18 }}>📅</span>
+                    <span style={{ fontWeight: 600, color: colors.text }}>
+                      {new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric"
+                      })}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                    <span style={{ fontSize: 18 }}>🕐</span>
+                    <span style={{ color: colors.text }}>
+                      {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 18 }}>📍</span>
+                    <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
+                  </div>
+                  {selectedSlot.customPreisProStunde && (
+                    <div style={{
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: `1px solid ${colors.border}`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}>
+                      <span style={{ fontSize: 18 }}>💰</span>
+                      <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
+                        {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  style={{
+                    background: colors.primary,
+                    color: "#fff",
+                    border: "none",
+                    padding: "14px 40px",
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = colors.primaryLight}
+                  onMouseLeave={(e) => e.currentTarget.style.background = colors.primary}
+                >
+                  Schließen
+                </button>
+              </div>
             ) : (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
