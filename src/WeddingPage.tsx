@@ -65,7 +65,7 @@ export default function WeddingPage() {
       qualification: "C-Lizenz Leistungssport (in Ausbildung)",
       bio: "",
       image: "/konstantin-klein.jpg",
-      imageZoom: 1.5,
+      imageZoom: 1.2,
     },
     {
       name: "Sascha Ivanenko",
