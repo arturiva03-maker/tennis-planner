@@ -1857,7 +1857,7 @@ export default function App() {
 
   const visibleTabs: Tab[] = isTrainer
     ? ["kalender", "abrechnung"]
-    : ["kalender", "training", "verwaltung", "abrechnung", "weiteres"];
+    : ["kalender", "training", "verwaltung", "formulare", "abrechnung", "weiteres"];
 
   const roleLabel = isTrainer ? "Trainer" : "Admin";
 
