@@ -90,15 +90,12 @@ export default function TenniscampInfoPage() {
               textAlign: "left"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 28 }}>🧒</span>
-              <div>
+            <div>
                 <h2 style={{ margin: 0, color: "#166534", fontSize: 20 }}>Kindercamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#15803d" }}>
                   13.-17. Juli & 17.-21. August · 10:00-15:00 Uhr · 270 €
                 </p>
               </div>
-            </div>
             <span style={{
               fontSize: 24,
               color: "#22c55e",
@@ -213,15 +210,12 @@ export default function TenniscampInfoPage() {
               textAlign: "left"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 28 }}>🎾</span>
-              <div>
+            <div>
                 <h2 style={{ margin: 0, color: "#1e40af", fontSize: 20 }}>Erwachsenencamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#1d4ed8" }}>
                   27.-31. Juli & 24.-28. August · 18:00-20:00 Uhr · 140 €
                 </p>
               </div>
-            </div>
             <span style={{
               fontSize: 24,
               color: "#3b82f6",
