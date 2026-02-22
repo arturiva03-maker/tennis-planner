@@ -8,13 +8,14 @@ type CampOption = {
   label: string;
   dates: string;
   type: "kind" | "erwachsene";
+  price: number;
 };
 
 const CAMP_OPTIONS: CampOption[] = [
-  { id: "woche1-kind", label: "1. Ferienwoche - Kindercamp", dates: "14.07. - 18.07.2025", type: "kind" },
-  { id: "woche1-erwachsene", label: "1. Ferienwoche - Erwachsenencamp", dates: "28.07. - 01.08.2025", type: "erwachsene" },
-  { id: "woche6-kind", label: "6. Ferienwoche - Kindercamp", dates: "18.08. - 22.08.2025", type: "kind" },
-  { id: "woche6-erwachsene", label: "6. Ferienwoche - Erwachsenencamp", dates: "25.08. - 29.08.2025", type: "erwachsene" },
+  { id: "woche1-kind", label: "Kindercamp - 1. Ferienwoche", dates: "14.07. - 18.07.2025", type: "kind", price: 270 },
+  { id: "woche1-erwachsene", label: "Erwachsenencamp - 1. Ferienwoche", dates: "28.07. - 01.08.2025", type: "erwachsene", price: 140 },
+  { id: "woche6-kind", label: "Kindercamp - 6. Ferienwoche", dates: "18.08. - 22.08.2025", type: "kind", price: 270 },
+  { id: "woche6-erwachsene", label: "Erwachsenencamp - 6. Ferienwoche", dates: "25.08. - 29.08.2025", type: "erwachsene", price: 140 },
 ];
 
 type TenniscampData = {
@@ -27,13 +28,14 @@ type TenniscampData = {
   telefon: string;
   email: string;
   iban: string;
+  bemerkungen: string;
   sepaZustimmung: boolean;
   verbindlicheAnmeldung: boolean;
 };
 
 export default function TenniscampForm() {
   const [searchParams] = useSearchParams();
-  const accountId = searchParams.get("a");
+  const accountId = searchParams.get("a") || "public";
 
   const [formData, setFormData] = useState<TenniscampData>({
     campId: "",
@@ -45,6 +47,7 @@ export default function TenniscampForm() {
     telefon: "",
     email: "",
     iban: "",
+    bemerkungen: "",
     sepaZustimmung: false,
     verbindlicheAnmeldung: false,
   });
@@ -57,7 +60,7 @@ export default function TenniscampForm() {
   const isKindercamp = selectedCamp?.type === "kind";
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
@@ -82,11 +85,6 @@ export default function TenniscampForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!accountId) {
-      setError("Ungültiger Anmeldelink. Bitte kontaktieren Sie den Anbieter.");
-      return;
-    }
 
     if (!formData.campId) {
       setError("Bitte wählen Sie ein Tenniscamp aus.");
@@ -159,6 +157,7 @@ export default function TenniscampForm() {
           telefon: formData.telefon.trim(),
           email: formData.email.trim(),
           iban: ibanClean,
+          bemerkungen: formData.bemerkungen.trim() || null,
           sepa_zustimmung: formData.sepaZustimmung,
           status: "neu",
         });
@@ -402,6 +401,17 @@ Tennisschule A bis Z`;
                   </td>
                 </tr>
               </table>
+
+              ${formData.bemerkungen.trim() ? `
+              <p style="margin: 24px 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Bemerkungen</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <span style="color: #78350f; font-size: 14px; line-height: 1.5;">${formData.bemerkungen.trim()}</span>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
             </td>
           </tr>
 
@@ -422,6 +432,7 @@ Tennisschule A bis Z`;
 
 Camp: ${selectedCamp?.label}
 Zeitraum: ${selectedCamp?.dates}
+Preis: ${selectedCamp?.price} €
 
 Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
@@ -429,7 +440,7 @@ ${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}
 E-Mail: ${formData.email}
 Telefon: ${formData.telefon}
 
-IBAN: ${formData.iban}`;
+IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formData.bemerkungen.trim()}` : ''}`;
 
       // E-Mails senden
       try {
@@ -473,20 +484,6 @@ IBAN: ${formData.iban}`;
     }
   }
 
-  if (!accountId) {
-    return (
-      <div className="registrationPage">
-        <div className="card registrationCard">
-          <h1>Ungültiger Link</h1>
-          <p className="muted">
-            Dieser Anmeldelink ist ungültig. Bitte kontaktieren Sie den
-            Tennisanbieter für einen korrekten Link.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   if (success) {
     return (
       <div className="registrationPage">
@@ -517,9 +514,12 @@ IBAN: ${formData.iban}`;
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
-        <h1>Anmeldung Tenniscamp</h1>
+        <h1>Tenniscamp 2025</h1>
+        <p className="muted" style={{ marginBottom: 8 }}>
+          <strong>Tennisschule A bis Z</strong> am BSC Rehberge
+        </p>
         <p className="muted" style={{ marginBottom: 16 }}>
-          Melden Sie sich oder Ihr Kind für eines unserer Tenniscamps an.
+          Anmeldung für Kinder- und Erwachsenencamps in den Sommerferien.
         </p>
 
         <div style={{
@@ -580,9 +580,17 @@ IBAN: ${formData.iban}`;
                       onChange={handleChange}
                       style={{ width: "auto" }}
                     />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{camp.label}</div>
                       <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{camp.dates}</div>
+                    </div>
+                    <div style={{
+                      fontWeight: 700,
+                      fontSize: 16,
+                      color: formData.campId === camp.id ? "var(--primary)" : "var(--text-muted)",
+                      whiteSpace: "nowrap"
+                    }}>
+                      {camp.price} €
                     </div>
                   </label>
                 ))}
@@ -700,6 +708,36 @@ IBAN: ${formData.iban}`;
                 placeholder="DE89 3704 0044 0532 0130 00"
                 style={{ fontFamily: "monospace", letterSpacing: 1 }}
               />
+            </div>
+
+            {/* Bemerkungen */}
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>
+                Bemerkungen
+              </label>
+              <textarea
+                name="bemerkungen"
+                value={formData.bemerkungen}
+                onChange={handleChange}
+                placeholder={isKindercamp
+                  ? "z.B. Essenswünsche, Allergien, Unverträglichkeiten, besondere Hinweise..."
+                  : "z.B. Spielstärke, besondere Hinweise..."}
+                rows={3}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  fontSize: 14,
+                  resize: "vertical",
+                  fontFamily: "inherit"
+                }}
+              />
+              {isKindercamp && (
+                <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--text-muted)" }}>
+                  Bitte teilen Sie uns besondere Essenswünsche oder Unverträglichkeiten Ihres Kindes mit.
+                </p>
+              )}
             </div>
 
             {/* SEPA Zustimmung */}

@@ -171,7 +171,7 @@ export default function TenniscampInfoPage() {
 
               <div style={{ marginTop: 16, padding: "12px 14px", background: "#dcfce7", borderRadius: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, color: "#166534" }}>
-                  <strong>Stornierung:</strong> Kostenfreie Absage bis eine Woche vor Beginn möglich (1. FW: 07.07. / 6. FW: 11.08.)
+                  <strong>Stornierung:</strong> Kostenfreie Absage bis zwei Wochen vor Beginn möglich (1. FW: 30.06. / 6. FW: 04.08.)
                 </p>
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function TenniscampInfoPage() {
               <div>
                 <h2 style={{ margin: 0, color: "#1e40af", fontSize: 20 }}>Erwachsenencamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#1d4ed8" }}>
-                  28.07.-01.08. & 25.-29.08. · 18:00-20:00 Uhr · Max. 12 Personen
+                  28.07.-01.08. & 25.-29.08. · 18:00-20:00 Uhr · 140 €
                 </p>
               </div>
             </div>
@@ -259,9 +259,9 @@ export default function TenniscampInfoPage() {
                   </p>
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Teilnehmer</h3>
-                  <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Max. 12 Personen</p>
-                  <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#1e40af" }}>betreut von 3 Trainern</p>
+                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Kursgebühr</h3>
+                  <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#1e40af" }}>140 € pro Person</p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#1e40af" }}>max. 12 Teilnehmer, 3 Trainer</p>
                 </div>
               </div>
 
@@ -289,7 +289,7 @@ export default function TenniscampInfoPage() {
 
               <div style={{ marginTop: 16, padding: "12px 14px", background: "#dbeafe", borderRadius: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, color: "#1e40af" }}>
-                  <strong>Stornierung:</strong> Kostenfreie Absage bis eine Woche vor Beginn möglich (1. FW: 21.07. / 6. FW: 18.08.)
+                  <strong>Stornierung:</strong> Kostenfreie Absage bis zwei Wochen vor Beginn möglich (1. FW: 14.07. / 6. FW: 11.08.)
                 </p>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function TenniscampInfoPage() {
         }}>
           <h3 style={{ margin: "0 0 12px 0", color: "#92400e" }}>Wichtige Hinweise zur Stornierung</h3>
           <ul style={{ margin: 0, paddingLeft: 20, color: "#78350f", lineHeight: 1.8 }}>
-            <li>Die Campgebühr wird <strong>eine Woche vor Beginn</strong> des Camps per SEPA-Lastschrift abgebucht.</li>
+            <li>Die Campgebühr wird <strong>zwei Wochen vor Beginn</strong> des Camps per SEPA-Lastschrift abgebucht.</li>
             <li>Eine kostenfreie Abmeldung ist nur <strong>bis zum Abbuchungsdatum</strong> möglich.</li>
             <li>Spätere Abmeldungen können aus organisatorischen Gründen leider nicht erstattet werden.</li>
             <li>Eine Absage ist ausschließlich <strong>schriftlich per E-Mail</strong> an{" "}
