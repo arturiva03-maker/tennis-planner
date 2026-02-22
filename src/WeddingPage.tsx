@@ -634,23 +634,57 @@ export default function WeddingPage() {
                   {item}
                 </button>
               ))}
-              <a
-                href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
-                style={{
-                  background: colors.primary,
-                  color: "#fff",
-                  padding: "11px 23px",
-                  borderRadius: 2,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  textDecoration: "none",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Training buchen
-              </a>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
+                {/* Animated Arrow with Text */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  animation: "bounce-right 1s ease-in-out infinite",
+                }}>
+                  <span style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: scrolled ? "#dc2626" : "#fca5a5",
+                    whiteSpace: "nowrap",
+                  }}>
+                    Anmeldung Sommertraining bis 10.3.
+                  </span>
+                  <span style={{
+                    fontSize: 20,
+                    color: scrolled ? "#dc2626" : "#fca5a5",
+                  }}>
+                    →
+                  </span>
+                </div>
+                <a
+                  href="/anmeldung-wedding"
+                  style={{
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    color: "#fff",
+                    padding: "11px 23px",
+                    borderRadius: 6,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    textDecoration: "none",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                  }}
+                >
+                  Training buchen
+                </a>
+              </div>
             </div>
+
+            <style>
+              {`
+                @keyframes bounce-right {
+                  0%, 100% { transform: translateX(0); }
+                  50% { transform: translateX(6px); }
+                }
+              `}
+            </style>
 
             {/* Mobile Menu Button */}
             <button
