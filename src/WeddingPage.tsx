@@ -860,6 +860,92 @@ export default function WeddingPage() {
               Jetzt anmelden →
             </a>
           </div>
+
+          {/* Tenniscamp Card */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              borderRadius: 16,
+              padding: "40px 40px",
+              textAlign: "center",
+              boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
+              position: "relative",
+              overflow: "hidden",
+              marginTop: 24,
+            }}
+          >
+            <div style={{
+              position: "absolute",
+              top: -20,
+              right: -20,
+              width: 100,
+              height: 100,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+            }} />
+
+            <div style={{
+              display: "inline-block",
+              background: "rgba(255,255,255,0.2)",
+              padding: "6px 16px",
+              borderRadius: 20,
+              marginBottom: 16,
+            }}>
+              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                Sommerferien 2026
+              </span>
+            </div>
+
+            <h2 style={{
+              fontSize: 26,
+              fontWeight: 700,
+              color: "#fff",
+              marginBottom: 12,
+              lineHeight: 1.2,
+            }}>
+              Tenniscamps für Kinder & Erwachsene
+            </h2>
+
+            <p style={{
+              fontSize: 15,
+              color: "rgba(255,255,255,0.9)",
+              lineHeight: 1.5,
+              marginBottom: 20,
+              maxWidth: 400,
+              margin: "0 auto 20px",
+            }}>
+              Kindercamp: 13.-17. Juli & 17.-21. August<br />
+              Erwachsenencamp: 27.-31. Juli & 24.-28. August
+            </p>
+
+            <a
+              href="/tenniscamp"
+              style={{
+                display: "inline-block",
+                background: "#fff",
+                color: "#d97706",
+                padding: "14px 32px",
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+              }}
+            >
+              Zum Tenniscamp →
+            </a>
+          </div>
         </div>
       </section>
 
