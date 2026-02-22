@@ -9,6 +9,7 @@ import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
 import WeddingPage from './WeddingPage';
 import TenniscampForm from './TenniscampForm';
+import TenniscampInfoPage from './TenniscampInfoPage';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -27,6 +28,7 @@ root.render(
         <Route path="/agb-britz" element={<AGBPageBritz />} />
         <Route path="/wedding" element={<WeddingPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
+        <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
