@@ -52,7 +52,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "formulare" | "newsletter";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
 type FormulareTab = "anmeldung" | "sepa";
 
 type Verfuegbarkeit = {
@@ -176,7 +176,7 @@ type AppState = {
   wirdAbgebucht?: WirdAbgebuchtMap;
 };
 
-type Tab = "kalender" | "training" | "verwaltung" | "abrechnung" | "weiteres";
+type Tab = "kalender" | "training" | "verwaltung" | "formulare" | "abrechnung" | "weiteres";
 type Role = "admin" | "trainer";
 
 type AuthUser = {
@@ -1757,7 +1757,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (tab === "verwaltung" && verwaltungTab === "formulare" && authUser?.accountId) {
+    if (tab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
       fetchSepaMandates();
     }
@@ -4368,6 +4368,28 @@ Deine Tennisschule`;
                 {t === "kalender" && "Kalender"}
                 {t === "training" && "Training"}
                 {t === "verwaltung" && "Verwaltung"}
+                {t === "formulare" && (
+                  <>
+                    Formulare
+                    {(registrationRequests.filter(r => r.status === "neu").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length) > 0 && (
+                      <span style={{
+                        marginLeft: 6,
+                        background: "var(--danger)",
+                        color: "white",
+                        borderRadius: "50%",
+                        width: 18,
+                        height: 18,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 700
+                      }}>
+                        {registrationRequests.filter(r => r.status === "neu").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length}
+                      </span>
+                    )}
+                  </>
+                )}
                 {t === "abrechnung" && "Abrechnung"}
                 {t === "weiteres" && "Weiteres"}
               </button>
@@ -5524,31 +5546,6 @@ Sportliche Grüße`
                   </button>
                   <button
                     className={`tabBtn ${
-                      verwaltungTab === "formulare" ? "tabBtnActive" : ""
-                    }`}
-                    onClick={() => setVerwaltungTab("formulare")}
-                  >
-                    Formulare
-                    {registrationRequests.filter(r => r.status === "neu").length > 0 && (
-                      <span style={{
-                        marginLeft: 6,
-                        background: "var(--danger)",
-                        color: "white",
-                        borderRadius: "50%",
-                        width: 18,
-                        height: 18,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 11,
-                        fontWeight: 700
-                      }}>
-                        {registrationRequests.filter(r => r.status === "neu").length}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    className={`tabBtn ${
                       verwaltungTab === "newsletter" ? "tabBtnActive" : ""
                     }`}
                     onClick={() => setVerwaltungTab("newsletter")}
@@ -5898,6 +5895,7 @@ Sportliche Grüße`
                                     );
                                     setNewsletterSubject("Anfrage zum Tennistraining");
                                     setNewsletterLabelFilter("keine");
+                                    setTab("verwaltung");
                                     setVerwaltungTab("newsletter");
                                   }}
                                   style={{
@@ -6378,11 +6376,15 @@ Sportliche Grüße`
                   </div>
                 )}
 
-                {verwaltungTab === "formulare" && (
-                  <div className="card">
-                    <h2>Formulare</h2>
+              </>
+            )}
 
-                    {/* Sub-Tabs für Formulare */}
+            {tab === "formulare" && !isTrainer && (
+              <>
+                <div className="card">
+                  <h2>Formulare</h2>
+
+                  {/* Sub-Tabs für Formulare */}
                     <div className="tabBar" style={{ marginBottom: 20 }}>
                       <button
                         className={`tabBtn ${formulareTab === "anmeldung" ? "tabBtnActive" : ""}`}
@@ -6804,6 +6806,7 @@ Sportliche Grüße`
                                             );
                                             setNewsletterSubject("Anfrage zum Tennistraining");
                                             setNewsletterLabelFilter("keine");
+                                            setTab("verwaltung");
                                             setVerwaltungTab("newsletter");
                                           }}
                                           style={{
@@ -7244,12 +7247,13 @@ Sportliche Grüße`
                         )}
                       </>
                     )}
-                  </div>
-                )}
+                </div>
+              </>
+            )}
 
-                {verwaltungTab === "newsletter" && (
-                  <div className="card">
-                    <h2>Newsletter versenden</h2>
+            {tab === "verwaltung" && !isTrainer && verwaltungTab === "newsletter" && (
+              <div className="card">
+                <h2>Newsletter versenden</h2>
                     <p className="muted" style={{ marginBottom: 16 }}>
                       Senden Sie E-Mails an Ihre Spieler. Wählen Sie optional ein Label um nur bestimmte Spieler anzuschreiben.
                     </p>
@@ -7703,10 +7707,7 @@ Sportliche Grüße`
                         um Newsletter gezielt an bestimmte Gruppen zu senden.
                       </p>
                     )}
-                  </div>
-                )}
-
-              </>
+              </div>
             )}
 
             {tab === "verwaltung" && isTrainer && (
