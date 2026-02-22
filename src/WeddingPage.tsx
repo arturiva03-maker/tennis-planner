@@ -897,44 +897,7 @@ export default function WeddingPage() {
           </div>
         </div>
 
-        {/* Stats Bar */}
-        <div style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: "rgba(0,0,0,0.2)",
-          backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-        }}>
-          <div style={{
-            maxWidth: 1200,
-            margin: "0 auto",
-            padding: "20px 24px",
-            display: "flex",
-            justifyContent: "center",
-            gap: "clamp(32px, 8vw, 80px)",
-            flexWrap: "wrap",
-          }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>10+</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Jahre Erfahrung</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>150+</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Aktive Spieler</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>3</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Lizenzierte Trainer</div>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>6</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Sandplätze</div>
-            </div>
-          </div>
-        </div>
-      </header>
+        </header>
 
       {/* Unser Angebot Section */}
       <section id="angebot" style={{ padding: "80px 24px", background: colors.bgLight }}>
@@ -966,10 +929,10 @@ export default function WeddingPage() {
             gap: 20,
           }}>
             {[
-              { title: "Kinder", desc: "Spielerisch Tennis lernen ab 5 Jahren", icon: "👦" },
-              { title: "Jugend", desc: "Technik & Taktik für ambitionierte Spieler", icon: "🎾" },
-              { title: "Erwachsene", desc: "Vom Anfänger bis zum Turnierspieler", icon: "👨" },
-              { title: "Camps", desc: "Intensivtraining in den Sommerferien", icon: "☀️" },
+              { title: "Kinder", desc: "Spielerisches und koordinativ orientiertes Training ab 5 Jahren" },
+              { title: "Jugend", desc: "Spaß und Technik im Vordergrund" },
+              { title: "Erwachsene", desc: "Alle Spielklassen" },
+              { title: "Camps", desc: "In den Sommerferien" },
             ].map((item, i) => (
               <div key={i} style={{
                 background: colors.white,
@@ -988,12 +951,15 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
               >
-                <div style={{ fontSize: 32, marginBottom: 12 }}>{item.icon}</div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{item.title}</h3>
                 <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.5 }}>{item.desc}</p>
               </div>
             ))}
           </div>
+
+          <p style={{ textAlign: "center", marginTop: 24, fontSize: 15, color: colors.textMuted }}>
+            Einzel- sowie Gruppentraining
+          </p>
         </div>
       </section>
 
@@ -1061,8 +1027,11 @@ export default function WeddingPage() {
                 Sommertraining
               </h3>
 
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 12, flex: 1 }}>
                 Sichern Sie sich jetzt Ihren Platz für die Sommersaison.
+              </p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: "#ff6b6b", marginBottom: 16 }}>
+                Anmeldung bis 10.3.!
               </p>
 
               <a
