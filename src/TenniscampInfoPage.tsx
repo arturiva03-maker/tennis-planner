@@ -21,17 +21,15 @@ export default function TenniscampInfoPage() {
         </div>
 
         <div style={{
-          background: "var(--bg-inset)",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: 20,
           marginBottom: 24,
-          lineHeight: 1.7
+          lineHeight: 1.7,
+          fontSize: 15
         }}>
           <p style={{ margin: 0 }}>
-            Auch dieses Jahr bieten wir wieder Tenniscamps für Kinder und Erwachsene in den Sommerferien an.
-            Egal ob Anfänger oder Fortgeschrittener – bei uns ist jeder willkommen!
-            Unsere erfahrenen Trainer sorgen für ein abwechslungsreiches Programm mit viel Spaß am Spiel.
+            In den Sommerferien 2026 finden am BSC Rehberge Tenniscamps für Kinder und Erwachsene statt.
+            Das Kindercamp läuft täglich von 10:00 bis 15:00 Uhr inklusive Mittagessen (270 €).
+            Das Erwachsenencamp findet abends von 18:00 bis 20:00 Uhr statt (140 €).
+            Die Teilnehmer werden nach Spielstärke in Gruppen eingeteilt.
           </p>
         </div>
 

@@ -713,14 +713,14 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             {/* Bemerkungen */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>
-                Bemerkungen
+                Bemerkungen {isKindercamp && <span style={{ color: "var(--danger)", fontWeight: 600 }}>– Besondere Essenswünsche</span>}
               </label>
               <textarea
                 name="bemerkungen"
                 value={formData.bemerkungen}
                 onChange={handleChange}
                 placeholder={isKindercamp
-                  ? "z.B. Essenswünsche, Allergien, Unverträglichkeiten, besondere Hinweise..."
+                  ? "z.B. Allergien, Unverträglichkeiten, vegetarisch, vegan..."
                   : "z.B. Spielstärke, besondere Hinweise..."}
                 rows={3}
                 style={{
@@ -733,11 +733,6 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                   fontFamily: "inherit"
                 }}
               />
-              {isKindercamp && (
-                <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--text-muted)" }}>
-                  Bitte teilen Sie uns besondere Essenswünsche oder Unverträglichkeiten Ihres Kindes mit.
-                </p>
-              )}
             </div>
 
             {/* SEPA Zustimmung */}
