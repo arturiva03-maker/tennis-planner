@@ -29,6 +29,7 @@ type TenniscampData = {
   email: string;
   iban: string;
   bemerkungen: string;
+  niveau: string;
   sepaZustimmung: boolean;
   verbindlicheAnmeldung: boolean;
 };
@@ -48,6 +49,7 @@ export default function TenniscampForm() {
     email: "",
     iban: "",
     bemerkungen: "",
+    niveau: "",
     sepaZustimmung: false,
     verbindlicheAnmeldung: false,
   });
@@ -98,6 +100,11 @@ export default function TenniscampForm() {
 
     if (isKindercamp && (!formData.zahlungspflichtigerVorname.trim() || !formData.zahlungspflichtigerNachname.trim())) {
       setError("Bitte geben Sie den Namen des Zahlungspflichtigen ein.");
+      return;
+    }
+
+    if (!isKindercamp && !formData.niveau) {
+      setError("Bitte wählen Sie Ihr Spielniveau aus.");
       return;
     }
 
@@ -169,6 +176,7 @@ export default function TenniscampForm() {
           email: formData.email.trim(),
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
+          niveau: !isKindercamp ? formData.niveau : null,
           mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
           status: "neu",
@@ -448,7 +456,7 @@ Preis: ${selectedCamp?.price} €
 
 Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
-${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}
+${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${!isKindercamp ? `Niveau: ${formData.niveau}\n` : ''}
 E-Mail: ${formData.email}
 Telefon: ${formData.telefon}
 
@@ -667,9 +675,47 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               </>
             )}
 
+            {/* Niveau für Erwachsene */}
+            {!isKindercamp && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>
+                  Spielniveau <span style={{ color: "var(--danger)" }}>*</span>
+                </label>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                  {["Anfänger", "Fortgeschritten", "Turnierspieler"].map((niveau) => (
+                    <label
+                      key={niveau}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "10px 16px",
+                        border: `2px solid ${formData.niveau === niveau ? "var(--primary)" : "var(--border)"}`,
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        background: formData.niveau === niveau ? "var(--bg-inset)" : "transparent",
+                        transition: "all 0.15s",
+                        fontWeight: formData.niveau === niveau ? 600 : 400,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="niveau"
+                        value={niveau}
+                        checked={formData.niveau === niveau}
+                        onChange={handleChange}
+                        style={{ width: "auto" }}
+                      />
+                      {niveau}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="field">
               <label>
-                Alter des Teilnehmers <span style={{ color: "var(--danger)" }}>*</span>
+                Alter <span style={{ color: "var(--danger)" }}>*</span>
               </label>
               <input
                 type="number"

@@ -116,6 +116,7 @@ type TenniscampAnmeldung = {
   email: string;
   iban: string;
   bemerkungen: string | null;
+  niveau: string | null;
   mandatsreferenz: string;
   sepa_zustimmung: boolean;
   status: string;
@@ -7450,6 +7451,12 @@ Sportliche Grüße`
                                         <div style={{ gridColumn: "1 / -1" }}>
                                           <div className="muted" style={{ fontSize: 11 }}>Zahlungspflichtiger</div>
                                           <div>{anmeldung.zahlungspflichtiger_vorname} {anmeldung.zahlungspflichtiger_nachname}</div>
+                                        </div>
+                                      )}
+                                      {anmeldung.niveau && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Niveau</div>
+                                          <div style={{ fontWeight: 500 }}>{anmeldung.niveau}</div>
                                         </div>
                                       )}
                                       <div style={{ gridColumn: "1 / -1" }}>
