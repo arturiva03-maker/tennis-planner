@@ -141,6 +141,17 @@ export default function TenniscampForm() {
     setLoading(true);
 
     try {
+      // Mandatsreferenz generieren: TC-YYYYMMDDHHMMSS-XXX
+      const now = new Date();
+      const timestamp = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0") +
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0") +
+        String(now.getSeconds()).padStart(2, "0");
+      const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
+      const mandatsreferenz = `TC-${timestamp}-${randomSuffix}`;
+
       const { error: insertError } = await supabase
         .from("tenniscamp_anmeldungen")
         .insert({
@@ -158,6 +169,7 @@ export default function TenniscampForm() {
           email: formData.email.trim(),
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
+          mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
           status: "neu",
         });

@@ -115,6 +115,8 @@ type TenniscampAnmeldung = {
   telefon: string;
   email: string;
   iban: string;
+  bemerkungen: string | null;
+  mandatsreferenz: string;
   sepa_zustimmung: boolean;
   status: string;
   created_at: string;
@@ -7454,6 +7456,16 @@ Sportliche Grüße`
                                         <div className="muted" style={{ fontSize: 11 }}>IBAN</div>
                                         <div style={{ fontFamily: "monospace" }}>{anmeldung.iban.replace(/(.{4})/g, "$1 ").trim()}</div>
                                       </div>
+                                      <div style={{ gridColumn: "1 / -1" }}>
+                                        <div className="muted" style={{ fontSize: 11 }}>Mandatsreferenz</div>
+                                        <div style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--primary)" }}>{anmeldung.mandatsreferenz}</div>
+                                      </div>
+                                      {anmeldung.bemerkungen && (
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <div className="muted" style={{ fontSize: 11 }}>Bemerkungen</div>
+                                          <div style={{ background: "var(--bg-inset)", padding: 8, borderRadius: 4, fontSize: 13 }}>{anmeldung.bemerkungen}</div>
+                                        </div>
+                                      )}
                                     </div>
                                     <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
                                       Angemeldet am: {new Date(anmeldung.created_at).toLocaleDateString("de-DE", {
