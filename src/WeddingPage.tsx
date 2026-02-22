@@ -546,7 +546,7 @@ export default function WeddingPage() {
     {
       name: "Joshua Kugel",
       qualification: "B-Lizenz Leistungssport",
-      bio: "Professionell als Kind Tennis gespielt. Seit vielen Jahren Erfahrung als Tennistrainer in allen Leistungsstufen. Spielt in der höchsten Berliner Liga sowie in nationalen Ligen.",
+      bio: "Langjährige Erfahrung als Trainer. Spielt in der höchsten Berliner Liga.",
     },
     {
       name: "Jesper Fremuth",
