@@ -53,7 +53,7 @@ type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
 type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
-type FormulareTab = "anmeldung" | "sepa";
+type FormulareTab = "anmeldung" | "sepa" | "tenniscamp";
 
 type Verfuegbarkeit = {
   montag: string;
@@ -98,6 +98,26 @@ type SepaMandate = {
   unterschriftsdatum: string;
   created_at: string;
   status?: string;
+};
+
+type TenniscampAnmeldung = {
+  id: string;
+  account_id: string;
+  camp_id: string;
+  camp_label: string;
+  camp_dates: string;
+  camp_type: "kind" | "erwachsene";
+  teilnehmer_vorname: string;
+  teilnehmer_nachname: string;
+  zahlungspflichtiger_vorname: string | null;
+  zahlungspflichtiger_nachname: string | null;
+  alter: number;
+  telefon: string;
+  email: string;
+  iban: string;
+  sepa_zustimmung: boolean;
+  status: string;
+  created_at: string;
 };
 
 type Training = {
@@ -1199,6 +1219,10 @@ export default function App() {
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
   const [expandedSepaMandateId, setExpandedSepaMandateId] = useState<string | null>(null);
 
+  const [tenniscampAnmeldungen, setTenniscampAnmeldungen] = useState<TenniscampAnmeldung[]>([]);
+  const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
+  const [expandedTenniscampId, setExpandedTenniscampId] = useState<string | null>(null);
+
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
   const [spontanVon, setSpontanVon] = useState("14:00");
@@ -1760,6 +1784,7 @@ export default function App() {
     if (tab === "formulare" && authUser?.accountId) {
       fetchRegistrationRequests();
       fetchSepaMandates();
+      fetchTenniscampAnmeldungen();
     }
     if (tab === "weiteres" && weiteresTabs === "spontan" && authUser?.accountId) {
       fetchSpontaneStunden();
@@ -2400,6 +2425,63 @@ export default function App() {
       console.error("Error fetching SEPA mandates:", err);
     } finally {
       setLoadingSepaMandates(false);
+    }
+  }
+
+  async function fetchTenniscampAnmeldungen() {
+    if (!authUser?.accountId) return;
+    setLoadingTenniscampAnmeldungen(true);
+    try {
+      const { data, error } = await supabase
+        .from("tenniscamp_anmeldungen")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching Tenniscamp-Anmeldungen:", error);
+        return;
+      }
+      setTenniscampAnmeldungen(data || []);
+    } catch (err) {
+      console.error("Error fetching Tenniscamp-Anmeldungen:", err);
+    } finally {
+      setLoadingTenniscampAnmeldungen(false);
+    }
+  }
+
+  async function updateTenniscampStatus(anmeldungId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from("tenniscamp_anmeldungen")
+        .update({ status: newStatus })
+        .eq("id", anmeldungId);
+
+      if (error) {
+        console.error("Error updating Tenniscamp status:", error);
+        return;
+      }
+      fetchTenniscampAnmeldungen();
+    } catch (err) {
+      console.error("Error updating Tenniscamp status:", err);
+    }
+  }
+
+  async function deleteTenniscampAnmeldung(anmeldungId: string) {
+    if (!window.confirm("Möchten Sie diese Anmeldung wirklich löschen?")) return;
+    try {
+      const { error } = await supabase
+        .from("tenniscamp_anmeldungen")
+        .delete()
+        .eq("id", anmeldungId);
+
+      if (error) {
+        console.error("Error deleting Tenniscamp-Anmeldung:", error);
+        return;
+      }
+      fetchTenniscampAnmeldungen();
+    } catch (err) {
+      console.error("Error deleting Tenniscamp-Anmeldung:", err);
     }
   }
 
@@ -6427,6 +6509,25 @@ Sportliche Grüße`
                           </span>
                         )}
                       </button>
+                      <button
+                        className={`tabBtn ${formulareTab === "tenniscamp" ? "tabBtnActive" : ""}`}
+                        onClick={() => setFormulareTab("tenniscamp")}
+                      >
+                        Tenniscamp
+                        {tenniscampAnmeldungen.filter(a => a.status === "neu").length > 0 && (
+                          <span style={{
+                            marginLeft: 6,
+                            background: "#22c55e",
+                            color: "#fff",
+                            borderRadius: 10,
+                            padding: "2px 6px",
+                            fontSize: 11,
+                            fontWeight: 600
+                          }}>
+                            {tenniscampAnmeldungen.filter(a => a.status === "neu").length}
+                          </span>
+                        )}
+                      </button>
                     </div>
 
                     {/* Anmeldung Tab */}
@@ -7235,6 +7336,164 @@ Sportliche Grüße`
                                         className="btn danger"
                                         style={{ fontSize: 13, padding: "4px 12px" }}
                                         onClick={() => deleteSepaMandate(mandate.id)}
+                                      >
+                                        Löschen
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    )}
+
+                    {/* Tenniscamp Tab */}
+                    {formulareTab === "tenniscamp" && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Tenniscamp-Anmeldung:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                              wordBreak: "break-all"
+                            }}>
+                              {window.location.origin}/tenniscamp?a={authUser?.accountId}
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/tenniscamp?a=${authUser?.accountId}`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                        </div>
+
+                        {loadingTenniscampAnmeldungen ? (
+                          <p className="muted">Laden...</p>
+                        ) : tenniscampAnmeldungen.length === 0 ? (
+                          <p className="muted">Keine Tenniscamp-Anmeldungen vorhanden.</p>
+                        ) : (
+                          <ul className="list">
+                            {tenniscampAnmeldungen.map((anmeldung) => (
+                              <li key={anmeldung.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                                <div
+                                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+                                  onClick={() => setExpandedTenniscampId(expandedTenniscampId === anmeldung.id ? null : anmeldung.id)}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ fontWeight: 500 }}>
+                                      {anmeldung.teilnehmer_vorname} {anmeldung.teilnehmer_nachname}
+                                    </span>
+                                    <span className="muted" style={{ fontSize: 13 }}>
+                                      {anmeldung.alter}J
+                                    </span>
+                                    <span style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      background: anmeldung.camp_type === "kind" ? "#8b5cf6" : "#06b6d4",
+                                      color: "#fff",
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                    }}>
+                                      {anmeldung.camp_type === "kind" ? "Kind" : "Erwachsen"}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      background: anmeldung.status === "neu" ? "var(--danger)" : anmeldung.status === "bestaetigt" ? "var(--success)" : "var(--text-muted)",
+                                      color: "#fff",
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                    }}>
+                                      {anmeldung.status === "neu" ? "Neu" : anmeldung.status === "bestaetigt" ? "Bestätigt" : anmeldung.status}
+                                    </span>
+                                    <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedTenniscampId === anmeldung.id ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                      ▶
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {expandedTenniscampId === anmeldung.id && (
+                                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Camp</div>
+                                        <div style={{ fontWeight: 500 }}>{anmeldung.camp_label}</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Zeitraum</div>
+                                        <div>{anmeldung.camp_dates}</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>E-Mail</div>
+                                        <div>{anmeldung.email}</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Telefon</div>
+                                        <div>{anmeldung.telefon}</div>
+                                      </div>
+                                      {anmeldung.zahlungspflichtiger_vorname && (
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <div className="muted" style={{ fontSize: 11 }}>Zahlungspflichtiger</div>
+                                          <div>{anmeldung.zahlungspflichtiger_vorname} {anmeldung.zahlungspflichtiger_nachname}</div>
+                                        </div>
+                                      )}
+                                      <div style={{ gridColumn: "1 / -1" }}>
+                                        <div className="muted" style={{ fontSize: 11 }}>IBAN</div>
+                                        <div style={{ fontFamily: "monospace" }}>{anmeldung.iban.replace(/(.{4})/g, "$1 ").trim()}</div>
+                                      </div>
+                                    </div>
+                                    <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
+                                      Angemeldet am: {new Date(anmeldung.created_at).toLocaleDateString("de-DE", {
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                      <select
+                                        value={anmeldung.status}
+                                        onChange={(e) => updateTenniscampStatus(anmeldung.id, e.target.value)}
+                                        style={{ fontSize: 13, padding: "4px 8px" }}
+                                      >
+                                        <option value="neu">Neu</option>
+                                        <option value="bestaetigt">Bestätigt</option>
+                                        <option value="storniert">Storniert</option>
+                                      </select>
+                                      <button
+                                        className="btn micro btnGhost"
+                                        onClick={() => {
+                                          setNewsletterExtraEmails(prev =>
+                                            prev.some(em => em.email === anmeldung.email)
+                                              ? prev
+                                              : [...prev, { email: anmeldung.email, name: `${anmeldung.teilnehmer_vorname} ${anmeldung.teilnehmer_nachname}` }]
+                                          );
+                                          setNewsletterSubject(`Tenniscamp ${anmeldung.camp_label}`);
+                                          setNewsletterLabelFilter("keine");
+                                          setTab("verwaltung");
+                                          setVerwaltungTab("newsletter");
+                                        }}
+                                      >
+                                        E-Mail senden
+                                      </button>
+                                      <button
+                                        className="btn danger"
+                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        onClick={() => deleteTenniscampAnmeldung(anmeldung.id)}
                                       >
                                         Löschen
                                       </button>
