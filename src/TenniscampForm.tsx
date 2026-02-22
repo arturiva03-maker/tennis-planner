@@ -257,7 +257,10 @@ export default function TenniscampForm() {
                 <p style="margin: 0 0 8px; color: #92400e; font-size: 14px; font-weight: 600;">Zahlungsinformation</p>
                 <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">
                   Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
-                  Eine kostenfreie Stornierung ist bis zu diesem Zeitpunkt möglich.
+                  Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
+                  Eine Absage ist ausschließlich schriftlich per E-Mail an
+                  <a href="mailto:tennisabisz@gmail.com" style="color: #92400e; font-weight: 600;">tennisabisz@gmail.com</a>
+                  möglich.
                 </p>
               </div>
             </td>
@@ -299,7 +302,8 @@ Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
 
 Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
-Eine kostenfreie Stornierung ist bis zu diesem Zeitpunkt möglich.
+Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
+Eine Absage ist ausschließlich schriftlich per E-Mail an tennisabisz@gmail.com möglich.
 
 Bei Fragen erreichen Sie uns unter: tennisabisz@gmail.com
 
@@ -499,9 +503,10 @@ IBAN: ${formData.iban}`;
             padding: 16,
             marginTop: 24,
           }}>
-            <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6 }}>
               <strong>Hinweis:</strong> Die Campgebühr wird zwei Wochen vor Beginn per SEPA-Lastschrift eingezogen.
-              Eine kostenfreie Stornierung ist bis zu diesem Zeitpunkt möglich.
+              Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich. Eine Absage ist ausschließlich
+              schriftlich per E-Mail an <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)" }}>tennisabisz@gmail.com</a> möglich.
             </p>
           </div>
         </div>
@@ -749,8 +754,10 @@ IBAN: ${formData.iban}`;
                     </span>
                     <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "#78350f", lineHeight: 1.5 }}>
                       Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
-                      Beginn des Camps fällig. Bitte beachten Sie, dass eine kostenfreie Stornierung nur bis zu diesem
-                      Zeitpunkt möglich ist.
+                      Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
+                      Eine Absage ist ausschließlich schriftlich per E-Mail an{" "}
+                      <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
+                      möglich.
                     </p>
                   </div>
                 </label>
