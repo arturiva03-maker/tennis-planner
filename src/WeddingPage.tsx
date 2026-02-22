@@ -546,7 +546,7 @@ export default function WeddingPage() {
     {
       name: "Joshua Kugel",
       qualification: "B-Lizenz Leistungssport",
-      bio: "",
+      bio: "Professionell als Kind Tennis gespielt. Seit vielen Jahren Erfahrung als Tennistrainer in allen Leistungsstufen. Spielt in der höchsten Berliner Liga sowie in nationalen Ligen.",
     },
     {
       name: "Jesper Fremuth",
@@ -565,7 +565,7 @@ export default function WeddingPage() {
     {
       name: "Konstantin Klein",
       qualification: "C-Lizenz Leistungssport (in Ausbildung)",
-      bio: "",
+      bio: "Als Kind und Jugendlicher täglich auf dem Platz. Viel Spaß am Training mit Erwachsenen und Kindern.",
       image: "/konstantin-klein.jpg",
       imageZoom: 1.2,
     },
