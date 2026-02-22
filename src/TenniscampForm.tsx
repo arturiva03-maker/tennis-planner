@@ -295,7 +295,7 @@ export default function TenniscampForm() {
         </table>
 
         <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
-          &copy; 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.
+          &copy; 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
     </tr>
@@ -526,7 +526,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
-        <h1>Tenniscamp 2025</h1>
+        <h1>Tenniscamp 2026</h1>
         <p className="muted" style={{ marginBottom: 8 }}>
           <strong>Tennisschule A bis Z</strong> am BSC Rehberge
         </p>

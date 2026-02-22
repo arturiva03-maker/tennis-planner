@@ -106,12 +106,6 @@ export default function TenniscampInfoPage() {
 
           {kindercampOpen && (
             <div style={{ padding: "0 24px 24px 24px" }}>
-              <p style={{ margin: "0 0 20px 0", fontSize: 14, lineHeight: 1.6, color: "#166534" }}>
-                Eine Woche voller Tennis, Spiel und Spaß! Wir teilen die Kinder am ersten Tag in passende Gruppen ein,
-                sodass jeder auf seinem Level gefördert wird. Mittags gibt's eine warme Mahlzeit – so können sich alle stärken
-                für den Nachmittag.
-              </p>
-
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -142,7 +136,7 @@ export default function TenniscampInfoPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 20 }}>
                 <div>
-                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#15803d" }}>Wann?</h3>
+                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#15803d" }}>Uhrzeit</h3>
                   <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Mo - Fr, 10:00 - 15:00 Uhr</p>
                   <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#166534" }}>
                     Mittagspause 12:00 - 13:00 Uhr
@@ -151,35 +145,26 @@ export default function TenniscampInfoPage() {
                 <div>
                   <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#15803d" }}>Kosten</h3>
                   <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#166534" }}>270 €</p>
-                  <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#166534" }}>inkl. warmes Mittagessen</p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#166534" }}>inkl. Mittagessen</p>
                 </div>
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, margin: "0 0 8px 0", color: "#15803d" }}>So läuft ein Camptag ab:</h3>
-                <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7, fontSize: 14 }}>
-                  <li>Gemeinsame Aufwärmung im Park nebenan</li>
-                  <li>Tennis in kleinen Gruppen (nach Spielstärke)</li>
-                  <li>Mittags: Warme Mahlzeit + Pause</li>
-                  <li>Bewegungsspiele & weiter geht's mit Tennis</li>
-                </ul>
               </div>
 
               <div style={{
                 background: "white",
                 border: "1px solid #bbf7d0",
                 borderRadius: 8,
-                padding: 14
+                padding: 14,
+                marginBottom: 12
               }}>
-                <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#166534" }}>Was muss mit?</h4>
+                <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#166534" }}>Mitzubringen</h4>
                 <p style={{ margin: 0, fontSize: 14 }}>
-                  Sandplatzschuhe (Pflicht!) · Wasserflasche · Tennisschläger (Ausleihe möglich)
+                  Sandplatzschuhe (Pflicht) · Wasserflasche · Tennisschläger (Ausleihe möglich)
                 </p>
               </div>
 
-              <div style={{ marginTop: 16, padding: "12px 14px", background: "#dcfce7", borderRadius: 8 }}>
+              <div style={{ padding: "12px 14px", background: "#dcfce7", borderRadius: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, color: "#166534" }}>
-                  Kostenlose Absage bis 2 Wochen vorher möglich.
+                  Kostenlose Stornierung bis 2 Wochen vor Beginn.
                 </p>
               </div>
             </div>
@@ -226,12 +211,6 @@ export default function TenniscampInfoPage() {
 
           {erwachsenencampOpen && (
             <div style={{ padding: "0 24px 24px 24px" }}>
-              <p style={{ margin: "0 0 20px 0", fontSize: 14, lineHeight: 1.6, color: "#1e40af" }}>
-                Fünf Abende intensives Training nach Feierabend! Wir teilen euch am ersten Tag in Gruppen ein,
-                damit ihr mit Spielern auf eurem Level trainieren könnt. Unsere drei Trainer wechseln täglich
-                zwischen den Gruppen – so bekommt jeder unterschiedliche Impulse.
-              </p>
-
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -262,11 +241,8 @@ export default function TenniscampInfoPage() {
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 20 }}>
                 <div>
-                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Wann?</h3>
+                  <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Uhrzeit</h3>
                   <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Mo - Fr, 18:00 - 20:00 Uhr</p>
-                  <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#1e40af" }}>
-                    Treffpunkt kurz vor 18 Uhr am Montag
-                  </p>
                 </div>
                 <div>
                   <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Kosten</h3>
@@ -275,30 +251,22 @@ export default function TenniscampInfoPage() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, margin: "0 0 8px 0", color: "#1d4ed8" }}>Das erwartet euch:</h3>
-                <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7, fontSize: 14 }}>
-                  <li>Gruppentraining nach Spielstärke (Anfänger bis Fortgeschrittene)</li>
-                  <li>3 Trainer, die täglich rotieren</li>
-                  <li>Technik, Taktik und viele Spielformen</li>
-                </ul>
-              </div>
-
               <div style={{
                 background: "white",
                 border: "1px solid #bfdbfe",
                 borderRadius: 8,
-                padding: 14
+                padding: 14,
+                marginBottom: 12
               }}>
-                <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#1e40af" }}>Was muss mit?</h4>
+                <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#1e40af" }}>Mitzubringen</h4>
                 <p style={{ margin: 0, fontSize: 14 }}>
-                  Eigener Schläger · Sandplatzschuhe (Pflicht!) · Wasserflasche
+                  Eigener Schläger · Sandplatzschuhe (Pflicht) · Wasserflasche
                 </p>
               </div>
 
-              <div style={{ marginTop: 16, padding: "12px 14px", background: "#dbeafe", borderRadius: 8 }}>
+              <div style={{ padding: "12px 14px", background: "#dbeafe", borderRadius: 8 }}>
                 <p style={{ margin: 0, fontSize: 13, color: "#1e40af" }}>
-                  Kostenlose Absage bis 2 Wochen vorher möglich.
+                  Kostenlose Stornierung bis 2 Wochen vor Beginn.
                 </p>
               </div>
             </div>
@@ -311,20 +279,14 @@ export default function TenniscampInfoPage() {
           border: "1px solid #fcd34d",
           borderRadius: 8,
           padding: 16,
-          marginBottom: 32,
+          marginBottom: 24,
           fontSize: 14,
           color: "#78350f",
           lineHeight: 1.6
         }}>
-          <strong>Zur Stornierung:</strong> Die Gebühr wird 2 Wochen vor Campbeginn abgebucht.
-          Bis dahin könnt ihr kostenfrei absagen – einfach kurze Mail an{" "}
-          <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e" }}>tennisabisz@gmail.com</a>.
-          Danach ist eine Erstattung leider nicht mehr möglich.
-        </div>
-
-        <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 14, marginTop: 16 }}>
-          <p style={{ margin: 0 }}>Wir freuen uns auf euch!</p>
-          <p style={{ margin: "4px 0 0 0", fontWeight: 600 }}>Euer Trainerteam A bis Z</p>
+          <strong>Stornierung:</strong> Die Gebühr wird 2 Wochen vor Campbeginn abgebucht.
+          Bis dahin ist eine kostenfreie Stornierung per E-Mail an{" "}
+          <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e" }}>tennisabisz@gmail.com</a> möglich.
         </div>
       </div>
     </div>
