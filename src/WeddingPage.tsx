@@ -612,7 +612,7 @@ export default function WeddingPage() {
 
             {/* Desktop Menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
-              {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -682,7 +682,7 @@ export default function WeddingPage() {
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
             }}>
-              {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -936,186 +936,221 @@ export default function WeddingPage() {
         </div>
       </header>
 
-      {/* Aktuelles Section */}
-      <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <div
-            style={{
-              background: `linear-gradient(135deg, ${colors.primary} 0%, #2d5a2d 100%)`,
-              borderRadius: 16,
-              padding: "48px 40px",
-              textAlign: "center",
-              boxShadow: "0 12px 40px rgba(27, 71, 27, 0.25)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Decorative tennis ball */}
-            <div style={{
-              position: "absolute",
-              top: -30,
-              right: -30,
-              width: 120,
-              height: 120,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.1)",
-            }} />
-            <div style={{
-              position: "absolute",
-              bottom: -40,
-              left: -40,
-              width: 150,
-              height: 150,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.05)",
-            }} />
-
-            <div style={{
-              display: "inline-block",
-              background: "rgba(255,255,255,0.2)",
-              padding: "8px 20px",
-              borderRadius: 20,
-              marginBottom: 20,
-            }}>
-              <span style={{ color: "#fff", fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
-                ☀️ Sommer 2026
-              </span>
-            </div>
-
-            <h2 style={{
-              fontSize: 32,
-              fontWeight: 700,
-              color: "#fff",
-              marginBottom: 16,
-              lineHeight: 1.2,
-            }}>
-              Anmeldung für das<br />Sommertraining läuft!
-            </h2>
-
+      {/* Unser Angebot Section */}
+      <section id="angebot" style={{ padding: "80px 24px", background: colors.bgLight }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
-              fontSize: 17,
-              color: "rgba(255,255,255,0.9)",
-              lineHeight: 1.6,
-              marginBottom: 28,
-              maxWidth: 450,
-              margin: "0 auto 28px",
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
             }}>
-              Sichern Sie sich jetzt Ihren Platz für die Sommersaison auf unserer Anlage im Wedding.
+              Unser Angebot
             </p>
-
-            <a
-              href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
-              style={{
-                display: "inline-block",
-                background: "#fff",
-                color: colors.primary,
-                padding: "16px 40px",
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.25)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.2)";
-              }}
-            >
-              Jetzt anmelden →
-            </a>
+            <h2 style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.text,
+              marginBottom: 16,
+            }}>
+              Tennis für jedes Alter und Level
+            </h2>
           </div>
 
-          {/* Tenniscamp Card */}
-          <div
-            style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              borderRadius: 16,
-              padding: "40px 40px",
-              textAlign: "center",
-              boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
-              position: "relative",
-              overflow: "hidden",
-              marginTop: 24,
-            }}
-          >
-            <div style={{
-              position: "absolute",
-              top: -20,
-              right: -20,
-              width: 100,
-              height: 100,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.1)",
-            }} />
-
-            <div style={{
-              display: "inline-block",
-              background: "rgba(255,255,255,0.2)",
-              padding: "6px 16px",
-              borderRadius: 20,
-              marginBottom: 16,
-            }}>
-              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
-                Sommerferien 2026
-              </span>
-            </div>
-
-            <h2 style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: "#fff",
-              marginBottom: 12,
-              lineHeight: 1.2,
-            }}>
-              Tenniscamps für Kinder & Erwachsene
-            </h2>
-
-            <p style={{
-              fontSize: 15,
-              color: "rgba(255,255,255,0.9)",
-              lineHeight: 1.5,
-              marginBottom: 20,
-              maxWidth: 400,
-              margin: "0 auto 20px",
-            }}>
-              Kindercamp: 13.-17. Juli & 17.-21. August<br />
-              Erwachsenencamp: 13.-17. Juli & 17.-21. August
-            </p>
-
-            <a
-              href="/tenniscamp"
-              style={{
-                display: "inline-block",
-                background: "#fff",
-                color: "#d97706",
-                padding: "14px 32px",
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 14,
-                textDecoration: "none",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 20,
+          }}>
+            {[
+              { title: "Kinder", desc: "Spielerisch Tennis lernen ab 5 Jahren", icon: "👦" },
+              { title: "Jugend", desc: "Technik & Taktik für ambitionierte Spieler", icon: "🎾" },
+              { title: "Erwachsene", desc: "Vom Anfänger bis zum Turnierspieler", icon: "👨" },
+              { title: "Camps", desc: "Intensivtraining in den Sommerferien", icon: "☀️" },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: colors.white,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 12,
+                padding: 24,
+                textAlign: "center",
                 transition: "transform 0.2s, box-shadow 0.2s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.15)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+              >
+                <div style={{ fontSize: 32, marginBottom: 12 }}>{item.icon}</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{item.title}</h3>
+                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.5 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Aktuelles Section - Cards nebeneinander */}
+      <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <p style={{
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}>
+              Aktuelles
+            </p>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+              Jetzt anmelden
+            </h2>
+          </div>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: 24,
+          }}>
+            {/* Sommertraining Card */}
+            <div
+              style={{
+                background: `linear-gradient(135deg, ${colors.primary} 0%, #2d5a2d 100%)`,
+                borderRadius: 16,
+                padding: "32px",
+                boxShadow: "0 12px 40px rgba(27, 71, 27, 0.25)",
+                position: "relative",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-              Zum Tenniscamp →
-            </a>
+              <div style={{
+                position: "absolute",
+                top: -30,
+                right: -30,
+                width: 100,
+                height: 100,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.1)",
+              }} />
+
+              <div style={{
+                display: "inline-block",
+                background: "rgba(255,255,255,0.2)",
+                padding: "6px 14px",
+                borderRadius: 20,
+                marginBottom: 16,
+                alignSelf: "flex-start",
+              }}>
+                <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Sommer 2026
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
+                Sommertraining
+              </h3>
+
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
+                Sichern Sie sich jetzt Ihren Platz für die Sommersaison.
+              </p>
+
+              <a
+                href="/anmeldung-wedding"
+                style={{
+                  display: "inline-block",
+                  background: "#fff",
+                  color: colors.primary,
+                  padding: "12px 24px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                  textAlign: "center",
+                  transition: "transform 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                Jetzt anmelden
+              </a>
+            </div>
+
+            {/* Tenniscamp Card */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                borderRadius: 16,
+                padding: "32px",
+                boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
+                position: "relative",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div style={{
+                position: "absolute",
+                top: -20,
+                right: -20,
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.1)",
+              }} />
+
+              <div style={{
+                display: "inline-block",
+                background: "rgba(255,255,255,0.2)",
+                padding: "6px 14px",
+                borderRadius: 20,
+                marginBottom: 16,
+                alignSelf: "flex-start",
+              }}>
+                <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Sommerferien
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
+                Tenniscamps
+              </h3>
+
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
+                Kinder & Erwachsene<br />
+                13.-17. Juli & 17.-21. August
+              </p>
+
+              <a
+                href="/tenniscamp"
+                style={{
+                  display: "inline-block",
+                  background: "#fff",
+                  color: "#d97706",
+                  padding: "12px 24px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                  textAlign: "center",
+                  transition: "transform 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                Zum Tenniscamp
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -1363,35 +1398,46 @@ export default function WeddingPage() {
       )}
 
       {/* Trainer Section */}
-      <section id="trainer" style={{ padding: "80px 24px", background: colors.white }}>
+      <section id="trainer" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}>
+              Unser Team
+            </p>
             <h2 style={{
               fontSize: 28,
               fontWeight: 700,
-              color: colors.primary,
-              marginBottom: 8,
-              textTransform: "uppercase",
-              letterSpacing: "1px",
+              color: colors.text,
             }}>
-              Unsere Trainer
+              Lizenzierte Trainer
             </h2>
-            <div style={{
-              width: 50,
-              height: 3,
-              background: colors.primary,
-              margin: "16px auto 0",
-            }} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
             {trainers.map((trainer, i) => (
               <div
                 key={i}
                 style={{
                   background: colors.white,
-                  border: `1px solid ${colors.border}`,
+                  borderRadius: 12,
                   overflow: "hidden",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
                 }}
               >
                 <div
@@ -1401,8 +1447,8 @@ export default function WeddingPage() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderBottom: `1px solid ${colors.border}`,
                     overflow: "hidden",
+                    position: "relative",
                   }}
                 >
                   {"image" in trainer && trainer.image ? (
@@ -1415,23 +1461,41 @@ export default function WeddingPage() {
                         objectFit: "cover",
                         objectPosition: ("imagePosition" in trainer && trainer.imagePosition) || "center",
                         transform: "imageZoom" in trainer ? `scale(${trainer.imageZoom})` : undefined,
+                        transition: "transform 0.3s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        const baseScale = "imageZoom" in trainer ? trainer.imageZoom || 1 : 1;
+                        e.currentTarget.style.transform = `scale(${baseScale * 1.05})`;
+                      }}
+                      onMouseLeave={(e) => {
+                        const baseScale = "imageZoom" in trainer ? trainer.imageZoom || 1 : 1;
+                        e.currentTarget.style.transform = `scale(${baseScale})`;
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: 36, fontWeight: 700, color: colors.border }}>
+                    <span style={{ fontSize: 48, fontWeight: 700, color: colors.border }}>
                       {trainer.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                   )}
                 </div>
-                <div style={{ padding: 16 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
+                <div style={{ padding: 20 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 6 }}>
                     {trainer.name}
                   </h3>
-                  <p style={{ fontSize: 13, color: colors.primary, marginBottom: 8, fontWeight: 700 }}>
+                  <p style={{
+                    fontSize: 12,
+                    color: colors.white,
+                    background: colors.primary,
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    display: "inline-block",
+                    marginBottom: 12,
+                    fontWeight: 500,
+                  }}>
                     {trainer.qualification}
                   </p>
                   {trainer.bio && (
-                    <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6 }}>
                       {trainer.bio}
                     </p>
                   )}
@@ -1444,45 +1508,146 @@ export default function WeddingPage() {
 
       {/* Kontakt Section */}
       <section id="kontakt" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
-          <h2 style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: colors.primary,
-            marginBottom: 8,
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}>
-            Kontakt
-          </h2>
-          <div style={{
-            width: 50,
-            height: 3,
-            background: colors.primary,
-            margin: "16px auto 32px",
-          }} />
-
-          <p style={{ fontSize: 16, color: colors.textMuted, lineHeight: 1.7, marginBottom: 32 }}>
-            Sie möchten ein Training buchen oder haben Fragen? Wir antworten meistens innerhalb von 24 Stunden.
-          </p>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}>
+              Kontakt
+            </p>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+              So erreichen Sie uns
+            </h2>
+          </div>
 
           <div style={{
-            background: colors.bgLight,
-            padding: 32,
-            borderLeft: `4px solid ${colors.primary}`,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: 24,
           }}>
-            <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 8 }}>E-Mail</div>
-            <a
-              href="mailto:tennisabisz@gmail.com"
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: colors.primary,
-                textDecoration: "none",
-              }}
-            >
-              tennisabisz@gmail.com
-            </a>
+            {/* Adresse */}
+            <div style={{
+              background: colors.bgLight,
+              borderRadius: 12,
+              padding: 28,
+            }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: colors.primary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+                fontSize: 20,
+              }}>
+                📍
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Adresse</h3>
+              <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
+                BSC Rehberge 1945 e.V.<br />
+                Sambesistraße 11<br />
+                13351 Berlin-Wedding
+              </p>
+              <a
+                href="https://maps.google.com/?q=BSC+Rehberge+Sambesistraße+11+Berlin"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: 14,
+                  color: colors.primary,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                In Google Maps öffnen →
+              </a>
+            </div>
+
+            {/* Telefon */}
+            <div style={{
+              background: colors.bgLight,
+              borderRadius: 12,
+              padding: 28,
+            }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: colors.primary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+                fontSize: 20,
+              }}>
+                📞
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Telefon</h3>
+              <a
+                href="tel:+4915560062745"
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: colors.primary,
+                  textDecoration: "none",
+                  display: "block",
+                  marginBottom: 8,
+                }}
+              >
+                0155 60062745
+              </a>
+              <p style={{ fontSize: 13, color: colors.textMuted }}>
+                Auch per WhatsApp erreichbar
+              </p>
+            </div>
+
+            {/* E-Mail */}
+            <div style={{
+              background: colors.bgLight,
+              borderRadius: 12,
+              padding: 28,
+            }}>
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: colors.primary,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+                fontSize: 20,
+              }}>
+                ✉️
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>E-Mail</h3>
+              <a
+                href="mailto:tennisabisz@gmail.com"
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: colors.primary,
+                  textDecoration: "none",
+                  display: "block",
+                  marginBottom: 8,
+                }}
+              >
+                tennisabisz@gmail.com
+              </a>
+              <p style={{ fontSize: 13, color: colors.textMuted }}>
+                Antwort meist innerhalb 24h
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -1504,7 +1669,7 @@ export default function WeddingPage() {
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+                {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
