@@ -16,7 +16,7 @@ export default function TenniscampInfoPage() {
           marginBottom: 24,
           textAlign: "center"
         }}>
-          <h1 style={{ margin: "0 0 8px 0", fontSize: 28, fontWeight: 700 }}>Tenniscamps 2025</h1>
+          <h1 style={{ margin: "0 0 8px 0", fontSize: 28, fontWeight: 700 }}>Tenniscamps 2026</h1>
           <p style={{ margin: 0, fontSize: 16, opacity: 0.95 }}>Tennisschule A bis Z am BSC Rehberge</p>
         </div>
 
@@ -95,7 +95,7 @@ export default function TenniscampInfoPage() {
               <div>
                 <h2 style={{ margin: 0, color: "#166534", fontSize: 20 }}>Kindercamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#15803d" }}>
-                  14.-18. Juli & 18.-22. August · 10:00-15:00 Uhr · 270 €
+                  13.-17. Juli & 17.-21. August · 10:00-15:00 Uhr · 270 €
                 </p>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function TenniscampInfoPage() {
                   textAlign: "center"
                 }}>
                   <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>14. - 18. Juli</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>13. - 17. Juli</div>
                 </div>
                 <div style={{
                   background: "white",
@@ -140,8 +140,8 @@ export default function TenniscampInfoPage() {
                   padding: 16,
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>6. FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>18. - 22. August</div>
+                  <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>LETZTE FERIENWOCHE</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>17. - 21. August</div>
                 </div>
               </div>
 
@@ -218,7 +218,7 @@ export default function TenniscampInfoPage() {
               <div>
                 <h2 style={{ margin: 0, color: "#1e40af", fontSize: 20 }}>Erwachsenencamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#1d4ed8" }}>
-                  28.07.-01.08. & 25.-29.08. · 18:00-20:00 Uhr · 140 €
+                  27.-31. Juli & 24.-28. August · 18:00-20:00 Uhr · 140 €
                 </p>
               </div>
             </div>
@@ -253,8 +253,8 @@ export default function TenniscampInfoPage() {
                   padding: 16,
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>28. Juli - 01. Aug</div>
+                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>3. FERIENWOCHE</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>27. - 31. Juli</div>
                 </div>
                 <div style={{
                   background: "white",
@@ -263,8 +263,8 @@ export default function TenniscampInfoPage() {
                   padding: 16,
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>6. FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>25. - 29. August</div>
+                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>LETZTE FERIENWOCHE</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>24. - 28. August</div>
                 </div>
               </div>
 

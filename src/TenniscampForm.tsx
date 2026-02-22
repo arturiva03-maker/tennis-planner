@@ -12,10 +12,10 @@ type CampOption = {
 };
 
 const CAMP_OPTIONS: CampOption[] = [
-  { id: "woche1-kind", label: "Kindercamp - 1. Ferienwoche", dates: "14.07. - 18.07.2025", type: "kind", price: 270 },
-  { id: "woche1-erwachsene", label: "Erwachsenencamp - 1. Ferienwoche", dates: "28.07. - 01.08.2025", type: "erwachsene", price: 140 },
-  { id: "woche6-kind", label: "Kindercamp - 6. Ferienwoche", dates: "18.08. - 22.08.2025", type: "kind", price: 270 },
-  { id: "woche6-erwachsene", label: "Erwachsenencamp - 6. Ferienwoche", dates: "25.08. - 29.08.2025", type: "erwachsene", price: 140 },
+  { id: "woche1-kind", label: "Kindercamp - 1. Ferienwoche", dates: "13.07. - 17.07.2026", type: "kind", price: 270 },
+  { id: "woche1-erwachsene", label: "Erwachsenencamp - 1. Ferienwoche", dates: "27.07. - 31.07.2026", type: "erwachsene", price: 140 },
+  { id: "woche6-kind", label: "Kindercamp - Letzte Ferienwoche", dates: "17.08. - 21.08.2026", type: "kind", price: 270 },
+  { id: "woche6-erwachsene", label: "Erwachsenencamp - Letzte Ferienwoche", dates: "24.08. - 28.08.2026", type: "erwachsene", price: 140 },
 ];
 
 type TenniscampData = {
