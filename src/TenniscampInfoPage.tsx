@@ -324,27 +324,7 @@ export default function TenniscampInfoPage() {
           Danach ist eine Erstattung leider nicht mehr möglich.
         </div>
 
-        {/* Anmeldung Button */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <a
-            href="/tenniscamp"
-            style={{
-              display: "inline-block",
-              background: "linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%)",
-              color: "white",
-              padding: "16px 40px",
-              borderRadius: 8,
-              textDecoration: "none",
-              fontWeight: 600,
-              fontSize: 18,
-              boxShadow: "0 4px 12px rgba(27, 71, 27, 0.3)"
-            }}
-          >
-            Jetzt anmelden
-          </a>
-        </div>
-
-        <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
+        <div style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 14, marginTop: 16 }}>
           <p style={{ margin: 0 }}>Wir freuen uns auf euch!</p>
           <p style={{ margin: "4px 0 0 0", fontWeight: 600 }}>Euer Trainerteam A bis Z</p>
         </div>
