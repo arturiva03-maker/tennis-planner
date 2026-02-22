@@ -704,18 +704,19 @@ export default function WeddingPage() {
                 </button>
               ))}
               <a
-                href="https://tennistrainer-app.de/anmeldung-wedding?a=9168a8e1-d237-4316-90fe-f0e7dfb665b9"
+                href="https://tennistrainer-app.de/anmeldung-wedding"
                 style={{
                   display: "block",
-                  background: colors.primary,
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                   color: "#fff",
                   padding: "12px 20px",
-                  borderRadius: 2,
+                  borderRadius: 6,
                   fontWeight: 700,
                   fontSize: 14,
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
+                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
                 }}
               >
                 Training buchen
@@ -729,39 +730,209 @@ export default function WeddingPage() {
       <header
         style={{
           position: "relative",
-          minHeight: "60vh",
+          minHeight: "70vh",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          background: colors.primary,
+          background: `linear-gradient(135deg, #0f2f1a 0%, ${colors.primary} 50%, #1a3d24 100%)`,
+          overflow: "hidden",
         }}
       >
-        <div style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "100px 24px 60px" }}>
-          <h1
-            style={{
-              fontSize: "clamp(32px, 6vw, 56px)",
-              fontWeight: 700,
-              color: "#fff",
+        {/* Tennis Court Lines Background */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.08,
+          backgroundImage: `
+            linear-gradient(90deg, transparent 49%, rgba(255,255,255,0.5) 49%, rgba(255,255,255,0.5) 51%, transparent 51%),
+            linear-gradient(0deg, transparent 49%, rgba(255,255,255,0.5) 49%, rgba(255,255,255,0.5) 51%, transparent 51%),
+            linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.3) 24%, rgba(255,255,255,0.3) 26%, transparent 26%),
+            linear-gradient(90deg, transparent 74%, rgba(255,255,255,0.3) 74%, rgba(255,255,255,0.3) 76%, transparent 76%)
+          `,
+          backgroundSize: "100% 100%, 100% 100%, 100% 100%, 100% 100%",
+        }} />
+
+        {/* Glow Effects */}
+        <div style={{
+          position: "absolute",
+          top: "-20%",
+          right: "-10%",
+          width: "50%",
+          height: "70%",
+          background: "radial-gradient(ellipse, rgba(245, 158, 11, 0.15) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "60%",
+          height: "60%",
+          background: "radial-gradient(ellipse, rgba(34, 197, 94, 0.1) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
+        {/* Noise Texture Overlay */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.03,
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
+          pointerEvents: "none",
+        }} />
+
+        {/* Content */}
+        <div style={{
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "120px 24px 80px",
+        }}>
+          <div style={{ maxWidth: 650 }}>
+            {/* Location Badge */}
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              background: "rgba(255,255,255,0.1)",
+              backdropFilter: "blur(8px)",
+              padding: "8px 16px",
+              borderRadius: 100,
+              marginBottom: 24,
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}>
+              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+                BSC Rehberge · Berlin-Wedding
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 style={{
+              fontSize: "clamp(36px, 7vw, 64px)",
+              fontWeight: 800,
+              lineHeight: 1.1,
               marginBottom: 16,
-              lineHeight: 1.2,
-            }}
-          >
-            Tennisschule A bis Z
-          </h1>
-          <p style={{
-            fontSize: 18,
-            color: "rgba(255,255,255,0.9)",
-            marginBottom: 8,
-            fontWeight: 400,
-          }}>
-            Standort Wedding · BSC Rehberge
-          </p>
+            }}>
+              <span style={{ color: "#fff" }}>Tennisschule</span>
+              <br />
+              <span style={{
+                background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                A bis Z
+              </span>
+            </h1>
+
+            {/* Tagline */}
+            <p style={{
+              fontSize: "clamp(18px, 3vw, 24px)",
+              color: "rgba(255,255,255,0.85)",
+              marginBottom: 32,
+              fontWeight: 400,
+              lineHeight: 1.5,
+            }}>
+              Tennis lernen, von A bis Z.
+            </p>
+
+            {/* CTAs */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+              <a
+                href="/anmeldung-wedding"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "#fff",
+                  padding: "16px 32px",
+                  borderRadius: 8,
+                  fontWeight: 700,
+                  fontSize: 16,
+                  textDecoration: "none",
+                  boxShadow: "0 4px 20px rgba(245, 158, 11, 0.4)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 24px rgba(245, 158, 11, 0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(245, 158, 11, 0.4)";
+                }}
+              >
+                Jetzt anmelden
+              </a>
+              <a
+                href="#trainer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "transparent",
+                  color: "#fff",
+                  padding: "16px 32px",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  fontSize: 16,
+                  textDecoration: "none",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.6)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                Trainer kennenlernen
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: "rgba(0,0,0,0.2)",
+          backdropFilter: "blur(12px)",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+        }}>
           <div style={{
-            width: 60,
-            height: 3,
-            background: "rgba(255,255,255,0.5)",
-            margin: "24px auto 0",
-          }} />
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "20px 24px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "clamp(32px, 8vw, 80px)",
+            flexWrap: "wrap",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>10+</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Jahre Erfahrung</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>150+</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Aktive Spieler</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>3</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Lizenzierte Trainer</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "#f59e0b" }}>6</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>Sandplätze</div>
+            </div>
+          </div>
         </div>
       </header>
 
