@@ -37,9 +37,11 @@ type RegistrationFormProps = {
   anlage: "Wedding" | "Britz";
 };
 
+const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
+
 export default function RegistrationForm({ anlage }: RegistrationFormProps) {
   const [searchParams] = useSearchParams();
-  const accountId = searchParams.get("a");
+  const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
   const [formData, setFormData] = useState<RegistrationData>({
     name: "",
@@ -134,11 +136,6 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!accountId) {
-      setError("Ungültiger Anmeldelink. Bitte kontaktieren Sie den Anbieter.");
-      return;
-    }
 
     if (!formData.name.trim()) {
       setError("Bitte geben Sie Ihren Namen ein.");
@@ -419,20 +416,6 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
     } finally {
       setLoading(false);
     }
-  }
-
-  if (!accountId) {
-    return (
-      <div className="registrationPage">
-        <div className="card registrationCard">
-          <h1>Ungültiger Link</h1>
-          <p className="muted">
-            Dieser Anmeldelink ist ungültig. Bitte kontaktieren Sie den
-            Tennisanbieter für einen korrekten Link.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   if (success) {

@@ -6537,46 +6537,44 @@ Sportliche Grüße`
                     {formulareTab === "anmeldung" && (
                       <>
                         <div style={{ marginBottom: 16 }}>
-                          <p className="muted" style={{ marginBottom: 12 }}>
+                          <p className="muted" style={{ marginBottom: 8 }}>
                             <strong>Anmeldung Wedding:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
                               borderRadius: 4,
                               fontSize: 13,
-                              wordBreak: "break-all"
                             }}>
-                              {window.location.origin}/anmeldung-wedding?a={authUser?.accountId}
+                              {window.location.origin}/anmeldung-wedding
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/anmeldung-wedding?a=${authUser?.accountId}`
+                                  `${window.location.origin}/anmeldung-wedding`
                                 );
                               }}
                             >
                               Kopieren
                             </button>
                           </p>
-                          <p className="muted">
+                          <p className="muted" style={{ marginBottom: 8 }}>
                             <strong>Anmeldung Britz:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
                               borderRadius: 4,
                               fontSize: 13,
-                              wordBreak: "break-all"
                             }}>
-                              {window.location.origin}/anmeldung-britz?a={authUser?.accountId}
+                              {window.location.origin}/anmeldung-britz
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/anmeldung-britz?a=${authUser?.accountId}`
+                                  `${window.location.origin}/anmeldung-britz`
                                 );
                               }}
                             >
@@ -7227,22 +7225,21 @@ Sportliche Grüße`
                       <>
                         <div style={{ marginBottom: 16 }}>
                           <p className="muted">
-                            Teilen Sie diesen Link für das SEPA-Lastschriftmandat:{" "}
+                            <strong>SEPA-Mandat:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
                               borderRadius: 4,
                               fontSize: 13,
-                              wordBreak: "break-all"
                             }}>
-                              {window.location.origin}/sepa?a={authUser?.accountId}
+                              {window.location.origin}/sepa
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/sepa?a=${authUser?.accountId}`
+                                  `${window.location.origin}/sepa`
                                 );
                               }}
                             >
@@ -7363,16 +7360,37 @@ Sportliche Grüße`
                               padding: "4px 8px",
                               borderRadius: 4,
                               fontSize: 13,
-                              wordBreak: "break-all"
                             }}>
-                              {window.location.origin}/tenniscamp?a={authUser?.accountId}
+                              {window.location.origin}/tenniscamp
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/tenniscamp?a=${authUser?.accountId}`
+                                  `${window.location.origin}/tenniscamp`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Tenniscamp-Info:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                            }}>
+                              {window.location.origin}/tenniscamp-info
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/tenniscamp-info`
                                 );
                               }}
                             >
