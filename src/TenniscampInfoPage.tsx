@@ -4,7 +4,7 @@ import "./App.css";
 export default function TenniscampInfoPage() {
   return (
     <div className="registrationPage">
-      <div className="card registrationCard" style={{ maxWidth: 800 }}>
+      <div className="card registrationCard" style={{ maxWidth: 900 }}>
         <h1>Informationen Tenniscamps 2025</h1>
 
         <div style={{
@@ -55,71 +55,68 @@ export default function TenniscampInfoPage() {
           </div>
         </div>
 
-        {/* Camp-Termine */}
-        <h2 style={{ marginBottom: 16 }}>Camp-Termine 2025</h2>
+        {/* ==================== KINDERCAMP ==================== */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 16,
+          background: "#f0fdf4",
+          border: "2px solid #22c55e",
+          borderRadius: 12,
+          padding: 28,
           marginBottom: 32
         }}>
-          <div style={{
-            background: "#f0fdf4",
-            border: "2px solid #22c55e",
-            borderRadius: 8,
-            padding: 20
-          }}>
-            <div style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#166534" }}>14. - 18. Juli 2025</div>
-            <div style={{ marginTop: 8, fontSize: 14, color: "#15803d" }}>Montag bis Freitag</div>
-          </div>
-          <div style={{
-            background: "#fef3c7",
-            border: "2px solid #f59e0b",
-            borderRadius: 8,
-            padding: 20
-          }}>
-            <div style={{ fontSize: 12, color: "#d97706", fontWeight: 600, marginBottom: 4 }}>6. FERIENWOCHE</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#92400e" }}>18. - 22. August 2025</div>
-            <div style={{ marginTop: 8, fontSize: 14, color: "#b45309" }}>Montag bis Freitag</div>
-          </div>
-        </div>
-
-        {/* Kindercamp Info */}
-        <div style={{
-          background: "#f8fafc",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: 24,
-          marginBottom: 24
-        }}>
-          <h2 style={{ margin: "0 0 20px 0", display: "flex", alignItems: "center", gap: 8 }}>
-            <span>🎾</span> Kindercamp
+          <h2 style={{ margin: "0 0 24px 0", display: "flex", alignItems: "center", gap: 10, color: "#166534" }}>
+            <span style={{ fontSize: 28 }}>🧒</span> Kindercamp
           </h2>
 
-          <div style={{ marginBottom: 20 }}>
-            <h3 style={{ fontSize: 16, margin: "0 0 8px 0" }}>Kurszeiten</h3>
-            <p style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Montag bis Freitag, 10:00 - 15:00 Uhr</p>
-            <p style={{ margin: "4px 0 0 0", color: "var(--text-muted)" }}>
-              inkl. Mittagspause von 12:00 - 13:00 Uhr mit warmer Mahlzeit
-            </p>
+          {/* Termine */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            marginBottom: 24
+          }}>
+            <div style={{
+              background: "white",
+              border: "1px solid #bbf7d0",
+              borderRadius: 8,
+              padding: 16,
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>14. - 18. Juli 2025</div>
+            </div>
+            <div style={{
+              background: "white",
+              border: "1px solid #bbf7d0",
+              borderRadius: 8,
+              padding: 16,
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>6. FERIENWOCHE</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#166534" }}>18. - 22. August 2025</div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 20 }}>
+            <div>
+              <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#15803d" }}>Kurszeiten</h3>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Mo - Fr, 10:00 - 15:00 Uhr</p>
+              <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#166534" }}>
+                inkl. Mittagspause 12:00 - 13:00 Uhr
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#15803d" }}>Kursgebühr</h3>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#166534" }}>270 € pro Kind</p>
+              <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#166534" }}>inkl. warme Mahlzeit</p>
+            </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <h3 style={{ fontSize: 16, margin: "0 0 8px 0" }}>Kursgebühr</h3>
-            <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "var(--primary)" }}>270 € pro Kind</p>
-            <p style={{ margin: "4px 0 0 0", color: "var(--text-muted)" }}>
-              Wird eine Woche vor Beginn des Camps per SEPA-Lastschrift abgebucht.
-              Eine Rechnung wird bei Bedarf gerne ausgestellt.
-            </p>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <h3 style={{ fontSize: 16, margin: "0 0 8px 0" }}>Ablauf eines Trainingstages</h3>
-            <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+            <h3 style={{ fontSize: 14, margin: "0 0 8px 0", color: "#15803d" }}>Ablauf eines Trainingstages</h3>
+            <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7, fontSize: 14 }}>
               <li>Gemeinsame Aufwärmung im nahegelegenen Park</li>
               <li>Einteilung in spielstärkengerechte Gruppen (am ersten Tag)</li>
-              <li>Gezielte Übungsformen und Spielformen rund um das Tennisspiel</li>
+              <li>Gezielte Übungs- und Spielformen rund um das Tennisspiel</li>
               <li><strong>12:00 - 13:00 Uhr:</strong> Mittagspause mit warmer Mahlzeit</li>
               <li>Gemeinsames Bewegungsspiel nach dem Mittagessen</li>
               <li>Fortsetzung des Tennistrainings</li>
@@ -127,36 +124,110 @@ export default function TenniscampInfoPage() {
           </div>
 
           <div style={{
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
+            background: "white",
+            border: "1px solid #bbf7d0",
             borderRadius: 8,
-            padding: 16,
-            marginBottom: 20
+            padding: 14
           }}>
-            <h3 style={{ fontSize: 16, margin: "0 0 8px 0", color: "#991b1b" }}>Bitte mitbringen</h3>
-            <ul style={{ margin: 0, paddingLeft: 20, color: "#991b1b" }}>
-              <li><strong>Sandplatzschuhe</strong> (wichtig für die Qualität der Plätze!)</li>
-              <li><strong>Ausreichend Wasser</strong></li>
-              <li><strong>Tennisschläger</strong> (bei Bedarf kann ein Schläger ausgeliehen werden)</li>
+            <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#166534" }}>Bitte mitbringen:</h4>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              <strong>Sandplatzschuhe</strong> (Pflicht!) · <strong>Ausreichend Wasser</strong> · <strong>Tennisschläger</strong> (Ausleihe möglich)
+            </p>
+          </div>
+
+          <div style={{ marginTop: 16, padding: "12px 14px", background: "#dcfce7", borderRadius: 8 }}>
+            <p style={{ margin: 0, fontSize: 13, color: "#166534" }}>
+              <strong>Stornierung:</strong> Kostenfreie Absage bis eine Woche vor Beginn möglich (1. FW: 07.07. / 6. FW: 11.08.)
+            </p>
+          </div>
+        </div>
+
+        {/* ==================== ERWACHSENENCAMP ==================== */}
+        <div style={{
+          background: "#eff6ff",
+          border: "2px solid #3b82f6",
+          borderRadius: 12,
+          padding: 28,
+          marginBottom: 32
+        }}>
+          <h2 style={{ margin: "0 0 24px 0", display: "flex", alignItems: "center", gap: 10, color: "#1e40af" }}>
+            <span style={{ fontSize: 28 }}>🎾</span> Erwachsenencamp
+          </h2>
+
+          {/* Termine */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            marginBottom: 24
+          }}>
+            <div style={{
+              background: "white",
+              border: "1px solid #bfdbfe",
+              borderRadius: 8,
+              padding: 16,
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>28. Juli - 01. Aug 2025</div>
+            </div>
+            <div style={{
+              background: "white",
+              border: "1px solid #bfdbfe",
+              borderRadius: 8,
+              padding: 16,
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>6. FERIENWOCHE</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>25. - 29. August 2025</div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, marginBottom: 20 }}>
+            <div>
+              <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Kurszeiten</h3>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Mo - Fr, 18:00 - 20:00 Uhr</p>
+              <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#1e40af" }}>
+                Treffpunkt: kurz vor 18:00 Uhr am Montag
+              </p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 14, margin: "0 0 6px 0", color: "#1d4ed8" }}>Teilnehmer</h3>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Max. 12 Personen</p>
+              <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#1e40af" }}>betreut von 3 Trainern</p>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, margin: "0 0 8px 0", color: "#1d4ed8" }}>Ablauf</h3>
+            <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7, fontSize: 14 }}>
+              <li>Am ersten Camptag: Einteilung in spielstärkengerechte Gruppen</li>
+              <li>Gruppen bleiben für die gesamte Dauer des Camps bestehen</li>
+              <li>Die Trainer rotieren täglich zwischen den Gruppen</li>
+              <li>Gezielte Übungs- und Spielformen für alle Spielstärken</li>
             </ul>
           </div>
 
           <div style={{
-            background: "#fff7ed",
-            border: "1px solid #fed7aa",
+            background: "white",
+            border: "1px solid #bfdbfe",
             borderRadius: 8,
-            padding: 16
+            padding: 14
           }}>
-            <h3 style={{ fontSize: 16, margin: "0 0 8px 0", color: "#9a3412" }}>Wichtige Hinweise</h3>
-            <ul style={{ margin: 0, paddingLeft: 20, color: "#9a3412", lineHeight: 1.6 }}>
-              <li>Bitte bringen Sie Ihr Kind <strong>pünktlich</strong> zum Training.</li>
-              <li>Bei erheblicher Verspätung bitten wir um rechtzeitige Mitteilung an das Trainerteam.</li>
-              <li>Die Teilnehmer werden je nach Anzahl in Gruppen eingeteilt und von mehreren Trainern betreut.</li>
-            </ul>
+            <h4 style={{ fontSize: 13, margin: "0 0 8px 0", color: "#1e40af" }}>Bitte mitbringen:</h4>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              <strong>Eigener Schläger</strong> · <strong>Sandplatzschuhe</strong> (Pflicht!) · <strong>Ausreichend Wasser</strong>
+            </p>
+          </div>
+
+          <div style={{ marginTop: 16, padding: "12px 14px", background: "#dbeafe", borderRadius: 8 }}>
+            <p style={{ margin: 0, fontSize: 13, color: "#1e40af" }}>
+              <strong>Stornierung:</strong> Kostenfreie Absage bis eine Woche vor Beginn möglich (1. FW: 21.07. / 6. FW: 18.08.)
+            </p>
           </div>
         </div>
 
-        {/* Stornierung */}
+        {/* Allgemeine Stornierungsbedingungen */}
         <div style={{
           background: "#fef3c7",
           border: "2px solid #f59e0b",
@@ -164,18 +235,18 @@ export default function TenniscampInfoPage() {
           padding: 20,
           marginBottom: 32
         }}>
-          <h3 style={{ margin: "0 0 12px 0", color: "#92400e" }}>Stornierungsbedingungen</h3>
-          <p style={{ margin: 0, color: "#78350f", lineHeight: 1.6 }}>
-            Eine kostenfreie Absage des Camps ist nur bis <strong>eine Woche vor Beginn</strong> des jeweiligen Camps möglich:
-          </p>
-          <ul style={{ margin: "12px 0 0 0", paddingLeft: 20, color: "#78350f" }}>
-            <li>1. Ferienwoche: Absage bis <strong>07.07.2025</strong></li>
-            <li>6. Ferienwoche: Absage bis <strong>11.08.2025</strong></li>
+          <h3 style={{ margin: "0 0 12px 0", color: "#92400e" }}>Wichtige Hinweise zur Stornierung</h3>
+          <ul style={{ margin: 0, paddingLeft: 20, color: "#78350f", lineHeight: 1.8 }}>
+            <li>Die Campgebühr wird <strong>eine Woche vor Beginn</strong> des Camps per SEPA-Lastschrift abgebucht.</li>
+            <li>Eine kostenfreie Abmeldung ist nur <strong>bis zum Abbuchungsdatum</strong> möglich.</li>
+            <li>Spätere Abmeldungen können aus organisatorischen Gründen leider nicht erstattet werden.</li>
+            <li>Eine Absage ist ausschließlich <strong>schriftlich per E-Mail</strong> an{" "}
+              <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
+              möglich.
+            </li>
           </ul>
-          <p style={{ margin: "12px 0 0 0", color: "#78350f" }}>
-            Eine Absage ist ausschließlich schriftlich per E-Mail an{" "}
-            <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
-            möglich.
+          <p style={{ margin: "12px 0 0 0", fontSize: 13, color: "#78350f" }}>
+            Wir bitten um Verständnis, da uns viele Anmeldungen vorliegen, aber nur begrenzte Kapazitäten zur Verfügung stehen.
           </p>
         </div>
 
@@ -185,13 +256,14 @@ export default function TenniscampInfoPage() {
             href="/tenniscamp"
             style={{
               display: "inline-block",
-              background: "var(--primary)",
+              background: "linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%)",
               color: "white",
               padding: "16px 32px",
               borderRadius: 8,
               textDecoration: "none",
               fontWeight: 600,
-              fontSize: 18
+              fontSize: 18,
+              boxShadow: "0 4px 12px rgba(27, 71, 27, 0.3)"
             }}
           >
             Jetzt zum Tenniscamp anmelden

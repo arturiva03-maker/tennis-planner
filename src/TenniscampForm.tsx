@@ -12,9 +12,9 @@ type CampOption = {
 
 const CAMP_OPTIONS: CampOption[] = [
   { id: "woche1-kind", label: "1. Ferienwoche - Kindercamp", dates: "14.07. - 18.07.2025", type: "kind" },
-  { id: "woche1-erwachsene", label: "1. Ferienwoche - Erwachsenencamp", dates: "14.07. - 18.07.2025", type: "erwachsene" },
+  { id: "woche1-erwachsene", label: "1. Ferienwoche - Erwachsenencamp", dates: "28.07. - 01.08.2025", type: "erwachsene" },
   { id: "woche6-kind", label: "6. Ferienwoche - Kindercamp", dates: "18.08. - 22.08.2025", type: "kind" },
-  { id: "woche6-erwachsene", label: "6. Ferienwoche - Erwachsenencamp", dates: "18.08. - 22.08.2025", type: "erwachsene" },
+  { id: "woche6-erwachsene", label: "6. Ferienwoche - Erwachsenencamp", dates: "25.08. - 29.08.2025", type: "erwachsene" },
 ];
 
 type TenniscampData = {
