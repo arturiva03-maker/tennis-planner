@@ -915,7 +915,7 @@ export default function WeddingPage() {
               margin: "0 auto 20px",
             }}>
               Kindercamp: 13.-17. Juli & 17.-21. August<br />
-              Erwachsenencamp: 27.-31. Juli & 24.-28. August
+              Erwachsenencamp: 13.-17. Juli & 17.-21. August
             </p>
 
             <a

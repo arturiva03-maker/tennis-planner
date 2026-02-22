@@ -211,7 +211,7 @@ export default function TenniscampInfoPage() {
             <div>
                 <h2 style={{ margin: 0, color: "#1e40af", fontSize: 20 }}>Erwachsenencamp</h2>
                 <p style={{ margin: "4px 0 0 0", fontSize: 14, color: "#1d4ed8" }}>
-                  27.-31. Juli & 24.-28. August · 18:00-20:00 Uhr · 140 €
+                  13.-17. Juli & 17.-21. August · 18:00-20:00 Uhr · 140 €
                 </p>
               </div>
             <span style={{
@@ -245,8 +245,8 @@ export default function TenniscampInfoPage() {
                   padding: 16,
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>3. FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>27. - 31. Juli</div>
+                  <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>1. FERIENWOCHE</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>13. - 17. Juli</div>
                 </div>
                 <div style={{
                   background: "white",
@@ -256,7 +256,7 @@ export default function TenniscampInfoPage() {
                   textAlign: "center"
                 }}>
                   <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, marginBottom: 4 }}>LETZTE FERIENWOCHE</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>24. - 28. August</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: "#1e40af" }}>17. - 21. August</div>
                 </div>
               </div>
 
