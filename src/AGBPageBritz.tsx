@@ -51,37 +51,28 @@ export default function AGBPageBritz() {
             In den Berliner offiziellen Sommerferien findet das Training nur nach vorheriger Absprache statt. Dazu wird es eine separate Anmeldemöglichkeit für Einzeltraining oder auch vereinbartes Gruppentraining geben.
           </p>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
-            Bei unter-saisonalem Beitritt wird anteilig berechnet. In diesem Fall wird die genaue Hallengebühr mitgeteilt. Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt). Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung.
+            Bei unter-saisonalem Beitritt wird anteilig berechnet. Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt). Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung.
           </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            3. Hallengebühren (nur in der Wintersaison)
-          </h2>
-          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
-            Im Sommer fallen keine zusätzlichen Platzgebühren an. Die genauen Hallengebühren werden vor der Wintersaison bekannt gegeben.
-          </p>
-        </section>
-
-        <section style={{ marginBottom: 32 }}>
-          <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            4. Zahlung und Absageregelungen
+            3. Zahlung und Absageregelungen
           </h2>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
             Zahlung erfolgt zum Monatsende per SEPA-Lastschrift. Rechnungen werden auf Wunsch elektronisch versandt.
           </p>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
-            Beim Gruppentraining wird die Gebühr auch bei Nichtteilnahme fällig. Beim Einzeltraining muss die Absage spätestens 24 Stunden vorher erfolgen, sonst wird das Honorar fällig. Bei Einzeltraining-Absage (nur in der Hallensaison) kann die Hallenstunde ohne Rückerstattung auf einen anderen Spieler übertragen werden.
+            Beim Gruppentraining wird die Gebühr auch bei Nichtteilnahme fällig. Beim Einzeltraining muss die Absage spätestens 24 Stunden vorher erfolgen, sonst wird das Honorar fällig.
           </p>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
-            Die Hallengebühr kann in keinem Fall erstattet werden. Versäumte Stunden können nicht nachgeholt oder erstattet werden. Bei trainerbedingtem Ausfall gibt es einen Ersatztermin oder Kostenerstattung. Bei erheblichen Regenunterbrechungen gibt es einen Ersatztermin oder 50% Gutschrift.
+            Versäumte Stunden können nicht nachgeholt oder erstattet werden. Bei trainerbedingtem Ausfall gibt es einen Ersatztermin oder Kostenerstattung. Bei erheblichen Regenunterbrechungen gibt es einen Ersatztermin oder 50% Gutschrift.
           </p>
         </section>
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            5. Ausnahmeregelungen
+            4. Ausnahmeregelungen
           </h2>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
             Bei mehrmonatiger Krankheit, Schwangerschaft oder Verletzung kann der Vertrag vorzeitig beendet werden. Es besteht kein genereller Anspruch auf Änderung oder Unterbrechung. Bei grobem Fehlverhalten erfolgt Ausschluss ohne Erstattung. Zahlungsverzug oder Rücklastschriften können zum Trainingsausschluss führen.
@@ -90,7 +81,7 @@ export default function AGBPageBritz() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            6. Haftung und Aufsichtspflicht
+            5. Haftung und Aufsichtspflicht
           </h2>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
             <strong>Die Teilnahme erfolgt auf eigene Gefahr.</strong> Die Haftung der Trainer besteht nur bei Vorsatz und grober Fahrlässigkeit. Eltern haften für ihre Kinder.
@@ -102,11 +93,11 @@ export default function AGBPageBritz() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            7. Vereinsmitgliedschaft (TC Britz)
+            6. Vereinsmitgliedschaft (TC Britz)
           </h2>
           <p style={{ marginBottom: 12, color: "#dc2626" }}>
-            Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich
-            (Ausnahmen: Probetraining, Tenniscamps, Wintertraining).
+            <strong>Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich
+            (Ausnahmen: Probetraining, Tenniscamps, Wintertraining).</strong>
           </p>
           <p style={{ marginTop: 12, fontStyle: "italic" }}>
             Gebühren und Konditionen für Vereinsmitgliedschaften können sich ändern.
@@ -116,10 +107,19 @@ export default function AGBPageBritz() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            8. Datenschutz
+            7. Datenschutz
           </h2>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
             Erhobene Daten werden ausschließlich für Organisation und Training genutzt. Daten werden vertraulich behandelt. Fotos und Videos können zu Dokumentations- und Werbezwecken erstellt werden. Schriftlicher Widerspruch ist jederzeit möglich.
+          </p>
+        </section>
+
+        <section style={{ marginBottom: 32 }}>
+          <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
+            8. Platzpflege
+          </h2>
+          <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
+            Die Plätze dürfen nur mit Sandplatzschuhen betreten werden. Nach jeder Benutzung ist ein sorgfältiges Aufräumen der Plätze erforderlich: Wässern, Abziehen und Linien fegen.
           </p>
         </section>
 

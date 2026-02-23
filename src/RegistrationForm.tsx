@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
-type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag";
+type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag";
 
 type RegistrationData = {
   name: string;
@@ -25,7 +25,6 @@ const WOCHENTAGE: { key: Wochentag; label: string }[] = [
   { key: "donnerstag", label: "Donnerstag" },
   { key: "freitag", label: "Freitag" },
   { key: "samstag", label: "Samstag" },
-  { key: "sonntag", label: "Sonntag" },
 ];
 
 const UHRZEITEN = [
@@ -54,7 +53,6 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
       donnerstag: "",
       freitag: "",
       samstag: "",
-      sonntag: "",
     },
     trainingsart: "",
     trainings_pro_woche: "",
@@ -66,15 +64,15 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
   const [zeitVon, setZeitVon] = useState<Record<Wochentag, string>>({
     montag: "", dienstag: "", mittwoch: "", donnerstag: "",
-    freitag: "", samstag: "", sonntag: ""
+    freitag: "", samstag: ""
   });
   const [zeitBis, setZeitBis] = useState<Record<Wochentag, string>>({
     montag: "", dienstag: "", mittwoch: "", donnerstag: "",
-    freitag: "", samstag: "", sonntag: ""
+    freitag: "", samstag: ""
   });
   const [nichtVerfuegbar, setNichtVerfuegbar] = useState<Record<Wochentag, boolean>>({
     montag: false, dienstag: false, mittwoch: false, donnerstag: false,
-    freitag: false, samstag: false, sonntag: false
+    freitag: false, samstag: false
   });
 
   const [error, setError] = useState<string | null>(null);
