@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
 
-type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag";
+type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag";
 
 type RegistrationData = {
   name: string;
@@ -18,7 +18,17 @@ type RegistrationData = {
   gruppenwuensche: string;
 };
 
-const WOCHENTAGE: { key: Wochentag; label: string }[] = [
+const WOCHENTAGE_ALL: { key: Wochentag; label: string }[] = [
+  { key: "montag", label: "Montag" },
+  { key: "dienstag", label: "Dienstag" },
+  { key: "mittwoch", label: "Mittwoch" },
+  { key: "donnerstag", label: "Donnerstag" },
+  { key: "freitag", label: "Freitag" },
+  { key: "samstag", label: "Samstag" },
+  { key: "sonntag", label: "Sonntag" },
+];
+
+const WOCHENTAGE_WEDDING: { key: Wochentag; label: string }[] = [
   { key: "montag", label: "Montag" },
   { key: "dienstag", label: "Dienstag" },
   { key: "mittwoch", label: "Mittwoch" },
@@ -53,6 +63,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
       donnerstag: "",
       freitag: "",
       samstag: "",
+      sonntag: "",
     },
     trainingsart: "",
     trainings_pro_woche: "",
@@ -64,16 +75,19 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
   const [zeitVon, setZeitVon] = useState<Record<Wochentag, string>>({
     montag: "", dienstag: "", mittwoch: "", donnerstag: "",
-    freitag: "", samstag: ""
+    freitag: "", samstag: "", sonntag: ""
   });
   const [zeitBis, setZeitBis] = useState<Record<Wochentag, string>>({
     montag: "", dienstag: "", mittwoch: "", donnerstag: "",
-    freitag: "", samstag: ""
+    freitag: "", samstag: "", sonntag: ""
   });
   const [nichtVerfuegbar, setNichtVerfuegbar] = useState<Record<Wochentag, boolean>>({
     montag: false, dienstag: false, mittwoch: false, donnerstag: false,
-    freitag: false, samstag: false
+    freitag: false, samstag: false, sonntag: false
   });
+
+  // Wedding: ohne Sonntag, Britz: mit Sonntag
+  const WOCHENTAGE = anlage === "Wedding" ? WOCHENTAGE_WEDDING : WOCHENTAGE_ALL;
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
