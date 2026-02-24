@@ -82,6 +82,7 @@ export default function WeddingPage() {
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [expandedAngebot, setExpandedAngebot] = useState<number | null>(null);
 
   const fetchSpontaneStunden = useCallback(async () => {
     setLoadingSlots(true);
@@ -958,42 +959,157 @@ export default function WeddingPage() {
           </div>
 
           <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
           }}>
             {[
-              { title: "Kinder", desc: "Spielerisches und koordinativ orientiertes Training ab 5 Jahren" },
-              { title: "Jugend", desc: "Spaß und Technik im Vordergrund" },
-              { title: "Erwachsene", desc: "Alle Spielklassen" },
-              { title: "Camps", desc: "In den Sommerferien" },
-            ].map((item, i) => (
-              <div key={i} style={{
-                background: colors.white,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 12,
-                padding: 24,
-                textAlign: "center",
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-              >
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{item.title}</h3>
-                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.5 }}>{item.desc}</p>
-              </div>
-            ))}
+              {
+                title: "Kindertraining",
+                subtitle: "ab 5 Jahren",
+                desc: "Kinder lernen bei uns Tennis nach dem DTB-Kindertennis-Konzept (Play+Stay / Tennis 10s). Mit altersgerechten Bällen, angepassten Feldgrößen und viel Bewegung steht der Spaß an erster Stelle. Die Kleinsten starten in der Ball- und Bewegungswelt mit Fang-, Wurf- und Bewegungsspielen, bevor es über die Stufen Rot, Orange und Grün Schritt für Schritt aufs große Feld geht. Koordination, Ballgefühl und Spielfreude stehen im Vordergrund – Erfolgserlebnisse von der ersten Stunde an."
+              },
+              {
+                title: "Jugendtraining",
+                subtitle: "Technik, Taktik & Spielverständnis",
+                desc: "Im Jugendtraining wird gezielt an Technik, Taktik und Spielverständnis gearbeitet. Grundschläge werden stabilisiert, erste taktische Muster wie Aufschlag + Punktaufbau trainiert und in Matchsituationen umgesetzt. Wir achten auf einen abwechslungsreichen Mix aus Korbtraining, Spielformen und Wettkampfsimulationen – damit Motivation und Fortschritt Hand in Hand gehen."
+              },
+              {
+                title: "Erwachsenentraining",
+                subtitle: "Einsteiger bis Clubspieler",
+                desc: "Ob Einsteiger, Wiedereinsteiger oder Clubspieler – unser Training für Erwachsene orientiert sich am Tennis-Xpress-Konzept des DTB. Verständliche Erklärungen, schnelle Spielfähigkeit und ein Training, das Fitness und Spaß verbindet. Bei Bedarf kommen auch druckreduzierte Bälle zum Einsatz, um den Einstieg zu erleichtern und Technik sauber aufzubauen."
+              },
+              {
+                title: "Einzeltraining",
+                subtitle: "Maximale Intensität",
+                desc: "Im Einzeltraining steht dein Spiel im Mittelpunkt. Wir arbeiten gezielt an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Trainingsintensität. Ob Feinschliff am Aufschlag, Vorbereitung auf ein Turnier oder systematischer Technikaufbau: Jede Stunde ist auf dich zugeschnitten."
+              },
+              {
+                title: "Gruppentraining",
+                subtitle: "Teamdynamik & Spielformen",
+                desc: "Im Gruppentraining profitierst du von abwechslungsreichen Spielformen, Teamdynamik und der Motivation, die eine Gruppe mitbringt. Durch angepasste Aufgaben und verschiedene Leistungsstufen kommt jeder auf seine Kosten – vom Einsteiger bis zum Mannschaftsspieler."
+              },
+              {
+                title: "Camps",
+                subtitle: "In den Sommerferien",
+                desc: "In unseren Tenniscamps in den Sommerferien erleben Kinder und Erwachsene intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß – der perfekte Einstieg oder die ideale Ergänzung zum regulären Training."
+              },
+            ].map((item, i) => {
+              const isExpanded = expandedAngebot === i;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    background: colors.white,
+                    border: `1px solid ${isExpanded ? colors.primary : colors.border}`,
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    transition: "all 0.3s ease",
+                    boxShadow: isExpanded ? "0 8px 24px rgba(27, 71, 27, 0.12)" : "none",
+                  }}
+                >
+                  <button
+                    onClick={() => setExpandedAngebot(isExpanded ? null : i)}
+                    style={{
+                      width: "100%",
+                      padding: "20px 24px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      transition: "background 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isExpanded) {
+                        e.currentTarget.style.background = "rgba(27, 71, 27, 0.03)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "none";
+                    }}
+                  >
+                    <div style={{ textAlign: "left" }}>
+                      <h3 style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: colors.text,
+                        marginBottom: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}>
+                        {item.title}
+                      </h3>
+                      <p style={{
+                        fontSize: 14,
+                        color: colors.textMuted,
+                        margin: 0,
+                      }}>
+                        {item.subtitle}
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: isExpanded ? colors.primary : colors.bgLight,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                        style={{
+                          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                          transition: "transform 0.3s ease",
+                        }}
+                      >
+                        <path
+                          d="M2 5L7 10L12 5"
+                          stroke={isExpanded ? "#fff" : colors.textMuted}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </button>
+                  <div
+                    style={{
+                      maxHeight: isExpanded ? 500 : 0,
+                      overflow: "hidden",
+                      transition: "max-height 0.3s ease",
+                    }}
+                  >
+                    <div style={{
+                      padding: "0 24px 24px 24px",
+                      borderTop: `1px solid ${colors.border}`,
+                    }}>
+                      <p style={{
+                        fontSize: 15,
+                        color: colors.textMuted,
+                        lineHeight: 1.7,
+                        marginTop: 20,
+                        marginBottom: 0,
+                      }}>
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          <p style={{ textAlign: "center", marginTop: 24, fontSize: 15, color: colors.textMuted }}>
-            Einzel- sowie Gruppentraining
-          </p>
         </div>
       </section>
 
