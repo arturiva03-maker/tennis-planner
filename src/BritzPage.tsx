@@ -1179,24 +1179,6 @@ export default function BritzPage() {
                       }}>
                         {selectedAngebot.desc}
                       </p>
-                      {!selectedAngebot.unavailable && (
-                        <a
-                          href="/anmeldung-britz"
-                          style={{
-                            display: "inline-block",
-                            background: colors.primary,
-                            color: "#fff",
-                            padding: "12px 24px",
-                            borderRadius: 8,
-                            fontWeight: 700,
-                            fontSize: 14,
-                            textDecoration: "none",
-                            marginTop: 24,
-                          }}
-                        >
-                          Jetzt anmelden
-                        </a>
-                      )}
                     </div>
                   </div>
                 )}
