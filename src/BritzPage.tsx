@@ -1031,7 +1031,7 @@ export default function BritzPage() {
                       e.currentTarget.style.background = "none";
                     }}
                   >
-                    <div style={{ textAlign: "left" }}>
+                    <div style={{ textAlign: "left", flex: 1 }}>
                       <h3 style={{
                         fontSize: 18,
                         fontWeight: 700,
@@ -1050,6 +1050,16 @@ export default function BritzPage() {
                       }}>
                         {item.subtitle}
                       </p>
+                      {item.unavailable && (
+                        <p style={{
+                          fontSize: 13,
+                          color: "#dc2626",
+                          margin: "8px 0 0 0",
+                          fontWeight: 500,
+                        }}>
+                          Aktuell wegen unzureichenden Anmeldungen nicht verfügbar. Bei hinreichenden Anmeldungen realisierbar.
+                        </p>
+                      )}
                     </div>
                     <div
                       style={{
@@ -1095,30 +1105,11 @@ export default function BritzPage() {
                       padding: "0 24px 24px 24px",
                       borderTop: `1px solid ${colors.border}`,
                     }}>
-                      {item.unavailable && (
-                        <div style={{
-                          background: "#fef2f2",
-                          border: "1px solid #fecaca",
-                          borderRadius: 8,
-                          padding: "12px 16px",
-                          marginTop: 20,
-                          marginBottom: 16,
-                        }}>
-                          <p style={{
-                            fontSize: 14,
-                            color: "#dc2626",
-                            margin: 0,
-                            fontWeight: 500,
-                          }}>
-                            Aktuell wegen unzureichenden Anmeldungen nicht verfügbar. Bei hinreichenden Anmeldungen realisierbar.
-                          </p>
-                        </div>
-                      )}
                       <p style={{
                         fontSize: 15,
                         color: colors.textMuted,
                         lineHeight: 1.7,
-                        marginTop: item.unavailable ? 0 : 20,
+                        marginTop: 20,
                         marginBottom: 0,
                       }}>
                         {item.desc}
