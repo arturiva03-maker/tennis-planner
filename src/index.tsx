@@ -8,6 +8,7 @@ import SepaForm from './SepaForm';
 import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
 import WeddingPage from './WeddingPage';
+import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import reportWebVitals from './reportWebVitals';
@@ -27,6 +28,7 @@ root.render(
         <Route path="/agb" element={<AGBPage />} />
         <Route path="/agb-britz" element={<AGBPageBritz />} />
         <Route path="/wedding" element={<WeddingPage />} />
+        <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
       </Routes>
