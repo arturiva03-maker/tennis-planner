@@ -958,12 +958,8 @@ export default function WeddingPage() {
             </h2>
           </div>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 20,
-          }}>
-            {[
+          {(() => {
+            const angebote = [
               {
                 title: "Kindertraining",
                 subtitle: "ab 5 Jahren",
@@ -994,109 +990,188 @@ export default function WeddingPage() {
                 subtitle: "In den Sommerferien",
                 desc: "In unseren Tenniscamps in den Sommerferien erleben Kinder und Erwachsene intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß – der perfekte Einstieg oder die ideale Ergänzung zum regulären Training."
               },
-            ].map((item, i) => {
-              const isExpanded = expandedAngebot === i;
-              return (
-                <div
-                  key={i}
-                  onClick={() => setExpandedAngebot(isExpanded ? null : i)}
-                  style={{
-                    background: colors.white,
-                    border: `1px solid ${isExpanded ? colors.primary : colors.border}`,
-                    borderRadius: 12,
-                    padding: 24,
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
-                    boxShadow: isExpanded ? "0 8px 24px rgba(27, 71, 27, 0.12)" : "none",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    if (!isExpanded) {
-                      e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    if (!isExpanded) {
-                      e.currentTarget.style.boxShadow = "none";
-                    }
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                    <h3 style={{
-                      fontSize: 18,
-                      fontWeight: 700,
-                      color: colors.text,
-                      margin: 0,
-                    }}>
-                      {item.title}
-                    </h3>
+            ];
+            const selectedAngebot = expandedAngebot !== null ? angebote[expandedAngebot] : null;
+            return (
+              <>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                  gap: 20,
+                }}>
+                  {angebote.map((item, i) => (
                     <div
+                      key={i}
+                      onClick={() => setExpandedAngebot(i)}
                       style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: isExpanded ? colors.primary : colors.bgLight,
+                        background: colors.white,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: 12,
+                        padding: 24,
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        display: "flex",
+                        flexDirection: "column",
+                        textAlign: "center",
+                        minHeight: 120,
+                        justifyContent: "center",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                        e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
+                        e.currentTarget.style.borderColor = colors.primary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
+                        e.currentTarget.style.borderColor = colors.border;
+                      }}
+                    >
+                      <h3 style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: colors.text,
+                        margin: 0,
+                        marginBottom: 8,
+                      }}>
+                        {item.title}
+                      </h3>
+                      <p style={{
+                        fontSize: 14,
+                        color: colors.textMuted,
+                        margin: 0,
+                      }}>
+                        {item.subtitle}
+                      </p>
+                      <div style={{
+                        marginTop: 12,
+                        fontSize: 12,
+                        color: colors.primary,
+                        fontWeight: 600,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        transition: "all 0.3s ease",
-                        flexShrink: 0,
-                        marginLeft: 12,
-                      }}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                        style={{
-                          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                          transition: "transform 0.3s ease",
-                        }}
-                      >
-                        <path
-                          d="M2 5L7 10L12 5"
-                          stroke={isExpanded ? "#fff" : colors.textMuted}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                        gap: 4,
+                      }}>
+                        Mehr erfahren
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                          <path d="M5 2L10 7L5 12" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                  <p style={{
-                    fontSize: 14,
-                    color: colors.textMuted,
-                    margin: 0,
-                    marginBottom: isExpanded ? 16 : 0,
-                  }}>
-                    {item.subtitle}
-                  </p>
+                  ))}
+                </div>
+
+                {/* Modal für Details */}
+                {selectedAngebot && (
                   <div
                     style={{
-                      maxHeight: isExpanded ? 300 : 0,
-                      overflow: "hidden",
-                      transition: "max-height 0.3s ease",
+                      position: "fixed",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 100,
+                      padding: 16,
                     }}
+                    onClick={() => setExpandedAngebot(null)}
                   >
-                    <p style={{
-                      fontSize: 14,
-                      color: colors.textMuted,
-                      lineHeight: 1.7,
-                      margin: 0,
-                      paddingTop: 16,
-                      borderTop: `1px solid ${colors.border}`,
-                    }}>
-                      {item.desc}
-                    </p>
+                    <div
+                      style={{
+                        background: colors.white,
+                        borderRadius: 16,
+                        padding: 32,
+                        maxWidth: 500,
+                        width: "100%",
+                        maxHeight: "80vh",
+                        overflow: "auto",
+                        position: "relative",
+                        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => setExpandedAngebot(null)}
+                        style={{
+                          position: "absolute",
+                          top: 16,
+                          right: 16,
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: colors.bgLight,
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: 18,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: colors.textMuted,
+                        }}
+                      >
+                        ×
+                      </button>
+                      <div style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        background: colors.primary,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginBottom: 20,
+                      }}>
+                        <span style={{ fontSize: 24 }}>🎾</span>
+                      </div>
+                      <h3 style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: colors.text,
+                        margin: 0,
+                        marginBottom: 8,
+                      }}>
+                        {selectedAngebot.title}
+                      </h3>
+                      <p style={{
+                        fontSize: 14,
+                        color: colors.primary,
+                        fontWeight: 600,
+                        margin: 0,
+                        marginBottom: 20,
+                      }}>
+                        {selectedAngebot.subtitle}
+                      </p>
+                      <p style={{
+                        fontSize: 15,
+                        color: colors.textMuted,
+                        lineHeight: 1.8,
+                        margin: 0,
+                      }}>
+                        {selectedAngebot.desc}
+                      </p>
+                      <a
+                        href="/anmeldung-wedding"
+                        style={{
+                          display: "inline-block",
+                          background: colors.primary,
+                          color: "#fff",
+                          padding: "12px 24px",
+                          borderRadius: 8,
+                          fontWeight: 700,
+                          fontSize: 14,
+                          textDecoration: "none",
+                          marginTop: 24,
+                        }}
+                      >
+                        Jetzt anmelden
+                      </a>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </section>
 
