@@ -1123,18 +1123,6 @@ export default function BritzPage() {
                       >
                         ×
                       </button>
-                      <div style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 12,
-                        background: colors.primary,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginBottom: 20,
-                      }}>
-                        <span style={{ fontSize: 24 }}>🎾</span>
-                      </div>
                       <h3 style={{
                         fontSize: 24,
                         fontWeight: 700,
