@@ -959,9 +959,9 @@ export default function WeddingPage() {
           </div>
 
           <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 20,
           }}>
             {[
               {
@@ -999,62 +999,44 @@ export default function WeddingPage() {
               return (
                 <div
                   key={i}
+                  onClick={() => setExpandedAngebot(isExpanded ? null : i)}
                   style={{
                     background: colors.white,
                     border: `1px solid ${isExpanded ? colors.primary : colors.border}`,
                     borderRadius: 12,
-                    overflow: "hidden",
+                    padding: 24,
+                    cursor: "pointer",
                     transition: "all 0.3s ease",
                     boxShadow: isExpanded ? "0 8px 24px rgba(27, 71, 27, 0.12)" : "none",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    if (!isExpanded) {
+                      e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    if (!isExpanded) {
+                      e.currentTarget.style.boxShadow = "none";
+                    }
                   }}
                 >
-                  <button
-                    onClick={() => setExpandedAngebot(isExpanded ? null : i)}
-                    style={{
-                      width: "100%",
-                      padding: "20px 24px",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 16,
-                      transition: "background 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isExpanded) {
-                        e.currentTarget.style.background = "rgba(27, 71, 27, 0.03)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "none";
-                    }}
-                  >
-                    <div style={{ textAlign: "left" }}>
-                      <h3 style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        color: colors.text,
-                        marginBottom: 4,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}>
-                        {item.title}
-                      </h3>
-                      <p style={{
-                        fontSize: 14,
-                        color: colors.textMuted,
-                        margin: 0,
-                      }}>
-                        {item.subtitle}
-                      </p>
-                    </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <h3 style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: colors.text,
+                      margin: 0,
+                    }}>
+                      {item.title}
+                    </h3>
                     <div
                       style={{
-                        width: 32,
-                        height: 32,
+                        width: 28,
+                        height: 28,
                         borderRadius: "50%",
                         background: isExpanded ? colors.primary : colors.bgLight,
                         display: "flex",
@@ -1062,11 +1044,12 @@ export default function WeddingPage() {
                         justifyContent: "center",
                         transition: "all 0.3s ease",
                         flexShrink: 0,
+                        marginLeft: 12,
                       }}
                     >
                       <svg
-                        width="14"
-                        height="14"
+                        width="12"
+                        height="12"
                         viewBox="0 0 14 14"
                         fill="none"
                         style={{
@@ -1083,28 +1066,32 @@ export default function WeddingPage() {
                         />
                       </svg>
                     </div>
-                  </button>
+                  </div>
+                  <p style={{
+                    fontSize: 14,
+                    color: colors.textMuted,
+                    margin: 0,
+                    marginBottom: isExpanded ? 16 : 0,
+                  }}>
+                    {item.subtitle}
+                  </p>
                   <div
                     style={{
-                      maxHeight: isExpanded ? 500 : 0,
+                      maxHeight: isExpanded ? 300 : 0,
                       overflow: "hidden",
                       transition: "max-height 0.3s ease",
                     }}
                   >
-                    <div style={{
-                      padding: "0 24px 24px 24px",
+                    <p style={{
+                      fontSize: 14,
+                      color: colors.textMuted,
+                      lineHeight: 1.7,
+                      margin: 0,
+                      paddingTop: 16,
                       borderTop: `1px solid ${colors.border}`,
                     }}>
-                      <p style={{
-                        fontSize: 15,
-                        color: colors.textMuted,
-                        lineHeight: 1.7,
-                        marginTop: 20,
-                        marginBottom: 0,
-                      }}>
-                        {item.desc}
-                      </p>
-                    </div>
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               );
