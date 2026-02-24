@@ -1554,7 +1554,7 @@ export default function WeddingPage() {
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
-                BSC Rehberge 1945 e.V.<br />
+                BSC Rehberge 1945 e.V. Abt. Tennis<br />
                 Sambesistraße 11<br />
                 13351 Berlin-Wedding
               </p>
