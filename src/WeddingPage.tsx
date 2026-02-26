@@ -2019,6 +2019,7 @@ export default function WeddingPage() {
               maxHeight: "85vh",
               overflow: "auto",
               padding: 32,
+              borderRadius: 12,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2118,7 +2119,7 @@ export default function WeddingPage() {
                     color: "#fff",
                     border: "none",
                     padding: "14px 40px",
-                    borderRadius: 4,
+                    borderRadius: 8,
                     fontWeight: 700,
                     fontSize: 14,
                     cursor: "pointer",
@@ -2144,9 +2145,13 @@ export default function WeddingPage() {
                       height: 36,
                       background: colors.bgLight,
                       border: "none",
+                      borderRadius: 8,
                       cursor: "pointer",
                       fontSize: 20,
+                      transition: "background 0.2s",
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = colors.border}
+                    onMouseLeave={(e) => e.currentTarget.style.background = colors.bgLight}
                   >
                     &times;
                   </button>
@@ -2156,6 +2161,7 @@ export default function WeddingPage() {
                   background: colors.bgLight,
                   padding: 16,
                   borderLeft: `4px solid ${colors.primary}`,
+                  borderRadius: 8,
                   marginBottom: 24,
                 }}>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>
@@ -2181,7 +2187,7 @@ export default function WeddingPage() {
                     background: "#fee2e2",
                     color: "#dc2626",
                     padding: 12,
-                    borderRadius: 4,
+                    borderRadius: 8,
                     marginBottom: 16,
                     fontSize: 14,
                   }}>
@@ -2201,10 +2207,20 @@ export default function WeddingPage() {
                     disabled={bookingSubmitting}
                     style={{
                       width: "100%",
-                      padding: "10px 12px",
+                      padding: "12px 14px",
                       border: `1px solid ${colors.border}`,
-                      borderRadius: 2,
+                      borderRadius: 8,
                       fontSize: 15,
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                      outline: "none",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px rgba(27, 71, 27, 0.1)`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   />
                 </div>
@@ -2221,10 +2237,20 @@ export default function WeddingPage() {
                     disabled={bookingSubmitting}
                     style={{
                       width: "100%",
-                      padding: "10px 12px",
+                      padding: "12px 14px",
                       border: `1px solid ${colors.border}`,
-                      borderRadius: 2,
+                      borderRadius: 8,
                       fontSize: 15,
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                      outline: "none",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px rgba(27, 71, 27, 0.1)`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   />
                 </div>
@@ -2241,10 +2267,20 @@ export default function WeddingPage() {
                     disabled={bookingSubmitting}
                     style={{
                       width: "100%",
-                      padding: "10px 12px",
+                      padding: "12px 14px",
                       border: `1px solid ${colors.border}`,
-                      borderRadius: 2,
+                      borderRadius: 8,
                       fontSize: 15,
+                      transition: "border-color 0.2s, box-shadow 0.2s",
+                      outline: "none",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px rgba(27, 71, 27, 0.1)`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.boxShadow = "none";
                     }}
                   />
                 </div>
@@ -2258,12 +2294,23 @@ export default function WeddingPage() {
                     color: "#fff",
                     border: "none",
                     padding: "14px 24px",
-                    borderRadius: 2,
+                    borderRadius: 8,
                     fontWeight: 700,
                     fontSize: 15,
                     cursor: bookingSubmitting ? "not-allowed" : "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
+                    transition: "background 0.2s, transform 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!bookingSubmitting) {
+                      e.currentTarget.style.background = colors.primaryLight;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!bookingSubmitting) {
+                      e.currentTarget.style.background = colors.primary;
+                    }
                   }}
                 >
                   {bookingSubmitting ? "Wird gebucht..." : "Jetzt buchen"}
