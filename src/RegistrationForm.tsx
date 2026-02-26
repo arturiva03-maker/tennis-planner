@@ -432,7 +432,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
 
   if (success) {
     return (
-      <div className="registrationPage">
+      <div className={`registrationPage ${anlage === "Wedding" ? "weddingTheme" : ""}`}>
         <div className="card registrationCard">
           <div className="successIcon">&#10003;</div>
           <h1>Anmeldung erfolgreich!</h1>
@@ -446,7 +446,7 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
   }
 
   return (
-    <div className="registrationPage">
+    <div className={`registrationPage ${anlage === "Wedding" ? "weddingTheme" : ""}`}>
       <div className="card registrationCard">
         <h1>Trainingsanmeldung {anlage}</h1>
         <p className="muted" style={{ marginBottom: 16 }}>

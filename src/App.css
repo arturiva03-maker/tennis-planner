@@ -2239,3 +2239,44 @@ select:focus:not(:focus-visible) {
     font-size: 13px;
   }
 }
+
+/* Wedding Theme für Anmeldeformular */
+.weddingTheme {
+  --primary: #1b471b;
+  --primary-dark: #143714;
+  --primary-light: #418231;
+}
+
+.weddingTheme input:focus,
+.weddingTheme select:focus {
+  border-color: #1b471b;
+  box-shadow: 0 0 0 3px rgba(27, 71, 27, 0.15);
+}
+
+.weddingTheme .registrationFields textarea:focus {
+  border-color: #1b471b;
+  box-shadow: 0 0 0 3px rgba(27, 71, 27, 0.1);
+}
+
+.weddingTheme .btn {
+  background: #1b471b;
+  box-shadow: 0 4px 14px rgba(27, 71, 27, 0.35);
+}
+
+.weddingTheme .btn:hover {
+  background: #418231;
+  box-shadow: 0 6px 20px rgba(27, 71, 27, 0.45);
+}
+
+.weddingTheme .btn:active {
+  box-shadow: 0 2px 8px rgba(27, 71, 27, 0.3);
+}
+
+.weddingTheme a {
+  color: #1b471b;
+}
+
+.weddingTheme a:hover {
+  color: #418231;
+  }
+}
