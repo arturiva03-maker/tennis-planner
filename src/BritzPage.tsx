@@ -552,7 +552,7 @@ export default function BritzPage() {
     {
       name: "Jesper Fremuth",
       qualification: "Trainer",
-      bio: "",
+      bio: "Ehemaliger Leistungsspieler mit Erfahrung in den höchsten US-College-Ligen. Nach einer Verletzung widmet er sich nun leidenschaftlich dem Training.",
       image: "/jesper-fremuth.jpg",
       imageZoom: 1.3,
     },
