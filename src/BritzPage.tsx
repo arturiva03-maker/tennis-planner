@@ -613,7 +613,7 @@ export default function BritzPage() {
 
             {/* Desktop Menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
-              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -717,7 +717,7 @@ export default function BritzPage() {
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
             }}>
-              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+              {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -1623,8 +1623,86 @@ export default function BritzPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}>
+              FAQ
+            </p>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+              Häufig gestellte Fragen
+            </h2>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {[
+              {
+                q: "Ab welchem Alter kann mein Kind Tennis lernen?",
+                a: "Kinder ab 5 Jahren sind bei uns herzlich willkommen. Wir trainieren Kinder jeden Alters und jeder Spielstärke."
+              },
+              {
+                q: "Brauche ich eigene Ausrüstung?",
+                a: "Sandplatzschuhe oder glatte Schuhe ohne Profil sind Pflicht. Ein Tennisschläger ist erforderlich, kann jedoch für Probetrainings vom Trainerteam begrenzt zur Verfügung gestellt werden."
+              },
+              {
+                q: "Was ist der Unterschied zwischen Einzel- und Gruppentraining?",
+                a: "Im Einzeltraining erhalten Sie die volle Aufmerksamkeit des Trainers für gezielte, individuelle Verbesserung. Gruppentraining bietet zusätzlich Spielpraxis mit anderen und ist kostengünstiger."
+              },
+              {
+                q: "Wie groß sind die Trainingsgruppen?",
+                a: "Die reguläre Trainingsgruppe besteht aus 4 Personen. Kleinere Gruppen sind nach Absprache möglich."
+              },
+              {
+                q: "Kann ich eine Probestunde machen?",
+                a: "Ja, nehmen Sie dazu Kontakt per E-Mail oder WhatsApp auf. Nach dem Probetraining und dem Wunsch weiterzumachen erfolgt eine verbindliche Saisonanmeldung, sobald ein passender Trainingsslot gefunden wurde."
+              },
+              {
+                q: "Was passiert bei schlechtem Wetter?",
+                a: "Bei starkem Regen muss das Training pausiert werden, da die Plätze nicht bespielbar sind. Entscheidungen werden kurzfristig getroffen."
+              },
+              {
+                q: "Wie läuft die Anmeldung ab?",
+                a: "Nach Eingang Ihrer Anmeldung stimmen wir einen passenden Trainingsslot ab. Nach Vertragsunterzeichnung (SEPA-Mandat) ist die Anmeldung abgeschlossen."
+              },
+              {
+                q: "Muss ich Vereinsmitglied sein?",
+                a: "Grundsätzlich ja. Ausnahmen: Im Wintertraining ist für Erwachsene zunächst keine Mitgliedschaft nötig (Mitglieder werden bei Hallenkapazitäten priorisiert). Kinder dürfen eine Saison ohne Mitgliedschaft trainieren, müssen aber ab der zweiten Saison Mitglied werden."
+              },
+              {
+                q: "Kann ich als Erwachsener Anfänger starten?",
+                a: "Ja, jeder kann in jedem Alter beginnen. Für Anfänger (Kinder ab 12 und Erwachsene) empfehlen wir zunächst einige Einzelstunden, da Gruppen selten aus Anfängern bestehen."
+              },
+            ].map((faq, i) => (
+              <div
+                key={i}
+                style={{
+                  background: colors.bgLight,
+                  borderRadius: 12,
+                  padding: 24,
+                }}
+              >
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
+                  {faq.q}
+                </h3>
+                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                  {faq.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Kontakt Section */}
-      <section id="kontakt" style={{ padding: "80px 24px", background: colors.white }}>
+      <section id="kontakt" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
@@ -1786,7 +1864,7 @@ export default function BritzPage() {
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "Kontakt"].map((item) => (
+                {["Angebot", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
