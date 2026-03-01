@@ -1935,6 +1935,8 @@ export default function WeddingPage() {
               Artur Ivanenko (Gesellschafter)</p>
               <p style={{ marginTop: 16 }}><strong>Kontakt</strong></p>
               <p>E-Mail: tennisabisz@gmail.com</p>
+              <p style={{ marginTop: 16 }}><strong>Umsatzsteuer-ID</strong></p>
+              <p>USt-IdNr.: DE450839939</p>
             </div>
           </div>
         </div>
