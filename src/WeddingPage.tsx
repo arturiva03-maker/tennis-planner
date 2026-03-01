@@ -2002,7 +2002,7 @@ export default function WeddingPage() {
               <p style={{ marginTop: 16 }}><strong>4. Empfänger und Drittanbieter</strong></p>
               <p>• Supabase Inc. (Datenbank, Server in Frankfurt/EU)<br />
               • Vercel Inc. (Hosting, USA – EU-Standardvertragsklauseln)<br />
-              • Resend Inc. (E-Mail-Versand, USA – EU-Standardvertragsklauseln)</p>
+              • Google LLC (E-Mail-Versand via Gmail, USA – EU-Standardvertragsklauseln)</p>
 
               <p style={{ marginTop: 16 }}><strong>5. Speicherdauer</strong></p>
               <p>Ihre Daten werden gespeichert, solange die Geschäftsbeziehung besteht oder gesetzliche Aufbewahrungsfristen gelten. Anfragen werden nach Bearbeitung maximal 3 Jahre aufbewahrt.</p>
