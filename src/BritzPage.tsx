@@ -1670,7 +1670,7 @@ export default function BritzPage() {
               },
               {
                 q: "Wie läuft die Anmeldung ab?",
-                a: "Nach Eingang Ihrer Anmeldung stimmen wir einen passenden Trainingsslot ab. Nach Vertragsunterzeichnung (SEPA-Mandat) ist die Anmeldung abgeschlossen."
+                a: "Nach Eingang Ihrer Anmeldung stimmen wir einen passenden Trainingsslot ab. Nach Vertragsunterzeichnung (SEPA-Mandat) ist die Anmeldung abgeschlossen. Wichtig: Auch nach einmaliger Anmeldung ist für jede Folgesaison eine erneute Anmeldung erforderlich, da die Planung zweimal jährlich erfolgt (Sommer/Winter). Allen Teilnehmenden wird rechtzeitig ein Anmeldeformular zugesendet."
               },
               {
                 q: "Muss ich Vereinsmitglied sein?",
