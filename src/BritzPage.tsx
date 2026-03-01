@@ -64,6 +64,7 @@ export default function BritzPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showImpressum, setShowImpressum] = useState(false);
   const [showDatenschutz, setShowDatenschutz] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Spontane Stunden Buchung
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
@@ -1686,15 +1687,42 @@ export default function BritzPage() {
                 style={{
                   background: colors.bgLight,
                   borderRadius: 12,
-                  padding: 24,
+                  overflow: "hidden",
                 }}
               >
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
-                  {faq.q}
-                </h3>
-                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
-                  {faq.a}
-                </p>
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
+                  style={{
+                    width: "100%",
+                    padding: 24,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    textAlign: "left",
+                  }}
+                >
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
+                    {faq.q}
+                  </h3>
+                  <span style={{
+                    fontSize: 20,
+                    color: colors.primary,
+                    transform: openFaqIndex === i ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s",
+                  }}>
+                    ▼
+                  </span>
+                </button>
+                {openFaqIndex === i && (
+                  <div style={{ padding: "0 24px 24px" }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                      {faq.a}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
