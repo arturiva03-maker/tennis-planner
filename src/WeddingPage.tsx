@@ -1212,7 +1212,7 @@ export default function WeddingPage() {
               </h3>
 
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 12, flex: 1 }}>
-                Sichern Sie sich jetzt Ihren Platz für die Sommersaison.
+                Die Wintersaison läuft noch bis zum 26.3., danach beginnt der Hallenabbau. Die Sommersaison startet voraussichtlich nach den Osterferien. Der genaue Trainingsstart wird mit der Bestätigung der Trainingszeit mitgeteilt.
               </p>
               <p style={{ fontSize: 15, fontWeight: 700, color: "#ff6b6b", marginBottom: 16 }}>
                 Anmeldung bis 10.3.!
