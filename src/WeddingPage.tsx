@@ -1989,10 +1989,32 @@ export default function WeddingPage() {
               <p>Tennisschule Zlatan Palazov und Artur Ivanenko GbR<br />
               Ricarda-Huch-Straße 40, 14480 Potsdam<br />
               E-Mail: tennisabisz@gmail.com</p>
-              <p style={{ marginTop: 16 }}><strong>2. Ihre Rechte</strong></p>
-              <p>Sie haben jederzeit das Recht auf Auskunft, Berichtigung oder Löschung Ihrer Daten.</p>
-              <p style={{ marginTop: 16 }}><strong>3. Hosting</strong></p>
-              <p>Diese Website wird extern gehostet. Erfasste Daten werden auf den Servern des Hosters gespeichert.</p>
+
+              <p style={{ marginTop: 16 }}><strong>2. Erhobene Daten</strong></p>
+              <p>Bei Nutzung unserer Dienste erheben wir folgende Daten:</p>
+              <p>• Anmeldeformular: Name, E-Mail, Telefon, Verfügbarkeit, Trainingsart, Erfahrungslevel, Alter, Nachricht<br />
+              • Buchungsformular: Name, E-Mail, Telefon<br />
+              • Technische Daten: IP-Adresse, Browsertyp, Zugriffszeit (durch Hosting-Anbieter)</p>
+
+              <p style={{ marginTop: 16 }}><strong>3. Zweck und Rechtsgrundlage</strong></p>
+              <p>Wir verarbeiten Ihre Daten zur Durchführung von Trainingsanfragen und Buchungen (Art. 6 Abs. 1 lit. b DSGVO – Vertragserfüllung) sowie zur Kontaktaufnahme (Art. 6 Abs. 1 lit. f DSGVO – berechtigtes Interesse).</p>
+
+              <p style={{ marginTop: 16 }}><strong>4. Empfänger und Drittanbieter</strong></p>
+              <p>• Supabase Inc. (Datenbank, Server in Frankfurt/EU)<br />
+              • Vercel Inc. (Hosting, USA – EU-Standardvertragsklauseln)<br />
+              • Resend Inc. (E-Mail-Versand, USA – EU-Standardvertragsklauseln)</p>
+
+              <p style={{ marginTop: 16 }}><strong>5. Speicherdauer</strong></p>
+              <p>Ihre Daten werden gespeichert, solange die Geschäftsbeziehung besteht oder gesetzliche Aufbewahrungsfristen gelten. Anfragen werden nach Bearbeitung maximal 3 Jahre aufbewahrt.</p>
+
+              <p style={{ marginTop: 16 }}><strong>6. Ihre Rechte</strong></p>
+              <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Kontaktieren Sie uns unter tennisabisz@gmail.com.</p>
+
+              <p style={{ marginTop: 16 }}><strong>7. Beschwerderecht</strong></p>
+              <p>Sie haben das Recht, sich bei der zuständigen Datenschutz-Aufsichtsbehörde zu beschweren (für Brandenburg: Die Landesbeauftragte für den Datenschutz und für das Recht auf Akteneinsicht).</p>
+
+              <p style={{ marginTop: 16 }}><strong>8. SSL-Verschlüsselung</strong></p>
+              <p>Diese Website nutzt HTTPS für eine sichere Datenübertragung.</p>
             </div>
           </div>
         </div>
