@@ -32,27 +32,29 @@ export default function WeddingRegistrationWrapper() {
             onClick={() => setUserType("existing")}
             style={{
               padding: "20px 24px",
-              background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-              color: "#fff",
-              border: "none",
+              background: "#fff",
+              color: "#1f2937",
+              border: "1px solid #e5e7eb",
               borderRadius: 12,
               cursor: "pointer",
               textAlign: "left",
-              transition: "transform 0.2s, box-shadow 0.2s",
+              transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(37, 99, 235, 0.3)";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.1)";
+              e.currentTarget.style.borderColor = "#2563eb";
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.borderColor = "#e5e7eb";
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
               Ich nehme bereits am Training teil
             </div>
-            <div style={{ opacity: 0.9, fontSize: 14 }}>
+            <div style={{ color: "#6b7280", fontSize: 14 }}>
               Saisonanmeldung für bestehende Teilnehmer
             </div>
           </button>
@@ -61,27 +63,29 @@ export default function WeddingRegistrationWrapper() {
             onClick={() => setUserType("new")}
             style={{
               padding: "20px 24px",
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-              color: "#fff",
-              border: "none",
+              background: "#fff",
+              color: "#1f2937",
+              border: "1px solid #e5e7eb",
               borderRadius: 12,
               cursor: "pointer",
               textAlign: "left",
-              transition: "transform 0.2s, box-shadow 0.2s",
+              transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(245, 158, 11, 0.3)";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.1)";
+              e.currentTarget.style.borderColor = "#2563eb";
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.borderColor = "#e5e7eb";
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
               Ich bin neu und möchte ein Probetraining buchen
             </div>
-            <div style={{ opacity: 0.9, fontSize: 14 }}>
+            <div style={{ color: "#6b7280", fontSize: 14 }}>
               Für alle, die zum ersten Mal bei uns trainieren möchten
             </div>
           </button>
