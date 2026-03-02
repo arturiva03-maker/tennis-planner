@@ -44,11 +44,12 @@ const UHRZEITEN = [
 
 type RegistrationFormProps = {
   anlage: "Wedding" | "Britz";
+  redirectUrl?: string;
 };
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-export default function RegistrationForm({ anlage }: RegistrationFormProps) {
+export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
@@ -431,6 +432,12 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
   }
 
   if (success) {
+    if (redirectUrl) {
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 3000);
+    }
+
     return (
       <div className={`registrationPage ${anlage === "Wedding" ? "weddingTheme" : ""}`}>
         <div className="card registrationCard">
@@ -440,6 +447,11 @@ export default function RegistrationForm({ anlage }: RegistrationFormProps) {
             Vielen Dank für Ihre Anmeldung. Wir werden uns in Kürze bei Ihnen
             melden.
           </p>
+          {redirectUrl && (
+            <p className="muted" style={{ marginTop: 16, fontSize: 14 }}>
+              Sie werden automatisch weitergeleitet...
+            </p>
+          )}
         </div>
       </div>
     );

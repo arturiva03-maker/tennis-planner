@@ -10,7 +10,7 @@ export default function WeddingRegistrationWrapper() {
 
   // If user selected existing, show normal registration form
   if (userType === "existing") {
-    return <RegistrationForm anlage="Wedding" />;
+    return <RegistrationForm anlage="Wedding" redirectUrl="/wedding" />;
   }
 
   // If user selected new, show probetraining form
