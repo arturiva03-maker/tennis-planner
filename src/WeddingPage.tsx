@@ -1757,6 +1757,24 @@ export default function WeddingPage() {
                     <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
                       {faq.a}
                     </p>
+                    {faq.q.includes("Probestunde") && (
+                      <a
+                        href="/anmeldung-wedding"
+                        style={{
+                          display: "inline-block",
+                          marginTop: 12,
+                          padding: "8px 16px",
+                          background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                          color: "#fff",
+                          borderRadius: 6,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                        }}
+                      >
+                        Probetraining anfragen
+                      </a>
+                    )}
                   </div>
                 )}
               </div>
