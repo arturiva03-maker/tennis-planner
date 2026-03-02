@@ -987,11 +987,6 @@ export default function WeddingPage() {
                 desc: "Im Gruppentraining profitierst du von abwechslungsreichen Spielformen, Teamdynamik und der Motivation, die eine Gruppe mitbringt. Durch angepasste Aufgaben und verschiedene Leistungsstufen kommt jeder auf seine Kosten – vom Einsteiger bis zum Mannschaftsspieler."
               },
               {
-                title: "Tarife",
-                subtitle: "Unsere Preise",
-                desc: "Einzeltraining: 40 € pro Stunde\nGruppentraining: 60 € pro Monat\n\nIm Winter zzgl. Hallengebühren."
-              },
-              {
                 title: "Camps",
                 subtitle: "In den Sommerferien",
                 desc: "In unseren Tenniscamps in den Sommerferien erleben Kinder und Erwachsene intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß – der perfekte Einstieg oder die ideale Ergänzung zum regulären Training."
@@ -1039,7 +1034,7 @@ export default function WeddingPage() {
                 </button>
                 {expandedAngebot === i && (
                   <div style={{ padding: "0 24px 24px" }}>
-                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
                       {item.desc}
                     </p>
                   </div>
@@ -1047,6 +1042,70 @@ export default function WeddingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Tarife Section */}
+      <section id="tarife" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <p style={{
+              fontSize: 12,
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              marginBottom: 8,
+              fontWeight: 600,
+            }}>
+              Tarife
+            </p>
+            <h2 style={{
+              fontSize: 28,
+              fontWeight: 700,
+              color: colors.text,
+              marginBottom: 16,
+            }}>
+              Unsere Preise
+            </h2>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{
+              background: colors.bgLight,
+              borderRadius: 12,
+              padding: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              border: `1px solid ${colors.border}`,
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>Einzeltraining</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: colors.primary }}>40 € / Stunde</span>
+            </div>
+
+            <div style={{
+              background: colors.bgLight,
+              borderRadius: 12,
+              padding: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              border: `1px solid ${colors.border}`,
+            }}>
+              <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>Gruppentraining</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: colors.primary }}>60 € / Monat</span>
+            </div>
+          </div>
+
+          <p style={{
+            marginTop: 24,
+            fontSize: 13,
+            color: colors.textMuted,
+            textAlign: "center",
+            fontStyle: "italic",
+          }}>
+            Im Winter zzgl. Hallengebühren
+          </p>
         </div>
       </section>
 
