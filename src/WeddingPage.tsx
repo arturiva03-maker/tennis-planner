@@ -978,12 +978,12 @@ export default function WeddingPage() {
               },
               {
                 title: "Einzeltraining",
-                subtitle: "Maximale Intensität",
+                subtitle: "40 € / Stunde",
                 desc: "Im Einzeltraining steht dein Spiel im Mittelpunkt. Wir arbeiten gezielt an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Trainingsintensität. Ob Feinschliff am Aufschlag, Vorbereitung auf ein Turnier oder systematischer Technikaufbau: Jede Stunde ist auf dich zugeschnitten."
               },
               {
                 title: "Gruppentraining",
-                subtitle: "Teamdynamik & Spielformen",
+                subtitle: "60 € / Monat",
                 desc: "Im Gruppentraining profitierst du von abwechslungsreichen Spielformen, Teamdynamik und der Motivation, die eine Gruppe mitbringt. Durch angepasste Aufgaben und verschiedene Leistungsstufen kommt jeder auf seine Kosten – vom Einsteiger bis zum Mannschaftsspieler."
               },
               {
@@ -1042,6 +1042,16 @@ export default function WeddingPage() {
               </div>
             ))}
           </div>
+
+          <p style={{
+            marginTop: 24,
+            fontSize: 13,
+            color: colors.textMuted,
+            textAlign: "center",
+            fontStyle: "italic",
+          }}>
+            Im Winter zzgl. Hallengebühren
+          </p>
         </div>
       </section>
 
