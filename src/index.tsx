@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import RegistrationForm from './RegistrationForm';
+import WeddingRegistrationWrapper from './WeddingRegistrationWrapper';
 import SepaForm from './SepaForm';
 import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
@@ -21,8 +22,8 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/anmeldung" element={<RegistrationForm anlage="Wedding" />} />
-        <Route path="/anmeldung-wedding" element={<RegistrationForm anlage="Wedding" />} />
+        <Route path="/anmeldung" element={<WeddingRegistrationWrapper />} />
+        <Route path="/anmeldung-wedding" element={<WeddingRegistrationWrapper />} />
         <Route path="/anmeldung-britz" element={<RegistrationForm anlage="Britz" />} />
         <Route path="/sepa" element={<SepaForm />} />
         <Route path="/agb" element={<AGBPage />} />
