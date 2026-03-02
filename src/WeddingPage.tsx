@@ -959,8 +959,8 @@ export default function WeddingPage() {
             </h2>
           </div>
 
-          {(() => {
-            const angebote = [
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {[
               {
                 title: "Kindertraining",
                 subtitle: "ab 5 Jahren",
@@ -991,160 +991,57 @@ export default function WeddingPage() {
                 subtitle: "In den Sommerferien",
                 desc: "In unseren Tenniscamps in den Sommerferien erleben Kinder und Erwachsene intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß – der perfekte Einstieg oder die ideale Ergänzung zum regulären Training."
               },
-            ];
-            const selectedAngebot = expandedAngebot !== null ? angebote[expandedAngebot] : null;
-            return (
-              <>
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: 20,
-                }}>
-                  {angebote.map((item, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setExpandedAngebot(i)}
-                      style={{
-                        background: colors.white,
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: 12,
-                        padding: 24,
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        display: "flex",
-                        flexDirection: "column",
-                        textAlign: "center",
-                        minHeight: 120,
-                        justifyContent: "center",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)";
-                        e.currentTarget.style.borderColor = colors.primary;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "none";
-                        e.currentTarget.style.borderColor = colors.border;
-                      }}
-                    >
-                      <h3 style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        color: colors.text,
-                        margin: 0,
-                        marginBottom: 8,
-                      }}>
-                        {item.title}
-                      </h3>
-                      <p style={{
-                        fontSize: 14,
-                        color: colors.textMuted,
-                        margin: 0,
-                      }}>
-                        {item.subtitle}
-                      </p>
-                      <div style={{
-                        marginTop: 12,
-                        fontSize: 12,
-                        color: colors.primary,
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 4,
-                      }}>
-                        Mehr erfahren
-                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                          <path d="M5 2L10 7L5 12" stroke={colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Modal für Details */}
-                {selectedAngebot && (
-                  <div
-                    style={{
-                      position: "fixed",
-                      inset: 0,
-                      background: "rgba(0,0,0,0.5)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      zIndex: 100,
-                      padding: 16,
-                    }}
-                    onClick={() => setExpandedAngebot(null)}
-                  >
-                    <div
-                      style={{
-                        background: colors.white,
-                        borderRadius: 16,
-                        padding: 32,
-                        maxWidth: 500,
-                        width: "100%",
-                        maxHeight: "80vh",
-                        overflow: "auto",
-                        position: "relative",
-                        boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        onClick={() => setExpandedAngebot(null)}
-                        style={{
-                          position: "absolute",
-                          top: 16,
-                          right: 16,
-                          width: 32,
-                          height: 32,
-                          borderRadius: "50%",
-                          background: colors.bgLight,
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: 18,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: colors.textMuted,
-                        }}
-                      >
-                        ×
-                      </button>
-                      <h3 style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: colors.text,
-                        margin: 0,
-                        marginBottom: 8,
-                      }}>
-                        {selectedAngebot.title}
-                      </h3>
-                      <p style={{
-                        fontSize: 14,
-                        color: colors.primary,
-                        fontWeight: 600,
-                        margin: 0,
-                        marginBottom: 20,
-                      }}>
-                        {selectedAngebot.subtitle}
-                      </p>
-                      <p style={{
-                        fontSize: 15,
-                        color: colors.textMuted,
-                        lineHeight: 1.8,
-                        margin: 0,
-                      }}>
-                        {selectedAngebot.desc}
-                      </p>
-                    </div>
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  background: colors.white,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                <button
+                  onClick={() => setExpandedAngebot(expandedAngebot === i ? null : i)}
+                  style={{
+                    width: "100%",
+                    padding: 24,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    textAlign: "left",
+                  }}
+                >
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
+                      {item.title}
+                    </h3>
+                    <p style={{ fontSize: 14, color: colors.textMuted, margin: "4px 0 0 0" }}>
+                      {item.subtitle}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: 20,
+                    color: colors.primary,
+                    transform: expandedAngebot === i ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s",
+                  }}>
+                    ▼
+                  </span>
+                </button>
+                {expandedAngebot === i && (
+                  <div style={{ padding: "0 24px 24px" }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                      {item.desc}
+                    </p>
                   </div>
                 )}
-              </>
-            );
-          })()}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
