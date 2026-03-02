@@ -10,7 +10,6 @@ type FormData = {
   hatTennisGespielt: string;
   spielstand: string;
   istVreinsmitglied: string;
-  istKind: boolean;
   email: string;
   telefon: string;
   verfuegbarkeit: Record<Wochentag, string>;
@@ -47,7 +46,6 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
     hatTennisGespielt: "",
     spielstand: "",
     istVreinsmitglied: "",
-    istKind: false,
     email: "",
     telefon: "",
     verfuegbarkeit: {
@@ -279,7 +277,6 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
           <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Schon Tennis gespielt?</td><td style="padding: 8px 0; font-weight: 500;">${hatGespieltText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Spielstand</td><td style="padding: 8px 0; font-weight: 500;">${spielstandText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Bereits Vereinsmitglied?</td><td style="padding: 8px 0; font-weight: 500;">${mitgliedText}</td></tr>
-          ${formData.istKind ? `<tr><td style="padding: 8px 0; color: #6b7280;">Kind (mitgliedsfrei)</td><td style="padding: 8px 0; font-weight: 500;">Ja - erste Saison mitgliedsfrei</td></tr>` : ""}
         </table>
       </div>
 
@@ -296,9 +293,9 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
         </table>
       </div>
 
-      ${formData.istVreinsmitglied === "nein" && !formData.istKind ? `
+      ${formData.istVreinsmitglied === "nein" ? `
       <div class="highlight">
-        <strong>Hinweis:</strong> Noch kein Vereinsmitglied. Nach dem Probetraining wird eine Vereinsmitgliedschaft benötigt.
+        <strong>Hinweis:</strong> Noch kein Vereinsmitglied.
       </div>
       ` : ""}
     </div>
@@ -321,7 +318,7 @@ Tenniserfahrung:
 Schon Tennis gespielt: ${hatGespieltText}
 Spielstand: ${spielstandText}
 Vereinsmitglied: ${mitgliedText}
-${formData.istKind ? "Kind: Ja - erste Saison mitgliedsfrei\n" : ""}
+
 Verfügbarkeit:
 ${WOCHENTAGE.map(({ key, label }) => `${label}: ${verfuegbarkeitFinal[key]}`).join("\n")}
 
@@ -329,7 +326,7 @@ Kontaktdaten:
 ${formData.email ? `E-Mail: ${formData.email}` : ""}
 ${formData.telefon ? `Telefon: ${formData.telefon}` : ""}
 
-${formData.istVreinsmitglied === "nein" && !formData.istKind ? "Hinweis: Noch kein Vereinsmitglied. Nach dem Probetraining wird eine Vereinsmitgliedschaft benötigt." : ""}`;
+${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." : ""}`;
 
     try {
       // E-Mail an Trainer senden
@@ -355,6 +352,11 @@ ${formData.istVreinsmitglied === "nein" && !formData.istKind ? "Hinweis: Noch ke
   }
 
   if (success) {
+    // Automatisch zur Wedding-Seite weiterleiten nach 3 Sekunden
+    setTimeout(() => {
+      window.location.href = "/wedding";
+    }, 3000);
+
     return (
       <div className="registrationPage weddingTheme">
         <div className="card registrationCard">
@@ -363,21 +365,9 @@ ${formData.istVreinsmitglied === "nein" && !formData.istKind ? "Hinweis: Noch ke
           <p className="muted">
             Vielen Dank für Ihre Probetraining-Anfrage. Wir werden uns in Kürze bei Ihnen melden, um einen Termin zu vereinbaren.
           </p>
-          <button
-            onClick={onBack}
-            style={{
-              marginTop: 24,
-              padding: "12px 24px",
-              background: "var(--primary)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Zurück zur Auswahl
-          </button>
+          <p className="muted" style={{ marginTop: 16, fontSize: 14 }}>
+            Sie werden automatisch weitergeleitet...
+          </p>
         </div>
       </div>
     );
@@ -544,25 +534,25 @@ ${formData.istVreinsmitglied === "nein" && !formData.istKind ? "Hinweis: Noch ke
                     border: "1px solid #f59e0b",
                     borderRadius: 8,
                     padding: 16,
-                    marginBottom: 16,
                   }}>
-                    <p style={{ margin: 0, fontWeight: 500, color: "#92400e" }}>
-                      Nach einem Probetraining wird eine Mitgliedschaft im Verein vorausgesetzt, um am regulären Training teilzunehmen.
+                    <p style={{ margin: 0, color: "#92400e", lineHeight: 1.6 }}>
+                      Nach dem Probetraining erhalten Sie Informationen zum Aufnahmeprozess. Bitte erkundigen Sie sich zu Mitgliedsbedingungen auf der Website des Tennisvereins:{" "}
+                      <a
+                        href="https://bscrehberge-tennis.de/verein/mitgliedschaft/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#92400e", fontWeight: 600 }}
+                      >
+                        bscrehberge-tennis.de
+                      </a>
+                    </p>
+                    <p style={{ margin: "12px 0 0 0", color: "#92400e", fontWeight: 500 }}>
+                      Das Probetraining ist unverbindlich.
+                    </p>
+                    <p style={{ margin: "12px 0 0 0", color: "#92400e", fontSize: 14 }}>
+                      <strong>Hinweis:</strong> Kinder dürfen 1 Saison mitgliedsfrei trainieren.
                     </p>
                   </div>
-
-                  <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      name="istKind"
-                      checked={formData.istKind}
-                      onChange={handleChange}
-                      style={{ width: "auto", marginTop: 3 }}
-                    />
-                    <span>
-                      <strong>Kind:</strong> Kinder dürfen 1 Saison mitgliedsfrei trainieren
-                    </span>
-                  </label>
                 </div>
               )}
             </div>
