@@ -1596,7 +1596,7 @@ export default function WeddingPage() {
               },
               {
                 q: "Kann ich eine Probestunde machen?",
-                a: "Ja, nehmen Sie dazu Kontakt per E-Mail oder WhatsApp auf. Nach dem Probetraining und dem Wunsch weiterzumachen erfolgt eine verbindliche Saisonanmeldung, sobald ein passender Trainingsslot gefunden wurde."
+                a: "Ja, melden Sie sich für ein Probetraining an. Nach dem Probetraining und dem Wunsch weiterzumachen erfolgt eine verbindliche Saisonanmeldung, sobald ein passender Trainingsslot gefunden wurde."
               },
               {
                 q: "Was passiert bei schlechtem Wetter?",
