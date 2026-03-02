@@ -978,13 +978,18 @@ export default function WeddingPage() {
               },
               {
                 title: "Einzeltraining",
-                subtitle: "40 € / Stunde",
+                subtitle: "Maximale Intensität",
                 desc: "Im Einzeltraining steht dein Spiel im Mittelpunkt. Wir arbeiten gezielt an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Trainingsintensität. Ob Feinschliff am Aufschlag, Vorbereitung auf ein Turnier oder systematischer Technikaufbau: Jede Stunde ist auf dich zugeschnitten."
               },
               {
                 title: "Gruppentraining",
-                subtitle: "60 € / Monat",
+                subtitle: "Teamdynamik & Spielformen",
                 desc: "Im Gruppentraining profitierst du von abwechslungsreichen Spielformen, Teamdynamik und der Motivation, die eine Gruppe mitbringt. Durch angepasste Aufgaben und verschiedene Leistungsstufen kommt jeder auf seine Kosten – vom Einsteiger bis zum Mannschaftsspieler."
+              },
+              {
+                title: "Tarife",
+                subtitle: "Unsere Preise",
+                desc: "Einzeltraining: 40 € pro Stunde\nGruppentraining: 60 € pro Monat\n\nIm Winter zzgl. Hallengebühren."
               },
               {
                 title: "Camps",
@@ -1034,7 +1039,7 @@ export default function WeddingPage() {
                 </button>
                 {expandedAngebot === i && (
                   <div style={{ padding: "0 24px 24px" }}>
-                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0, whiteSpace: "pre-line" }}>
                       {item.desc}
                     </p>
                   </div>
@@ -1042,16 +1047,6 @@ export default function WeddingPage() {
               </div>
             ))}
           </div>
-
-          <p style={{
-            marginTop: 24,
-            fontSize: 13,
-            color: colors.textMuted,
-            textAlign: "center",
-            fontStyle: "italic",
-          }}>
-            Im Winter zzgl. Hallengebühren
-          </p>
         </div>
       </section>
 
