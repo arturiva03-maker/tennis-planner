@@ -52,7 +52,7 @@ export default function WeddingRegistrationWrapper() {
             }}
           >
             <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
-              Ich nehme bereits am Training teil
+              Ich nehme bereits am Training teil oder möchte ein regelmäßiges Training buchen
             </div>
             <div style={{ color: "#6b7280", fontSize: 14 }}>
               Saisonanmeldung für bestehende Teilnehmer
