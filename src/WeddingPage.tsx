@@ -977,6 +977,11 @@ export default function WeddingPage() {
                 desc: "Ob Einsteiger, Wiedereinsteiger oder Clubspieler – unser Training für Erwachsene orientiert sich am Tennis-Xpress-Konzept des DTB. Verständliche Erklärungen, schnelle Spielfähigkeit und ein Training, das Fitness und Spaß verbindet. Bei Bedarf kommen auch druckreduzierte Bälle zum Einsatz, um den Einstieg zu erleichtern und Technik sauber aufzubauen."
               },
               {
+                title: "Mannschaftstraining",
+                subtitle: "Wettkampforientiert",
+                desc: "Spieler oder Mannschaften bestimmter Spielstärke (Mannschafts- oder Turnierspieler) haben die Möglichkeit, mit gleichstarken Spielern und einem Trainer an einem wettkampforientierten Training teilzunehmen."
+              },
+              {
                 title: "Einzeltraining",
                 subtitle: "Maximale Intensität",
                 desc: "Im Einzeltraining steht dein Spiel im Mittelpunkt. Wir arbeiten gezielt an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Trainingsintensität. Ob Feinschliff am Aufschlag, Vorbereitung auf ein Turnier oder systematischer Technikaufbau: Jede Stunde ist auf dich zugeschnitten."
