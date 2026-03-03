@@ -93,6 +93,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showMinDaysPopup, setShowMinDaysPopup] = useState(false);
 
   function handleChange(
     e: React.ChangeEvent<
@@ -183,6 +184,18 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
 
     if (!formData.trainings_pro_woche) {
       setError("Bitte wählen Sie die gewünschte Anzahl Trainings pro Woche.");
+      return;
+    }
+
+    // Prüfen ob mindestens 3 verfügbare Tage angegeben wurden
+    const verfuegbareTage = WOCHENTAGE.filter(({ key }) => {
+      const hasTime = zeitVon[key] && zeitBis[key];
+      const isNichtVerfuegbar = nichtVerfuegbar[key];
+      return hasTime && !isNichtVerfuegbar;
+    }).length;
+
+    if (verfuegbareTage < 3) {
+      setShowMinDaysPopup(true);
       return;
     }
 
@@ -715,6 +728,54 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
           </div>
         </form>
       </div>
+
+      {/* Popup für zu wenige verfügbare Tage */}
+      {showMinDaysPopup && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowMinDaysPopup(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: 16,
+              padding: "32px 40px",
+              maxWidth: 400,
+              textAlign: "center",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 48, marginBottom: 16 }}>
+              &#8987;
+            </div>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: 20 }}>
+              Mehr Verfügbarkeit benötigt
+            </h3>
+            <p style={{ margin: "0 0 24px 0", color: "#6b7280", lineHeight: 1.6 }}>
+              Bitte geben Sie mindestens 3 verfügbare Tage an, da sonst eine passende Zeiteinteilung schwer ist.
+            </p>
+            <button
+              onClick={() => setShowMinDaysPopup(false)}
+              className="btn"
+              style={{ minWidth: 120 }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
