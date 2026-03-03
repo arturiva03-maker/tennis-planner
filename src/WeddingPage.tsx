@@ -1020,14 +1020,9 @@ export default function WeddingPage() {
                     textAlign: "left",
                   }}
                 >
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
-                      {item.title}
-                    </h3>
-                    <p style={{ fontSize: 14, color: colors.textMuted, margin: "4px 0 0 0" }}>
-                      {item.subtitle}
-                    </p>
-                  </div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
+                    {item.title}
+                  </h3>
                   <span style={{
                     fontSize: 20,
                     color: colors.primary,
