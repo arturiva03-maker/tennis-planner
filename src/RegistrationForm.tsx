@@ -188,14 +188,29 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
       return;
     }
 
-    // Prüfen ob mindestens 3 verfügbare Tage angegeben wurden (nur Hinweis, kein Blocker)
-    const verfuegbareTage = WOCHENTAGE.filter(({ key }) => {
+    // Prüfen ob genug Verfügbarkeit angegeben wurde (nur Hinweis, kein Blocker)
+    // Bedingung: mindestens 3 Tage ODER weniger Tage aber mindestens 8 Stunden insgesamt
+    const verfuegbareTageKeys = WOCHENTAGE.filter(({ key }) => {
       const hasTime = zeitVon[key] && zeitBis[key];
       const isNichtVerfuegbar = nichtVerfuegbar[key];
       return hasTime && !isNichtVerfuegbar;
-    }).length;
+    }).map(({ key }) => key);
 
-    if (verfuegbareTage < 3 && !minDaysWarningShown) {
+    const verfuegbareTage = verfuegbareTageKeys.length;
+
+    // Berechne Gesamtstunden
+    let gesamtStunden = 0;
+    for (const key of verfuegbareTageKeys) {
+      const von = parseInt(zeitVon[key].split(":")[0], 10);
+      const bis = parseInt(zeitBis[key].split(":")[0], 10);
+      if (!isNaN(von) && !isNaN(bis) && bis > von) {
+        gesamtStunden += bis - von;
+      }
+    }
+
+    const genugVerfuegbarkeit = verfuegbareTage >= 3 || gesamtStunden >= 8;
+
+    if (!genugVerfuegbarkeit && !minDaysWarningShown) {
       setShowMinDaysPopup(true);
       return;
     }
@@ -759,8 +774,11 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             <div style={{ fontSize: 48, marginBottom: 16 }}>
               &#8987;
             </div>
-            <p style={{ margin: "0 0 24px 0", color: "#374151", lineHeight: 1.6, fontSize: 16 }}>
-              Sie haben weniger als 3 verfügbare Tage angegeben. In diesem Fall könnte eine passende Zeiteinteilung schwer werden. Möchten Sie fortfahren?
+            <p style={{ margin: "0 0 16px 0", color: "#374151", lineHeight: 1.6, fontSize: 16 }}>
+              Sie haben weniger als 3 verfügbare Tage angegeben. In diesem Fall könnte eine passende Zeiteinteilung schwer werden.
+            </p>
+            <p style={{ margin: "0 0 24px 0", color: "#6b7280", lineHeight: 1.6, fontSize: 14 }}>
+              Möglicherweise bekommen Sie kein passendes Training. Bitte geben Sie mehr verfügbare Tage oder eine größere Zeitspanne an.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
               <button
