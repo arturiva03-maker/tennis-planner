@@ -793,7 +793,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
                   fontWeight: 500,
                 }}
               >
-                Abbrechen
+                Verfügbarkeiten anpassen
               </button>
               <button
                 onClick={() => {
