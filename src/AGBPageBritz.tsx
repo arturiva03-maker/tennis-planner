@@ -21,7 +21,7 @@ export default function AGBPageBritz() {
             <tbody>
               <tr>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Gruppentraining (3-5 Personen)</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>60 EUR pro Monat</strong></td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>60 EUR pro Monat</strong> (für 1x wöchentliches Training)</td>
               </tr>
               <tr>
                 <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Einzeltraining</td>
