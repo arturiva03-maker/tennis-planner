@@ -790,7 +790,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>
-              ⏱️
+              ⚠️
             </div>
             <p style={{ margin: "0 0 16px 0", color: "#374151", lineHeight: 1.6, fontSize: 16 }}>
               Sie haben weniger als 3 Tage angegeben oder eine Zeitspanne von weniger als insgesamt 8 Stunden.
