@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
@@ -95,6 +95,24 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
   const [loading, setLoading] = useState(false);
   const [showMinDaysPopup, setShowMinDaysPopup] = useState(false);
   const [minDaysWarningShown, setMinDaysWarningShown] = useState(false);
+  const [popupCountdown, setPopupCountdown] = useState(5);
+
+  // Countdown für Popup starten wenn es geöffnet wird
+  useEffect(() => {
+    if (showMinDaysPopup) {
+      setPopupCountdown(5);
+      const interval = setInterval(() => {
+        setPopupCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [showMinDaysPopup]);
 
   function handleChange(
     e: React.ChangeEvent<
@@ -772,24 +790,30 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             }}
           >
             <div style={{ fontSize: 48, marginBottom: 16 }}>
-              &#8987;
+              ⏱️
             </div>
             <p style={{ margin: "0 0 16px 0", color: "#374151", lineHeight: 1.6, fontSize: 16 }}>
-              Sie haben weniger als 3 verfügbare Tage angegeben. In diesem Fall könnte eine passende Zeiteinteilung schwer werden.
+              Sie haben weniger als 3 Tage angegeben oder eine Zeitspanne von weniger als insgesamt 8 Stunden.
             </p>
             <p style={{ margin: "0 0 24px 0", color: "#6b7280", lineHeight: 1.6, fontSize: 14 }}>
               Möglicherweise bekommen Sie kein passendes Training. Bitte geben Sie mehr verfügbare Tage oder eine größere Zeitspanne an.
             </p>
+            {popupCountdown > 0 && (
+              <div style={{ marginBottom: 16, fontSize: 24, fontWeight: 700, color: "#2563eb" }}>
+                {popupCountdown}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
               <button
                 onClick={() => setShowMinDaysPopup(false)}
+                disabled={popupCountdown > 0}
                 style={{
                   padding: "10px 24px",
                   borderRadius: 8,
                   border: "1px solid #d1d5db",
-                  background: "white",
-                  color: "#374151",
-                  cursor: "pointer",
+                  background: popupCountdown > 0 ? "#f3f4f6" : "white",
+                  color: popupCountdown > 0 ? "#9ca3af" : "#374151",
+                  cursor: popupCountdown > 0 ? "not-allowed" : "pointer",
                   fontWeight: 500,
                 }}
               >
@@ -803,8 +827,13 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
                   const form = document.querySelector("form");
                   if (form) form.requestSubmit();
                 }}
+                disabled={popupCountdown > 0}
                 className="btn"
-                style={{ minWidth: 120 }}
+                style={{
+                  minWidth: 120,
+                  opacity: popupCountdown > 0 ? 0.5 : 1,
+                  cursor: popupCountdown > 0 ? "not-allowed" : "pointer",
+                }}
               >
                 Fortfahren
               </button>
