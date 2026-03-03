@@ -55,7 +55,7 @@ export default function WeddingRegistrationWrapper() {
               Ich nehme bereits am Training teil oder möchte ein regelmäßiges Training buchen
             </div>
             <div style={{ color: "#6b7280", fontSize: 14 }}>
-              Saisonanmeldung für bestehende Teilnehmer
+              Saisonanmeldung bzw. Anmeldung für bestehende Teilnehmer
             </div>
           </button>
 
