@@ -32,6 +32,7 @@ root.render(
         <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
+        <Route path="/anmeldung-wedding-probetraining" element={<WeddingRegistrationWrapper directToProbetraining />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
