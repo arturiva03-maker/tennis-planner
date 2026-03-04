@@ -5,8 +5,12 @@ import "./App.css";
 
 type UserType = "existing" | "new" | null;
 
-export default function WeddingRegistrationWrapper() {
-  const [userType, setUserType] = useState<UserType>(null);
+type WeddingRegistrationWrapperProps = {
+  directToProbetraining?: boolean;
+};
+
+export default function WeddingRegistrationWrapper({ directToProbetraining }: WeddingRegistrationWrapperProps) {
+  const [userType, setUserType] = useState<UserType>(directToProbetraining ? "new" : null);
 
   // If user selected existing, show normal registration form
   if (userType === "existing") {
