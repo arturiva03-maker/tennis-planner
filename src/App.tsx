@@ -7562,19 +7562,22 @@ Sportliche Grüße`
                               borderRadius: 4,
                               fontSize: 13,
                             }}>
-                              {window.location.origin}/probetraining-wedding
+                              {window.location.origin}/anmeldung-wedding
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/probetraining-wedding`
+                                  `${window.location.origin}/anmeldung-wedding`
                                 );
                               }}
                             >
                               Kopieren
                             </button>
+                          </p>
+                          <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                            Nutzer wählen auf der Anmeldeseite "Probetraining buchen"
                           </p>
                         </div>
                         <p className="muted">
