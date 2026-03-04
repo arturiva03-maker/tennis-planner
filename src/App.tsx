@@ -2415,7 +2415,7 @@ export default function App() {
       const { data, error } = await supabase
         .from("registration_requests")
         .select("*")
-        .in("account_id", [authUser.accountId, "public"])
+        .eq("account_id", authUser.accountId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -2437,7 +2437,7 @@ export default function App() {
       const { data, error } = await supabase
         .from("sepa_mandates")
         .select("*")
-        .in("account_id", [authUser.accountId, "public"])
+        .eq("account_id", authUser.accountId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -2459,7 +2459,7 @@ export default function App() {
       const { data, error } = await supabase
         .from("tenniscamp_anmeldungen")
         .select("*")
-        .in("account_id", [authUser.accountId, "public"])
+        .eq("account_id", authUser.accountId)
         .order("created_at", { ascending: false });
 
       if (error) {
