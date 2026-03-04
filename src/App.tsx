@@ -2459,7 +2459,7 @@ export default function App() {
       const { data, error } = await supabase
         .from("tenniscamp_anmeldungen")
         .select("*")
-        .eq("account_id", authUser.accountId)
+        .in("account_id", [authUser.accountId, "public"])
         .order("created_at", { ascending: false });
 
       if (error) {

@@ -34,9 +34,11 @@ type TenniscampData = {
   verbindlicheAnmeldung: boolean;
 };
 
+const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
+
 export default function TenniscampForm() {
   const [searchParams] = useSearchParams();
-  const accountId = searchParams.get("a") || "public";
+  const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
   const [formData, setFormData] = useState<TenniscampData>({
     campId: "",
