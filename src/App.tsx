@@ -53,7 +53,7 @@ type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
 type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
-type FormulareTab = "anmeldung" | "sepa" | "tenniscamp";
+type FormulareTab = "anmeldung" | "sepa" | "tenniscamp" | "probetraining";
 
 type Verfuegbarkeit = {
   montag: string;
@@ -6531,6 +6531,12 @@ Sportliche Grüße`
                           </span>
                         )}
                       </button>
+                      <button
+                        className={`tabBtn ${formulareTab === "probetraining" ? "tabBtnActive" : ""}`}
+                        onClick={() => setFormulareTab("probetraining")}
+                      >
+                        Probetraining (pw)
+                      </button>
                     </div>
 
                     {/* Anmeldung Tab */}
@@ -7541,6 +7547,39 @@ Sportliche Grüße`
                             ))}
                           </ul>
                         )}
+                      </>
+                    )}
+
+                    {/* Probetraining Tab */}
+                    {formulareTab === "probetraining" && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Probetraining Wedding:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                            }}>
+                              {window.location.origin}/probetraining-wedding
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/probetraining-wedding`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                        </div>
+                        <p className="muted">
+                          Probetraining-Anfragen werden per E-Mail an tennisabisz@gmail.com gesendet.
+                        </p>
                       </>
                     )}
                 </div>

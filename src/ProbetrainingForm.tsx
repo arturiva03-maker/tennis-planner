@@ -38,6 +38,7 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showSeasonPopup, setShowSeasonPopup] = useState(true);
 
   const [formData, setFormData] = useState<FormData>({
     vorname: "",
@@ -398,6 +399,57 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
             transition: "width 0.3s ease",
           }} />
         </div>
+
+        {/* Season Info Popup */}
+        {step === 1 && showSeasonPopup && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 16,
+          }}>
+            <div style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 420,
+              width: "100%",
+              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.3)",
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>&#9888;</div>
+              <h2 style={{ marginBottom: 12, fontSize: 18, color: "#1f2937" }}>
+                Hinweis zur Sommersaison
+              </h2>
+              <p style={{ color: "#4b5563", lineHeight: 1.6, marginBottom: 20 }}>
+                Da aktuell die Planung für die Sommersaison läuft, können Probetrainings erst wieder nach den Osterferien stattfinden. Füllen Sie trotzdem gerne schon einmal das Formular aus.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowSeasonPopup(false)}
+                style={{
+                  padding: "12px 32px",
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 15,
+                }}
+              >
+                Verstanden
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && <div className="errorBox">{error}</div>}
 

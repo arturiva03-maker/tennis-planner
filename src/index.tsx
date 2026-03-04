@@ -12,6 +12,7 @@ import WeddingPage from './WeddingPage';
 import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
+import ProbetrainingForm from './ProbetrainingForm';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -32,6 +33,7 @@ root.render(
         <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
+        <Route path="/probetraining-wedding" element={<ProbetrainingForm onBack={() => window.location.href = "/wedding"} />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
