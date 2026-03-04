@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm";
 import ProbetrainingForm from "./ProbetrainingForm";
@@ -13,6 +13,12 @@ type WeddingRegistrationWrapperProps = {
 export default function WeddingRegistrationWrapper({ directToProbetraining }: WeddingRegistrationWrapperProps) {
   const navigate = useNavigate();
   const [userType, setUserType] = useState<UserType>(directToProbetraining ? "new" : null);
+
+  useEffect(() => {
+    if (directToProbetraining) {
+      setUserType("new");
+    }
+  }, [directToProbetraining]);
 
   // If user selected existing, show normal registration form
   if (userType === "existing") {
