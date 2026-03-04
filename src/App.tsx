@@ -2516,7 +2516,7 @@ export default function App() {
       const { data, error } = await supabase
         .from("probetraining_anfragen")
         .select("*")
-        .eq("account_id", authUser.accountId)
+        .in("account_id", [authUser.accountId, "public"])
         .order("created_at", { ascending: false });
 
       if (error) {
