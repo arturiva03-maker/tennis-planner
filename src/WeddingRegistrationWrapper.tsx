@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm";
 import ProbetrainingForm from "./ProbetrainingForm";
 import "./App.css";
@@ -10,6 +11,7 @@ type WeddingRegistrationWrapperProps = {
 };
 
 export default function WeddingRegistrationWrapper({ directToProbetraining }: WeddingRegistrationWrapperProps) {
+  const navigate = useNavigate();
   const [userType, setUserType] = useState<UserType>(directToProbetraining ? "new" : null);
 
   // If user selected existing, show normal registration form
@@ -64,7 +66,7 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
           </button>
 
           <button
-            onClick={() => setUserType("new")}
+            onClick={() => navigate("/anmeldung-wedding-probetraining")}
             style={{
               padding: "20px 24px",
               background: "#fff",
