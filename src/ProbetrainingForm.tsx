@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 import "./App.css";
 
 type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag";
@@ -34,6 +36,9 @@ type ProbetrainingFormProps = {
 };
 
 export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
+  const [searchParams] = useSearchParams();
+  const accountId = searchParams.get("a") || "public";
+
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -330,6 +335,27 @@ ${formData.telefon ? `Telefon: ${formData.telefon}` : ""}
 ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." : ""}`;
 
     try {
+      // In Supabase speichern
+      const { error: dbError } = await supabase
+        .from("probetraining_anfragen")
+        .insert({
+          account_id: accountId,
+          vorname: formData.vorname,
+          nachname: formData.nachname,
+          alter: parseInt(formData.alter, 10),
+          hat_tennis_gespielt: formData.hatTennisGespielt === "ja",
+          spielstand: formData.spielstand,
+          ist_vereinsmitglied: formData.istVreinsmitglied === "ja",
+          email: formData.email || null,
+          telefon: formData.telefon || null,
+          verfuegbarkeit: verfuegbarkeitFinal,
+          status: "neu",
+        });
+
+      if (dbError) {
+        console.error("Database error:", dbError);
+      }
+
       // E-Mail an Trainer senden
       await fetch("/api/send-newsletter", {
         method: "POST",

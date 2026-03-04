@@ -123,6 +123,22 @@ type TenniscampAnmeldung = {
   created_at: string;
 };
 
+type ProbetrainingAnfrage = {
+  id: string;
+  account_id: string;
+  vorname: string;
+  nachname: string;
+  alter: number;
+  hat_tennis_gespielt: boolean;
+  spielstand: string;
+  ist_vereinsmitglied: boolean;
+  email: string | null;
+  telefon: string | null;
+  verfuegbarkeit: Record<string, string>;
+  status: string;
+  created_at: string;
+};
+
 type Training = {
   id: string;
   trainerId?: string;
@@ -1226,6 +1242,10 @@ export default function App() {
   const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
   const [expandedTenniscampId, setExpandedTenniscampId] = useState<string | null>(null);
 
+  const [probetrainingAnfragen, setProbetrainingAnfragen] = useState<ProbetrainingAnfrage[]>([]);
+  const [loadingProbetrainingAnfragen, setLoadingProbetrainingAnfragen] = useState(false);
+  const [expandedProbetrainingId, setExpandedProbetrainingId] = useState<string | null>(null);
+
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
   const [spontanVon, setSpontanVon] = useState("14:00");
@@ -1788,6 +1808,7 @@ export default function App() {
       fetchRegistrationRequests();
       fetchSepaMandates();
       fetchTenniscampAnmeldungen();
+      fetchProbetrainingAnfragen();
     }
     if (tab === "weiteres" && weiteresTabs === "spontan" && authUser?.accountId) {
       fetchSpontaneStunden();
@@ -2485,6 +2506,63 @@ export default function App() {
       fetchTenniscampAnmeldungen();
     } catch (err) {
       console.error("Error deleting Tenniscamp-Anmeldung:", err);
+    }
+  }
+
+  async function fetchProbetrainingAnfragen() {
+    if (!authUser?.accountId) return;
+    setLoadingProbetrainingAnfragen(true);
+    try {
+      const { data, error } = await supabase
+        .from("probetraining_anfragen")
+        .select("*")
+        .eq("account_id", authUser.accountId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching Probetraining-Anfragen:", error);
+        return;
+      }
+      setProbetrainingAnfragen(data || []);
+    } catch (err) {
+      console.error("Error fetching Probetraining-Anfragen:", err);
+    } finally {
+      setLoadingProbetrainingAnfragen(false);
+    }
+  }
+
+  async function updateProbetrainingStatus(anfragenId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from("probetraining_anfragen")
+        .update({ status: newStatus })
+        .eq("id", anfragenId);
+
+      if (error) {
+        console.error("Error updating Probetraining status:", error);
+        return;
+      }
+      fetchProbetrainingAnfragen();
+    } catch (err) {
+      console.error("Error updating Probetraining status:", err);
+    }
+  }
+
+  async function deleteProbetrainingAnfrage(anfragenId: string) {
+    if (!window.confirm("Möchten Sie diese Anfrage wirklich löschen?")) return;
+    try {
+      const { error } = await supabase
+        .from("probetraining_anfragen")
+        .delete()
+        .eq("id", anfragenId);
+
+      if (error) {
+        console.error("Error deleting Probetraining-Anfrage:", error);
+        return;
+      }
+      fetchProbetrainingAnfragen();
+    } catch (err) {
+      console.error("Error deleting Probetraining-Anfrage:", err);
     }
   }
 
@@ -6536,6 +6614,19 @@ Sportliche Grüße`
                         onClick={() => setFormulareTab("probetraining")}
                       >
                         Probetraining (pw)
+                        {probetrainingAnfragen.filter(a => a.status === "neu").length > 0 && (
+                          <span style={{
+                            marginLeft: 6,
+                            background: "#f59e0b",
+                            color: "#fff",
+                            borderRadius: 10,
+                            padding: "2px 6px",
+                            fontSize: 11,
+                            fontWeight: 600
+                          }}>
+                            {probetrainingAnfragen.filter(a => a.status === "neu").length}
+                          </span>
+                        )}
                       </button>
                     </div>
 
@@ -7577,9 +7668,120 @@ Sportliche Grüße`
                             </button>
                           </p>
                         </div>
-                        <p className="muted">
-                          Probetraining-Anfragen werden per E-Mail an tennisabisz@gmail.com gesendet.
-                        </p>
+
+                        {loadingProbetrainingAnfragen ? (
+                          <p className="muted">Laden...</p>
+                        ) : probetrainingAnfragen.length === 0 ? (
+                          <p className="muted">Keine Probetraining-Anfragen vorhanden.</p>
+                        ) : (
+                          <ul className="list">
+                            {probetrainingAnfragen.map((anfrage) => (
+                              <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                                <div
+                                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+                                  onClick={() => setExpandedProbetrainingId(expandedProbetrainingId === anfrage.id ? null : anfrage.id)}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <span style={{ fontWeight: 500 }}>
+                                      {anfrage.vorname} {anfrage.nachname}
+                                    </span>
+                                    <span className="muted" style={{ fontSize: 13 }}>
+                                      {anfrage.alter}J
+                                    </span>
+                                    <span style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      background: anfrage.spielstand === "anfaenger" ? "#8b5cf6" : anfrage.spielstand === "fortgeschritten" ? "#06b6d4" : "#22c55e",
+                                      color: "#fff",
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                    }}>
+                                      {anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      background: anfrage.status === "neu" ? "#f59e0b" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "erledigt" ? "#22c55e" : "var(--text-muted)",
+                                      color: "#fff",
+                                      padding: "2px 6px",
+                                      borderRadius: 4,
+                                    }}>
+                                      {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "erledigt" ? "Erledigt" : anfrage.status}
+                                    </span>
+                                    <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedProbetrainingId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                      ▶
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {expandedProbetrainingId === anfrage.id && (
+                                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 13 }}>
+                                      <div>
+                                        <span className="muted">E-Mail:</span>{" "}
+                                        <span style={{ fontWeight: 500 }}>{anfrage.email || "-"}</span>
+                                      </div>
+                                      <div>
+                                        <span className="muted">Telefon:</span>{" "}
+                                        <span style={{ fontWeight: 500 }}>{anfrage.telefon || "-"}</span>
+                                      </div>
+                                      <div>
+                                        <span className="muted">Tennis gespielt:</span>{" "}
+                                        <span style={{ fontWeight: 500 }}>{anfrage.hat_tennis_gespielt ? "Ja" : "Nein"}</span>
+                                      </div>
+                                      <div>
+                                        <span className="muted">Vereinsmitglied:</span>{" "}
+                                        <span style={{ fontWeight: 500 }}>{anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</span>
+                                      </div>
+                                    </div>
+                                    <div style={{ marginTop: 12 }}>
+                                      <span className="muted" style={{ fontSize: 13 }}>Verfügbarkeit:</span>
+                                      <div style={{ marginTop: 4, fontSize: 13 }}>
+                                        {Object.entries(anfrage.verfuegbarkeit || {}).map(([tag, zeit]) => (
+                                          zeit && zeit !== "nicht verfügbar" && (
+                                            <span key={tag} style={{
+                                              display: "inline-block",
+                                              background: "var(--bg-inset)",
+                                              padding: "2px 8px",
+                                              borderRadius: 4,
+                                              marginRight: 6,
+                                              marginBottom: 4,
+                                            }}>
+                                              {tag.charAt(0).toUpperCase() + tag.slice(1)}: {zeit}
+                                            </span>
+                                          )
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      <select
+                                        value={anfrage.status}
+                                        onChange={(e) => updateProbetrainingStatus(anfrage.id, e.target.value)}
+                                        style={{ fontSize: 13, padding: "6px 10px" }}
+                                      >
+                                        <option value="neu">Neu</option>
+                                        <option value="kontaktiert">Kontaktiert</option>
+                                        <option value="erledigt">Erledigt</option>
+                                      </select>
+                                      <button
+                                        className="btn micro btnGhost"
+                                        style={{ color: "var(--danger)" }}
+                                        onClick={() => deleteProbetrainingAnfrage(anfrage.id)}
+                                      >
+                                        Löschen
+                                      </button>
+                                    </div>
+                                    <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
+                                      Anfrage vom {new Date(anfrage.created_at).toLocaleDateString("de-DE")}
+                                    </div>
+                                  </div>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </>
                     )}
                 </div>
