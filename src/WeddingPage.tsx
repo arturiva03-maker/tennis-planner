@@ -1720,7 +1720,7 @@ export default function WeddingPage() {
                     </p>
                     {faq.q.includes("Probestunde") && (
                       <a
-                        href="/anmeldung-wedding"
+                        href="/anmeldung-wedding-probetraining"
                         style={{
                           display: "inline-block",
                           marginTop: 12,
