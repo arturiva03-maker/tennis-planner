@@ -8219,7 +8219,7 @@ Sportliche Grüße`
                                   textOverflow: "ellipsis",
                                   whiteSpace: "nowrap"
                                 }}>
-                                  {recipient.kontaktEmail}
+                                  {[recipient.kontaktEmail, ...(recipient.zusaetzlicheEmails || [])].filter(Boolean).join(", ")}
                                 </div>
                               </div>
                               <button
