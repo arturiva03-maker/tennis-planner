@@ -728,11 +728,14 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             {(formData.trainingsart === "gruppe" || formData.trainingsart === "beides") && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <label>Bei Gruppentraining: Gruppenwünsche</label>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "4px 0 8px 0" }}>
+                  Mit wem möchten Sie gerne in einer Gruppe trainieren? Falls Sie keine Wunschpartner haben und letzte Saison noch nicht am Training teilgenommen haben, hilft uns eine kurze Beschreibung Ihrer Spielstärke bei der Gruppeneinteilung.
+                </p>
                 <textarea
                   name="gruppenwuensche"
                   value={formData.gruppenwuensche}
                   onChange={handleChange}
-                  placeholder="Mit wem möchten Sie gerne in einer Gruppe trainieren?"
+                  placeholder="z.B. Wunschpartner oder Spielstärke (Anfänger, fortgeschritten, etc.)"
                   rows={3}
                   style={{
                     resize: "vertical",
