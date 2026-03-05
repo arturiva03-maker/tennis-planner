@@ -98,12 +98,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
   const [popupCountdown, setPopupCountdown] = useState(5);
   const [showVerfuegbarkeitHinweis, setShowVerfuegbarkeitHinweis] = useState(true);
 
-  // Verfügbarkeit-Hinweis nach 5 Sekunden ausblenden
-  useEffect(() => {
-    const timer = setTimeout(() => setShowVerfuegbarkeitHinweis(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
+  
   // Countdown für Popup starten wenn es geöffnet wird
   useEffect(() => {
     if (showMinDaysPopup) {
@@ -518,27 +513,52 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
         <div
           style={{
             position: "fixed",
-            top: 80,
-            left: "50%",
-            transform: "translateX(-50%)",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
             zIndex: 9999,
-            background: anlage === "Wedding"
-              ? "linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%)"
-              : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-            color: "#fff",
-            padding: "24px 36px",
-            borderRadius: 16,
-            boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
-            animation: "fadeInOut 5s ease-in-out",
-            textAlign: "center",
-            maxWidth: "90%",
-            border: "3px solid rgba(255,255,255,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
           }}
         >
-          <div style={{ fontSize: 28, marginBottom: 8 }}>💡</div>
-          <div style={{ fontWeight: 700, fontSize: 18, lineHeight: 1.5 }}>
-            Bitte geben Sie möglichst viele verfügbare Zeiten an,<br />
-            um die Chance auf eine passende Einteilung zu erhöhen.
+          <div
+            style={{
+              background: anlage === "Wedding"
+                ? "linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%)"
+                : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+              color: "#fff",
+              padding: "32px 40px",
+              borderRadius: 16,
+              boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
+              textAlign: "center",
+              maxWidth: 500,
+              border: "3px solid rgba(255,255,255,0.3)",
+            }}
+          >
+            <div style={{ fontSize: 36, marginBottom: 12 }}>💡</div>
+            <div style={{ fontWeight: 700, fontSize: 20, lineHeight: 1.5, marginBottom: 24 }}>
+              Bitte geben Sie möglichst viele verfügbare Zeiten an,
+              um die Chance auf eine passende Einteilung zu erhöhen.
+            </div>
+            <button
+              onClick={() => setShowVerfuegbarkeitHinweis(false)}
+              style={{
+                background: "#fff",
+                color: anlage === "Wedding" ? "#1a5f2a" : "#2563eb",
+                border: "none",
+                padding: "12px 48px",
+                borderRadius: 8,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
