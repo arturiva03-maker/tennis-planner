@@ -96,6 +96,13 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
   const [showMinDaysPopup, setShowMinDaysPopup] = useState(false);
   const [minDaysWarningShown, setMinDaysWarningShown] = useState(false);
   const [popupCountdown, setPopupCountdown] = useState(5);
+  const [showVerfuegbarkeitHinweis, setShowVerfuegbarkeitHinweis] = useState(true);
+
+  // Verfügbarkeit-Hinweis nach 3 Sekunden ausblenden
+  useEffect(() => {
+    const timer = setTimeout(() => setShowVerfuegbarkeitHinweis(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Countdown für Popup starten wenn es geöffnet wird
   useEffect(() => {
@@ -506,6 +513,33 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
 
   return (
     <div className={`registrationPage ${anlage === "Wedding" ? "weddingTheme" : ""}`}>
+      {/* Verfügbarkeit-Hinweis Popup */}
+      {showVerfuegbarkeitHinweis && (
+        <div
+          style={{
+            position: "fixed",
+            top: 100,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: anlage === "Wedding"
+              ? "linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%)"
+              : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
+            color: "#fff",
+            padding: "16px 28px",
+            borderRadius: 12,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            animation: "fadeInOut 3s ease-in-out",
+            textAlign: "center",
+            maxWidth: "90%",
+          }}
+        >
+          <div style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.5 }}>
+            Bitte geben Sie möglichst viele verfügbare Zeiten an,<br />
+            um die Chance auf eine passende Einteilung zu erhöhen.
+          </div>
+        </div>
+      )}
       <div className="card registrationCard">
         <h1>Trainingsanmeldung {anlage}</h1>
         <p className="muted" style={{ marginBottom: 16 }}>
