@@ -28,6 +28,7 @@ type Spieler = {
   vorname: string;
   nachname?: string;
   kontaktEmail?: string;
+  zusaetzlicheEmails?: string[];
   kontaktTelefon?: string;
   rechnungsAdresse?: string;
   notizen?: string;
@@ -1209,6 +1210,8 @@ export default function App() {
   const [spielerVorname, setSpielerVorname] = useState("");
   const [spielerNachname, setSpielerNachname] = useState("");
   const [spielerEmail, setSpielerEmail] = useState("");
+  const [spielerZusaetzlicheEmails, setSpielerZusaetzlicheEmails] = useState<string[]>([]);
+  const [spielerNeueEmail, setSpielerNeueEmail] = useState("");
   const [spielerTelefon, setSpielerTelefon] = useState("");
   const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
@@ -2236,6 +2239,7 @@ export default function App() {
       vorname,
       nachname: nachname || undefined,
       kontaktEmail: spielerEmail.trim() || undefined,
+      zusaetzlicheEmails: spielerZusaetzlicheEmails.length > 0 ? spielerZusaetzlicheEmails : undefined,
       kontaktTelefon: spielerTelefon.trim() || undefined,
       rechnungsAdresse: spielerRechnung.trim() || undefined,
       notizen: spielerNotizen.trim() || undefined,
@@ -2252,6 +2256,8 @@ export default function App() {
     setSpielerVorname("");
     setSpielerNachname("");
     setSpielerEmail("");
+    setSpielerZusaetzlicheEmails([]);
+    setSpielerNeueEmail("");
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
@@ -2270,6 +2276,8 @@ export default function App() {
     setSpielerVorname(s.vorname);
     setSpielerNachname(s.nachname ?? "");
     setSpielerEmail(s.kontaktEmail ?? "");
+    setSpielerZusaetzlicheEmails(s.zusaetzlicheEmails ?? []);
+    setSpielerNeueEmail("");
     setSpielerTelefon(s.kontaktTelefon ?? "");
     setSpielerRechnung(s.rechnungsAdresse ?? "");
     setSpielerNotizen(s.notizen ?? "");
@@ -2318,6 +2326,7 @@ export default function App() {
               vorname,
               nachname: nachname || undefined,
               kontaktEmail: spielerEmail.trim() || undefined,
+              zusaetzlicheEmails: spielerZusaetzlicheEmails.length > 0 ? spielerZusaetzlicheEmails : undefined,
               kontaktTelefon: spielerTelefon.trim() || undefined,
               rechnungsAdresse: spielerRechnung.trim() || undefined,
               notizen: spielerNotizen.trim() || undefined,
@@ -2336,6 +2345,8 @@ export default function App() {
     setSpielerVorname("");
     setSpielerNachname("");
     setSpielerEmail("");
+    setSpielerZusaetzlicheEmails([]);
+    setSpielerNeueEmail("");
     setSpielerTelefon("");
     setSpielerRechnung("");
     setSpielerNotizen("");
@@ -6051,11 +6062,14 @@ Sportliche Grüße`
                                   title="E-Mail senden"
                                   onClick={() => {
                                     const name = `${spielerVorname}${spielerNachname ? " " + spielerNachname : ""}`;
-                                    setNewsletterExtraEmails(prev =>
-                                      prev.some(e => e.email === spielerEmail)
-                                        ? prev
-                                        : [...prev, { email: spielerEmail, name }]
-                                    );
+                                    const allEmails = [spielerEmail, ...spielerZusaetzlicheEmails].filter(Boolean);
+                                    setNewsletterExtraEmails(prev => {
+                                      const existingEmails = new Set(prev.map(e => e.email));
+                                      const newEntries = allEmails
+                                        .filter(email => !existingEmails.has(email))
+                                        .map(email => ({ email, name }));
+                                      return [...prev, ...newEntries];
+                                    });
                                     setNewsletterSubject("Anfrage zum Tennistraining");
                                     setNewsletterLabelFilter("keine");
                                     setTab("verwaltung");
@@ -6078,6 +6092,87 @@ Sportliche Grüße`
                                   ✉
                                 </button>
                               )}
+                            </div>
+                            {/* Zusätzliche E-Mail-Adressen */}
+                            {spielerZusaetzlicheEmails.length > 0 && (
+                              <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                {spielerZusaetzlicheEmails.map((email, idx) => (
+                                  <span
+                                    key={idx}
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: 4,
+                                      padding: "4px 8px",
+                                      background: "var(--surface)",
+                                      borderRadius: "var(--radius-sm)",
+                                      fontSize: 13,
+                                    }}
+                                  >
+                                    {email}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSpielerZusaetzlicheEmails(prev => prev.filter((_, i) => i !== idx));
+                                      }}
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                        color: "var(--danger)",
+                                        fontSize: 14,
+                                        lineHeight: 1,
+                                      }}
+                                      title="Entfernen"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                              <input
+                                value={spielerNeueEmail}
+                                onChange={(e) => setSpielerNeueEmail(e.target.value)}
+                                placeholder="Weitere E-Mail hinzufügen"
+                                style={{ flex: 1, fontSize: 13 }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const email = spielerNeueEmail.trim();
+                                    if (!email) return;
+                                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+                                    if (email === spielerEmail.trim()) return;
+                                    if (spielerZusaetzlicheEmails.includes(email)) return;
+                                    setSpielerZusaetzlicheEmails(prev => [...prev, email]);
+                                    setSpielerNeueEmail("");
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const email = spielerNeueEmail.trim();
+                                  if (!email) return;
+                                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+                                  if (email === spielerEmail.trim()) return;
+                                  if (spielerZusaetzlicheEmails.includes(email)) return;
+                                  setSpielerZusaetzlicheEmails(prev => [...prev, email]);
+                                  setSpielerNeueEmail("");
+                                }}
+                                style={{
+                                  padding: "4px 10px",
+                                  fontSize: 13,
+                                  background: "var(--surface)",
+                                  border: "1px solid var(--border)",
+                                  borderRadius: "var(--radius-sm)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                +
+                              </button>
                             </div>
                           </div>
                           <div className="field">
@@ -8180,7 +8275,10 @@ Sportliche Grüße`
                         onClick={async () => {
                           const recipients = getNewsletterRecipients();
                           const allEmails = [
-                            ...recipients.map(r => r.kontaktEmail),
+                            ...recipients.flatMap(r => [
+                              r.kontaktEmail,
+                              ...(r.zusaetzlicheEmails || [])
+                            ].filter(Boolean)),
                             ...newsletterExtraEmails.map(e => e.email)
                           ];
 
@@ -11432,13 +11530,18 @@ Deine Tennisschule`;
 
                       for (const recipient of recipients) {
                         try {
+                          const recipientEmails = [
+                            recipient.kontaktEmail,
+                            ...(recipient.zusaetzlicheEmails || [])
+                          ].filter(Boolean) as string[];
+
                           const response = await fetch("/api/send-newsletter", {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
                             },
                             body: JSON.stringify({
-                              to: [recipient.kontaktEmail],
+                              to: recipientEmails,
                               subject: emailSubject,
                               body: getEmailBody(getFullName(recipient)),
                               html: getEmailBody(getFullName(recipient)).replace(/\n/g, "<br>"),
@@ -11637,11 +11740,16 @@ Deine Tennisschule`;
                       // Personalisierte E-Mails an jeden Empfänger senden
                       for (const recipient of recipients) {
                         try {
+                          const recipientEmails = [
+                            recipient.kontaktEmail,
+                            ...(recipient.zusaetzlicheEmails || [])
+                          ].filter(Boolean) as string[];
+
                           const response = await fetch("/api/send-newsletter", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
-                              to: [recipient.kontaktEmail],
+                              to: recipientEmails,
                               subject: cancelNotifySubject.trim(),
                               body: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)),
                               html: getPersonalizedBody(cancelNotifyBody.trim(), getFullName(recipient)).replace(/\n/g, "<br>"),
@@ -11815,8 +11923,11 @@ Deine Tennisschule`;
                 disabled={trainingInfoEmailSending}
                 onClick={async () => {
                   const recipients = tSpielerIds
-                    .map(id => spielerById.get(id)?.kontaktEmail)
-                    .filter((email): email is string => !!email);
+                    .flatMap(id => {
+                      const s = spielerById.get(id);
+                      if (!s) return [];
+                      return [s.kontaktEmail, ...(s.zusaetzlicheEmails || [])].filter(Boolean);
+                    }) as string[];
 
                   if (recipients.length === 0) {
                     alert("Keine Spieler mit E-Mail-Adresse gefunden.");
