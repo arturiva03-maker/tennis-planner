@@ -65,6 +65,7 @@ export default function WeddingPage() {
   const [showImpressum, setShowImpressum] = useState(false);
   const [showDatenschutz, setShowDatenschutz] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [showAnmeldungPopup, setShowAnmeldungPopup] = useState(true);
 
   // Spontane Stunden Buchung
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
@@ -144,6 +145,12 @@ export default function WeddingPage() {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Popup nach 3 Sekunden ausblenden
+  useEffect(() => {
+    const timer = setTimeout(() => setShowAnmeldungPopup(false), 3000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -586,6 +593,34 @@ export default function WeddingPage() {
       fontFamily: "'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       color: colors.text,
     }}>
+      {/* Anmeldung Popup */}
+      {showAnmeldungPopup && (
+        <div
+          onClick={() => window.location.href = "/anmeldung-wedding"}
+          style={{
+            position: "fixed",
+            top: 100,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: "linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%)",
+            color: "#fff",
+            padding: "16px 32px",
+            borderRadius: 12,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+            cursor: "pointer",
+            animation: "fadeInOut 3s ease-in-out",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
+            Anmeldung Sommertraining bis 10.3.
+          </div>
+          <div style={{ fontSize: 14, opacity: 0.9 }}>
+            Klicken zum Anmelden
+          </div>
+        </div>
+      )}
       {/* Navigation */}
       <nav
         style={{
