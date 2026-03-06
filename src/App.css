@@ -2206,6 +2206,12 @@ select:focus:not(:focus-visible) {
   font-size: 14px;
 }
 
+.registrationPage .errorBox {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  color: #1e40af;
+}
+
 .weddingTheme .errorBox {
   background: #fef3c7;
   border: 1px solid #fcd34d;

@@ -527,16 +527,14 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
         >
           <div
             style={{
-              background: anlage === "Wedding"
-                ? "#fff"
-                : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-              color: anlage === "Wedding" ? "#1b471b" : "#fff",
+              background: "#fff",
+              color: anlage === "Wedding" ? "#1b471b" : "#1e40af",
               padding: "32px 40px",
               borderRadius: 16,
               boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
               textAlign: "center",
               maxWidth: 500,
-              border: anlage === "Wedding" ? "3px solid #1b471b" : "3px solid rgba(255,255,255,0.3)",
+              border: anlage === "Wedding" ? "3px solid #1b471b" : "3px solid #2563eb",
             }}
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>💡</div>
@@ -547,8 +545,8 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             <button
               onClick={() => setShowVerfuegbarkeitHinweis(false)}
               style={{
-                background: anlage === "Wedding" ? "#1b471b" : "#fff",
-                color: anlage === "Wedding" ? "#fff" : "#2563eb",
+                background: anlage === "Wedding" ? "#1b471b" : "#2563eb",
+                color: "#fff",
                 border: "none",
                 padding: "12px 48px",
                 borderRadius: 8,
@@ -570,15 +568,15 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
         </p>
 
         <div style={{
-          background: anlage === "Wedding" ? "rgba(27, 71, 27, 0.08)" : "var(--bg-inset)",
-          border: anlage === "Wedding" ? "1px solid #1b471b" : "1px solid var(--warning)",
+          background: anlage === "Wedding" ? "rgba(27, 71, 27, 0.08)" : "rgba(37, 99, 235, 0.08)",
+          border: anlage === "Wedding" ? "1px solid #1b471b" : "1px solid #2563eb",
           borderRadius: 8,
           padding: 16,
           marginBottom: 24,
           fontSize: 14,
           lineHeight: 1.6
         }}>
-          <strong style={{ color: anlage === "Wedding" ? "#1b471b" : "var(--warning)" }}>Wichtiger Hinweis zur Mitgliedschaft:</strong>
+          <strong style={{ color: anlage === "Wedding" ? "#1b471b" : "#1e40af" }}>Wichtiger Hinweis zur Mitgliedschaft:</strong>
           <p style={{ margin: "8px 0 0 0" }}>
             Das Training ist grundsätzlich nur für Vereinsmitglieder möglich. Mitglieder zahlen neben den Trainingsgebühren zusätzliche Mitgliedsgebühren. Ausnahmen bestehen für Probetrainings und Tenniscamps.
           </p>
@@ -707,12 +705,12 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
               <p style={{
                   fontSize: 15,
                   marginBottom: 12,
-                  color: anlage === "Wedding" ? "#92400e" : "#dc2626",
+                  color: anlage === "Wedding" ? "#92400e" : "#1e40af",
                   fontWeight: 700,
-                  background: anlage === "Wedding" ? "#fef3c7" : "#fef2f2",
+                  background: anlage === "Wedding" ? "#fef3c7" : "#dbeafe",
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: anlage === "Wedding" ? "1px solid #fcd34d" : "1px solid #fecaca"
+                  border: anlage === "Wedding" ? "1px solid #fcd34d" : "1px solid #93c5fd"
                 }}>
                   Bitte geben Sie möglichst viele verfügbare Zeiten an, um die Chance auf eine passende Einteilung zu ermöglichen.
                 </p>
