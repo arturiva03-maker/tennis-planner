@@ -528,15 +528,15 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
           <div
             style={{
               background: anlage === "Wedding"
-                ? "linear-gradient(135deg, #1a5f2a 0%, #2d8a3e 100%)"
+                ? "#fff"
                 : "linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)",
-              color: "#fff",
+              color: anlage === "Wedding" ? "#1b471b" : "#fff",
               padding: "32px 40px",
               borderRadius: 16,
               boxShadow: "0 12px 48px rgba(0,0,0,0.4)",
               textAlign: "center",
               maxWidth: 500,
-              border: "3px solid rgba(255,255,255,0.3)",
+              border: anlage === "Wedding" ? "3px solid #1b471b" : "3px solid rgba(255,255,255,0.3)",
             }}
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>💡</div>
@@ -547,8 +547,8 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             <button
               onClick={() => setShowVerfuegbarkeitHinweis(false)}
               style={{
-                background: "#fff",
-                color: anlage === "Wedding" ? "#1a5f2a" : "#2563eb",
+                background: anlage === "Wedding" ? "#1b471b" : "#fff",
+                color: anlage === "Wedding" ? "#fff" : "#2563eb",
                 border: "none",
                 padding: "12px 48px",
                 borderRadius: 8,
@@ -570,15 +570,15 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
         </p>
 
         <div style={{
-          background: "var(--bg-inset)",
-          border: "1px solid var(--warning)",
+          background: anlage === "Wedding" ? "rgba(27, 71, 27, 0.08)" : "var(--bg-inset)",
+          border: anlage === "Wedding" ? "1px solid #1b471b" : "1px solid var(--warning)",
           borderRadius: 8,
           padding: 16,
           marginBottom: 24,
           fontSize: 14,
           lineHeight: 1.6
         }}>
-          <strong style={{ color: "var(--warning)" }}>Wichtiger Hinweis zur Mitgliedschaft:</strong>
+          <strong style={{ color: anlage === "Wedding" ? "#1b471b" : "var(--warning)" }}>Wichtiger Hinweis zur Mitgliedschaft:</strong>
           <p style={{ margin: "8px 0 0 0" }}>
             Das Training ist grundsätzlich nur für Vereinsmitglieder möglich. Mitglieder zahlen neben den Trainingsgebühren zusätzliche Mitgliedsgebühren. Ausnahmen bestehen für Probetrainings und Tenniscamps.
           </p>
