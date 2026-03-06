@@ -707,12 +707,12 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
               <p style={{
                   fontSize: 15,
                   marginBottom: 12,
-                  color: "#dc2626",
+                  color: anlage === "Wedding" ? "#92400e" : "#dc2626",
                   fontWeight: 700,
-                  background: "#fef2f2",
+                  background: anlage === "Wedding" ? "#fef3c7" : "#fef2f2",
                   padding: "10px 14px",
                   borderRadius: 8,
-                  border: "1px solid #fecaca"
+                  border: anlage === "Wedding" ? "1px solid #fcd34d" : "1px solid #fecaca"
                 }}>
                   Bitte geben Sie möglichst viele verfügbare Zeiten an, um die Chance auf eine passende Einteilung zu ermöglichen.
                 </p>

@@ -2206,6 +2206,12 @@ select:focus:not(:focus-visible) {
   font-size: 14px;
 }
 
+.weddingTheme .errorBox {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+}
+
 .verfuegbarkeitTable {
   width: 100%;
   border-collapse: collapse;
