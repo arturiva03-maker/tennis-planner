@@ -71,6 +71,8 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
             </div>
           </button>
 
+          {/* Probetraining-Option vorübergehend deaktiviert */}
+          {false && (
           <button
             onClick={() => navigate("/anmeldung-wedding-probetraining")}
             style={{
@@ -101,6 +103,7 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
               Für alle, die zum ersten Mal bei uns trainieren möchten
             </div>
           </button>
+          )}
         </div>
       </div>
     </div>
