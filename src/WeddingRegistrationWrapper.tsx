@@ -12,7 +12,8 @@ type WeddingRegistrationWrapperProps = {
 
 export default function WeddingRegistrationWrapper({ directToProbetraining }: WeddingRegistrationWrapperProps) {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState<UserType>(directToProbetraining ? "new" : null);
+  // Vorübergehend direkt zum Formular (Auswahlseite deaktiviert)
+  const [userType, setUserType] = useState<UserType>(directToProbetraining ? "new" : "existing");
 
   useEffect(() => {
     if (directToProbetraining) {
