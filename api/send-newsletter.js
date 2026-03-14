@@ -8,8 +8,20 @@ try {
 module.exports = async function handler(req, res) {
   console.log('Newsletter function called, method:', req.method);
 
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS - nur erlaubte Domains
+  const allowedOrigins = [
+    'https://bscrehberge-tennis.de',
+    'https://www.bscrehberge-tennis.de',
+    'https://tc-britz.de',
+    'https://www.tc-britz.de',
+    'https://tennis-planner.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173',
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
@@ -96,6 +108,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('Newsletter error:', err);
-    return res.status(500).json({ error: err.message || 'Unbekannter Fehler' });
+    return res.status(500).json({ error: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.' });
   }
 };
