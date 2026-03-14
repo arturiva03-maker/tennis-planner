@@ -1097,76 +1097,65 @@ export default function WeddingPage() {
             </h2>
           </div>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: 24,
-          }}>
-            {/* Tenniscamp Card */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                borderRadius: 16,
-                padding: "32px",
-                boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
-                position: "relative",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div style={{
-                position: "absolute",
-                top: -20,
-                right: -20,
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.1)",
-              }} />
-
-              <div style={{
-                display: "inline-block",
-                background: "rgba(255,255,255,0.2)",
-                padding: "6px 14px",
-                borderRadius: 20,
-                marginBottom: 16,
-                alignSelf: "flex-start",
-              }}>
-                <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
-                  Sommerferien
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
-                Tenniscamps
-              </h3>
-
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", lineHeight: 1.6, marginBottom: 20, flex: 1 }}>
-                Kinder & Erwachsene<br />
-                13.-17. Juli & 17.-21. August
-              </p>
-
-              <a
-                href="/tenniscamp"
-                style={{
-                  display: "inline-block",
-                  background: "#fff",
-                  color: "#d97706",
-                  padding: "12px 24px",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  textAlign: "center",
-                  transition: "transform 0.2s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-              >
-                Zum Tenniscamp
-              </a>
+          {/* Tenniscamp Card */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              borderRadius: 16,
+              padding: "28px 32px",
+              boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
+              maxWidth: 420,
+            }}
+          >
+            <div style={{
+              display: "inline-block",
+              background: "rgba(255,255,255,0.2)",
+              padding: "5px 12px",
+              borderRadius: 16,
+              marginBottom: 12,
+            }}>
+              <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
+                Sommerferien 2026
+              </span>
             </div>
+
+            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 16 }}>
+              Tenniscamps
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px" }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>Kindercamp</div>
+                <div style={{ fontSize: 14, color: "#fff", fontWeight: 600 }}>10:00–15:00 Uhr · 270 €</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px" }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>Erwachsenencamp</div>
+                <div style={{ fontSize: 14, color: "#fff", fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", marginBottom: 16 }}>
+              13.–17. Juli & 17.–21. August
+            </p>
+
+            <a
+              href="/tenniscamp"
+              style={{
+                display: "inline-block",
+                background: "#fff",
+                color: "#d97706",
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+                transition: "transform 0.2s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              Mehr erfahren
+            </a>
           </div>
         </div>
       </section>
