@@ -49,6 +49,21 @@ type RegistrationFormProps = {
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
+// Security: Validate redirect URLs to prevent open redirect attacks
+function isValidRedirectUrl(url: string): boolean {
+  // Allow only relative URLs starting with /
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    return true;
+  }
+  // Allow only same-origin URLs
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
@@ -481,7 +496,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
   }
 
   if (success) {
-    if (redirectUrl) {
+    if (redirectUrl && isValidRedirectUrl(redirectUrl)) {
       setTimeout(() => {
         window.location.href = redirectUrl;
       }, 3000);
@@ -496,7 +511,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             Vielen Dank für Ihre Anmeldung. Wir werden uns in Kürze bei Ihnen
             melden.
           </p>
-          {redirectUrl && (
+          {redirectUrl && isValidRedirectUrl(redirectUrl) && (
             <p className="muted" style={{ marginTop: 16, fontSize: 14 }}>
               Sie werden automatisch weitergeleitet...
             </p>

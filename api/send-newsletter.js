@@ -49,6 +49,27 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Betreff und Nachricht erforderlich' });
     }
 
+    // Security: Validate email addresses
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const recipient of to) {
+      if (!emailRegex.test(recipient)) {
+        return res.status(400).json({ error: 'Ungültige E-Mail-Adresse' });
+      }
+    }
+
+    // Security: Limit attachment size (5MB)
+    if (attachment && attachment.content) {
+      const sizeInBytes = Buffer.byteLength(attachment.content, attachment.encoding || 'base64');
+      if (sizeInBytes > 5 * 1024 * 1024) {
+        return res.status(400).json({ error: 'Anhang zu groß (max. 5MB)' });
+      }
+    }
+
+    // Security: Limit number of recipients
+    if (to.length > 100) {
+      return res.status(400).json({ error: 'Zu viele Empfänger (max. 100)' });
+    }
+
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
     console.log('SMTP config exists:', !!smtpUser, !!smtpPass);

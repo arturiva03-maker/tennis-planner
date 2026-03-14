@@ -10,6 +10,17 @@ import React, {
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
+// Security: Escape HTML to prevent XSS attacks
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 type Trainer = {
   id: string;
   name: string;
@@ -6907,31 +6918,31 @@ Sportliche Grüße`
                                         ? "Profi"
                                         : "-";
                                       const verfuegbarkeitRows = req.verfuegbarkeit ? [
-                                        req.verfuegbarkeit.montag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mo</td><td style="padding:1px 0;">${req.verfuegbarkeit.montag}</td></tr>` : "",
-                                        req.verfuegbarkeit.dienstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Di</td><td style="padding:1px 0;">${req.verfuegbarkeit.dienstag}</td></tr>` : "",
-                                        req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mi</td><td style="padding:1px 0;">${req.verfuegbarkeit.mittwoch}</td></tr>` : "",
-                                        req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Do</td><td style="padding:1px 0;">${req.verfuegbarkeit.donnerstag}</td></tr>` : "",
-                                        req.verfuegbarkeit.freitag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Fr</td><td style="padding:1px 0;">${req.verfuegbarkeit.freitag}</td></tr>` : "",
-                                        req.verfuegbarkeit.samstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Sa</td><td style="padding:1px 0;">${req.verfuegbarkeit.samstag}</td></tr>` : "",
-                                        req.verfuegbarkeit.sonntag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">So</td><td style="padding:1px 0;">${req.verfuegbarkeit.sonntag}</td></tr>` : "",
+                                        req.verfuegbarkeit.montag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mo</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.montag)}</td></tr>` : "",
+                                        req.verfuegbarkeit.dienstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Di</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.dienstag)}</td></tr>` : "",
+                                        req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Mi</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.mittwoch)}</td></tr>` : "",
+                                        req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Do</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.donnerstag)}</td></tr>` : "",
+                                        req.verfuegbarkeit.freitag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Fr</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.freitag)}</td></tr>` : "",
+                                        req.verfuegbarkeit.samstag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">Sa</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.samstag)}</td></tr>` : "",
+                                        req.verfuegbarkeit.sonntag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">So</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.sonntag)}</td></tr>` : "",
                                       ].filter(Boolean).join("") : "";
 
                                       return `
                                         <div class="card">
                                           <div class="header">
-                                            <p class="name">${req.name}</p>
-                                            ${req.anlage ? `<span class="anlage" style="background:${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};">${req.anlage}</span>` : ""}
+                                            <p class="name">${escapeHtml(req.name)}</p>
+                                            ${req.anlage ? `<span class="anlage" style="background:${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};">${escapeHtml(req.anlage)}</span>` : ""}
                                           </div>
                                           <div class="info-grid">
-                                            <div class="info-item"><label>Telefon</label><span>${req.telefon || "-"}</span></div>
-                                            <div class="info-item"><label>E-Mail</label><span style="font-size:7pt;word-break:break-all;">${req.email}</span></div>
-                                            <div class="info-item"><label>Alter</label><span>${req.alter_jahre ? req.alter_jahre + " J." : "-"}</span></div>
+                                            <div class="info-item"><label>Telefon</label><span>${escapeHtml(req.telefon) || "-"}</span></div>
+                                            <div class="info-item"><label>E-Mail</label><span style="font-size:7pt;word-break:break-all;">${escapeHtml(req.email)}</span></div>
+                                            <div class="info-item"><label>Alter</label><span>${req.alter_jahre ? escapeHtml(req.alter_jahre) + " J." : "-"}</span></div>
                                             <div class="info-item"><label>Art</label><span>${trainingsartText}</span></div>
                                             <div class="info-item"><label>Level</label><span>${erfahrungText}</span></div>
-                                            <div class="info-item"><label>Pro Woche</label><span>${req.trainings_pro_woche ? req.trainings_pro_woche + "x" : "-"}</span></div>
+                                            <div class="info-item"><label>Pro Woche</label><span>${req.trainings_pro_woche ? escapeHtml(req.trainings_pro_woche) + "x" : "-"}</span></div>
                                           </div>
                                           ${verfuegbarkeitRows ? `<div class="verfuegbarkeit"><h4>Verfügbarkeit</h4><table>${verfuegbarkeitRows}</table></div>` : ""}
-                                          ${req.nachricht ? `<div class="nachricht"><label>Nachricht</label><span>${req.nachricht}</span></div>` : ""}
+                                          ${req.nachricht ? `<div class="nachricht"><label>Nachricht</label><span>${escapeHtml(req.nachricht)}</span></div>` : ""}
                                           <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
                                         </div>
                                       `;
@@ -7258,13 +7269,13 @@ Sportliche Grüße`
                                             : "-";
 
                                           const verfuegbarkeitRows = req.verfuegbarkeit ? [
-                                            req.verfuegbarkeit.montag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mo</td><td style="padding:2px 0;">${req.verfuegbarkeit.montag}</td></tr>` : "",
-                                            req.verfuegbarkeit.dienstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Di</td><td style="padding:2px 0;">${req.verfuegbarkeit.dienstag}</td></tr>` : "",
-                                            req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mi</td><td style="padding:2px 0;">${req.verfuegbarkeit.mittwoch}</td></tr>` : "",
-                                            req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Do</td><td style="padding:2px 0;">${req.verfuegbarkeit.donnerstag}</td></tr>` : "",
-                                            req.verfuegbarkeit.freitag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Fr</td><td style="padding:2px 0;">${req.verfuegbarkeit.freitag}</td></tr>` : "",
-                                            req.verfuegbarkeit.samstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Sa</td><td style="padding:2px 0;">${req.verfuegbarkeit.samstag}</td></tr>` : "",
-                                            req.verfuegbarkeit.sonntag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">So</td><td style="padding:2px 0;">${req.verfuegbarkeit.sonntag}</td></tr>` : "",
+                                            req.verfuegbarkeit.montag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mo</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.montag)}</td></tr>` : "",
+                                            req.verfuegbarkeit.dienstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Di</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.dienstag)}</td></tr>` : "",
+                                            req.verfuegbarkeit.mittwoch ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Mi</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.mittwoch)}</td></tr>` : "",
+                                            req.verfuegbarkeit.donnerstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Do</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.donnerstag)}</td></tr>` : "",
+                                            req.verfuegbarkeit.freitag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Fr</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.freitag)}</td></tr>` : "",
+                                            req.verfuegbarkeit.samstag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">Sa</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.samstag)}</td></tr>` : "",
+                                            req.verfuegbarkeit.sonntag ? `<tr><td style="padding:2px 8px 2px 0;font-weight:500;">So</td><td style="padding:2px 0;">${escapeHtml(req.verfuegbarkeit.sonntag)}</td></tr>` : "",
                                           ].filter(Boolean).join("") : "";
 
                                           const cardHTML = `
@@ -7329,21 +7340,21 @@ Sportliche Grüße`
                                             <body>
                                               <div class="card">
                                                 <div class="header">
-                                                  <p class="name">${req.name}</p>
-                                                  ${req.anlage ? `<span class="anlage">${req.anlage}</span>` : ""}
+                                                  <p class="name">${escapeHtml(req.name)}</p>
+                                                  ${req.anlage ? `<span class="anlage">${escapeHtml(req.anlage)}</span>` : ""}
                                                 </div>
                                                 <div class="info-grid">
                                                   <div class="info-item">
                                                     <label>Telefon</label>
-                                                    <span>${req.telefon || "-"}</span>
+                                                    <span>${escapeHtml(req.telefon) || "-"}</span>
                                                   </div>
                                                   <div class="info-item">
                                                     <label>E-Mail</label>
-                                                    <span>${req.email}</span>
+                                                    <span>${escapeHtml(req.email)}</span>
                                                   </div>
                                                   <div class="info-item">
                                                     <label>Alter</label>
-                                                    <span>${req.alter_jahre ? req.alter_jahre + " Jahre" : "-"}</span>
+                                                    <span>${req.alter_jahre ? escapeHtml(req.alter_jahre) + " Jahre" : "-"}</span>
                                                   </div>
                                                   <div class="info-item">
                                                     <label>Trainingsart</label>
@@ -7355,7 +7366,7 @@ Sportliche Grüße`
                                                   </div>
                                                   <div class="info-item">
                                                     <label>Pro Woche</label>
-                                                    <span>${req.trainings_pro_woche ? req.trainings_pro_woche + "x" : "-"}</span>
+                                                    <span>${req.trainings_pro_woche ? escapeHtml(req.trainings_pro_woche) + "x" : "-"}</span>
                                                   </div>
                                                 </div>
                                                 ${verfuegbarkeitRows ? `
@@ -7364,7 +7375,7 @@ Sportliche Grüße`
                                                     <table>${verfuegbarkeitRows}</table>
                                                   </div>
                                                 ` : ""}
-                                                ${req.nachricht ? `<div class="nachricht"><strong>Nachricht:</strong> ${req.nachricht}</div>` : ""}
+                                                ${req.nachricht ? `<div class="nachricht"><strong>Nachricht:</strong> ${escapeHtml(req.nachricht)}</div>` : ""}
                                                 <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
                                               </div>
                                             </body>
@@ -9845,10 +9856,10 @@ Sportliche Grüße`
                             return `
                               <tr>
                                 <td style="padding: 6px 8px; border: 1px solid #ddd;">${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}</td>
-                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${t.uhrzeitVon}-${t.uhrzeitBis}</td>
-                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${ursprTrainer}</td>
-                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${spielerNames}</td>
-                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${vertretungTrainer}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${escapeHtml(t.uhrzeitVon)}-${escapeHtml(t.uhrzeitBis)}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${escapeHtml(ursprTrainer)}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${escapeHtml(spielerNames)}</td>
+                                <td style="padding: 6px 8px; border: 1px solid #ddd;">${escapeHtml(vertretungTrainer)}</td>
                               </tr>
                             `;
                           }).join('');
@@ -12137,13 +12148,13 @@ Deine Tennisschule`;
                               </td>
                             ` : ""}
                             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; white-space: nowrap;">
-                              ${t.uhrzeitVon} - ${t.uhrzeitBis}
+                              ${escapeHtml(t.uhrzeitVon)} - ${escapeHtml(t.uhrzeitBis)}
                             </td>
                             <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
-                              ${trainer?.name || "-"}
+                              ${escapeHtml(trainer?.name) || "-"}
                             </td>
                             <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
-                              ${spielerNames || "-"}
+                              ${escapeHtml(spielerNames) || "-"}
                             </td>
                             <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">
                               <span style="
@@ -12362,8 +12373,8 @@ Deine Tennisschule`;
                             ${filteredSpieler.map((s, idx) => `
                               <tr>
                                 <td>${idx + 1}</td>
-                                <td>${s.vorname}</td>
-                                <td>${s.nachname || ""}</td>
+                                <td>${escapeHtml(s.vorname)}</td>
+                                <td>${escapeHtml(s.nachname) || ""}</td>
                               </tr>
                             `).join("")}
                           </tbody>
