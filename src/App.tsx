@@ -11,9 +11,10 @@ import "./App.css";
 import { supabase } from "./supabaseClient";
 
 // Security: Escape HTML to prevent XSS attacks
-function escapeHtml(str: string | null | undefined): string {
-  if (!str) return "";
-  return str
+function escapeHtml(str: string | number | null | undefined): string {
+  if (str === null || str === undefined) return "";
+  const s = String(str);
+  return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
