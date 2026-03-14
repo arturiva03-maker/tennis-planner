@@ -1,3 +1,10 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap
+Sitemap: https://bscrehberge-tennis.de/sitemap.xml
+
+# Admin-Bereich nicht indexieren
+Disallow: /admin
+Disallow: /app
