@@ -637,28 +637,6 @@ export default function WeddingPage() {
                 </button>
               ))}
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
-                {/* Animated Arrow with Text */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  animation: "bounce-right 1s ease-in-out infinite",
-                }}>
-                  <span style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: scrolled ? "#dc2626" : "#fca5a5",
-                    whiteSpace: "nowrap",
-                  }}>
-                    Anmeldung Sommertraining bis 10.3.
-                  </span>
-                  <span style={{
-                    fontSize: 20,
-                    color: scrolled ? "#dc2626" : "#fca5a5",
-                  }}>
-                    →
-                  </span>
-                </div>
                 <a
                   href="/anmeldung-wedding"
                   style={{
@@ -678,15 +656,6 @@ export default function WeddingPage() {
                 </a>
               </div>
             </div>
-
-            <style>
-              {`
-                @keyframes bounce-right {
-                  0%, 100% { transform: translateX(0); }
-                  50% { transform: translateX(6px); }
-                }
-              `}
-            </style>
 
             {/* Mobile Menu Button */}
             <button
@@ -1175,9 +1144,6 @@ export default function WeddingPage() {
 
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", lineHeight: 1.6, marginBottom: 12, flex: 1 }}>
                 Die Wintersaison läuft noch bis zum 26.3., danach beginnt der Hallenabbau. Die Sommersaison startet voraussichtlich nach den Osterferien. Der genaue Trainingsstart wird mit der Bestätigung der Trainingszeit mitgeteilt.
-              </p>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "#ff6b6b", marginBottom: 16 }}>
-                Anmeldung bis 10.3.!
               </p>
 
               <a
