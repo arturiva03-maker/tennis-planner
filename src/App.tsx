@@ -7394,7 +7394,8 @@ Sportliche Grüße`
                                               margin: 5,
                                               filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
                                               html2canvas: { scale: 2 },
-                                              jsPDF: { unit: 'mm', format: [100, 85], orientation: 'landscape' }
+                                              jsPDF: { unit: 'mm', format: [120, 150], orientation: 'portrait' },
+                                              pagebreak: { mode: 'avoid-all' }
                                             })
                                             .from(cardEl)
                                             .save();
