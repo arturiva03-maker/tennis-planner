@@ -7017,7 +7017,7 @@ Sportliche Grüße`
                                     // Jede Seite einzeln als PDF generieren
                                     const pages = container.querySelectorAll('.print-page');
                                     const pdfOptions = {
-                                      margin: [10, 10, 10, 10],
+                                      margin: 10,
                                       filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
                                       html2canvas: { scale: 2 },
                                       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
