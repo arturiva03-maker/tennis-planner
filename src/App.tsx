@@ -7014,26 +7014,15 @@ Sportliche Grüße`
 
                                     document.body.appendChild(container);
 
-                                    // Jede Seite einzeln als PDF generieren
-                                    const pages = container.querySelectorAll('.print-page');
-                                    const pdfOptions = {
-                                      margin: 10,
-                                      filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
-                                      html2canvas: { scale: 2 },
-                                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-                                    };
-
-                                    if (pages.length === 1) {
-                                      await html2pdf().set(pdfOptions).from(pages[0] as HTMLElement).save();
-                                    } else {
-                                      let worker = html2pdf().set(pdfOptions).from(pages[0] as HTMLElement).toPdf();
-                                      for (let i = 1; i < pages.length; i++) {
-                                        worker = worker.get('pdf').then((pdf: { addPage: () => void }) => {
-                                          pdf.addPage();
-                                        }).from(pages[i] as HTMLElement).toContainer().toCanvas().toPdf();
-                                      }
-                                      await worker.save();
-                                    }
+                                    await html2pdf()
+                                      .set({
+                                        margin: 10,
+                                        filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
+                                        html2canvas: { scale: 2 },
+                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+                                      })
+                                      .from(container)
+                                      .save();
 
                                     document.body.removeChild(container);
                                   }}
