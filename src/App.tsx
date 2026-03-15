@@ -7284,20 +7284,22 @@ Sportliche Grüße`
                                             <html>
                                             <head>
                                               <style>
-                                                @page { size: A4; margin: 0; }
+                                                @page { size: 95mm 140mm; margin: 0; }
                                                 body {
                                                   font-family: Arial, sans-serif;
                                                   margin: 0;
-                                                  padding: 10mm;
+                                                  padding: 3mm;
                                                   box-sizing: border-box;
                                                 }
                                                 .card {
-                                                  max-width: 180mm;
+                                                  width: 89mm;
+                                                  height: 134mm;
                                                   border: 1px solid #ccc;
-                                                  border-radius: 4px;
-                                                  padding: 6mm;
+                                                  border-radius: 3px;
+                                                  padding: 3mm;
                                                   box-sizing: border-box;
-                                                  font-size: 10pt;
+                                                  font-size: 8pt;
+                                                  overflow: hidden;
                                                 }
                                                 .header {
                                                   display: flex;
@@ -7307,7 +7309,7 @@ Sportliche Grüße`
                                                   padding-bottom: 2mm;
                                                   margin-bottom: 2mm;
                                                 }
-                                                .name { font-size: 12pt; font-weight: bold; margin: 0; }
+                                                .name { font-size: 10pt; font-weight: bold; margin: 0; }
                                                 .anlage {
                                                   background: ${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};
                                                   color: white;
@@ -7389,10 +7391,10 @@ Sportliche Grüße`
 
                                           await html2pdf()
                                             .set({
-                                              margin: 10,
+                                              margin: 0,
                                               filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
                                               html2canvas: { scale: 2, useCORS: true },
-                                              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                              jsPDF: { unit: 'mm', format: [95, 140], orientation: 'portrait' }
                                             })
                                             .from(cardEl)
                                             .save();
