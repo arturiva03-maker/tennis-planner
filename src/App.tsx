@@ -6957,7 +6957,7 @@ Sportliche Grüße`
 
                                     const html2pdf = (await import('html2pdf.js')).default;
                                     const container = document.createElement('div');
-                                    container.style.cssText = 'position:absolute;left:-9999px;font-family:Arial,sans-serif;';
+                                    container.style.cssText = 'position:fixed;top:0;left:0;z-index:-9999;background:#fff;font-family:Arial,sans-serif;';
 
                                     // Style-Element hinzufügen
                                     const style = document.createElement('style');
