@@ -6955,67 +6955,85 @@ Sportliche Grüße`
                                       cardGroups.push(selectedReqs.slice(i, i + 4));
                                     }
 
-                                    const cardsHTML = `
-                                      <!DOCTYPE html>
-                                      <html>
-                                      <head>
-                                        <style>
-                                          @page { size: A4; margin: 8mm; }
-                                          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-                                          .page {
-                                            display: grid;
-                                            grid-template-columns: 1fr 1fr;
-                                            grid-template-rows: 1fr 1fr;
-                                            gap: 4mm;
-                                            height: 281mm;
-                                            page-break-after: always;
-                                          }
-                                          .page:last-child { page-break-after: auto; }
-                                          .card {
-                                            width: 93mm; height: 136mm;
-                                            border: 1px solid #ccc; border-radius: 3px;
-                                            padding: 3mm; box-sizing: border-box;
-                                            font-size: 8pt; overflow: hidden;
-                                          }
-                                          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
-                                          .name { font-size: 10pt; font-weight: bold; margin: 0; }
-                                          .anlage { color: white; padding: 1px 5px; border-radius: 2px; font-size: 7pt; }
-                                          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; margin-bottom: 1.5mm; }
-                                          .info-item label { font-size: 6pt; color: #666; display: block; }
-                                          .info-item span { font-size: 8pt; }
-                                          .verfuegbarkeit { margin-top: 1mm; }
-                                          .verfuegbarkeit h4 { font-size: 7pt; margin: 0 0 0.5mm 0; color: #666; }
-                                          .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
-                                          .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
-                                          .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
-                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 10mm; overflow: hidden; }
-                                          .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
-                                        </style>
-                                      </head>
-                                      <body>
-                                        ${cardGroups.map(group => `
-                                          <div class="page">
-                                            ${group.map(generateCardHTML).join("")}
-                                          </div>
-                                        `).join("")}
-                                      </body>
-                                      </html>
-                                    `;
-
                                     const html2pdf = (await import('html2pdf.js')).default;
                                     const container = document.createElement('div');
-                                    container.innerHTML = cardsHTML;
+                                    container.style.cssText = 'position:absolute;left:-9999px;font-family:Arial,sans-serif;';
+
+                                    // Style-Element hinzufügen
+                                    const style = document.createElement('style');
+                                    style.textContent = `
+                                      .print-page {
+                                        width: 190mm;
+                                        height: 277mm;
+                                        display: grid;
+                                        grid-template-columns: 1fr 1fr;
+                                        grid-template-rows: 1fr 1fr;
+                                        gap: 4mm;
+                                        padding: 0;
+                                        box-sizing: border-box;
+                                      }
+                                      .print-card {
+                                        width: 93mm;
+                                        height: 134mm;
+                                        border: 1px solid #ccc;
+                                        border-radius: 3px;
+                                        padding: 3mm;
+                                        box-sizing: border-box;
+                                        font-size: 8pt;
+                                        overflow: hidden;
+                                        font-family: Arial, sans-serif;
+                                      }
+                                      .print-card .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
+                                      .print-card .name { font-size: 10pt; font-weight: bold; margin: 0; }
+                                      .print-card .anlage { color: white; padding: 1px 5px; border-radius: 2px; font-size: 7pt; }
+                                      .print-card .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; margin-bottom: 1.5mm; }
+                                      .print-card .info-item label { font-size: 6pt; color: #666; display: block; }
+                                      .print-card .info-item span { font-size: 8pt; }
+                                      .print-card .verfuegbarkeit { margin-top: 1mm; }
+                                      .print-card .verfuegbarkeit h4 { font-size: 7pt; margin: 0 0 0.5mm 0; color: #666; }
+                                      .print-card .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
+                                      .print-card .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
+                                      .print-card .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
+                                      .print-card .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 10mm; overflow: hidden; }
+                                      .print-card .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
+                                    `;
+                                    container.appendChild(style);
+
+                                    // Seiten erstellen
+                                    cardGroups.forEach(group => {
+                                      const page = document.createElement('div');
+                                      page.className = 'print-page';
+                                      group.forEach(req => {
+                                        const cardDiv = document.createElement('div');
+                                        cardDiv.className = 'print-card';
+                                        cardDiv.innerHTML = generateCardHTML(req).replace('class="card"', '');
+                                        page.appendChild(cardDiv);
+                                      });
+                                      container.appendChild(page);
+                                    });
+
                                     document.body.appendChild(container);
 
-                                    await html2pdf()
-                                      .set({
-                                        margin: 0,
-                                        filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
-                                        html2canvas: { scale: 2 },
-                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                                      })
-                                      .from(container.querySelector('body') as HTMLElement)
-                                      .save();
+                                    // Jede Seite einzeln als PDF generieren
+                                    const pages = container.querySelectorAll('.print-page');
+                                    const pdfOptions = {
+                                      margin: [10, 10, 10, 10],
+                                      filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
+                                      html2canvas: { scale: 2 },
+                                      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+                                    };
+
+                                    if (pages.length === 1) {
+                                      await html2pdf().set(pdfOptions).from(pages[0] as HTMLElement).save();
+                                    } else {
+                                      let worker = html2pdf().set(pdfOptions).from(pages[0] as HTMLElement).toPdf();
+                                      for (let i = 1; i < pages.length; i++) {
+                                        worker = worker.get('pdf').then((pdf: { addPage: () => void }) => {
+                                          pdf.addPage();
+                                        }).from(pages[i] as HTMLElement).toContainer().toCanvas().toPdf();
+                                      }
+                                      await worker.save();
+                                    }
 
                                     document.body.removeChild(container);
                                   }}
