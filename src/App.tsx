@@ -7292,14 +7292,12 @@ Sportliche Grüße`
                                                   box-sizing: border-box;
                                                 }
                                                 .card {
-                                                  width: 90mm;
-                                                  min-height: 70mm;
+                                                  max-width: 180mm;
                                                   border: 1px solid #ccc;
                                                   border-radius: 4px;
-                                                  padding: 4mm;
+                                                  padding: 6mm;
                                                   box-sizing: border-box;
-                                                  font-size: 9pt;
-                                                  page-break-inside: avoid;
+                                                  font-size: 10pt;
                                                 }
                                                 .header {
                                                   display: flex;
@@ -7391,10 +7389,10 @@ Sportliche Grüße`
 
                                           await html2pdf()
                                             .set({
-                                              margin: 5,
+                                              margin: 10,
                                               filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
-                                              html2canvas: { scale: 2 },
-                                              jsPDF: { unit: 'mm', format: [120, 150], orientation: 'portrait' }
+                                              html2canvas: { scale: 2, useCORS: true },
+                                              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                                             })
                                             .from(cardEl)
                                             .save();
