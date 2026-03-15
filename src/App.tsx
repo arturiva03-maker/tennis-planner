@@ -6985,7 +6985,7 @@ Sportliche Grüße`
                                           .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
                                           .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
                                           .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
-                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 10mm; overflow: hidden; }
+                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; }
                                           .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
                                         </style>
                                         ${cardGroups.map(group => `
