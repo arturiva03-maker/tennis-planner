@@ -6949,22 +6949,36 @@ Sportliche Grüße`
                                       `;
                                     };
 
+                                    // Karten in 4er-Gruppen aufteilen
+                                    const cardGroups: typeof selectedReqs[] = [];
+                                    for (let i = 0; i < selectedReqs.length; i += 4) {
+                                      cardGroups.push(selectedReqs.slice(i, i + 4));
+                                    }
+
                                     const cardsHTML = `
                                       <!DOCTYPE html>
                                       <html>
                                       <head>
                                         <style>
-                                          @page { size: A4; margin: 10mm; }
+                                          @page { size: A4; margin: 8mm; }
                                           body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-                                          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+                                          .page {
+                                            display: grid;
+                                            grid-template-columns: 1fr 1fr;
+                                            grid-template-rows: 1fr 1fr;
+                                            gap: 4mm;
+                                            height: 281mm;
+                                            page-break-after: always;
+                                          }
+                                          .page:last-child { page-break-after: auto; }
                                           .card {
-                                            width: 93mm; min-height: 70mm;
+                                            width: 93mm; height: 136mm;
                                             border: 1px solid #ccc; border-radius: 3px;
                                             padding: 3mm; box-sizing: border-box;
-                                            font-size: 8pt; page-break-inside: avoid;
+                                            font-size: 8pt; overflow: hidden;
                                           }
                                           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
-                                          .name { font-size: 11pt; font-weight: bold; margin: 0; }
+                                          .name { font-size: 10pt; font-weight: bold; margin: 0; }
                                           .anlage { color: white; padding: 1px 5px; border-radius: 2px; font-size: 7pt; }
                                           .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; margin-bottom: 1.5mm; }
                                           .info-item label { font-size: 6pt; color: #666; display: block; }
@@ -6974,14 +6988,16 @@ Sportliche Grüße`
                                           .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
                                           .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
                                           .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
-                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 12mm; overflow: hidden; }
+                                          .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; max-height: 10mm; overflow: hidden; }
                                           .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
                                         </style>
                                       </head>
                                       <body>
-                                        <div class="grid">
-                                          ${selectedReqs.map(generateCardHTML).join("")}
-                                        </div>
+                                        ${cardGroups.map(group => `
+                                          <div class="page">
+                                            ${group.map(generateCardHTML).join("")}
+                                          </div>
+                                        `).join("")}
                                       </body>
                                       </html>
                                     `;
@@ -6993,12 +7009,12 @@ Sportliche Grüße`
 
                                     await html2pdf()
                                       .set({
-                                        margin: 10,
+                                        margin: 0,
                                         filename: `Anmeldungen_${new Date().toISOString().split('T')[0]}.pdf`,
                                         html2canvas: { scale: 2 },
                                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                                       })
-                                      .from(container.querySelector('.grid') as HTMLElement)
+                                      .from(container.querySelector('body') as HTMLElement)
                                       .save();
 
                                     document.body.removeChild(container);
