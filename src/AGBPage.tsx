@@ -36,7 +36,7 @@ export default function AGBPage() {
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Für besonders kleine Gruppenwünsche kann zu beliebten Trainingszeiten ein Aufpreis erforderlich sein.{" "}
+            Wird für einen besonders kleinen Gruppenwunsch ein Aufpreis erhoben?{" "}
             <button
               onClick={() => setShowAufpreise(!showAufpreise)}
               style={{
