@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import "./App.css";
 
 export default function AGBPageBritz() {
+  const [showAufpreise, setShowAufpreise] = useState(false);
+
   return (
     <div className="registrationPage">
       <div className="card registrationCard" style={{ maxWidth: 800 }}>
@@ -33,8 +35,57 @@ export default function AGBPageBritz() {
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für einen besonders kleinen Gruppenwunsch zu einer beliebten Trainingszeit (z.B. 2er oder 3er Gruppe an einem Wochentag ab 16 Uhr) kann ein Aufpreis erforderlich sein. Weitere Details sind mit dem Trainerteam zu besprechen.
+            Wird für einen besonders kleinen Gruppenwunsch ein Aufpreis erhoben?{" "}
+            <button
+              onClick={() => setShowAufpreise(!showAufpreise)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--primary)",
+                cursor: "pointer",
+                padding: 0,
+                fontSize: 13,
+                textDecoration: "underline",
+              }}
+            >
+              {showAufpreise ? "Aufpreise ausblenden" : "Aufpreise anzeigen"}
+            </button>
           </p>
+
+          {showAufpreise && (
+            <div style={{
+              background: "var(--bg-inset)",
+              borderRadius: 8,
+              padding: 16,
+              marginTop: 12,
+              fontSize: 14
+            }}>
+              <p style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
+                Für folgende Trainingszeiten wird ein Aufpreis erhoben:
+              </p>
+              <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, lineHeight: 1.6 }}>
+                <li>Mo-Fr: 17-21 Uhr</li>
+              </ul>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "2px solid var(--border)", background: "var(--bg)" }}>Gruppengröße</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right", borderBottom: "2px solid var(--border)", background: "var(--bg)" }}>Preis pro Person/Stunde</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", textAlign: "right" }}><strong>25 EUR</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "8px 12px" }}>3er Gruppe</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right" }}><strong>20 EUR</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         <section style={{ marginBottom: 32 }}>
