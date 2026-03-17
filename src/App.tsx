@@ -5504,22 +5504,38 @@ Deine Tennisschule`;
                             const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
                             const datum = new Date(tDatum + "T12:00:00");
                             const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
-                            const startDatum = tDatum.split("-").reverse().join(".");
+                            const spielerNamen = tSpielerIds
+                              .map(id => spielerById.get(id)?.vorname)
+                              .filter(Boolean)
+                              .join(", ");
+                            const sepaLink = tAnlage === "Britz"
+                              ? `${window.location.origin}/sepa-britz`
+                              : `${window.location.origin}/sepa`;
 
                             setTrainingInfoEmailSubject(`Dein Tennis-Training - ${wochentag}s ${tVon}-${tBis} Uhr`);
                             setTrainingInfoEmailBody(
-`Hallo,
+`Hallo ${spielerNamen || ""},
 
-hiermit informiere ich dich über dein Tennis-Training:
+hiermit informiere ich dich über dein Training für die Sommersaison:
 
 Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
-Startdatum: ${startDatum}
+Startdatum: Erste Woche nach den Osterferien
 
-Bei Fragen melde dich gerne.
+Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
+${sepaLink}
 
-Sportliche Grüße`
+Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig.
+
+In den Sommerferien findet das Training nur nach vorheriger Absprache statt, dazu wird es ein separates Tool geben. Nach den Sommerferien geht das Tennistraining dann regulär weiter.
+
+Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen nach den Sommerferien nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
+
+Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
+
+Sportliche Grüße
+Trainerteam A bis Z`
                             );
                             setShowTrainingInfoEmail(true);
                           }}
