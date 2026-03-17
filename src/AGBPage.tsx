@@ -62,7 +62,7 @@ export default function AGBPage() {
               fontSize: 14
             }}>
               <p style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
-                Für folgende Trainingszeiten wird ein Aufpreis erhoben:
+                Für folgende Trainingszeiten wird für besonders kleine Gruppenwünsche ein Aufpreis erhoben:
               </p>
               <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, lineHeight: 1.6 }}>
                 <li>Mo-Fr: 16-21 Uhr</li>
