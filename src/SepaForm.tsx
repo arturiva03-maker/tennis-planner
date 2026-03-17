@@ -197,7 +197,7 @@ export default function SepaForm({ anlage = "Wedding" }: SepaFormProps) {
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
-        <h1>SEPA-Lastschriftmandat {anlage}</h1>
+        <h1>SEPA-Lastschriftmandat</h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Erteilen Sie uns ein SEPA-Lastschriftmandat für die bequeme Abbuchung der Trainingsgebühren.
         </p>

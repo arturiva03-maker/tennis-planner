@@ -111,6 +111,7 @@ type SepaMandate = {
   unterschriftsdatum: string;
   created_at: string;
   status?: string;
+  anlage?: string;
 };
 
 type TenniscampAnmeldung = {
@@ -7517,6 +7518,17 @@ Sportliche Grüße`
                                           borderRadius: 4
                                         }}>
                                           Kind
+                                        </span>
+                                      )}
+                                      {mandate.anlage && (
+                                        <span style={{
+                                          fontSize: 11,
+                                          background: mandate.anlage === "Britz" ? "#8b5cf6" : "#3b82f6",
+                                          color: "#fff",
+                                          padding: "2px 6px",
+                                          borderRadius: 4
+                                        }}>
+                                          {mandate.anlage}
                                         </span>
                                       )}
                                       <span style={{
