@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import "./App.css";
 
 export default function AGBPage() {
+  const [showAufpreise, setShowAufpreise] = useState(false);
+
   return (
     <div className="registrationPage">
       <div className="card registrationCard" style={{ maxWidth: 800 }}>
@@ -30,47 +32,60 @@ export default function AGBPage() {
             </tbody>
           </table>
 
-          <p className="muted" style={{ fontSize: 13, marginTop: 16, marginBottom: 8 }}>
-            <strong>Aufpreis für kleine Gruppen zu beliebten Trainingszeiten:</strong>
-          </p>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: "var(--bg-inset)" }}>
-                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Gruppengröße</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Zeitraum</th>
-                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Preis</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
-              </tr>
-              <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
-              </tr>
-              <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
-              </tr>
-              <tr>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
-                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
-              </tr>
-            </tbody>
-          </table>
-
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers.
+            Für besonders kleine Gruppenwünsche kann zu beliebten Trainingszeiten ein Aufpreis erforderlich sein.{" "}
+            <button
+              onClick={() => setShowAufpreise(!showAufpreise)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--primary)",
+                cursor: "pointer",
+                padding: 0,
+                fontSize: 13,
+                textDecoration: "underline",
+              }}
+            >
+              {showAufpreise ? "Aufpreise ausblenden" : "Aufpreise anzeigen"}
+            </button>
           </p>
+
+          {showAufpreise && (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, marginTop: 12 }}>
+              <thead>
+                <tr style={{ background: "var(--bg-inset)" }}>
+                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Gruppengröße</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Zeitraum</th>
+                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Preis</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
         </section>
 
         <section style={{ marginBottom: 32 }}>
