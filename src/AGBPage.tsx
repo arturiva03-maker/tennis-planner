@@ -29,11 +29,47 @@ export default function AGBPage() {
               </tr>
             </tbody>
           </table>
+
+          <p className="muted" style={{ fontSize: 13, marginTop: 16, marginBottom: 8 }}>
+            <strong>Aufpreis für kleine Gruppen zu beliebten Trainingszeiten:</strong>
+          </p>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "var(--bg-inset)" }}>
+                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Gruppengröße</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Zeitraum</th>
+                <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Preis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
+                <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
+              </tr>
+            </tbody>
+          </table>
+
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für einen besonders kleinen Gruppenwunsch zu einer beliebten Trainingszeit (z.B. 2er oder 3er Gruppe an einem Wochentag ab 16 Uhr) kann ein Aufpreis erforderlich sein. Weitere Details sind mit dem Trainerteam zu besprechen.
+            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers.
           </p>
         </section>
 
