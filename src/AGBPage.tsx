@@ -54,37 +54,39 @@ export default function AGBPage() {
           </p>
 
           {showAufpreise && (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, marginTop: 12 }}>
-              <thead>
-                <tr style={{ background: "var(--bg-inset)" }}>
-                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Gruppengröße</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Zeitraum</th>
-                  <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)" }}>Preis</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Mo-Fr 16-21 Uhr</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>25 EUR</strong> pro Person/Stunde</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>3er Gruppe</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>Sa 10-18 Uhr</td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}><strong>20 EUR</strong> pro Person/Stunde</td>
-                </tr>
-              </tbody>
-            </table>
+            <div style={{
+              background: "var(--bg-inset)",
+              borderRadius: 8,
+              padding: 16,
+              marginTop: 12,
+              fontSize: 14
+            }}>
+              <p style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
+                Beliebte Trainingszeiten:
+              </p>
+              <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, lineHeight: 1.6 }}>
+                <li>Mo-Fr: 16-21 Uhr</li>
+                <li>Sa: 10-18 Uhr</li>
+              </ul>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ padding: "8px 12px", textAlign: "left", borderBottom: "2px solid var(--border)", background: "var(--bg)" }}>Gruppengröße</th>
+                    <th style={{ padding: "8px 12px", textAlign: "right", borderBottom: "2px solid var(--border)", background: "var(--bg)" }}>Preis pro Person/Stunde</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)" }}>2er Gruppe</td>
+                    <td style={{ padding: "8px 12px", borderBottom: "1px solid var(--border)", textAlign: "right" }}><strong>25 EUR</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "8px 12px" }}>3er Gruppe</td>
+                    <td style={{ padding: "8px 12px", textAlign: "right" }}><strong>20 EUR</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 
