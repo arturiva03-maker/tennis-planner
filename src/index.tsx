@@ -26,6 +26,7 @@ root.render(
         <Route path="/anmeldung-wedding" element={<WeddingRegistrationWrapper />} />
         <Route path="/anmeldung-britz" element={<RegistrationForm anlage="Britz" />} />
         <Route path="/sepa" element={<SepaForm />} />
+        <Route path="/sepa-britz" element={<SepaForm anlage="Britz" />} />
         <Route path="/agb" element={<AGBPage />} />
         <Route path="/agb-britz" element={<AGBPageBritz />} />
         <Route path="/wedding" element={<WeddingPage />} />

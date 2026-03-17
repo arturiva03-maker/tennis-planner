@@ -39,7 +39,11 @@ function generateMandatsreferenz(): string {
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-export default function SepaForm() {
+type SepaFormProps = {
+  anlage?: "Wedding" | "Britz";
+};
+
+export default function SepaForm({ anlage = "Wedding" }: SepaFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
@@ -154,6 +158,7 @@ export default function SepaForm() {
           email: formData.email.trim(),
           mandatsreferenz,
           unterschriftsdatum,
+          anlage: anlage,
         });
 
       if (insertError) {
@@ -192,7 +197,7 @@ export default function SepaForm() {
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
-        <h1>SEPA-Lastschriftmandat</h1>
+        <h1>SEPA-Lastschriftmandat {anlage}</h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Erteilen Sie uns ein SEPA-Lastschriftmandat für die bequeme Abbuchung der Trainingsgebühren.
         </p>
@@ -356,7 +361,7 @@ export default function SepaForm() {
               <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
                 Mit der Erteilung des SEPA-Mandats akzeptieren Sie unsere{" "}
                 <a
-                  href="/agb"
+                  href={anlage === "Britz" ? "/agb-britz" : "/agb"}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)" }}
