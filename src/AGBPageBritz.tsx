@@ -35,7 +35,7 @@ export default function AGBPageBritz() {
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers.{" "}
+            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers. Für besonders kleine Gruppenwünsche zu beliebten Trainingszeiten erheben wir einen Aufpreis.{" "}
             <button
               onClick={() => setShowAufpreise(!showAufpreise)}
               style={{
