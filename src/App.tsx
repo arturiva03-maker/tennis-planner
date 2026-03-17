@@ -7438,8 +7438,8 @@ Sportliche Grüße`
                     {formulareTab === "sepa" && (
                       <>
                         <div style={{ marginBottom: 16 }}>
-                          <p className="muted">
-                            <strong>SEPA-Mandat:</strong>{" "}
+                          <p className="muted" style={{ marginBottom: 8 }}>
+                            <strong>SEPA-Mandat Wedding:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
@@ -7454,6 +7454,28 @@ Sportliche Grüße`
                               onClick={() => {
                                 navigator.clipboard.writeText(
                                   `${window.location.origin}/sepa`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                          <p className="muted">
+                            <strong>SEPA-Mandat Britz:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                            }}>
+                              {window.location.origin}/sepa-britz
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/sepa-britz`
                                 );
                               }}
                             >
