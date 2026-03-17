@@ -11,7 +11,7 @@ export default function AGBPage() {
 
         <section style={{ marginBottom: 32 }}>
           <h2 style={{ fontSize: 18, marginBottom: 12, color: "var(--primary)" }}>
-            1. Trainingspreise (Honorar)
+            1. Trainingspreise
           </h2>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
