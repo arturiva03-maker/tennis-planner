@@ -5504,23 +5504,20 @@ Deine Tennisschule`;
                             const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
                             const datum = new Date(tDatum + "T12:00:00");
                             const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
-                            const spielerNamen = tSpielerIds
-                              .map(id => spielerById.get(id)?.vorname)
-                              .filter(Boolean)
-                              .join(", ");
                             const sepaLink = tAnlage === "Britz"
                               ? `${window.location.origin}/sepa-britz`
                               : `${window.location.origin}/sepa`;
 
                             setTrainingInfoEmailSubject(`Dein Tennis-Training - ${wochentag}s ${tVon}-${tBis} Uhr`);
                             setTrainingInfoEmailBody(
-`Hallo ${spielerNamen || ""},
+`Hallo {SPIELERNAME},
 
 hiermit informiere ich dich über dein Training für die Sommersaison:
 
 Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
+Teilnehmer: {ANDERE_TEILNEHMER}
 Startdatum: Erste Woche nach den Osterferien
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
@@ -5530,7 +5527,7 @@ Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses
 
 In den Sommerferien findet das Training nur nach vorheriger Absprache statt, dazu wird es ein separates Tool geben. Nach den Sommerferien geht das Tennistraining dann regulär weiter.
 
-Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen nach den Sommerferien nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
+Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen zur späteren Sommerzeit nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
 
 Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
 
@@ -11956,11 +11953,19 @@ Deine Tennisschule`;
             </div>
 
             <div className="muted" style={{ marginBottom: 16 }}>
-              E-Mail wird gesendet an: {tSpielerIds
-                .map(id => spielerById.get(id))
-                .filter(s => s?.kontaktEmail)
-                .map(s => `${getFullName(s!)} (${s!.kontaktEmail})`)
-                .join(", ") || "Keine Spieler mit E-Mail"}
+              <p style={{ margin: "0 0 8px 0" }}>
+                Jeder Spieler erhält eine individuelle E-Mail mit seinem Namen.
+              </p>
+              <p style={{ margin: 0 }}>
+                Empfänger: {tSpielerIds
+                  .map(id => spielerById.get(id))
+                  .filter(s => s?.kontaktEmail)
+                  .map(s => `${getFullName(s!)}`)
+                  .join(", ") || "Keine Spieler mit E-Mail"}
+              </p>
+              <p style={{ margin: "8px 0 0 0", fontSize: 12 }}>
+                Platzhalter: {"{SPIELERNAME}"} = Vorname, {"{ANDERE_TEILNEHMER}"} = andere Gruppenmitglieder
+              </p>
             </div>
 
             <div className="field" style={{ marginBottom: 12 }}>
@@ -11994,41 +11999,61 @@ Deine Tennisschule`;
                 className="btn"
                 disabled={trainingInfoEmailSending}
                 onClick={async () => {
-                  const recipients = tSpielerIds
-                    .flatMap(id => {
-                      const s = spielerById.get(id);
-                      if (!s) return [];
-                      return [s.kontaktEmail, ...(s.zusaetzlicheEmails || [])].filter(Boolean);
-                    }) as string[];
+                  const spielerMitEmail = tSpielerIds
+                    .map(id => spielerById.get(id))
+                    .filter(s => s && s.kontaktEmail) as Spieler[];
 
-                  if (recipients.length === 0) {
+                  if (spielerMitEmail.length === 0) {
                     alert("Keine Spieler mit E-Mail-Adresse gefunden.");
                     return;
                   }
 
                   setTrainingInfoEmailSending(true);
 
+                  let erfolgreich = 0;
+                  let fehler = 0;
+
                   try {
-                    const resp = await fetch("/api/send-newsletter", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        to: recipients,
-                        subject: trainingInfoEmailSubject,
-                        body: trainingInfoEmailBody,
-                        html: trainingInfoEmailBody.replace(/\n/g, "<br>"),
-                        fromName: "Tennisschule A bis Z",
-                      }),
-                    });
+                    for (const spieler of spielerMitEmail) {
+                      const spielerName = spieler.vorname;
+                      const andereTeilnehmer = spielerMitEmail
+                        .filter(s => s.id !== spieler.id)
+                        .map(s => s.vorname)
+                        .join(", ") || "Einzeltraining";
 
-                    const result = await resp.json();
+                      const personalizedBody = trainingInfoEmailBody
+                        .replace("{SPIELERNAME}", spielerName)
+                        .replace("{ANDERE_TEILNEHMER}", andereTeilnehmer);
 
-                    if (resp.ok && result.success) {
-                      alert(`E-Mail erfolgreich an ${result.sent} Spieler gesendet!`);
-                      setShowTrainingInfoEmail(false);
-                    } else {
-                      alert(`Fehler beim Senden: ${result.error || "Unbekannter Fehler"}`);
+                      const recipients = [spieler.kontaktEmail, ...(spieler.zusaetzlicheEmails || [])].filter(Boolean);
+
+                      const resp = await fetch("/api/send-newsletter", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          to: recipients,
+                          subject: trainingInfoEmailSubject,
+                          body: personalizedBody,
+                          html: personalizedBody.replace(/\n/g, "<br>"),
+                          fromName: "Tennisschule A bis Z",
+                        }),
+                      });
+
+                      const result = await resp.json();
+
+                      if (resp.ok && result.success) {
+                        erfolgreich++;
+                      } else {
+                        fehler++;
+                      }
                     }
+
+                    if (fehler === 0) {
+                      alert(`E-Mail erfolgreich an ${erfolgreich} Spieler gesendet!`);
+                    } else {
+                      alert(`${erfolgreich} E-Mails gesendet, ${fehler} fehlgeschlagen.`);
+                    }
+                    setShowTrainingInfoEmail(false);
                   } catch (err) {
                     alert(`Fehler beim Senden: ${err instanceof Error ? err.message : "Unbekannter Fehler"}`);
                   } finally {
