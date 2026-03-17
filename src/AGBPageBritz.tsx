@@ -35,7 +35,7 @@ export default function AGBPageBritz() {
             Die Einteilung in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam. Die Standardgruppe besteht aus 4 Personen. Eine Gruppe mit 5 Personen bildet die Ausnahme.
           </p>
           <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
-            Wird für einen besonders kleinen Gruppenwunsch ein Aufpreis erhoben?{" "}
+            Über die Gruppengröße entscheidet das Trainerteam je nach Auslastung und zeitlicher Flexibilität des Schülers.{" "}
             <button
               onClick={() => setShowAufpreise(!showAufpreise)}
               style={{
@@ -61,6 +61,9 @@ export default function AGBPageBritz() {
               fontSize: 14
             }}>
               <p style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
+                Wird für einen besonders kleinen Gruppenwunsch ein Aufpreis erhoben?
+              </p>
+              <p style={{ margin: "0 0 12px 0" }}>
                 Für folgende Trainingszeiten wird ein Aufpreis erhoben:
               </p>
               <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, lineHeight: 1.6 }}>
