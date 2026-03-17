@@ -61,9 +61,6 @@ export default function AGBPageBritz() {
               fontSize: 14
             }}>
               <p style={{ margin: "0 0 12px 0", fontWeight: 600 }}>
-                Wird für einen besonders kleinen Gruppenwunsch ein Aufpreis erhoben?
-              </p>
-              <p style={{ margin: "0 0 12px 0" }}>
                 Für folgende Trainingszeiten wird ein Aufpreis erhoben:
               </p>
               <ul style={{ margin: "0 0 16px 0", paddingLeft: 20, lineHeight: 1.6 }}>
