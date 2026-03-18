@@ -5572,7 +5572,7 @@ Deine Tennisschule`;
                               ? `${window.location.origin}/sepa-britz`
                               : `${window.location.origin}/sepa`;
 
-                            setTrainingInfoEmailSubject(`Dein Tennis-Training - ${wochentag}s ${tVon}-${tBis} Uhr`);
+                            setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -5594,6 +5594,8 @@ In den Sommerferien findet das Training nur nach vorheriger Absprache statt, daz
 Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen zur späteren Sommerzeit nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
 
 Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
+
+Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.
 
 Sportliche Grüße
 Trainerteam A bis Z`
