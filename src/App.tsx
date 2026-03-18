@@ -1249,6 +1249,7 @@ export default function App() {
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
   const [selectedRequestIds, setSelectedRequestIds] = useState<Set<string>>(new Set());
+  const [showAdoptConfirmDialog, setShowAdoptConfirmDialog] = useState(false);
 
   const [sepaMandates, setSepaMandates] = useState<SepaMandate[]>([]);
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
@@ -2986,7 +2987,7 @@ export default function App() {
     setSpielerNachname(nachname);
     setSpielerEmail(req.email);
     setSpielerTelefon(req.telefon || "");
-    setSpielerNotizen(req.nachricht || "");
+    setSpielerNotizen(""); // Nachricht wird nicht als Notiz übernommen
     
     // Labels vorbereiten
     const newLabels: string[] = [];
@@ -3003,6 +3004,69 @@ export default function App() {
     
     // Nach oben scrollen
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function adoptMultiplePlayersFromRequests() {
+    const selectedReqs = registrationRequests.filter(r => selectedRequestIds.has(r.id));
+    if (selectedReqs.length === 0) return;
+
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    selectedReqs.forEach((req) => {
+      // Name splitten (einfache Heuristik: letztes Wort ist Nachname)
+      const parts = req.name.trim().split(/\s+/);
+      let vorname = "";
+      let nachname = "";
+
+      if (parts.length === 1) {
+        vorname = parts[0];
+      } else {
+        nachname = parts.pop() || "";
+        vorname = parts.join(" ");
+      }
+
+      // Duplikatscheck
+      const fullNameLower = `${vorname} ${nachname}`.toLowerCase().trim();
+      const duplicate = spieler.find((s) => {
+        const existingFullName = `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim();
+        return existingFullName === fullNameLower;
+      });
+
+      if (duplicate) {
+        skippedCount++;
+        return;
+      }
+
+      // Labels vorbereiten
+      const newLabels: string[] = [];
+      if (req.anlage) {
+        newLabels.push(req.anlage);
+      }
+
+      const neu: Spieler = {
+        id: uid(),
+        vorname,
+        nachname: nachname || undefined,
+        kontaktEmail: req.email || undefined,
+        kontaktTelefon: req.telefon || undefined,
+        labels: newLabels.length > 0 ? newLabels : undefined,
+      };
+
+      setSpieler((prev) => [...prev, neu]);
+      addedCount++;
+    });
+
+    // Dialog schließen und Auswahl aufheben
+    setShowAdoptConfirmDialog(false);
+    setSelectedRequestIds(new Set());
+
+    // Feedback anzeigen
+    if (skippedCount > 0) {
+      alert(`${addedCount} Spieler übernommen. ${skippedCount} übersprungen (bereits vorhanden).`);
+    } else {
+      alert(`${addedCount} Spieler erfolgreich übernommen!`);
+    }
   }
 
   function toggleSpielerPick(id: string) {
@@ -7029,6 +7093,13 @@ Trainerteam A bis Z`
                                   }}
                                 >
                                   Ausgewählte drucken
+                                </button>
+                                <button
+                                  className="btn micro"
+                                  style={{ backgroundColor: "#059669", borderColor: "#059669" }}
+                                  onClick={() => setShowAdoptConfirmDialog(true)}
+                                >
+                                  Als Spieler übernehmen
                                 </button>
                                 <button
                                   className="btn micro btnGhost"
@@ -12304,6 +12375,92 @@ Deine Tennisschule`;
                   }}
                 >
                   PDF erstellen
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Spieler-Übernahme Bestätigungs-Dialog */}
+      {showAdoptConfirmDialog && (() => {
+        const selectedReqs = registrationRequests.filter(r => selectedRequestIds.has(r.id));
+        return (
+          <div className="modalOverlay" onClick={() => setShowAdoptConfirmDialog(false)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 600, maxHeight: "90vh", overflow: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0 }}>Spieler übernehmen</h2>
+                <button
+                  onClick={() => setShowAdoptConfirmDialog(false)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    fontSize: 20,
+                    cursor: "pointer",
+                    color: "var(--text-muted)"
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              <p style={{ marginBottom: 16 }}>
+                Die folgenden {selectedReqs.length} Anmeldungen werden als Spieler übernommen:
+              </p>
+              <div style={{ maxHeight: 400, overflowY: "auto", marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Name</th>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>E-Mail</th>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Telefon</th>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Anlage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedReqs.map((req) => (
+                      <tr key={req.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "8px 4px" }}>{req.name}</td>
+                        <td style={{ padding: "8px 4px", fontSize: 12 }}>{req.email}</td>
+                        <td style={{ padding: "8px 4px" }}>{req.telefon || "-"}</td>
+                        <td style={{ padding: "8px 4px" }}>
+                          {req.anlage && (
+                            <span style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                              color: req.anlage === "Britz" ? "#000" : "#fff",
+                              padding: "2px 6px",
+                              borderRadius: 4
+                            }}>
+                              {req.anlage}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="muted" style={{ fontSize: 12, marginBottom: 16 }}>
+                Es werden Name, E-Mail, Telefon und Anlage (als Label) übernommen. Nachrichten werden nicht übernommen.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                <button
+                  className="btn btnGhost"
+                  onClick={() => setShowAdoptConfirmDialog(false)}
+                >
+                  Abbrechen
+                </button>
+                <button
+                  className="btn"
+                  style={{ backgroundColor: "#059669", borderColor: "#059669" }}
+                  onClick={adoptMultiplePlayersFromRequests}
+                >
+                  {selectedReqs.length} Spieler übernehmen
                 </button>
               </div>
             </div>
