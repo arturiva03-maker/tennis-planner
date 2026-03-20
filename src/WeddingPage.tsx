@@ -961,45 +961,6 @@ export default function WeddingPage() {
 
       </header>
 
-      {/* Social Proof Strip */}
-      <div style={{
-        background: colors.white,
-        borderBottom: `1px solid ${colors.border}`,
-        padding: "28px 24px",
-      }}>
-        <div style={{
-          maxWidth: 900,
-          margin: "0 auto",
-          display: "flex",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          gap: "40px",
-        }}>
-          {[
-            { number: "7", label: "Lizenzierte Trainer" },
-            { number: "150+", label: "Aktive Spieler" },
-            { number: "2", label: "Standorte in Berlin" },
-            { number: "DTB", label: "Zertifizierte Methoden" },
-          ].map((stat, i) => (
-            <div key={i} style={{ textAlign: "center", minWidth: 120 }}>
-              <div style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: colors.primary,
-                fontFamily: "'DM Serif Display', serif",
-                lineHeight: 1,
-                marginBottom: 4,
-              }}>
-                {stat.number}
-              </div>
-              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
-                {stat.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Unser Angebot Section */}
       <section id="angebot" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -1028,46 +989,39 @@ export default function WeddingPage() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
               {
-                icon: "🧒",
                 title: "Kindertraining",
                 subtitle: "ab 5 Jahren",
                 desc: "Tennis nach dem DTB-Konzept (Play+Stay / Tennis 10s). Altersgerechte Balle, angepasste Feldgrossen und viel Bewegung - Spass an erster Stelle.",
               },
               {
-                icon: "🎯",
                 title: "Jugendtraining",
                 subtitle: "Technik, Taktik & Spielverstandnis",
                 desc: "Gezieltes Training an Technik, Taktik und Spielverstandnis. Mix aus Korbtraining, Spielformen und Wettkampfsimulationen.",
               },
               {
-                icon: "🎾",
                 title: "Erwachsenentraining",
                 subtitle: "Einsteiger bis Clubspieler",
                 desc: "Training nach dem Tennis-Xpress-Konzept des DTB. Schnelle Spielfahigkeit und ein Training, das Fitness und Spass verbindet.",
               },
               {
-                icon: "🏆",
                 title: "Mannschaftstraining",
                 subtitle: "Wettkampforientiert",
                 desc: "Wettkampforientiertes Training mit gleichstarken Spielern. Fur Mannschafts- und Turnierspieler.",
               },
               {
-                icon: "👤",
                 title: "Einzeltraining",
                 subtitle: "Maximale Intensitat",
                 desc: "Gezieltes Arbeiten an Technik, Schwachen und individuellen Zielen - mit direktem Feedback und maximaler Intensitat.",
               },
               {
-                icon: "👥",
                 title: "Gruppentraining",
                 subtitle: "Teamdynamik & Spielformen",
                 desc: "Abwechslungsreiche Spielformen und die Motivation einer Gruppe. Vom Einsteiger bis zum Mannschaftsspieler.",
               },
               {
-                icon: "☀️",
                 title: "Camps",
                 subtitle: "In den Sommerferien",
                 desc: "Intensives Training in entspannter Atmosphare. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spass.",
@@ -1075,52 +1029,88 @@ export default function WeddingPage() {
             ].map((item, i) => (
               <div
                 key={i}
+                className="flip-card"
                 style={{
-                  background: colors.white,
-                  borderRadius: 12,
-                  padding: 28,
-                  border: `1px solid ${colors.border}`,
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  cursor: "default",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.08)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
+                  perspective: 800,
+                  height: 200,
+                  cursor: "pointer",
                 }}
               >
-                <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 10,
-                  background: `linear-gradient(135deg, rgba(27,71,27,0.08) 0%, rgba(65,130,49,0.12) 100%)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 22,
-                  marginBottom: 16,
+                <div className="flip-card-inner" style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transformStyle: "preserve-3d",
                 }}>
-                  {item.icon}
+                  {/* Front */}
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    backfaceVisibility: "hidden",
+                    background: colors.white,
+                    borderRadius: 12,
+                    border: `1px solid ${colors.border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 28,
+                    textAlign: "center",
+                  }}>
+                    <h3 style={{
+                      fontSize: 20,
+                      fontWeight: 700,
+                      color: colors.text,
+                      marginBottom: 8,
+                      fontFamily: "'DM Serif Display', serif",
+                    }}>
+                      {item.title}
+                    </h3>
+                    <p style={{
+                      fontSize: 13,
+                      color: colors.primary,
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      margin: 0,
+                    }}>
+                      {item.subtitle}
+                    </p>
+                  </div>
+                  {/* Back */}
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                    background: colors.primary,
+                    borderRadius: 12,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    padding: 28,
+                  }}>
+                    <h4 style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,0.7)",
+                      marginBottom: 10,
+                      textTransform: "uppercase",
+                      letterSpacing: "1px",
+                    }}>
+                      {item.title}
+                    </h4>
+                    <p style={{
+                      fontSize: 14,
+                      color: "rgba(255,255,255,0.9)",
+                      lineHeight: 1.6,
+                      margin: 0,
+                    }}>
+                      {item.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3 style={{ fontSize: 17, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
-                  {item.title}
-                </h3>
-                <p style={{
-                  fontSize: 12,
-                  color: colors.primary,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  marginBottom: 12,
-                }}>
-                  {item.subtitle}
-                </p>
-                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
-                  {item.desc}
-                </p>
               </div>
             ))}
           </div>
@@ -2464,6 +2454,11 @@ export default function WeddingPage() {
           .mobile-menu-btn {
             display: block !important;
           }
+        }
+
+        /* Flip card hover */
+        .flip-card:hover .flip-card-inner {
+          transform: rotateY(180deg);
         }
 
         /* Scroll-triggered fade-in animations */
