@@ -83,7 +83,7 @@ export default function WeddingPage() {
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
-  const [expandedAngebot, setExpandedAngebot] = useState<number | null>(null);
+
 
   const fetchSpontaneStunden = useCallback(async () => {
     setLoadingSlots(true);
