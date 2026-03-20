@@ -961,6 +961,45 @@ export default function WeddingPage() {
 
       </header>
 
+      {/* Social Proof Strip */}
+      <div style={{
+        background: colors.white,
+        borderBottom: `1px solid ${colors.border}`,
+        padding: "28px 24px",
+      }}>
+        <div style={{
+          maxWidth: 900,
+          margin: "0 auto",
+          display: "flex",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          gap: "40px",
+        }}>
+          {[
+            { number: "7", label: "Lizenzierte Trainer" },
+            { number: "150+", label: "Aktive Spieler" },
+            { number: "2", label: "Standorte in Berlin" },
+            { number: "DTB", label: "Zertifizierte Methoden" },
+          ].map((stat, i) => (
+            <div key={i} style={{ textAlign: "center", minWidth: 120 }}>
+              <div style={{
+                fontSize: 28,
+                fontWeight: 700,
+                color: colors.primary,
+                fontFamily: "'DM Serif Display', serif",
+                lineHeight: 1,
+                marginBottom: 4,
+              }}>
+                {stat.number}
+              </div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Unser Angebot Section */}
       <section id="angebot" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
