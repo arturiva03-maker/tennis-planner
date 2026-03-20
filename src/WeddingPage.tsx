@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
@@ -145,6 +145,34 @@ export default function WeddingPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Load Google Fonts
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, []);
+
+  // Scroll-triggered fade-in animations
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("fade-in-visible");
+            observerRef.current?.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+    const els = document.querySelectorAll(".fade-in-section");
+    els.forEach((el) => observerRef.current?.observe(el));
+    return () => observerRef.current?.disconnect();
+  }, [hasAnySlots]);
 
   useEffect(() => {
     fetchSpontaneStunden();
@@ -583,7 +611,7 @@ export default function WeddingPage() {
     <div style={{
       minHeight: "100vh",
       background: colors.white,
-      fontFamily: "'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       color: colors.text,
     }}>
       {/* Navigation */}
@@ -735,53 +763,73 @@ export default function WeddingPage() {
       <header
         style={{
           position: "relative",
-          minHeight: "70vh",
+          minHeight: "80vh",
           display: "flex",
           alignItems: "center",
-          background: `linear-gradient(135deg, #0f2f1a 0%, ${colors.primary} 50%, #1a3d24 100%)`,
+          background: `linear-gradient(160deg, #0a1f10 0%, ${colors.primary} 40%, #1a4d2a 70%, #0f2f1a 100%)`,
           overflow: "hidden",
         }}
       >
-        {/* Tennis Court Lines Background */}
+        {/* Diagonal clay court texture */}
         <div style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.08,
+          opacity: 0.04,
           backgroundImage: `
-            linear-gradient(90deg, transparent 49%, rgba(255,255,255,0.5) 49%, rgba(255,255,255,0.5) 51%, transparent 51%),
-            linear-gradient(0deg, transparent 49%, rgba(255,255,255,0.5) 49%, rgba(255,255,255,0.5) 51%, transparent 51%),
-            linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.3) 24%, rgba(255,255,255,0.3) 26%, transparent 26%),
-            linear-gradient(90deg, transparent 74%, rgba(255,255,255,0.3) 74%, rgba(255,255,255,0.3) 76%, transparent 76%)
+            repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 2px,
+              rgba(255,255,255,0.3) 2px,
+              rgba(255,255,255,0.3) 4px
+            )
           `,
-          backgroundSize: "100% 100%, 100% 100%, 100% 100%, 100% 100%",
+          pointerEvents: "none",
+        }} />
+
+        {/* Large decorative tennis ball */}
+        <div className="hero-ball" style={{
+          position: "absolute",
+          right: "-5%",
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: "min(500px, 45vw)",
+          height: "min(500px, 45vw)",
+          borderRadius: "50%",
+          background: "radial-gradient(circle at 35% 35%, #e0f040 0%, #c8d820 40%, #a8b818 100%)",
+          opacity: 0.12,
+          pointerEvents: "none",
+        }} />
+        {/* Ball curve line */}
+        <div className="hero-ball-line" style={{
+          position: "absolute",
+          right: "calc(-5% + min(100px, 9vw))",
+          top: "50%",
+          transform: "translateY(-50%) rotate(-30deg)",
+          width: "min(300px, 27vw)",
+          height: "min(500px, 45vw)",
+          borderRadius: "50%",
+          border: "3px solid rgba(255,255,255,0.06)",
+          pointerEvents: "none",
         }} />
 
         {/* Glow Effects */}
         <div style={{
           position: "absolute",
           top: "-20%",
-          right: "-10%",
-          width: "50%",
-          height: "70%",
-          background: "radial-gradient(ellipse, rgba(245, 158, 11, 0.15) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute",
-          bottom: "-30%",
-          left: "-10%",
-          width: "60%",
+          right: "10%",
+          width: "40%",
           height: "60%",
-          background: "radial-gradient(ellipse, rgba(34, 197, 94, 0.1) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(245, 158, 11, 0.12) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
-
-        {/* Noise Texture Overlay */}
         <div style={{
           position: "absolute",
-          inset: 0,
-          opacity: 0.03,
-          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
+          bottom: "-20%",
+          left: "-5%",
+          width: "50%",
+          height: "50%",
+          background: "radial-gradient(ellipse, rgba(34, 197, 94, 0.08) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
 
@@ -792,37 +840,45 @@ export default function WeddingPage() {
           width: "100%",
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "120px 24px 80px",
+          padding: "140px 24px 100px",
         }}>
-          <div style={{ maxWidth: 650 }}>
+          <div style={{ maxWidth: 680 }}>
             {/* Location Badge */}
-            <div style={{
+            <div className="hero-badge" style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "rgba(255,255,255,0.1)",
-              backdropFilter: "blur(8px)",
-              padding: "8px 16px",
+              background: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(12px)",
+              padding: "10px 20px",
               borderRadius: 100,
-              marginBottom: 24,
-              border: "1px solid rgba(255,255,255,0.15)",
+              marginBottom: 28,
+              border: "1px solid rgba(255,255,255,0.12)",
             }}>
-              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
+              <span style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#22c55e",
+                display: "inline-block",
+                boxShadow: "0 0 8px rgba(34, 197, 94, 0.6)",
+              }} />
+              <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.3px" }}>
                 BSC Rehberge · Berlin-Wedding
               </span>
             </div>
 
             {/* Headline */}
             <h1 style={{
-              fontSize: "clamp(36px, 7vw, 64px)",
-              fontWeight: 800,
-              lineHeight: 1.1,
-              marginBottom: 16,
+              fontSize: "clamp(40px, 8vw, 72px)",
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
+              lineHeight: 1.05,
+              marginBottom: 20,
+              letterSpacing: "-0.5px",
             }}>
               <span style={{ color: "#fff" }}>Tennisschule</span>
               <br />
               <span style={{
-                background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+                background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -833,17 +889,18 @@ export default function WeddingPage() {
 
             {/* Tagline */}
             <p style={{
-              fontSize: "clamp(18px, 3vw, 24px)",
-              color: "rgba(255,255,255,0.85)",
-              marginBottom: 32,
+              fontSize: "clamp(18px, 3vw, 22px)",
+              color: "rgba(255,255,255,0.75)",
+              marginBottom: 40,
               fontWeight: 400,
-              lineHeight: 1.5,
+              lineHeight: 1.6,
+              maxWidth: 480,
             }}>
-              Tennis lernen, von A bis Z.
+              Professionelles Tennistraining fur alle Alters- und Leistungsstufen in Berlin-Wedding.
             </p>
 
             {/* CTAs */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
               <a
                 href="/anmeldung-wedding"
                 style={{
@@ -852,21 +909,21 @@ export default function WeddingPage() {
                   gap: 8,
                   background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                   color: "#fff",
-                  padding: "16px 32px",
+                  padding: "16px 36px",
                   borderRadius: 8,
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(245, 158, 11, 0.4)",
+                  boxShadow: "0 4px 24px rgba(245, 158, 11, 0.35)",
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 6px 24px rgba(245, 158, 11, 0.5)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(245, 158, 11, 0.45)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(245, 158, 11, 0.4)";
+                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(245, 158, 11, 0.35)";
                 }}
               >
                 Jetzt anmelden
@@ -881,89 +938,139 @@ export default function WeddingPage() {
                   color: "#fff",
                   padding: "16px 32px",
                   borderRadius: 8,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   fontSize: 16,
                   textDecoration: "none",
-                  border: "2px solid rgba(255,255,255,0.3)",
+                  border: "1.5px solid rgba(255,255,255,0.25)",
                   transition: "all 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.6)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
                   e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                   e.currentTarget.style.background = "transparent";
                 }}
               >
-                Trainer kennenlernen
+                Unser Team
               </a>
             </div>
           </div>
         </div>
 
-        </header>
+      </header>
+
+      {/* Social Proof Strip */}
+      <div style={{
+        background: colors.white,
+        borderBottom: `1px solid ${colors.border}`,
+        padding: "28px 24px",
+      }}>
+        <div style={{
+          maxWidth: 900,
+          margin: "0 auto",
+          display: "flex",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          gap: "40px",
+        }}>
+          {[
+            { number: "7", label: "Lizenzierte Trainer" },
+            { number: "150+", label: "Aktive Spieler" },
+            { number: "2", label: "Standorte in Berlin" },
+            { number: "DTB", label: "Zertifizierte Methoden" },
+          ].map((stat, i) => (
+            <div key={i} style={{ textAlign: "center", minWidth: 120 }}>
+              <div style={{
+                fontSize: 28,
+                fontWeight: 700,
+                color: colors.primary,
+                fontFamily: "'DM Serif Display', serif",
+                lineHeight: 1,
+                marginBottom: 4,
+              }}>
+                {stat.number}
+              </div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Unser Angebot Section */}
-      <section id="angebot" style={{ padding: "80px 24px", background: colors.bgLight }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      <section id="angebot" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               Unser Angebot
             </p>
             <h2 style={{
-              fontSize: 28,
-              fontWeight: 700,
+              fontSize: 32,
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
               color: colors.text,
-              marginBottom: 16,
+              marginBottom: 12,
             }}>
-              Tennis für jedes Alter und Level
+              Tennis fur jedes Alter und Level
             </h2>
+            <p style={{ fontSize: 15, color: colors.textMuted, maxWidth: 500, margin: "0 auto" }}>
+              Von den ersten Schlagerfahrungen bis zum Wettkampftennis - wir begleiten euch auf jedem Level.
+            </p>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
             {[
               {
+                icon: "🧒",
                 title: "Kindertraining",
                 subtitle: "ab 5 Jahren",
-                desc: "Kinder lernen bei uns Tennis nach dem DTB-Kindertennis-Konzept (Play+Stay / Tennis 10s). Mit altersgerechten Bällen, angepassten Feldgrößen und viel Bewegung steht der Spaß an erster Stelle. Die Kleinsten starten in der Ball- und Bewegungswelt mit Fang-, Wurf- und Bewegungsspielen, bevor es über die Stufen Rot, Orange und Grün Schritt für Schritt aufs große Feld geht. Koordination, Ballgefühl und Spielfreude stehen im Vordergrund – Erfolgserlebnisse von der ersten Stunde an."
+                desc: "Tennis nach dem DTB-Konzept (Play+Stay / Tennis 10s). Altersgerechte Balle, angepasste Feldgrossen und viel Bewegung - Spass an erster Stelle.",
               },
               {
+                icon: "🎯",
                 title: "Jugendtraining",
-                subtitle: "Technik, Taktik & Spielverständnis",
-                desc: "Im Jugendtraining wird gezielt an Technik, Taktik und Spielverständnis gearbeitet. Grundschläge werden stabilisiert, erste taktische Muster wie Aufschlag + Punktaufbau trainiert und in Matchsituationen umgesetzt. Wir achten auf einen abwechslungsreichen Mix aus Korbtraining, Spielformen und Wettkampfsimulationen – damit Motivation und Fortschritt Hand in Hand gehen."
+                subtitle: "Technik, Taktik & Spielverstandnis",
+                desc: "Gezieltes Training an Technik, Taktik und Spielverstandnis. Mix aus Korbtraining, Spielformen und Wettkampfsimulationen.",
               },
               {
+                icon: "🎾",
                 title: "Erwachsenentraining",
                 subtitle: "Einsteiger bis Clubspieler",
-                desc: "Ob Einsteiger, Wiedereinsteiger oder Clubspieler – unser Training für Erwachsene orientiert sich am Tennis-Xpress-Konzept des DTB. Verständliche Erklärungen, schnelle Spielfähigkeit und ein Training, das Fitness und Spaß verbindet. Bei Bedarf kommen auch druckreduzierte Bälle zum Einsatz, um den Einstieg zu erleichtern und Technik sauber aufzubauen."
+                desc: "Training nach dem Tennis-Xpress-Konzept des DTB. Schnelle Spielfahigkeit und ein Training, das Fitness und Spass verbindet.",
               },
               {
+                icon: "🏆",
                 title: "Mannschaftstraining",
                 subtitle: "Wettkampforientiert",
-                desc: "Spieler oder Mannschaften bestimmter Spielstärke (Mannschafts- oder Turnierspieler) haben die Möglichkeit, mit gleichstarken Spielern und einem Trainer an einem wettkampforientierten Training teilzunehmen."
+                desc: "Wettkampforientiertes Training mit gleichstarken Spielern. Fur Mannschafts- und Turnierspieler.",
               },
               {
+                icon: "👤",
                 title: "Einzeltraining",
-                subtitle: "Maximale Intensität",
-                desc: "Im Einzeltraining steht dein Spiel im Mittelpunkt. Wir arbeiten gezielt an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Trainingsintensität. Ob Feinschliff am Aufschlag, Vorbereitung auf ein Turnier oder systematischer Technikaufbau: Jede Stunde ist auf dich zugeschnitten."
+                subtitle: "Maximale Intensitat",
+                desc: "Gezieltes Arbeiten an Technik, Schwachen und individuellen Zielen - mit direktem Feedback und maximaler Intensitat.",
               },
               {
+                icon: "👥",
                 title: "Gruppentraining",
                 subtitle: "Teamdynamik & Spielformen",
-                desc: "Im Gruppentraining profitierst du von abwechslungsreichen Spielformen, Teamdynamik und der Motivation, die eine Gruppe mitbringt. Durch angepasste Aufgaben und verschiedene Leistungsstufen kommt jeder auf seine Kosten – vom Einsteiger bis zum Mannschaftsspieler."
+                desc: "Abwechslungsreiche Spielformen und die Motivation einer Gruppe. Vom Einsteiger bis zum Mannschaftsspieler.",
               },
               {
+                icon: "☀️",
                 title: "Camps",
                 subtitle: "In den Sommerferien",
-                desc: "In unseren Tenniscamps in den Sommerferien erleben Kinder und Erwachsene intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß – der perfekte Einstieg oder die ideale Ergänzung zum regulären Training."
+                desc: "Intensives Training in entspannter Atmosphare. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spass.",
               },
             ].map((item, i) => (
               <div
@@ -971,43 +1078,49 @@ export default function WeddingPage() {
                 style={{
                   background: colors.white,
                   borderRadius: 12,
-                  overflow: "hidden",
+                  padding: 28,
                   border: `1px solid ${colors.border}`,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-4px)";
+                  e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               >
-                <button
-                  onClick={() => setExpandedAngebot(expandedAngebot === i ? null : i)}
-                  style={{
-                    width: "100%",
-                    padding: 24,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    textAlign: "left",
-                  }}
-                >
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
-                    {item.title}
-                  </h3>
-                  <span style={{
-                    fontSize: 20,
-                    color: colors.primary,
-                    transform: expandedAngebot === i ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}>
-                    ▼
-                  </span>
-                </button>
-                {expandedAngebot === i && (
-                  <div style={{ padding: "0 24px 24px" }}>
-                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
-                      {item.desc}
-                    </p>
-                  </div>
-                )}
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  background: `linear-gradient(135deg, rgba(27,71,27,0.08) 0%, rgba(65,130,49,0.12) 100%)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                  marginBottom: 16,
+                }}>
+                  {item.icon}
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: colors.text, marginBottom: 4 }}>
+                  {item.title}
+                </h3>
+                <p style={{
+                  fontSize: 12,
+                  color: colors.primary,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: 12,
+                }}>
+                  {item.subtitle}
+                </p>
+                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -1015,54 +1128,98 @@ export default function WeddingPage() {
       </section>
 
       {/* Tarife Section */}
-      <section id="tarife" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 600, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
+      <section id="tarife" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
+        <div style={{ maxWidth: 700, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               Tarife
             </p>
             <h2 style={{
-              fontSize: 28,
-              fontWeight: 700,
+              fontSize: 32,
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
               color: colors.text,
-              marginBottom: 16,
             }}>
               Unsere Preise
             </h2>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+            {/* Einzeltraining */}
             <div style={{
-              background: colors.bgLight,
-              borderRadius: 12,
-              padding: 24,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              background: colors.white,
+              borderRadius: 16,
+              padding: 32,
               border: `1px solid ${colors.border}`,
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>Einzeltraining</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: colors.primary }}>40 € / Stunde</span>
+              textAlign: "center",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div style={{ fontSize: 28, marginBottom: 12 }}>👤</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Einzeltraining</h3>
+              <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 20 }}>Individuelles 1:1 Training mit vollem Fokus auf Ihre Ziele</p>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 36, fontWeight: 700, color: colors.primary, fontFamily: "'DM Serif Display', serif" }}>40 €</span>
+                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 4 }}>/ Stunde</span>
+              </div>
             </div>
 
+            {/* Gruppentraining */}
             <div style={{
-              background: colors.bgLight,
-              borderRadius: 12,
-              padding: 24,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              border: `1px solid ${colors.border}`,
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: colors.text }}>Gruppentraining</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: colors.primary }}>60 € / Monat</span>
+              background: colors.primary,
+              borderRadius: 16,
+              padding: 32,
+              textAlign: "center",
+              position: "relative",
+              overflow: "hidden",
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 12px 32px rgba(27,71,27,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "4px 12px",
+                borderRadius: 100,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+              }}>
+                Beliebt
+              </div>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>👥</div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Gruppentraining</h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}>Training in Gruppen von bis zu 4 Personen</p>
+              <div style={{ marginBottom: 8 }}>
+                <span style={{ fontSize: 36, fontWeight: 700, color: "#fff", fontFamily: "'DM Serif Display', serif" }}>60 €</span>
+                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 4 }}>/ Monat</span>
+              </div>
             </div>
           </div>
 
@@ -1073,26 +1230,26 @@ export default function WeddingPage() {
             textAlign: "center",
             fontStyle: "italic",
           }}>
-            Im Winter zzgl. Hallengebühren
+            Im Winter zzgl. Hallengebuhren
           </p>
         </div>
       </section>
 
-      {/* Aktuelles Section - Cards nebeneinander */}
-      <section id="aktuelles" style={{ padding: "80px 24px", background: colors.white }}>
+      {/* Aktuelles Section */}
+      <section id="aktuelles" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               Aktuelles
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
               Jetzt anmelden
             </h2>
           </div>
@@ -1102,11 +1259,25 @@ export default function WeddingPage() {
             style={{
               background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
               borderRadius: 16,
-              padding: "28px 32px",
+              padding: "32px 36px",
               boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
-              maxWidth: 420,
+              maxWidth: 460,
+              margin: "0 auto",
+              position: "relative",
+              overflow: "hidden",
             }}
           >
+            {/* Decorative circle */}
+            <div style={{
+              position: "absolute",
+              right: -30,
+              top: -30,
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+              pointerEvents: "none",
+            }} />
             <div style={{
               display: "inline-block",
               background: "rgba(255,255,255,0.2)",
@@ -1162,22 +1333,23 @@ export default function WeddingPage() {
 
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
       {!loadingSlots && hasAnySlots && (
-        <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
+        <section id="spontan" className="fade-in-section" style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <p style={{
                 fontSize: 12,
                 color: colors.primary,
                 textTransform: "uppercase",
-                letterSpacing: "2px",
-                marginBottom: 8,
+                letterSpacing: "3px",
+                marginBottom: 12,
                 fontWeight: 600,
               }}>
-                Verfügbare Termine
+                Verfugbare Termine
               </p>
               <h2 style={{
-                fontSize: 24,
-                fontWeight: 700,
+                fontSize: 28,
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
                 color: colors.text,
                 marginBottom: 8,
               }}>
@@ -1403,22 +1575,23 @@ export default function WeddingPage() {
       )}
 
       {/* Trainer Section */}
-      <section id="trainer" style={{ padding: "80px 24px", background: colors.bgLight }}>
+      <section id="trainer" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               Unser Team
             </p>
             <h2 style={{
-              fontSize: 28,
-              fontWeight: 700,
+              fontSize: 32,
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
               color: colors.text,
             }}>
               Lizenzierte Trainer
@@ -1447,7 +1620,7 @@ export default function WeddingPage() {
               >
                 <div
                   style={{
-                    aspectRatio: "1",
+                    aspectRatio: "3/4",
                     background: colors.bgLight,
                     display: "flex",
                     alignItems: "center",
@@ -1484,7 +1657,7 @@ export default function WeddingPage() {
                   )}
                 </div>
                 <div style={{ padding: 20 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 6 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 6, fontFamily: "'DM Serif Display', serif" }}>
                     {trainer.name}
                   </h3>
                   <p style={{
@@ -1512,21 +1685,21 @@ export default function WeddingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" style={{ padding: "80px 24px", background: colors.white }}>
+      <section id="faq" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               FAQ
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
-              Häufig gestellte Fragen
+            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
+              Haufig gestellte Fragen
             </h2>
           </div>
 
@@ -1635,20 +1808,20 @@ export default function WeddingPage() {
       </section>
 
       {/* Kontakt Section */}
-      <section id="kontakt" style={{ padding: "80px 24px", background: colors.bgLight }}>
+      <section id="kontakt" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <p style={{
               fontSize: 12,
               color: colors.primary,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              marginBottom: 8,
+              letterSpacing: "3px",
+              marginBottom: 12,
               fontWeight: 600,
             }}>
               Kontakt
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
               So erreichen Sie uns
             </h2>
           </div>
@@ -1660,15 +1833,17 @@ export default function WeddingPage() {
           }}>
             {/* Adresse */}
             <div style={{
-              background: colors.bgLight,
+              background: colors.white,
               borderRadius: 12,
               padding: 28,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              border: `1px solid ${colors.border}`,
             }}>
               <div style={{
                 width: 48,
                 height: 48,
                 borderRadius: 12,
-                background: colors.primary,
+                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1677,7 +1852,7 @@ export default function WeddingPage() {
               }}>
                 📍
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Adresse</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
                 BSC Rehberge 1945 e.V. Abt. Tennis<br />
                 Sambesistraße 11<br />
@@ -1703,15 +1878,17 @@ export default function WeddingPage() {
 
             {/* Telefon */}
             <div style={{
-              background: colors.bgLight,
+              background: colors.white,
               borderRadius: 12,
               padding: 28,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              border: `1px solid ${colors.border}`,
             }}>
               <div style={{
                 width: 48,
                 height: 48,
                 borderRadius: 12,
-                background: colors.primary,
+                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1720,7 +1897,7 @@ export default function WeddingPage() {
               }}>
                 📞
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Telefon</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>Telefon</h3>
               <a
                 href="tel:+4915560062745"
                 style={{
@@ -1741,15 +1918,17 @@ export default function WeddingPage() {
 
             {/* E-Mail */}
             <div style={{
-              background: colors.bgLight,
+              background: colors.white,
               borderRadius: 12,
               padding: 28,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              border: `1px solid ${colors.border}`,
             }}>
               <div style={{
                 width: 48,
                 height: 48,
                 borderRadius: 12,
-                background: colors.primary,
+                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1758,7 +1937,7 @@ export default function WeddingPage() {
               }}>
                 ✉️
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>E-Mail</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>E-Mail</h3>
               <a
                 href="mailto:tennisabisz@gmail.com"
                 style={{
@@ -1853,7 +2032,7 @@ export default function WeddingPage() {
           </div>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            <p>&copy; 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
+            <p>&copy; 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
@@ -2284,6 +2463,40 @@ export default function WeddingPage() {
           }
           .mobile-menu-btn {
             display: block !important;
+          }
+        }
+
+        /* Scroll-triggered fade-in animations */
+        .fade-in-section {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+        .fade-in-section.fade-in-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        /* Staggered children animation */
+        .fade-in-visible > div > div {
+          animation: fadeInUp 0.5s ease-out both;
+        }
+        .fade-in-visible > div > div:nth-child(1) { animation-delay: 0s; }
+        .fade-in-visible > div > div:nth-child(2) { animation-delay: 0.06s; }
+        .fade-in-visible > div > div:nth-child(3) { animation-delay: 0.12s; }
+        .fade-in-visible > div > div:nth-child(4) { animation-delay: 0.18s; }
+        .fade-in-visible > div > div:nth-child(5) { animation-delay: 0.24s; }
+        .fade-in-visible > div > div:nth-child(6) { animation-delay: 0.3s; }
+        .fade-in-visible > div > div:nth-child(7) { animation-delay: 0.36s; }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
