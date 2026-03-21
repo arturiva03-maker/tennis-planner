@@ -976,7 +976,7 @@ export default function WeddingPage() {
           gap: "40px",
         }}>
           {[
-            { number: "7", label: "Lizenzierte Trainer" },
+            { number: "7", label: "Trainer" },
             { number: "150+", label: "Aktive Spieler" },
             { number: "2", label: "Standorte in Berlin" },
             { number: "DTB", label: "Zertifizierte Methoden" },
@@ -1227,21 +1227,6 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <div style={{
-                position: "absolute",
-                top: 12,
-                right: 12,
-                background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                color: "#fff",
-                fontSize: 11,
-                fontWeight: 700,
-                padding: "4px 12px",
-                borderRadius: 100,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}>
-                Beliebt
-              </div>
               <div style={{ fontSize: 28, marginBottom: 12 }}>👥</div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Gruppentraining</h3>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}>Training in Gruppen von bis zu 4 Personen</p>
@@ -1623,7 +1608,7 @@ export default function WeddingPage() {
               fontWeight: 400,
               color: colors.text,
             }}>
-              Lizenzierte Trainer
+              Trainer
             </h2>
           </div>
 
