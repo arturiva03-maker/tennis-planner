@@ -770,82 +770,36 @@ export default function WeddingPage() {
           minHeight: "90vh",
           display: "flex",
           alignItems: "center",
-          background: `linear-gradient(160deg, #060d08 0%, ${colors.primary} 35%, #1a3d22 65%, #0a1a0e 100%)`,
           overflow: "hidden",
         }}
       >
-        {/* Noise grain texture overlay */}
+        {/* Background photo */}
+        <img
+          src="/hero-wedding.webp"
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "center 60%",
+          }}
+        />
+        {/* Dark overlay for text readability */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(160deg, rgba(6,13,8,0.85) 0%, rgba(20,53,26,0.7) 40%, rgba(20,53,26,0.55) 70%, rgba(10,26,14,0.75) 100%)",
+          pointerEvents: "none",
+        }} />
+        {/* Grain texture */}
         <div className="grain-overlay" style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.35,
+          opacity: 0.25,
           pointerEvents: "none",
           mixBlendMode: "overlay",
-        }} />
-
-        {/* Diagonal court lines */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          opacity: 0.03,
-          backgroundImage: `
-            repeating-linear-gradient(
-              -35deg,
-              transparent,
-              transparent 40px,
-              rgba(255,255,255,0.5) 40px,
-              rgba(255,255,255,0.5) 41px
-            )
-          `,
-          pointerEvents: "none",
-        }} />
-
-        {/* Large decorative tennis ball — oversized, cropped */}
-        <div className="hero-ball" style={{
-          position: "absolute",
-          right: "-12%",
-          top: "50%",
-          transform: "translateY(-55%)",
-          width: "min(650px, 55vw)",
-          height: "min(650px, 55vw)",
-          borderRadius: "50%",
-          background: "radial-gradient(circle at 30% 30%, #d4e040 0%, #b8c420 40%, #8a9818 100%)",
-          opacity: 0.08,
-          pointerEvents: "none",
-          filter: "blur(1px)",
-        }} />
-        {/* Ball seam curve */}
-        <div className="hero-ball-line" style={{
-          position: "absolute",
-          right: "calc(-12% + min(130px, 11vw))",
-          top: "50%",
-          transform: "translateY(-55%) rotate(-25deg)",
-          width: "min(380px, 32vw)",
-          height: "min(650px, 55vw)",
-          borderRadius: "50%",
-          border: "2px solid rgba(255,255,255,0.04)",
-          pointerEvents: "none",
-        }} />
-
-        {/* Warm glow — top right */}
-        <div style={{
-          position: "absolute",
-          top: "-25%",
-          right: "5%",
-          width: "45%",
-          height: "65%",
-          background: "radial-gradient(ellipse, rgba(232, 160, 32, 0.15) 0%, transparent 65%)",
-          pointerEvents: "none",
-        }} />
-        {/* Green glow — bottom left */}
-        <div style={{
-          position: "absolute",
-          bottom: "-25%",
-          left: "-8%",
-          width: "55%",
-          height: "55%",
-          background: "radial-gradient(ellipse, rgba(42, 107, 58, 0.12) 0%, transparent 65%)",
-          pointerEvents: "none",
         }} />
 
         {/* Content */}
@@ -1325,7 +1279,7 @@ export default function WeddingPage() {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  objectPosition: "center 40%",
+                  objectPosition: "60% 40%",
                   transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
