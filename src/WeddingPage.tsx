@@ -1260,7 +1260,7 @@ export default function WeddingPage() {
             >
               <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>👥</div>
               <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 4 Personen</p>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 5 Personen</p>
               <div style={{ marginBottom: 8 }}>
                 <span style={{ fontSize: 42, fontWeight: 900, color: "#fff", fontFamily: "'Fraunces', serif" }}>60 €</span>
                 <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 6 }}>/ Monat</span>
@@ -1299,79 +1299,140 @@ export default function WeddingPage() {
             </h2>
           </div>
 
-          {/* Tenniscamp Card */}
+          {/* Tenniscamp Card — photo-driven layout */}
           <div
             style={{
-              background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
-              borderRadius: 16,
-              padding: "32px 36px",
-              boxShadow: "0 12px 40px rgba(232, 160, 32, 0.25)",
-              maxWidth: 460,
+              borderRadius: 20,
+              overflow: "hidden",
+              maxWidth: 720,
               margin: "0 auto",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              minHeight: 360,
+            }}
+            className="camp-card"
+          >
+            {/* Photo side */}
+            <div style={{
               position: "relative",
               overflow: "hidden",
-            }}
-          >
-            {/* Decorative circle */}
-            <div style={{
-              position: "absolute",
-              right: -30,
-              top: -30,
-              width: 120,
-              height: 120,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.1)",
-              pointerEvents: "none",
-            }} />
-            <div style={{
-              display: "inline-block",
-              background: "rgba(255,255,255,0.2)",
-              padding: "5px 12px",
-              borderRadius: 16,
-              marginBottom: 12,
             }}>
-              <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "1px" }}>
-                Sommerferien 2026
-              </span>
+              <img
+                src="/tenniscamp.jpg"
+                alt="Tenniscamp Gruppenfoto"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center 40%",
+                  transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+              />
+              {/* Gradient overlay on photo */}
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(to right, transparent 60%, rgba(20, 53, 26, 0.3) 100%)",
+                pointerEvents: "none",
+              }} />
             </div>
 
-            <h3 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 16 }}>
-              Tenniscamps
-            </h3>
+            {/* Info side */}
+            <div style={{
+              background: colors.primary,
+              padding: "36px 32px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              position: "relative",
+            }}>
+              {/* Grain */}
+              <div className="grain-overlay" style={{
+                position: "absolute", inset: 0, opacity: 0.12, pointerEvents: "none", mixBlendMode: "overlay",
+              }} />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px" }}>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>Kindercamp</div>
-                <div style={{ fontSize: 14, color: "#fff", fontWeight: 600 }}>10:00–15:00 Uhr · 270 €</div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 8, padding: "10px 14px" }}>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>Erwachsenencamp</div>
-                <div style={{ fontSize: 14, color: "#fff", fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  display: "inline-block",
+                  background: colors.accent,
+                  color: colors.bgDark,
+                  padding: "5px 14px",
+                  borderRadius: 100,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "1.5px",
+                  marginBottom: 20,
+                }}>
+                  Sommerferien 2026
+                </span>
+
+                <h3 style={{
+                  fontSize: 28,
+                  fontWeight: 900,
+                  color: "#fff",
+                  marginBottom: 20,
+                  fontFamily: "'Fraunces', serif",
+                  letterSpacing: "-0.5px",
+                  lineHeight: 1.1,
+                }}>
+                  Tennis&shy;camps
+                </h3>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+                  <div style={{
+                    background: "rgba(255,255,255,0.08)",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    borderLeft: `3px solid ${colors.accent}`,
+                  }}>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "1px" }}>Kindercamp</div>
+                    <div style={{ fontSize: 15, color: "#fff", fontWeight: 600 }}>10:00–15:00 Uhr · 270 €</div>
+                  </div>
+                  <div style={{
+                    background: "rgba(255,255,255,0.08)",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    borderLeft: `3px solid ${colors.accent}`,
+                  }}>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "1px" }}>Erwachsenencamp</div>
+                    <div style={{ fontSize: 15, color: "#fff", fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 24, lineHeight: 1.5 }}>
+                  13.–17. Juli & 17.–21. August
+                </p>
+
+                <a
+                  href="/tenniscamp"
+                  style={{
+                    display: "inline-block",
+                    background: colors.accent,
+                    color: colors.bgDark,
+                    padding: "12px 28px",
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: "none",
+                    transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease",
+                    letterSpacing: "0.3px",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(232, 160, 32, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  Anmelden
+                </a>
               </div>
             </div>
-
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", marginBottom: 16 }}>
-              13.–17. Juli & 17.–21. August
-            </p>
-
-            <a
-              href="/tenniscamp"
-              style={{
-                display: "inline-block",
-                background: "#fff",
-                color: "#d97706",
-                padding: "10px 20px",
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 14,
-                textDecoration: "none",
-                transition: "transform 0.2s",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              Anmelden
-            </a>
           </div>
         </div>
       </section>
@@ -1775,7 +1836,7 @@ export default function WeddingPage() {
               },
               {
                 q: "Wie groß sind die Trainingsgruppen?",
-                a: "Die reguläre Trainingsgruppe besteht aus 4 Personen. Kleinere Gruppen sind nach Absprache möglich."
+                a: "Die reguläre Trainingsgruppe besteht aus bis zu 5 Personen. Kleinere Gruppen sind nach Absprache möglich."
               },
               {
                 q: "Kann ich eine Probestunde machen?",
@@ -2549,6 +2610,8 @@ export default function WeddingPage() {
           .mobile-menu-btn { display: block !important; }
           .trainer-grid { grid-template-columns: 1fr !important; }
           .trainer-card { transform: translateY(0) !important; }
+          .camp-card { grid-template-columns: 1fr !important; }
+          .camp-card > div:first-child { min-height: 220px; }
         }
 
         /* ── Flip card hover ── */
