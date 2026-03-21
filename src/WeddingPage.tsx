@@ -146,11 +146,11 @@ export default function WeddingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Google Fonts
+  // Load Google Fonts — Fraunces (display) + Outfit (body)
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(link);
     return () => { document.head.removeChild(link); };
   }, []);
@@ -417,7 +417,7 @@ export default function WeddingPage() {
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #e8a020 0%, #c4850a 100%); padding: 24px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
             </td>
           </tr>
@@ -547,15 +547,18 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Vereinsfarben BSC Rehberge
+  // Vereinsfarben BSC Rehberge — elevated palette
   const colors = {
-    primary: "#1b471b",
-    primaryLight: "#418231",
-    white: "#ffffff",
-    bgLight: "#f6f6f6",
-    text: "#333333",
-    textMuted: "#666666",
-    border: "#d2d2d2",
+    primary: "#14351a",
+    primaryLight: "#2a6b3a",
+    accent: "#e8a020",
+    accentDark: "#c4850a",
+    white: "#fafaf8",
+    bgLight: "#f0ede6",
+    bgDark: "#0c1f10",
+    text: "#1a1a18",
+    textMuted: "#5c5c56",
+    border: "#d8d4cc",
   };
 
 
@@ -611,8 +614,9 @@ export default function WeddingPage() {
     <div style={{
       minHeight: "100vh",
       background: colors.white,
-      fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
       color: colors.text,
+      overflowX: "hidden",
     }}>
       {/* Navigation */}
       <nav
@@ -668,7 +672,7 @@ export default function WeddingPage() {
                 <a
                   href="/anmeldung-wedding"
                   style={{
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
                     color: "#fff",
                     padding: "11px 23px",
                     borderRadius: 6,
@@ -677,7 +681,7 @@ export default function WeddingPage() {
                     textDecoration: "none",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                    boxShadow: "0 4px 12px rgba(232, 160, 32, 0.3)",
                   }}
                 >
                   Training buchen
@@ -740,7 +744,7 @@ export default function WeddingPage() {
                 href="https://tennistrainer-app.de/anmeldung-wedding"
                 style={{
                   display: "block",
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
                   color: "#fff",
                   padding: "12px 20px",
                   borderRadius: 6,
@@ -749,7 +753,7 @@ export default function WeddingPage() {
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                  boxShadow: "0 4px 12px rgba(232, 160, 32, 0.3)",
                 }}
               >
                 Training buchen
@@ -763,73 +767,84 @@ export default function WeddingPage() {
       <header
         style={{
           position: "relative",
-          minHeight: "80vh",
+          minHeight: "90vh",
           display: "flex",
           alignItems: "center",
-          background: `linear-gradient(160deg, #0a1f10 0%, ${colors.primary} 40%, #1a4d2a 70%, #0f2f1a 100%)`,
+          background: `linear-gradient(160deg, #060d08 0%, ${colors.primary} 35%, #1a3d22 65%, #0a1a0e 100%)`,
           overflow: "hidden",
         }}
       >
-        {/* Diagonal clay court texture */}
+        {/* Noise grain texture overlay */}
+        <div className="grain-overlay" style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.35,
+          pointerEvents: "none",
+          mixBlendMode: "overlay",
+        }} />
+
+        {/* Diagonal court lines */}
         <div style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.04,
+          opacity: 0.03,
           backgroundImage: `
             repeating-linear-gradient(
-              -45deg,
+              -35deg,
               transparent,
-              transparent 2px,
-              rgba(255,255,255,0.3) 2px,
-              rgba(255,255,255,0.3) 4px
+              transparent 40px,
+              rgba(255,255,255,0.5) 40px,
+              rgba(255,255,255,0.5) 41px
             )
           `,
           pointerEvents: "none",
         }} />
 
-        {/* Large decorative tennis ball */}
+        {/* Large decorative tennis ball — oversized, cropped */}
         <div className="hero-ball" style={{
           position: "absolute",
-          right: "-5%",
+          right: "-12%",
           top: "50%",
-          transform: "translateY(-50%)",
-          width: "min(500px, 45vw)",
-          height: "min(500px, 45vw)",
+          transform: "translateY(-55%)",
+          width: "min(650px, 55vw)",
+          height: "min(650px, 55vw)",
           borderRadius: "50%",
-          background: "radial-gradient(circle at 35% 35%, #e0f040 0%, #c8d820 40%, #a8b818 100%)",
-          opacity: 0.12,
+          background: "radial-gradient(circle at 30% 30%, #d4e040 0%, #b8c420 40%, #8a9818 100%)",
+          opacity: 0.08,
           pointerEvents: "none",
+          filter: "blur(1px)",
         }} />
-        {/* Ball curve line */}
+        {/* Ball seam curve */}
         <div className="hero-ball-line" style={{
           position: "absolute",
-          right: "calc(-5% + min(100px, 9vw))",
+          right: "calc(-12% + min(130px, 11vw))",
           top: "50%",
-          transform: "translateY(-50%) rotate(-30deg)",
-          width: "min(300px, 27vw)",
-          height: "min(500px, 45vw)",
+          transform: "translateY(-55%) rotate(-25deg)",
+          width: "min(380px, 32vw)",
+          height: "min(650px, 55vw)",
           borderRadius: "50%",
-          border: "3px solid rgba(255,255,255,0.06)",
+          border: "2px solid rgba(255,255,255,0.04)",
           pointerEvents: "none",
         }} />
 
-        {/* Glow Effects */}
+        {/* Warm glow — top right */}
         <div style={{
           position: "absolute",
-          top: "-20%",
-          right: "10%",
-          width: "40%",
-          height: "60%",
-          background: "radial-gradient(ellipse, rgba(245, 158, 11, 0.12) 0%, transparent 70%)",
+          top: "-25%",
+          right: "5%",
+          width: "45%",
+          height: "65%",
+          background: "radial-gradient(ellipse, rgba(232, 160, 32, 0.15) 0%, transparent 65%)",
           pointerEvents: "none",
         }} />
+        {/* Green glow — bottom left */}
         <div style={{
           position: "absolute",
-          bottom: "-20%",
-          left: "-5%",
-          width: "50%",
-          height: "50%",
-          background: "radial-gradient(ellipse, rgba(34, 197, 94, 0.08) 0%, transparent 70%)",
+          bottom: "-25%",
+          left: "-8%",
+          width: "55%",
+          height: "55%",
+          background: "radial-gradient(ellipse, rgba(42, 107, 58, 0.12) 0%, transparent 65%)",
           pointerEvents: "none",
         }} />
 
@@ -867,21 +882,22 @@ export default function WeddingPage() {
             </div>
 
             {/* Headline */}
-            <h1 style={{
-              fontSize: "clamp(40px, 8vw, 72px)",
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-              lineHeight: 1.05,
-              marginBottom: 20,
-              letterSpacing: "-0.5px",
+            <h1 className="hero-title" style={{
+              fontSize: "clamp(44px, 9vw, 80px)",
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 900,
+              lineHeight: 1.0,
+              marginBottom: 24,
+              letterSpacing: "-2px",
             }}>
-              <span style={{ color: "#fff" }}>Tennisschule</span>
-              <br />
+              <span style={{ color: "#fff", display: "block" }}>Tennisschule</span>
               <span style={{
-                background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)",
+                background: "linear-gradient(135deg, #e8a020 0%, #f0c050 50%, #e8a020 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
+                display: "block",
+                fontStyle: "italic",
               }}>
                 A bis Z
               </span>
@@ -907,23 +923,23 @@ export default function WeddingPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
                   color: "#fff",
                   padding: "16px 36px",
                   borderRadius: 8,
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(245, 158, 11, 0.35)",
+                  boxShadow: "0 4px 24px rgba(232, 160, 32, 0.35)",
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(245, 158, 11, 0.45)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(232, 160, 32, 0.45)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(245, 158, 11, 0.35)";
+                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(232, 160, 32, 0.35)";
                 }}
               >
                 Jetzt anmelden
@@ -961,19 +977,25 @@ export default function WeddingPage() {
 
       </header>
 
-      {/* Social Proof Strip */}
+      {/* Social Proof Strip — diagonal cut top */}
       <div style={{
-        background: colors.white,
-        borderBottom: `1px solid ${colors.border}`,
-        padding: "28px 24px",
+        background: colors.primary,
+        padding: "40px 24px",
+        position: "relative",
+        clipPath: "polygon(0 0, 100% 12px, 100% 100%, 0 100%)",
       }}>
+        {/* Subtle noise */}
+        <div className="grain-overlay" style={{
+          position: "absolute", inset: 0, opacity: 0.15, pointerEvents: "none", mixBlendMode: "overlay",
+        }} />
         <div style={{
           maxWidth: 900,
           margin: "0 auto",
           display: "flex",
           justifyContent: "center",
           flexWrap: "wrap",
-          gap: "40px",
+          gap: "48px",
+          position: "relative",
         }}>
           {[
             { number: "7", label: "Trainer" },
@@ -981,18 +1003,18 @@ export default function WeddingPage() {
             { number: "2", label: "Standorte in Berlin" },
             { number: "DTB", label: "Zertifizierte Methoden" },
           ].map((stat, i) => (
-            <div key={i} style={{ textAlign: "center", minWidth: 120 }}>
+            <div key={i} className="stat-item" style={{ textAlign: "center", minWidth: 130 }}>
               <div style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: colors.primary,
-                fontFamily: "'DM Serif Display', serif",
+                fontSize: 36,
+                fontWeight: 900,
+                color: colors.accent,
+                fontFamily: "'Fraunces', serif",
                 lineHeight: 1,
-                marginBottom: 4,
+                marginBottom: 6,
               }}>
                 {stat.number}
               </div>
-              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px" }}>
                 {stat.label}
               </div>
             </div>
@@ -1001,29 +1023,37 @@ export default function WeddingPage() {
       </div>
 
       {/* Unser Angebot Section */}
-      <section id="angebot" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
+      <section id="angebot" className="fade-in-section" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
+        {/* Subtle geometric pattern */}
+        <div style={{
+          position: "absolute", inset: 0, opacity: 0.03, pointerEvents: "none",
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${colors.primary} 1px, transparent 0)`,
+          backgroundSize: "32px 32px",
+        }} />
+        <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+          <div style={{ textAlign: "left", marginBottom: 56, maxWidth: 600 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               Unser Angebot
             </p>
             <h2 style={{
-              fontSize: 32,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
+              fontSize: "clamp(28px, 5vw, 42px)",
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 700,
               color: colors.text,
-              marginBottom: 12,
+              marginBottom: 16,
+              lineHeight: 1.1,
+              letterSpacing: "-1px",
             }}>
               Tennis fur jedes Alter und Level
             </h2>
-            <p style={{ fontSize: 15, color: colors.textMuted, maxWidth: 500, margin: "0 auto" }}>
+            <p style={{ fontSize: 16, color: colors.textMuted, lineHeight: 1.7 }}>
               Von den ersten Schlagerfahrungen bis zum Wettkampftennis - wir begleiten euch auf jedem Level.
             </p>
           </div>
@@ -1102,7 +1132,7 @@ export default function WeddingPage() {
                       fontWeight: 700,
                       color: colors.text,
                       marginBottom: 8,
-                      fontFamily: "'DM Serif Display', serif",
+                      fontFamily: "'Fraunces', serif",
                     }}>
                       {item.title}
                     </h3>
@@ -1157,24 +1187,25 @@ export default function WeddingPage() {
       </section>
 
       {/* Tarife Section */}
-      <section id="tarife" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
+      <section id="tarife" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               Tarife
             </p>
             <h2 style={{
-              fontSize: 32,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
+              fontSize: "clamp(28px, 5vw, 42px)",
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 700,
               color: colors.text,
+              letterSpacing: "-1px",
             }}>
               Unsere Preise
             </h2>
@@ -1199,12 +1230,12 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <div style={{ fontSize: 28, marginBottom: 12 }}>👤</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Einzeltraining</h3>
-              <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 20 }}>Individuelles 1:1 Training mit vollem Fokus auf Ihre Ziele</p>
+              <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: colors.bgLight, display: "flex", alignItems: "center", justifyContent: "center" }}>👤</div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Einzeltraining</h3>
+              <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 1.6 }}>Individuelles 1:1 Training mit vollem Fokus auf Ihre Ziele</p>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 36, fontWeight: 700, color: colors.primary, fontFamily: "'DM Serif Display', serif" }}>40 €</span>
-                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 4 }}>/ Stunde</span>
+                <span style={{ fontSize: 42, fontWeight: 900, color: colors.primary, fontFamily: "'Fraunces', serif" }}>40 €</span>
+                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 6 }}>/ Stunde</span>
               </div>
             </div>
 
@@ -1227,12 +1258,12 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <div style={{ fontSize: 28, marginBottom: 12 }}>👥</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Gruppentraining</h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}>Training in Gruppen von bis zu 4 Personen</p>
+              <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>👥</div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 4 Personen</p>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 36, fontWeight: 700, color: "#fff", fontFamily: "'DM Serif Display', serif" }}>60 €</span>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 4 }}>/ Monat</span>
+                <span style={{ fontSize: 42, fontWeight: 900, color: "#fff", fontFamily: "'Fraunces', serif" }}>60 €</span>
+                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 6 }}>/ Monat</span>
               </div>
             </div>
           </div>
@@ -1250,20 +1281,20 @@ export default function WeddingPage() {
       </section>
 
       {/* Aktuelles Section */}
-      <section id="aktuelles" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
+      <section id="aktuelles" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               Aktuelles
             </p>
-            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Jetzt anmelden
             </h2>
           </div>
@@ -1271,10 +1302,10 @@ export default function WeddingPage() {
           {/* Tenniscamp Card */}
           <div
             style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+              background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
               borderRadius: 16,
               padding: "32px 36px",
-              boxShadow: "0 12px 40px rgba(245, 158, 11, 0.25)",
+              boxShadow: "0 12px 40px rgba(232, 160, 32, 0.25)",
               maxWidth: 460,
               margin: "0 auto",
               position: "relative",
@@ -1362,7 +1393,7 @@ export default function WeddingPage() {
               </p>
               <h2 style={{
                 fontSize: 28,
-                fontFamily: "'DM Serif Display', serif",
+                fontFamily: "'Fraunces', serif",
                 fontWeight: 400,
                 color: colors.text,
                 marginBottom: 8,
@@ -1589,53 +1620,63 @@ export default function WeddingPage() {
       )}
 
       {/* Trainer Section */}
-      <section id="trainer" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      <section id="trainer" className="fade-in-section" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
+        {/* Dot pattern */}
+        <div style={{
+          position: "absolute", inset: 0, opacity: 0.025, pointerEvents: "none",
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${colors.primary} 1px, transparent 0)`,
+          backgroundSize: "28px 28px",
+        }} />
+        <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+          <div style={{ textAlign: "left", marginBottom: 56, maxWidth: 500 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               Unser Team
             </p>
             <h2 style={{
-              fontSize: 32,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
+              fontSize: "clamp(28px, 5vw, 42px)",
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 700,
               color: colors.text,
+              letterSpacing: "-1px",
+              lineHeight: 1.1,
             }}>
               Trainer
             </h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+          <div className="trainer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
             {trainers.map((trainer, i) => (
               <div
                 key={i}
+                className="trainer-card"
                 style={{
                   background: colors.white,
-                  borderRadius: 12,
+                  borderRadius: 16,
                   overflow: "hidden",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                  transition: "transform 0.2s, box-shadow 0.2s",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                  transition: "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transform: i % 3 === 1 ? "translateY(24px)" : "translateY(0)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-4px)";
-                  e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.12)";
+                  e.currentTarget.style.transform = i % 3 === 1 ? "translateY(18px)" : "translateY(-6px)";
+                  e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.10)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
+                  e.currentTarget.style.transform = i % 3 === 1 ? "translateY(24px)" : "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.04)";
                 }}
               >
                 <div
                   style={{
                     aspectRatio: "3/4",
-                    background: colors.bgLight,
+                    background: `linear-gradient(135deg, ${colors.bgLight} 0%, #e2ddd4 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1653,11 +1694,11 @@ export default function WeddingPage() {
                         objectFit: "cover",
                         objectPosition: ("imagePosition" in trainer && trainer.imagePosition) || "center",
                         transform: "imageZoom" in trainer ? `scale(${trainer.imageZoom})` : undefined,
-                        transition: "transform 0.3s ease",
+                        transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                       }}
                       onMouseEnter={(e) => {
                         const baseScale = "imageZoom" in trainer ? trainer.imageZoom || 1 : 1;
-                        e.currentTarget.style.transform = `scale(${baseScale * 1.05})`;
+                        e.currentTarget.style.transform = `scale(${baseScale * 1.07})`;
                       }}
                       onMouseLeave={(e) => {
                         const baseScale = "imageZoom" in trainer ? trainer.imageZoom || 1 : 1;
@@ -1665,29 +1706,30 @@ export default function WeddingPage() {
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: 48, fontWeight: 700, color: colors.border }}>
+                    <span style={{ fontSize: 56, fontWeight: 900, color: colors.border, fontFamily: "'Fraunces', serif", opacity: 0.5 }}>
                       {trainer.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                   )}
                 </div>
-                <div style={{ padding: 20 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 6, fontFamily: "'DM Serif Display', serif" }}>
+                <div style={{ padding: 22 }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif", letterSpacing: "-0.3px" }}>
                     {trainer.name}
                   </h3>
                   <p style={{
-                    fontSize: 12,
-                    color: colors.white,
-                    background: colors.primary,
-                    padding: "4px 10px",
-                    borderRadius: 4,
-                    display: "inline-block",
-                    marginBottom: 12,
-                    fontWeight: 500,
+                    fontSize: 11,
+                    color: colors.accent,
+                    background: "transparent",
+                    padding: 0,
+                    display: "block",
+                    marginBottom: 10,
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
                   }}>
                     {trainer.qualification}
                   </p>
                   {trainer.bio && (
-                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6 }}>
+                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.65 }}>
                       {trainer.bio}
                     </p>
                   )}
@@ -1699,20 +1741,20 @@ export default function WeddingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="fade-in-section" style={{ padding: "80px 24px", background: colors.white }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      <section id="faq" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               FAQ
             </p>
-            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Haufig gestellte Fragen
             </h2>
           </div>
@@ -1759,16 +1801,19 @@ export default function WeddingPage() {
               <div
                 key={i}
                 style={{
-                  background: colors.bgLight,
-                  borderRadius: 12,
+                  background: openFaqIndex === i ? colors.white : colors.bgLight,
+                  borderRadius: 14,
                   overflow: "hidden",
+                  transition: "background 0.3s ease, box-shadow 0.3s ease",
+                  boxShadow: openFaqIndex === i ? "0 4px 20px rgba(0,0,0,0.06)" : "none",
+                  border: `1px solid ${openFaqIndex === i ? colors.border : "transparent"}`,
                 }}
               >
                 <button
                   onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
                   style={{
                     width: "100%",
-                    padding: 24,
+                    padding: "22px 24px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1776,23 +1821,38 @@ export default function WeddingPage() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     textAlign: "left",
+                    gap: 16,
                   }}
                 >
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, margin: 0 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, lineHeight: 1.4 }}>
                     {faq.q}
                   </h3>
                   <span style={{
-                    fontSize: 20,
-                    color: colors.primary,
-                    transform: openFaqIndex === i ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s",
+                    fontSize: 14,
+                    color: colors.accent,
+                    transform: openFaqIndex === i ? "rotate(45deg)" : "rotate(0deg)",
+                    transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)",
+                    flexShrink: 0,
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: openFaqIndex === i ? `${colors.accent}15` : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
                   }}>
-                    ▼
+                    +
                   </span>
                 </button>
-                {openFaqIndex === i && (
+                <div className="faq-answer" style={{
+                  maxHeight: openFaqIndex === i ? 300 : 0,
+                  overflow: "hidden",
+                  transition: "max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease",
+                  opacity: openFaqIndex === i ? 1 : 0,
+                }}>
                   <div style={{ padding: "0 24px 24px" }}>
-                    <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>
                       {faq.a}
                     </p>
                     {faq.q.includes("Probestunde") && (
@@ -1802,7 +1862,7 @@ export default function WeddingPage() {
                           display: "inline-block",
                           marginTop: 12,
                           padding: "8px 16px",
-                          background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                          background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
                           color: "#fff",
                           borderRadius: 6,
                           fontSize: 13,
@@ -1814,7 +1874,7 @@ export default function WeddingPage() {
                       </a>
                     )}
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
@@ -1822,20 +1882,30 @@ export default function WeddingPage() {
       </section>
 
       {/* Kontakt Section */}
-      <section id="kontakt" className="fade-in-section" style={{ padding: "80px 24px", background: colors.bgLight }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+      <section id="kontakt" className="fade-in-section" style={{
+        padding: "100px 24px",
+        background: `linear-gradient(165deg, ${colors.bgLight} 0%, #e8e4dc 100%)`,
+        position: "relative",
+      }}>
+        {/* Diagonal top cut */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 60,
+          background: colors.white,
+          clipPath: "polygon(0 0, 100% 0, 100% 0%, 0 100%)",
+        }} />
+        <div style={{ maxWidth: 900, margin: "0 auto", position: "relative" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
-              fontSize: 12,
-              color: colors.primary,
+              fontSize: 11,
+              color: colors.accent,
               textTransform: "uppercase",
-              letterSpacing: "3px",
-              marginBottom: 12,
+              letterSpacing: "4px",
+              marginBottom: 16,
               fontWeight: 600,
             }}>
               Kontakt
             </p>
-            <h2 style={{ fontSize: 32, fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: colors.text }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               So erreichen Sie uns
             </h2>
           </div>
@@ -1866,7 +1936,7 @@ export default function WeddingPage() {
               }}>
                 📍
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>Adresse</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
                 BSC Rehberge 1945 e.V. Abt. Tennis<br />
                 Sambesistraße 11<br />
@@ -1911,7 +1981,7 @@ export default function WeddingPage() {
               }}>
                 📞
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>Telefon</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Telefon</h3>
               <a
                 href="tel:+4915560062745"
                 style={{
@@ -1951,7 +2021,7 @@ export default function WeddingPage() {
               }}>
                 ✉️
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'DM Serif Display', serif" }}>E-Mail</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>E-Mail</h3>
               <a
                 href="mailto:tennisabisz@gmail.com"
                 style={{
@@ -1974,7 +2044,9 @@ export default function WeddingPage() {
       </section>
 
       {/* Footer */}
-      <footer style={{ background: colors.primary, color: "#fff", padding: "48px 24px" }}>
+      <footer style={{ background: colors.bgDark, color: "#fff", padding: "56px 24px", position: "relative" }}>
+        {/* Grain */}
+        <div className="grain-overlay" style={{ position: "absolute", inset: 0, opacity: 0.2, pointerEvents: "none", mixBlendMode: "overlay" }} />
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginBottom: 32 }}>
             <div>
@@ -2471,52 +2543,95 @@ export default function WeddingPage() {
       )}
 
       <style>{`
+        /* ── Responsive nav ── */
         @media (max-width: 768px) {
-          .desktop-menu {
-            display: none !important;
-          }
-          .mobile-menu-btn {
-            display: block !important;
-          }
+          .desktop-menu { display: none !important; }
+          .mobile-menu-btn { display: block !important; }
+          .trainer-grid { grid-template-columns: 1fr !important; }
+          .trainer-card { transform: translateY(0) !important; }
         }
 
-        /* Flip card hover */
-        .flip-card:hover .flip-card-inner {
+        /* ── Flip card hover ── */
+        .flip-card:hover .flip-card-inner,
+        .flip-card:focus-within .flip-card-inner {
           transform: rotateY(180deg);
         }
 
-        /* Scroll-triggered fade-in animations */
+        /* ── Grain / noise texture (SVG-based) ── */
+        .grain-overlay {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-size: 128px 128px;
+        }
+
+        /* ── Scroll-triggered fade-in ── */
         .fade-in-section {
           opacity: 0;
-          transform: translateY(30px);
-          transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+          transform: translateY(40px);
+          transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .fade-in-section.fade-in-visible {
           opacity: 1;
           transform: translateY(0);
         }
 
-        /* Staggered children animation */
-        .fade-in-visible > div > div {
-          animation: fadeInUp 0.5s ease-out both;
+        /* ── Staggered children reveal ── */
+        .fade-in-visible .flip-card,
+        .fade-in-visible .trainer-card,
+        .fade-in-visible .stat-item {
+          animation: staggerUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .fade-in-visible > div > div:nth-child(1) { animation-delay: 0s; }
-        .fade-in-visible > div > div:nth-child(2) { animation-delay: 0.06s; }
-        .fade-in-visible > div > div:nth-child(3) { animation-delay: 0.12s; }
-        .fade-in-visible > div > div:nth-child(4) { animation-delay: 0.18s; }
-        .fade-in-visible > div > div:nth-child(5) { animation-delay: 0.24s; }
-        .fade-in-visible > div > div:nth-child(6) { animation-delay: 0.3s; }
-        .fade-in-visible > div > div:nth-child(7) { animation-delay: 0.36s; }
+        .fade-in-visible .flip-card:nth-child(1),
+        .fade-in-visible .trainer-card:nth-child(1),
+        .fade-in-visible .stat-item:nth-child(1) { animation-delay: 0s; }
+        .fade-in-visible .flip-card:nth-child(2),
+        .fade-in-visible .trainer-card:nth-child(2),
+        .fade-in-visible .stat-item:nth-child(2) { animation-delay: 0.08s; }
+        .fade-in-visible .flip-card:nth-child(3),
+        .fade-in-visible .trainer-card:nth-child(3),
+        .fade-in-visible .stat-item:nth-child(3) { animation-delay: 0.16s; }
+        .fade-in-visible .flip-card:nth-child(4),
+        .fade-in-visible .trainer-card:nth-child(4),
+        .fade-in-visible .stat-item:nth-child(4) { animation-delay: 0.24s; }
+        .fade-in-visible .flip-card:nth-child(5),
+        .fade-in-visible .trainer-card:nth-child(5) { animation-delay: 0.32s; }
+        .fade-in-visible .flip-card:nth-child(6),
+        .fade-in-visible .trainer-card:nth-child(6) { animation-delay: 0.40s; }
+        .fade-in-visible .flip-card:nth-child(7),
+        .fade-in-visible .trainer-card:nth-child(7) { animation-delay: 0.48s; }
 
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes staggerUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Hero title entrance ── */
+        .hero-title {
+          animation: heroReveal 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+        }
+        .hero-badge {
+          animation: heroReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0s both;
+        }
+        @keyframes heroReveal {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Smooth link underlines ── */
+        a[href^="mailto"], a[href^="tel"] {
+          position: relative;
+        }
+        a[href^="mailto"]::after, a[href^="tel"]::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: currentColor;
+          transition: width 0.3s ease;
+        }
+        a[href^="mailto"]:hover::after, a[href^="tel"]:hover::after {
+          width: 100%;
         }
       `}</style>
     </div>
