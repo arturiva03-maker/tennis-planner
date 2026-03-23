@@ -843,7 +843,7 @@ export default function WeddingPage() {
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(160deg, rgba(10,10,10,0.85) 0%, rgba(23,23,23,0.7) 40%, rgba(23,23,23,0.55) 70%, rgba(10,10,10,0.75) 100%)",
+          background: "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(23,23,23,0.35) 40%, rgba(23,23,23,0.25) 70%, rgba(10,10,10,0.45) 100%)",
           pointerEvents: "none",
         }} />
         {/* Grain texture */}
