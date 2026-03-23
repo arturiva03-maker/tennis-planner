@@ -156,43 +156,39 @@ export default function WeddingPage() {
     const style = document.createElement("style");
     style.textContent = `
       .wedding-page {
-        --card: #ffffff;
-        --ring: #a1a1a1;
-        --input: #e5e5e5;
-        --muted: #f5f5f5;
-        --accent: #f5f5f5;
-        --border: #e5e5e5;
-        --radius: 0.625rem;
-        --chart-1: #91c5ff;
-        --chart-2: #3a81f6;
-        --chart-3: #2563ef;
-        --chart-4: #1a4eda;
-        --chart-5: #1f3fad;
+        --card: #faf9f5;
+        --ring: #c96442;
+        --input: #b4b2a7;
+        --muted: #ede9de;
+        --accent: #e9e6dc;
+        --border: #dad9d4;
+        --radius: 0.5rem;
+        --chart-1: #b05730;
+        --chart-2: #9c87f5;
+        --chart-3: #ded8c4;
+        --chart-4: #dbd3f0;
+        --chart-5: #b4552d;
         --popover: #ffffff;
-        --primary: #171717;
-        --sidebar: #fafafa;
-        --spacing: 0.25rem;
-        --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-        --secondary: #f5f5f5;
-        --background: #ffffff;
-        --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-        --foreground: #0a0a0a;
-        --destructive: #e7000b;
-        --sidebar-ring: #a1a1a1;
-        --sidebar-accent: #f5f5f5;
-        --sidebar-border: #e5e5e5;
-        --card-foreground: #0a0a0a;
-        --sidebar-primary: #171717;
-        --muted-foreground: #737373;
-        --accent-foreground: #171717;
-        --popover-foreground: #0a0a0a;
-        --primary-foreground: #fafafa;
-        --sidebar-foreground: #0a0a0a;
-        --secondary-foreground: #171717;
+        --primary: #c96442;
+        --sidebar: #f5f4ee;
+        --secondary: #e9e6dc;
+        --background: #faf9f5;
+        --foreground: #3d3929;
+        --destructive: #141413;
+        --sidebar-ring: #b5b5b5;
+        --sidebar-accent: #e9e6dc;
+        --sidebar-border: #ebebeb;
+        --card-foreground: #141413;
+        --sidebar-primary: #c96442;
+        --muted-foreground: #83827d;
+        --accent-foreground: #28261b;
+        --popover-foreground: #28261b;
+        --primary-foreground: #ffffff;
+        --sidebar-foreground: #3d3d3a;
+        --secondary-foreground: #535146;
         --destructive-foreground: #ffffff;
-        --sidebar-accent-foreground: #171717;
-        --sidebar-primary-foreground: #fafafa;
+        --sidebar-accent-foreground: #343434;
+        --sidebar-primary-foreground: #fbfbfb;
       }
     `;
     document.head.appendChild(style);
@@ -597,25 +593,25 @@ export default function WeddingPage() {
 
   // ── Theme: Alle Farben hier ändern ──
   const colors = {
-    primary: "#171717",        // Hauptfarbe (Buttons, Überschriften)
-    primaryMid: "#262626",     // Mittlere Variante (E-Mail-Header Gradient)
-    primaryDark: "#0a0a0a",    // Dunklere Variante (Gradient-Ende)
-    primaryLight: "#3a81f6",   // Helle Akzentfarbe (Links, Highlights)
-    accent: "#3a81f6",         // Akzent (Badges, Borders, Dots)
-    accentLight: "#91c5ff",    // Heller Akzent (Gradient-Mitte)
-    accentDark: "#1a4eda",     // Dunkler Akzent
-    accentBg: "#f0f4ff",       // Akzent-Hintergrund (z.B. Info-Boxen)
-    white: "#ffffff",          // Weiß
-    bgLight: "#f5f5f5",       // Heller Hintergrund
-    bgDark: "#0a0a0a",        // Dunkler Hintergrund (Footer)
-    text: "#0a0a0a",           // Primärtext
-    textMuted: "#737373",      // Gedämpfter Text
-    textSubtle: "#a1a1a1",     // Subtiler Text (Footer-Details)
-    border: "#e5e5e5",         // Rahmenfarbe
-    success: "#3a81f6",        // Erfolg (Bestätigungs-Icons)
-    successDark: "#2563ef",    // Erfolg dunkel
-    error: "#dc2626",          // Fehler
-    errorBg: "#fee2e2",        // Fehler-Hintergrund
+    primary: "#c96442",        // Hauptfarbe (Buttons, Überschriften)
+    primaryMid: "#a8533a",     // Mittlere Variante (E-Mail-Header Gradient)
+    primaryDark: "#8b4430",    // Dunklere Variante (Gradient-Ende)
+    primaryLight: "#d97757",   // Helle Akzentfarbe (Links, Highlights)
+    accent: "#c96442",         // Akzent (Badges, Borders, Dots)
+    accentLight: "#e8a48e",    // Heller Akzent (Gradient-Mitte)
+    accentDark: "#b05730",     // Dunkler Akzent
+    accentBg: "#faf3ef",       // Akzent-Hintergrund (z.B. Info-Boxen)
+    white: "#faf9f5",          // Weiß / Hintergrund
+    bgLight: "#ede9de",        // Heller Hintergrund
+    bgDark: "#3d3929",         // Dunkler Hintergrund (Footer)
+    text: "#3d3929",           // Primärtext
+    textMuted: "#83827d",      // Gedämpfter Text
+    textSubtle: "#b4b2a7",     // Subtiler Text (Footer-Details)
+    border: "#dad9d4",         // Rahmenfarbe
+    success: "#c96442",        // Erfolg (Bestätigungs-Icons)
+    successDark: "#b05730",    // Erfolg dunkel
+    error: "#141413",          // Fehler
+    errorBg: "#ede9de",        // Fehler-Hintergrund
   };
 
 
