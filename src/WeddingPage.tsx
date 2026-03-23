@@ -315,14 +315,14 @@ export default function WeddingPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%); padding: 32px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #171717 0%, #262626 100%); padding: 32px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Buchungsbestätigung</h1>
             </td>
           </tr>
@@ -330,7 +330,7 @@ export default function WeddingPage() {
           <!-- Success Icon -->
           <tr>
             <td align="center" style="padding: 40px 40px 20px;">
-              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #3a81f6 0%, #2563ef 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
                 <span style="color: #ffffff; font-size: 32px;">✓</span>
               </div>
             </td>
@@ -339,46 +339,46 @@ export default function WeddingPage() {
           <!-- Greeting -->
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
-              <h2 style="margin: 0 0 8px; color: #333333; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
-              <p style="margin: 0; color: #666666; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
+              <h2 style="margin: 0 0 8px; color: #171717; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
+              <p style="margin: 0; color: #737373; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
             </td>
           </tr>
 
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5;">
                 <tr>
                   <td style="padding: 24px;">
-                    <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
+                    <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📅</td>
-                              <td style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
+                              <td style="color: #171717; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">🕐</td>
-                              <td style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
+                              <td style="color: #171717; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
+                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e5e5;' : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📍</td>
-                              <td style="color: #333333; font-size: 15px;">BSC Rehberge, Wedding</td>
+                              <td style="color: #171717; font-size: 15px;">BSC Rehberge, Wedding</td>
                             </tr>
                           </table>
                         </td>
@@ -389,7 +389,7 @@ export default function WeddingPage() {
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
+                              <td style="color: #171717; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
                             </tr>
                           </table>
                         </td>
@@ -405,23 +405,23 @@ export default function WeddingPage() {
           <!-- Contact Info -->
           <tr>
             <td style="padding: 0 40px 32px; text-align: center;">
-              <p style="margin: 0 0 8px; color: #666666; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
-              <a href="mailto:tennisabisz@gmail.com" style="color: #1b471b; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+              <p style="margin: 0 0 8px; color: #737373; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
+              <a href="mailto:tennisabisz@gmail.com" style="color: #171717; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
-              <p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
-              <p style="margin: 12px 0 0; color: #999999; font-size: 12px;">Standort Wedding · BSC Rehberge</p>
+            <td style="background-color: #f5f5f5; padding: 24px 40px; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 4px; color: #171717; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
+              <p style="margin: 0; color: #171717; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+              <p style="margin: 12px 0 0; color: #a1a1a1; font-size: 12px;">Standort Wedding · BSC Rehberge</p>
             </td>
           </tr>
         </table>
 
         <!-- Footer Text -->
-        <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
+        <p style="margin: 24px 0 0; color: #a1a1a1; font-size: 12px; text-align: center;">
           © 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
@@ -458,14 +458,14 @@ export default function WeddingPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #e8a020 0%, #c4850a 100%); padding: 24px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #171717 0%, #0a0a0a 100%); padding: 24px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
             </td>
           </tr>
@@ -473,28 +473,28 @@ export default function WeddingPage() {
           <!-- Customer Info -->
           <tr>
             <td style="padding: 32px 40px 24px;">
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #666666; font-size: 13px;">Name:</span>
-                          <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
+                          <span style="color: #737373; font-size: 13px;">Name:</span>
+                          <span style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #666666; font-size: 13px;">E-Mail:</span>
-                          <a href="mailto:${email}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
+                          <span style="color: #737373; font-size: 13px;">E-Mail:</span>
+                          <a href="mailto:${email}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
                         </td>
                       </tr>
                       ${telefon ? `
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #666666; font-size: 13px;">Telefon:</span>
-                          <a href="tel:${telefon}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
+                          <span style="color: #737373; font-size: 13px;">Telefon:</span>
+                          <a href="tel:${telefon}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
                         </td>
                       </tr>
                       ` : ''}
@@ -508,34 +508,34 @@ export default function WeddingPage() {
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f0f4ff; border-radius: 8px; border: 1px solid #91c5ff;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">📅</span>
-                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
+                          <span style="color: #171717; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">🕐</span>
-                          <span style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
+                          <span style="color: #171717; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">📍</span>
-                          <span style="color: #333333; font-size: 15px;">${selectedSlot.anlage}</span>
+                          <span style="color: #171717; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
                       ${selectedSlot.customPreisProStunde ? `
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
+                          <span style="color: #171717; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
                         </td>
                       </tr>
                       ` : ''}
@@ -548,8 +548,8 @@ export default function WeddingPage() {
 
           <!-- Action Note -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #666666; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
+            <td style="background-color: #f5f5f5; padding: 20px 40px; border-top: 1px solid #e5e5e5; text-align: center;">
+              <p style="margin: 0; color: #737373; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
             </td>
           </tr>
         </table>
@@ -720,7 +720,7 @@ export default function WeddingPage() {
                 <a
                   href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
                   style={{
-                    background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
+                    background: "#171717",
                     color: "#fff",
                     padding: "11px 23px",
                     borderRadius: 6,
@@ -729,7 +729,7 @@ export default function WeddingPage() {
                     textDecoration: "none",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(232, 160, 32, 0.3)",
+                    boxShadow: "0 4px 12px rgba(23, 23, 23, 0.3)",
                   }}
                 >
                   Training buchen
@@ -792,7 +792,7 @@ export default function WeddingPage() {
                 href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
                 style={{
                   display: "block",
-                  background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
+                  background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
                   color: "#fff",
                   padding: "12px 20px",
                   borderRadius: 6,
@@ -801,7 +801,7 @@ export default function WeddingPage() {
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(232, 160, 32, 0.3)",
+                  boxShadow: "0 4px 12px rgba(23, 23, 23, 0.25)",
                 }}
               >
                 Training buchen
@@ -838,7 +838,7 @@ export default function WeddingPage() {
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(160deg, rgba(6,13,8,0.85) 0%, rgba(20,53,26,0.7) 40%, rgba(20,53,26,0.55) 70%, rgba(10,26,14,0.75) 100%)",
+          background: "linear-gradient(160deg, rgba(10,10,10,0.85) 0%, rgba(23,23,23,0.7) 40%, rgba(23,23,23,0.55) 70%, rgba(10,10,10,0.75) 100%)",
           pointerEvents: "none",
         }} />
         {/* Grain texture */}
@@ -874,9 +874,9 @@ export default function WeddingPage() {
             }}>
               <span style={{
                 width: 8, height: 8, borderRadius: "50%",
-                background: "#22c55e",
+                background: "#3a81f6",
                 display: "inline-block",
-                boxShadow: "0 0 8px rgba(34, 197, 94, 0.6)",
+                boxShadow: "0 0 8px rgba(58, 129, 246, 0.6)",
               }} />
               <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.3px" }}>
                 BSC Rehberge · Berlin-Wedding
@@ -894,7 +894,7 @@ export default function WeddingPage() {
             }}>
               <span style={{ color: "#fff", display: "block" }}>Tennisschule</span>
               <span style={{
-                background: "linear-gradient(135deg, #e8a020 0%, #f0c050 50%, #e8a020 100%)",
+                background: "linear-gradient(135deg, #3a81f6 0%, #91c5ff 50%, #3a81f6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -925,23 +925,23 @@ export default function WeddingPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
+                  background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
                   color: "#fff",
                   padding: "16px 36px",
                   borderRadius: 8,
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(232, 160, 32, 0.35)",
+                  boxShadow: "0 4px 24px rgba(23, 23, 23, 0.3)",
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(232, 160, 32, 0.45)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(23, 23, 23, 0.4)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(232, 160, 32, 0.35)";
+                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(23, 23, 23, 0.3)";
                 }}
               >
                 Jetzt anmelden
@@ -1253,7 +1253,7 @@ export default function WeddingPage() {
             }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(27,71,27,0.25)";
+                e.currentTarget.style.boxShadow = "0 12px 32px rgba(23,23,23,0.2)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
@@ -1336,7 +1336,7 @@ export default function WeddingPage() {
               {/* Gradient overlay on photo */}
               <div style={{
                 position: "absolute", inset: 0,
-                background: "linear-gradient(to right, transparent 60%, rgba(20, 53, 26, 0.3) 100%)",
+                background: "linear-gradient(to right, transparent 60%, rgba(23, 23, 23, 0.3) 100%)",
                 pointerEvents: "none",
               }} />
             </div>
@@ -1424,7 +1424,7 @@ export default function WeddingPage() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(232, 160, 32, 0.4)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(23, 23, 23, 0.35)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
@@ -1654,7 +1654,7 @@ export default function WeddingPage() {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.borderColor = colors.primary;
-                            e.currentTarget.style.background = "#f8fdf8";
+                            e.currentTarget.style.background = "#f5f5f5";
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.borderColor = colors.border;
@@ -1739,7 +1739,7 @@ export default function WeddingPage() {
                 <div
                   style={{
                     aspectRatio: "3/4",
-                    background: `linear-gradient(135deg, ${colors.bgLight} 0%, #e2ddd4 100%)`,
+                    background: `linear-gradient(135deg, ${colors.bgLight} 0%, #e5e5e5 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1925,7 +1925,7 @@ export default function WeddingPage() {
                           display: "inline-block",
                           marginTop: 12,
                           padding: "8px 16px",
-                          background: "linear-gradient(135deg, #e8a020 0%, #c4850a 100%)",
+                          background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
                           color: "#fff",
                           borderRadius: 6,
                           fontSize: 13,
@@ -1947,7 +1947,7 @@ export default function WeddingPage() {
       {/* Kontakt Section */}
       <section id="kontakt" className="fade-in-section" style={{
         padding: "100px 24px",
-        background: `linear-gradient(165deg, ${colors.bgLight} 0%, #e8e4dc 100%)`,
+        background: `linear-gradient(165deg, ${colors.bgLight} 0%, #e5e5e5 100%)`,
         position: "relative",
       }}>
         {/* Diagonal top cut */}
@@ -2355,12 +2355,12 @@ export default function WeddingPage() {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+                  background: "linear-gradient(135deg, #3a81f6 0%, #2563ef 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
-                  boxShadow: "0 8px 24px rgba(34, 197, 94, 0.25)",
+                  boxShadow: "0 8px 24px rgba(58, 129, 246, 0.25)",
                 }}>
                   <span style={{ color: "#fff", fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>
