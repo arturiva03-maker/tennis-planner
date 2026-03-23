@@ -146,13 +146,68 @@ export default function WeddingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Google Fonts — Fraunces (display) + Outfit (body)
+  // Load Google Fonts — Fraunces (display) + Outfit (body) + Inter + JetBrains Mono + Source Serif 4
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,700;1,8..60,400&display=swap";
     document.head.appendChild(link);
-    return () => { document.head.removeChild(link); };
+
+    const style = document.createElement("style");
+    style.textContent = `
+      .wedding-page {
+        --card: #ffffff;
+        --ring: #f59e0b;
+        --input: #e5e7eb;
+        --muted: #f9fafb;
+        --accent: #fffbeb;
+        --border: #e5e7eb;
+        --radius: 0.375rem;
+        --chart-1: #f59e0b;
+        --chart-2: #d97706;
+        --chart-3: #b45309;
+        --chart-4: #92400e;
+        --chart-5: #78350f;
+        --popover: #ffffff;
+        --primary: #f59e0b;
+        --sidebar: #f9fafb;
+        --spacing: 0.25rem;
+        --font-mono: 'JetBrains Mono', monospace;
+        --font-sans: 'Inter', sans-serif;
+        --secondary: #f3f4f6;
+        --background: #ffffff;
+        --font-serif: 'Source Serif 4', serif;
+        --foreground: #262626;
+        --destructive: #ef4444;
+        --shadow-blur: 8px;
+        --shadow-color: hsl(0 0% 0%);
+        --sidebar-ring: #f59e0b;
+        --shadow-spread: -1px;
+        --letter-spacing: 0em;
+        --shadow-opacity: 0.1;
+        --sidebar-accent: #fffbeb;
+        --sidebar-border: #e5e7eb;
+        --card-foreground: #262626;
+        --shadow-offset-x: 0px;
+        --shadow-offset-y: 4px;
+        --sidebar-primary: #f59e0b;
+        --muted-foreground: #6b7280;
+        --accent-foreground: #92400e;
+        --popover-foreground: #262626;
+        --primary-foreground: #000000;
+        --sidebar-foreground: #262626;
+        --secondary-foreground: #4b5563;
+        --destructive-foreground: #ffffff;
+        --sidebar-accent-foreground: #92400e;
+        --sidebar-primary-foreground: #ffffff;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(link);
+      document.head.removeChild(style);
+    };
   }, []);
 
   // Scroll-triggered fade-in animations
@@ -547,18 +602,18 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Vereinsfarben BSC Rehberge — elevated palette
+  // Amber/Gold Theme
   const colors = {
-    primary: "#14351a",
-    primaryLight: "#2a6b3a",
-    accent: "#e8a020",
-    accentDark: "#c4850a",
-    white: "#fafaf8",
-    bgLight: "#f0ede6",
-    bgDark: "#0c1f10",
-    text: "#1a1a18",
-    textMuted: "#5c5c56",
-    border: "#d8d4cc",
+    primary: "#f59e0b",
+    primaryLight: "#fbbf24",
+    accent: "#92400e",
+    accentDark: "#78350f",
+    white: "#ffffff",
+    bgLight: "#fffbeb",
+    bgDark: "#171717",
+    text: "#262626",
+    textMuted: "#6b7280",
+    border: "#e5e7eb",
   };
 
 
@@ -611,7 +666,7 @@ export default function WeddingPage() {
   ];
 
   return (
-    <div style={{
+    <div className="wedding-page" style={{
       minHeight: "100vh",
       background: colors.white,
       fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
