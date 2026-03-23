@@ -315,23 +315,23 @@ export default function WeddingPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; background-color: ${colors.bgLight}; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${colors.bgLight};">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: ${colors.white}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #171717 0%, #262626 100%); padding: 32px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Buchungsbestätigung</h1>
+            <td style="background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryMid} 100%); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: ${colors.white}; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Buchungsbestätigung</h1>
             </td>
           </tr>
 
           <!-- Success Icon -->
           <tr>
             <td align="center" style="padding: 40px 40px 20px;">
-              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #3a81f6 0%, #2563ef 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
-                <span style="color: #ffffff; font-size: 32px;">✓</span>
+              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, ${colors.accent} 0%, ${colors.successDark} 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+                <span style="color: ${colors.white}; font-size: 32px;">✓</span>
               </div>
             </td>
           </tr>
@@ -339,46 +339,46 @@ export default function WeddingPage() {
           <!-- Greeting -->
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
-              <h2 style="margin: 0 0 8px; color: #171717; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
-              <p style="margin: 0; color: #737373; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
+              <h2 style="margin: 0 0 8px; color: ${colors.primary}; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
+              <p style="margin: 0; color: ${colors.textMuted}; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
             </td>
           </tr>
 
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${colors.bgLight}; border-radius: 8px; border: 1px solid ${colors.border};">
                 <tr>
                   <td style="padding: 24px;">
-                    <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
+                    <p style="margin: 0 0 16px; color: ${colors.primary}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📅</td>
-                              <td style="color: #171717; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
+                              <td style="color: ${colors.primary}; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e5e5;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">🕐</td>
-                              <td style="color: #171717; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
+                              <td style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e5e5;' : ''}">
+                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ` border-bottom: 1px solid ${colors.border};` : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📍</td>
-                              <td style="color: #171717; font-size: 15px;">BSC Rehberge, Wedding</td>
+                              <td style="color: ${colors.primary}; font-size: 15px;">BSC Rehberge, Wedding</td>
                             </tr>
                           </table>
                         </td>
@@ -389,7 +389,7 @@ export default function WeddingPage() {
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: #171717; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
+                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
                             </tr>
                           </table>
                         </td>
@@ -405,23 +405,23 @@ export default function WeddingPage() {
           <!-- Contact Info -->
           <tr>
             <td style="padding: 0 40px 32px; text-align: center;">
-              <p style="margin: 0 0 8px; color: #737373; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
-              <a href="mailto:tennisabisz@gmail.com" style="color: #171717; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+              <p style="margin: 0 0 8px; color: ${colors.textMuted}; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
+              <a href="mailto:tennisabisz@gmail.com" style="color: ${colors.primary}; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f5f5f5; padding: 24px 40px; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 4px; color: #171717; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
-              <p style="margin: 0; color: #171717; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
-              <p style="margin: 12px 0 0; color: #a1a1a1; font-size: 12px;">Standort Wedding · BSC Rehberge</p>
+            <td style="background-color: ${colors.bgLight}; padding: 24px 40px; border-top: 1px solid ${colors.border};">
+              <p style="margin: 0 0 4px; color: ${colors.primary}; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
+              <p style="margin: 0; color: ${colors.primary}; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+              <p style="margin: 12px 0 0; color: ${colors.textSubtle}; font-size: 12px;">Standort Wedding · BSC Rehberge</p>
             </td>
           </tr>
         </table>
 
         <!-- Footer Text -->
-        <p style="margin: 24px 0 0; color: #a1a1a1; font-size: 12px; text-align: center;">
+        <p style="margin: 24px 0 0; color: ${colors.textSubtle}; font-size: 12px; text-align: center;">
           © 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
@@ -458,43 +458,43 @@ export default function WeddingPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; background-color: ${colors.bgLight}; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${colors.bgLight};">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: ${colors.white}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #171717 0%, #0a0a0a 100%); padding: 24px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
+            <td style="background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%); padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; color: ${colors.white}; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
             </td>
           </tr>
 
           <!-- Customer Info -->
           <tr>
             <td style="padding: 32px 40px 24px;">
-              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 16px; color: ${colors.primary}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${colors.bgLight}; border-radius: 8px; border: 1px solid ${colors.border};">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #737373; font-size: 13px;">Name:</span>
-                          <span style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
+                          <span style="color: ${colors.textMuted}; font-size: 13px;">Name:</span>
+                          <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #737373; font-size: 13px;">E-Mail:</span>
-                          <a href="mailto:${email}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
+                          <span style="color: ${colors.textMuted}; font-size: 13px;">E-Mail:</span>
+                          <a href="mailto:${email}" style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
                         </td>
                       </tr>
                       ${telefon ? `
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: #737373; font-size: 13px;">Telefon:</span>
-                          <a href="tel:${telefon}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
+                          <span style="color: ${colors.textMuted}; font-size: 13px;">Telefon:</span>
+                          <a href="tel:${telefon}" style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
                         </td>
                       </tr>
                       ` : ''}
@@ -508,34 +508,34 @@ export default function WeddingPage() {
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f0f4ff; border-radius: 8px; border: 1px solid #91c5ff;">
+              <p style="margin: 0 0 16px; color: ${colors.primary}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: ${colors.accentBg}; border-radius: 8px; border: 1px solid ${colors.accentLight};">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">📅</span>
-                          <span style="color: #171717; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
+                          <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">🕐</span>
-                          <span style="color: #171717; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
+                          <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">📍</span>
-                          <span style="color: #171717; font-size: 15px;">${selectedSlot.anlage}</span>
+                          <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
                       ${selectedSlot.customPreisProStunde ? `
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: #171717; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
+                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
                         </td>
                       </tr>
                       ` : ''}
@@ -548,8 +548,8 @@ export default function WeddingPage() {
 
           <!-- Action Note -->
           <tr>
-            <td style="background-color: #f5f5f5; padding: 20px 40px; border-top: 1px solid #e5e5e5; text-align: center;">
-              <p style="margin: 0; color: #737373; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
+            <td style="background-color: ${colors.bgLight}; padding: 20px 40px; border-top: 1px solid ${colors.border}; text-align: center;">
+              <p style="margin: 0; color: ${colors.textMuted}; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
             </td>
           </tr>
         </table>
@@ -595,18 +595,27 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Neutral/Blue Theme
+  // ── Theme: Alle Farben hier ändern ──
   const colors = {
-    primary: "#171717",
-    primaryLight: "#3a81f6",
-    accent: "#3a81f6",
-    accentDark: "#1a4eda",
-    white: "#ffffff",
-    bgLight: "#f5f5f5",
-    bgDark: "#0a0a0a",
-    text: "#0a0a0a",
-    textMuted: "#737373",
-    border: "#e5e5e5",
+    primary: "#171717",        // Hauptfarbe (Buttons, Überschriften)
+    primaryMid: "#262626",     // Mittlere Variante (E-Mail-Header Gradient)
+    primaryDark: "#0a0a0a",    // Dunklere Variante (Gradient-Ende)
+    primaryLight: "#3a81f6",   // Helle Akzentfarbe (Links, Highlights)
+    accent: "#3a81f6",         // Akzent (Badges, Borders, Dots)
+    accentLight: "#91c5ff",    // Heller Akzent (Gradient-Mitte)
+    accentDark: "#1a4eda",     // Dunkler Akzent
+    accentBg: "#f0f4ff",       // Akzent-Hintergrund (z.B. Info-Boxen)
+    white: "#ffffff",          // Weiß
+    bgLight: "#f5f5f5",       // Heller Hintergrund
+    bgDark: "#0a0a0a",        // Dunkler Hintergrund (Footer)
+    text: "#0a0a0a",           // Primärtext
+    textMuted: "#737373",      // Gedämpfter Text
+    textSubtle: "#a1a1a1",     // Subtiler Text (Footer-Details)
+    border: "#e5e5e5",         // Rahmenfarbe
+    success: "#3a81f6",        // Erfolg (Bestätigungs-Icons)
+    successDark: "#2563ef",    // Erfolg dunkel
+    error: "#dc2626",          // Fehler
+    errorBg: "#fee2e2",        // Fehler-Hintergrund
   };
 
 
@@ -685,7 +694,7 @@ export default function WeddingPage() {
             <span style={{
               fontWeight: 700,
               fontSize: 18,
-              color: scrolled ? colors.primary : "#fff",
+              color: scrolled ? colors.primary : colors.white,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
             }}>
@@ -720,8 +729,8 @@ export default function WeddingPage() {
                 <a
                   href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
                   style={{
-                    background: "#171717",
-                    color: "#fff",
+                    background: colors.primary,
+                    color: colors.white,
                     padding: "11px 23px",
                     borderRadius: 6,
                     fontWeight: 700,
@@ -746,7 +755,7 @@ export default function WeddingPage() {
                 border: "none",
                 cursor: "pointer",
                 padding: 8,
-                color: scrolled ? colors.text : "#fff",
+                color: scrolled ? colors.text : colors.white,
               }}
               className="mobile-menu-btn"
             >
@@ -792,8 +801,8 @@ export default function WeddingPage() {
                 href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
                 style={{
                   display: "block",
-                  background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
-                  color: "#fff",
+                  background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
+                  color: colors.white,
                   padding: "12px 20px",
                   borderRadius: 6,
                   fontWeight: 700,
@@ -874,7 +883,7 @@ export default function WeddingPage() {
             }}>
               <span style={{
                 width: 8, height: 8, borderRadius: "50%",
-                background: "#3a81f6",
+                background: colors.accent,
                 display: "inline-block",
                 boxShadow: "0 0 8px rgba(58, 129, 246, 0.6)",
               }} />
@@ -892,9 +901,9 @@ export default function WeddingPage() {
               marginBottom: 24,
               letterSpacing: "-2px",
             }}>
-              <span style={{ color: "#fff", display: "block" }}>Tennisschule</span>
+              <span style={{ color: colors.white, display: "block" }}>Tennisschule</span>
               <span style={{
-                background: "linear-gradient(135deg, #3a81f6 0%, #91c5ff 50%, #3a81f6 100%)",
+                background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.accentLight} 50%, ${colors.accent} 100%)`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -925,8 +934,8 @@ export default function WeddingPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
-                  color: "#fff",
+                  background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
+                  color: colors.white,
                   padding: "16px 36px",
                   borderRadius: 8,
                   fontWeight: 700,
@@ -953,7 +962,7 @@ export default function WeddingPage() {
                   alignItems: "center",
                   gap: 8,
                   background: "transparent",
-                  color: "#fff",
+                  color: colors.white,
                   padding: "16px 32px",
                   borderRadius: 8,
                   fontWeight: 500,
@@ -1261,10 +1270,10 @@ export default function WeddingPage() {
               }}
             >
               <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>👥</div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.white, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 5 Personen</p>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 42, fontWeight: 900, color: "#fff", fontFamily: "'Fraunces', serif" }}>60 €</span>
+                <span style={{ fontSize: 42, fontWeight: 900, color: colors.white, fontFamily: "'Fraunces', serif" }}>60 €</span>
                 <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 6 }}>/ Monat</span>
               </div>
             </div>
@@ -1374,7 +1383,7 @@ export default function WeddingPage() {
                 <h3 style={{
                   fontSize: 28,
                   fontWeight: 900,
-                  color: "#fff",
+                  color: colors.white,
                   marginBottom: 20,
                   fontFamily: "'Fraunces', serif",
                   letterSpacing: "-0.5px",
@@ -1391,7 +1400,7 @@ export default function WeddingPage() {
                     borderLeft: `3px solid ${colors.accent}`,
                   }}>
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "1px" }}>Kindercamp</div>
-                    <div style={{ fontSize: 15, color: "#fff", fontWeight: 600 }}>10:00–15:00 Uhr · 270 €</div>
+                    <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>10:00–15:00 Uhr · 270 €</div>
                   </div>
                   <div style={{
                     background: "rgba(255,255,255,0.08)",
@@ -1400,7 +1409,7 @@ export default function WeddingPage() {
                     borderLeft: `3px solid ${colors.accent}`,
                   }}>
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "1px" }}>Erwachsenencamp</div>
-                    <div style={{ fontSize: 15, color: "#fff", fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
+                    <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
                   </div>
                 </div>
 
@@ -1575,7 +1584,7 @@ export default function WeddingPage() {
                           border: isToday ? `2px solid ${colors.primary}` : isSelected ? `2px solid ${colors.primary}` : "1px solid transparent",
                           borderRadius: 8,
                           background: isSelected ? colors.primary : "transparent",
-                          color: isSelected ? "#fff" : isPast ? colors.border : colors.text,
+                          color: isSelected ? colors.white : isPast ? colors.border : colors.text,
                           cursor: hasSlots && !isPast ? "pointer" : "default",
                           fontWeight: isToday || isSelected ? 600 : 400,
                           fontSize: 14,
@@ -1654,7 +1663,7 @@ export default function WeddingPage() {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.borderColor = colors.primary;
-                            e.currentTarget.style.background = "#f5f5f5";
+                            e.currentTarget.style.background = colors.bgLight;
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.borderColor = colors.border;
@@ -1739,7 +1748,7 @@ export default function WeddingPage() {
                 <div
                   style={{
                     aspectRatio: "3/4",
-                    background: `linear-gradient(135deg, ${colors.bgLight} 0%, #e5e5e5 100%)`,
+                    background: `linear-gradient(135deg, ${colors.bgLight} 0%, ${colors.border} 100%)`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1925,8 +1934,8 @@ export default function WeddingPage() {
                           display: "inline-block",
                           marginTop: 12,
                           padding: "8px 16px",
-                          background: "linear-gradient(135deg, #171717 0%, #0a0a0a 100%)",
-                          color: "#fff",
+                          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
+                          color: colors.white,
                           borderRadius: 6,
                           fontSize: 13,
                           fontWeight: 600,
@@ -1947,7 +1956,7 @@ export default function WeddingPage() {
       {/* Kontakt Section */}
       <section id="kontakt" className="fade-in-section" style={{
         padding: "100px 24px",
-        background: `linear-gradient(165deg, ${colors.bgLight} 0%, #e5e5e5 100%)`,
+        background: `linear-gradient(165deg, ${colors.bgLight} 0%, ${colors.border} 100%)`,
         position: "relative",
       }}>
         {/* Diagonal top cut */}
@@ -2107,7 +2116,7 @@ export default function WeddingPage() {
       </section>
 
       {/* Footer */}
-      <footer style={{ background: colors.bgDark, color: "#fff", padding: "56px 24px", position: "relative" }}>
+      <footer style={{ background: colors.bgDark, color: colors.white, padding: "56px 24px", position: "relative" }}>
         {/* Grain */}
         <div className="grain-overlay" style={{ position: "absolute", inset: 0, opacity: 0.2, pointerEvents: "none", mixBlendMode: "overlay" }} />
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -2203,7 +2212,7 @@ export default function WeddingPage() {
         >
           <div
             style={{
-              background: "#fff",
+              background: colors.white,
               maxWidth: 600,
               width: "100%",
               maxHeight: "85vh",
@@ -2262,7 +2271,7 @@ export default function WeddingPage() {
         >
           <div
             style={{
-              background: "#fff",
+              background: colors.white,
               maxWidth: 600,
               width: "100%",
               maxHeight: "85vh",
@@ -2340,7 +2349,7 @@ export default function WeddingPage() {
         >
           <div
             style={{
-              background: "#fff",
+              background: colors.white,
               maxWidth: 500,
               width: "100%",
               maxHeight: "85vh",
@@ -2355,14 +2364,14 @@ export default function WeddingPage() {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #3a81f6 0%, #2563ef 100%)",
+                  background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.successDark} 100%)`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
                   boxShadow: "0 8px 24px rgba(58, 129, 246, 0.25)",
                 }}>
-                  <span style={{ color: "#fff", fontSize: 36, fontWeight: 300 }}>✓</span>
+                  <span style={{ color: colors.white, fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>
 
                 <h2 style={{
@@ -2442,7 +2451,7 @@ export default function WeddingPage() {
                   onClick={() => setShowBookingModal(false)}
                   style={{
                     background: colors.primary,
-                    color: "#fff",
+                    color: colors.white,
                     border: "none",
                     padding: "14px 40px",
                     borderRadius: 4,
@@ -2505,8 +2514,8 @@ export default function WeddingPage() {
 
                 {bookingError && (
                   <div style={{
-                    background: "#fee2e2",
-                    color: "#dc2626",
+                    background: colors.errorBg,
+                    color: colors.error,
                     padding: 12,
                     borderRadius: 4,
                     marginBottom: 16,
@@ -2582,7 +2591,7 @@ export default function WeddingPage() {
                   style={{
                     width: "100%",
                     background: bookingSubmitting ? colors.textMuted : colors.primary,
-                    color: "#fff",
+                    color: colors.white,
                     border: "none",
                     padding: "14px 24px",
                     borderRadius: 2,
