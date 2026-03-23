@@ -146,60 +146,53 @@ export default function WeddingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Google Fonts — Fraunces (display) + Outfit (body) + Inter + JetBrains Mono + Source Serif 4
+  // Load Google Fonts — Fraunces (display) + Outfit (body)
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,700;1,8..60,400&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(link);
 
     const style = document.createElement("style");
     style.textContent = `
       .wedding-page {
         --card: #ffffff;
-        --ring: #f59e0b;
-        --input: #e5e7eb;
-        --muted: #f9fafb;
-        --accent: #fffbeb;
-        --border: #e5e7eb;
-        --radius: 0.375rem;
-        --chart-1: #f59e0b;
-        --chart-2: #d97706;
-        --chart-3: #b45309;
-        --chart-4: #92400e;
-        --chart-5: #78350f;
+        --ring: #a1a1a1;
+        --input: #e5e5e5;
+        --muted: #f5f5f5;
+        --accent: #f5f5f5;
+        --border: #e5e5e5;
+        --radius: 0.625rem;
+        --chart-1: #91c5ff;
+        --chart-2: #3a81f6;
+        --chart-3: #2563ef;
+        --chart-4: #1a4eda;
+        --chart-5: #1f3fad;
         --popover: #ffffff;
-        --primary: #f59e0b;
-        --sidebar: #f9fafb;
+        --primary: #171717;
+        --sidebar: #fafafa;
         --spacing: 0.25rem;
-        --font-mono: 'JetBrains Mono', monospace;
-        --font-sans: 'Inter', sans-serif;
-        --secondary: #f3f4f6;
+        --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+        --secondary: #f5f5f5;
         --background: #ffffff;
-        --font-serif: 'Source Serif 4', serif;
-        --foreground: #262626;
-        --destructive: #ef4444;
-        --shadow-blur: 8px;
-        --shadow-color: hsl(0 0% 0%);
-        --sidebar-ring: #f59e0b;
-        --shadow-spread: -1px;
-        --letter-spacing: 0em;
-        --shadow-opacity: 0.1;
-        --sidebar-accent: #fffbeb;
-        --sidebar-border: #e5e7eb;
-        --card-foreground: #262626;
-        --shadow-offset-x: 0px;
-        --shadow-offset-y: 4px;
-        --sidebar-primary: #f59e0b;
-        --muted-foreground: #6b7280;
-        --accent-foreground: #92400e;
-        --popover-foreground: #262626;
-        --primary-foreground: #000000;
-        --sidebar-foreground: #262626;
-        --secondary-foreground: #4b5563;
+        --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+        --foreground: #0a0a0a;
+        --destructive: #e7000b;
+        --sidebar-ring: #a1a1a1;
+        --sidebar-accent: #f5f5f5;
+        --sidebar-border: #e5e5e5;
+        --card-foreground: #0a0a0a;
+        --sidebar-primary: #171717;
+        --muted-foreground: #737373;
+        --accent-foreground: #171717;
+        --popover-foreground: #0a0a0a;
+        --primary-foreground: #fafafa;
+        --sidebar-foreground: #0a0a0a;
+        --secondary-foreground: #171717;
         --destructive-foreground: #ffffff;
-        --sidebar-accent-foreground: #92400e;
-        --sidebar-primary-foreground: #ffffff;
+        --sidebar-accent-foreground: #171717;
+        --sidebar-primary-foreground: #fafafa;
       }
     `;
     document.head.appendChild(style);
@@ -602,18 +595,18 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Amber/Gold Theme
+  // Neutral/Blue Theme
   const colors = {
-    primary: "#f59e0b",
-    primaryLight: "#fbbf24",
-    accent: "#92400e",
-    accentDark: "#78350f",
+    primary: "#171717",
+    primaryLight: "#3a81f6",
+    accent: "#3a81f6",
+    accentDark: "#1a4eda",
     white: "#ffffff",
-    bgLight: "#fffbeb",
-    bgDark: "#171717",
-    text: "#262626",
-    textMuted: "#6b7280",
-    border: "#e5e7eb",
+    bgLight: "#f5f5f5",
+    bgDark: "#0a0a0a",
+    text: "#0a0a0a",
+    textMuted: "#737373",
+    border: "#e5e5e5",
   };
 
 
