@@ -1,6 +1,51 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, useScroll, useTransform, useInView, useSpring } from "framer-motion";
 import "./App.css";
 import { supabase } from "./supabaseClient";
+
+// Animated counter component for stats
+function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const numericPart = parseInt(value);
+  const isNumeric = !isNaN(numericPart);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (isInView && isNumeric) {
+      let start = 0;
+      const end = numericPart;
+      const duration = 2000;
+      const stepTime = Math.max(Math.floor(duration / end), 30);
+      const timer = setInterval(() => {
+        start += 1;
+        setCount(start);
+        if (start >= end) clearInterval(timer);
+      }, stepTime);
+      return () => clearInterval(timer);
+    }
+  }, [isInView, isNumeric, numericPart]);
+
+  return <span ref={ref}>{isInView ? (isNumeric ? count + suffix : value) : "0"}</span>;
+}
+
+// Reveal-on-scroll wrapper
+function ScrollReveal({ children, delay = 0, direction = "up" }: { children: React.ReactNode; delay?: number; direction?: "up" | "left" | "right" }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const initial = direction === "up" ? { y: 60 } : direction === "left" ? { x: -60 } : { x: 60 };
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, ...initial }}
+      animate={isInView ? { opacity: 1, y: 0, x: 0 } : { opacity: 0, ...initial }}
+      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 type SpontaneStundeBuchung = {
   name: string;
@@ -60,6 +105,13 @@ function getCalendarDays(year: number, month: number) {
 }
 
 export default function WeddingPage() {
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress: heroScrollProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroParallaxY = useTransform(heroScrollProgress, [0, 1], ["0%", "30%"]);
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showImpressum, setShowImpressum] = useState(false);
@@ -818,6 +870,7 @@ export default function WeddingPage() {
 
       {/* Hero Section */}
       <header
+        ref={heroRef}
         style={{
           position: "relative",
           minHeight: "90vh",
@@ -826,17 +879,18 @@ export default function WeddingPage() {
           overflow: "hidden",
         }}
       >
-        {/* Background photo */}
-        <img
+        {/* Background photo with parallax */}
+        <motion.img
           src="/hero-wedding.webp"
           alt=""
           style={{
             position: "absolute",
             inset: 0,
             width: "100%",
-            height: "100%",
+            height: "120%",
             objectFit: "cover",
             objectPosition: "center 60%",
+            y: heroParallaxY,
           }}
         />
         {/* Dark overlay for text readability */}
@@ -856,14 +910,19 @@ export default function WeddingPage() {
         }} />
 
         {/* Content */}
-        <div style={{
-          position: "relative",
-          zIndex: 10,
-          width: "100%",
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "140px 24px 100px",
-        }}>
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            position: "relative",
+            zIndex: 10,
+            width: "100%",
+            maxWidth: 1200,
+            margin: "0 auto",
+            padding: "140px 24px 100px",
+          }}
+        >
           <div style={{ maxWidth: 680 }}>
             {/* Location Badge */}
             <div className="hero-badge" style={{
@@ -919,7 +978,7 @@ export default function WeddingPage() {
               lineHeight: 1.6,
               maxWidth: 480,
             }}>
-              Professionelles Tennistraining fur alle Alters- und Leistungsstufen in Berlin-Wedding.
+              Professionelles Tennistraining für alle Alters- und Leistungsstufen in Berlin-Wedding.
             </p>
 
             {/* CTAs */}
@@ -980,7 +1039,7 @@ export default function WeddingPage() {
               </a>
             </div>
           </div>
-        </div>
+        </motion.div>
 
       </header>
 
@@ -1005,32 +1064,40 @@ export default function WeddingPage() {
           position: "relative",
         }}>
           {[
-            { number: "7", label: "Trainer" },
-            { number: "150+", label: "Aktive Spieler" },
-            { number: "2", label: "Standorte in Berlin" },
-            { number: "DTB", label: "Zertifizierte Methoden" },
+            { number: "7", suffix: "", label: "Trainer" },
+            { number: "150", suffix: "+", label: "Aktive Spieler" },
+            { number: "2", suffix: "", label: "Standorte in Berlin" },
+            { number: "DTB", suffix: "", label: "Zertifizierte Methoden" },
           ].map((stat, i) => (
-            <div key={i} className="stat-item" style={{ textAlign: "center", minWidth: 130 }}>
+            <motion.div
+              key={i}
+              className="stat-item"
+              style={{ textAlign: "center", minWidth: 130 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+            >
               <div style={{
                 fontSize: 36,
                 fontWeight: 900,
-                color: colors.accent,
+                color: "#fff",
                 fontFamily: "'Fraunces', serif",
                 lineHeight: 1,
                 marginBottom: 6,
               }}>
-                {stat.number}
+                <AnimatedCounter value={stat.number} suffix={stat.suffix} />
               </div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px" }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px" }}>
                 {stat.label}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
 
       {/* Unser Angebot Section */}
-      <section id="angebot" className="fade-in-section" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
+      <section id="angebot" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
         {/* Subtle geometric pattern */}
         <div style={{
           position: "absolute", inset: 0, opacity: 0.03, pointerEvents: "none",
@@ -1038,6 +1105,7 @@ export default function WeddingPage() {
           backgroundSize: "32px 32px",
         }} />
         <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "left", marginBottom: 56, maxWidth: 600 }}>
             <p style={{
               fontSize: 11,
@@ -1058,39 +1126,40 @@ export default function WeddingPage() {
               lineHeight: 1.1,
               letterSpacing: "-1px",
             }}>
-              Tennis fur jedes Alter und Level
+              Tennis für jedes Alter und Level
             </h2>
             <p style={{ fontSize: 16, color: colors.textMuted, lineHeight: 1.7 }}>
-              Von den ersten Schlagerfahrungen bis zum Wettkampftennis - wir begleiten euch auf jedem Level.
+              Von den ersten Schlägerfahrungen bis zum Wettkampftennis – wir begleiten euch auf jedem Level.
             </p>
           </div>
+          </ScrollReveal>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {[
               {
                 title: "Kindertraining",
                 subtitle: "ab 5 Jahren",
-                desc: "Tennis nach dem DTB-Konzept (Play+Stay / Tennis 10s). Altersgerechte Balle, angepasste Feldgrossen und viel Bewegung - Spass an erster Stelle.",
+                desc: "Tennis nach dem DTB-Konzept (Play+Stay / Tennis 10s). Altersgerechte Bälle, angepasste Feldgrößen und viel Bewegung – Spaß an erster Stelle.",
               },
               {
                 title: "Jugendtraining",
-                subtitle: "Technik, Taktik & Spielverstandnis",
-                desc: "Gezieltes Training an Technik, Taktik und Spielverstandnis. Mix aus Korbtraining, Spielformen und Wettkampfsimulationen.",
+                subtitle: "Technik, Taktik & Spielverständnis",
+                desc: "Gezieltes Training an Technik, Taktik und Spielverständnis. Mix aus Korbtraining, Spielformen und Wettkampfsimulationen.",
               },
               {
                 title: "Erwachsenentraining",
                 subtitle: "Einsteiger bis Clubspieler",
-                desc: "Training nach dem Tennis-Xpress-Konzept des DTB. Schnelle Spielfahigkeit und ein Training, das Fitness und Spass verbindet.",
+                desc: "Training nach dem Tennis-Xpress-Konzept des DTB. Schnelle Spielfähigkeit und ein Training, das Fitness und Spaß verbindet.",
               },
               {
                 title: "Mannschaftstraining",
                 subtitle: "Wettkampforientiert",
-                desc: "Wettkampforientiertes Training mit gleichstarken Spielern. Fur Mannschafts- und Turnierspieler.",
+                desc: "Wettkampforientiertes Training mit gleichstarken Spielern. Für Mannschafts- und Turnierspieler.",
               },
               {
                 title: "Einzeltraining",
-                subtitle: "Maximale Intensitat",
-                desc: "Gezieltes Arbeiten an Technik, Schwachen und individuellen Zielen - mit direktem Feedback und maximaler Intensitat.",
+                subtitle: "Maximale Intensität",
+                desc: "Gezieltes Arbeiten an Technik, Schwächen und individuellen Zielen – mit direktem Feedback und maximaler Intensität.",
               },
               {
                 title: "Gruppentraining",
@@ -1100,11 +1169,11 @@ export default function WeddingPage() {
               {
                 title: "Camps",
                 subtitle: "In den Sommerferien",
-                desc: "Intensives Training in entspannter Atmosphare. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spass.",
+                desc: "Intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß.",
               },
             ].map((item, i) => (
+              <ScrollReveal key={i} delay={i * 0.08}>
               <div
-                key={i}
                 className="flip-card"
                 style={{
                   perspective: 800,
@@ -1188,14 +1257,16 @@ export default function WeddingPage() {
                   </div>
                 </div>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Tarife Section */}
-      <section id="tarife" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
+      <section id="tarife" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
               fontSize: 11,
@@ -1217,6 +1288,7 @@ export default function WeddingPage() {
               Unsere Preise
             </h2>
           </div>
+          </ScrollReveal>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {/* Einzeltraining */}
@@ -1282,14 +1354,15 @@ export default function WeddingPage() {
             textAlign: "center",
             fontStyle: "italic",
           }}>
-            Im Winter zzgl. Hallengebuhren
+            Im Winter zzgl. Hallengebühren
           </p>
         </div>
       </section>
 
       {/* Aktuelles Section */}
-      <section id="aktuelles" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
+      <section id="aktuelles" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
               fontSize: 11,
@@ -1305,7 +1378,9 @@ export default function WeddingPage() {
               Jetzt anmelden
             </h2>
           </div>
+          </ScrollReveal>
 
+          <ScrollReveal delay={0.15}>
           {/* Tenniscamp Card — photo-driven layout */}
           <div
             style={{
@@ -1441,12 +1516,13 @@ export default function WeddingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
       {!loadingSlots && hasAnySlots && (
-        <section id="spontan" className="fade-in-section" style={{ padding: "60px 24px", background: colors.white }}>
+        <section id="spontan"  style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <p style={{
@@ -1457,7 +1533,7 @@ export default function WeddingPage() {
                 marginBottom: 12,
                 fontWeight: 600,
               }}>
-                Verfugbare Termine
+                Verfügbare Termine
               </p>
               <h2 style={{
                 fontSize: 28,
@@ -1688,7 +1764,7 @@ export default function WeddingPage() {
       )}
 
       {/* Trainer Section */}
-      <section id="trainer" className="fade-in-section" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
+      <section id="trainer" style={{ padding: "100px 24px", background: colors.bgLight, position: "relative" }}>
         {/* Dot pattern */}
         <div style={{
           position: "absolute", inset: 0, opacity: 0.025, pointerEvents: "none",
@@ -1696,6 +1772,7 @@ export default function WeddingPage() {
           backgroundSize: "28px 28px",
         }} />
         <div style={{ maxWidth: 1100, margin: "0 auto", position: "relative" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "left", marginBottom: 56, maxWidth: 500 }}>
             <p style={{
               fontSize: 11,
@@ -1718,11 +1795,12 @@ export default function WeddingPage() {
               Trainer
             </h2>
           </div>
+          </ScrollReveal>
 
           <div className="trainer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
             {trainers.map((trainer, i) => (
+              <ScrollReveal key={i} delay={i * 0.1}>
               <div
-                key={i}
                 className="trainer-card"
                 style={{
                   background: colors.white,
@@ -1803,14 +1881,16 @@ export default function WeddingPage() {
                   )}
                 </div>
               </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="fade-in-section" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
+      <section id="faq" style={{ padding: "100px 24px", background: colors.white, position: "relative" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
               fontSize: 11,
@@ -1823,9 +1903,10 @@ export default function WeddingPage() {
               FAQ
             </p>
             <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
-              Haufig gestellte Fragen
+              Häufig gestellte Fragen
             </h2>
           </div>
+          </ScrollReveal>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {[
@@ -1950,7 +2031,7 @@ export default function WeddingPage() {
       </section>
 
       {/* Kontakt Section */}
-      <section id="kontakt" className="fade-in-section" style={{
+      <section id="kontakt" style={{
         padding: "100px 24px",
         background: `linear-gradient(165deg, ${colors.bgLight} 0%, ${colors.border} 100%)`,
         position: "relative",
@@ -1962,6 +2043,7 @@ export default function WeddingPage() {
           clipPath: "polygon(0 0, 100% 0, 100% 0%, 0 100%)",
         }} />
         <div style={{ maxWidth: 900, margin: "0 auto", position: "relative" }}>
+          <ScrollReveal>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <p style={{
               fontSize: 11,
@@ -1977,6 +2059,7 @@ export default function WeddingPage() {
               So erreichen Sie uns
             </h2>
           </div>
+          </ScrollReveal>
 
           <div style={{
             display: "grid",
