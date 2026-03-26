@@ -5184,7 +5184,9 @@ Deine Tennisschule`;
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.14)"
                                 : "rgba(59, 130, 246, 0.18)";
-                              const border = hasVertretung
+                              const border = t.isPrivat
+                                ? "rgba(234, 179, 8, 0.8)"
+                                : hasVertretung
                                 ? isVertretungOffen ? "rgba(220, 38, 38, 0.8)" : "rgba(34, 197, 94, 0.8)"
                                 : isSelected
                                 ? "rgba(139, 92, 246, 0.6)"
@@ -5290,6 +5292,20 @@ Deine Tennisschule`;
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
+                                    {t.isPrivat && (
+                                      <span
+                                        style={{
+                                          fontSize: 8,
+                                          fontWeight: 700,
+                                          background: "#eab308",
+                                          color: "white",
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
+                                        }}
+                                      >
+                                        P
+                                      </span>
+                                    )}
                                     {t.isSpontanBuchung && (
                                       <span
                                         style={{
