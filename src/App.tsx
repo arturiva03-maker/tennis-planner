@@ -1298,7 +1298,7 @@ export default function App() {
 
   const [repeatWeekly, setRepeatWeekly] = useState(true);
   const [repeatUntil, setRepeatUntil] = useState("2026-07-12");
-  const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([{ von: todayISO(), bis: "2026-07-12" }]);
+  const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([{ von: todayISO(), bis: "2026-07-12" }, { von: "2026-08-24", bis: "2026-09-30" }]);
   const [applySerieScope, setApplySerieScope] =
     useState<"nurDieses" | "abHeute">("nurDieses");
 
@@ -3181,7 +3181,7 @@ export default function App() {
     setTSpielerIds([]);
     setRepeatWeekly(true);
     setRepeatUntil("2026-07-12");
-    setRepeatPeriods([{ von: todayISO(), bis: "2026-07-12" }]);
+    setRepeatPeriods([{ von: todayISO(), bis: "2026-07-12" }, { von: "2026-08-24", bis: "2026-09-30" }]);
     setApplySerieScope("nurDieses");
     setTTarifId("");
     setTCustomPreisProStunde("");
@@ -5101,7 +5101,7 @@ Deine Tennisschule`;
                                   if (isTrainer) return;
                                   resetTrainingForm();
                                   setTDatum(day);
-                                  setRepeatPeriods([{ von: day, bis: "2026-07-12" }]);
+                                  setRepeatPeriods([{ von: day, bis: "2026-07-12" }, { von: "2026-08-24", bis: "2026-09-30" }]);
                                   setTVon(`${pad2(h)}:00`);
                                   setTBis(`${pad2(h + 1)}:00`);
                                   if (kalenderTrainerFilter.length === 1) {
