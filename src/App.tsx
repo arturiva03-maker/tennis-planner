@@ -1295,6 +1295,7 @@ export default function App() {
 
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [repeatUntil, setRepeatUntil] = useState("2026-03-28");
+  const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([]);
   const [applySerieScope, setApplySerieScope] =
     useState<"nurDieses" | "abHeute">("nurDieses");
 
@@ -3154,6 +3155,7 @@ export default function App() {
     setTSpielerIds([]);
     setRepeatWeekly(false);
     setRepeatUntil("2026-03-28");
+    setRepeatPeriods([]);
     setApplySerieScope("nurDieses");
     setTTarifId("");
     setTCustomPreisProStunde("");
@@ -3764,30 +3766,42 @@ Deine Tennisschule`;
     }
 
     if (repeatWeekly) {
-      const until = repeatUntil;
-      if (!until || until < tDatum) return;
+      const periods = repeatPeriods.length > 0
+        ? repeatPeriods.filter(p => p.von && p.bis && p.bis >= p.von)
+        : [{ von: tDatum, bis: repeatUntil }];
+
+      if (periods.length === 0) return;
 
       const serieId = uid();
       const created: Training[] = [];
-      let d = tDatum;
 
-      while (d <= until) {
-        created.push({
-          id: uid(),
-          datum: d,
-          uhrzeitVon: tVon,
-          uhrzeitBis: tBis,
-          trainerId: trainerIdForSave,
-          tarifId: hasTarif ? tTarifId : undefined,
-          spielerIds: tSpielerIds,
-          status: tStatus,
-          notiz: tNotiz.trim() || undefined,
-          serieId,
-          customPreisProStunde: customPreis,
-          customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
-          anlage: tAnlage,
-        });
-        d = addDaysISO(d, 7);
+      for (const period of periods) {
+        let d = period.von;
+        // Align to the same weekday as tDatum
+        const startDay = new Date(tDatum + "T00:00:00").getDay();
+        const periodDay = new Date(d + "T00:00:00").getDay();
+        let diff = startDay - periodDay;
+        if (diff < 0) diff += 7;
+        if (diff > 0) d = addDaysISO(d, diff);
+
+        while (d <= period.bis) {
+          created.push({
+            id: uid(),
+            datum: d,
+            uhrzeitVon: tVon,
+            uhrzeitBis: tBis,
+            trainerId: trainerIdForSave,
+            tarifId: hasTarif ? tTarifId : undefined,
+            spielerIds: tSpielerIds,
+            status: tStatus,
+            notiz: tNotiz.trim() || undefined,
+            serieId,
+            customPreisProStunde: customPreis,
+            customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
+            anlage: tAnlage,
+          });
+          d = addDaysISO(d, 7);
+        }
       }
 
       setTrainings((prev) => [...prev, ...created]);
@@ -5465,24 +5479,87 @@ Deine Tennisschule`;
                             />
                             Wöchentlich wiederholen
                           </label>
-                          <div className="field" style={{ minWidth: 220 }}>
-                            <label>Bis Datum</label>
-                            <input
-                              type="date"
-                              value={repeatUntil}
-                              onChange={(e) =>
-                                setRepeatUntil(e.target.value)
-                              }
-                              disabled={!repeatWeekly}
-                            />
-                          </div>
+                          {repeatPeriods.length === 0 && (
+                            <div className="field" style={{ minWidth: 220 }}>
+                              <label>Bis Datum</label>
+                              <input
+                                type="date"
+                                value={repeatUntil}
+                                onChange={(e) =>
+                                  setRepeatUntil(e.target.value)
+                                }
+                                disabled={!repeatWeekly}
+                              />
+                            </div>
+                          )}
                           <span className="pill">
                             Trainer: <strong>{selectedTrainerName}</strong>
                           </span>
                         </div>
-                        <div className="muted">
-                          Wenn aktiv: Es werden alle Termine wöchentlich bis zum
-                          Bis Datum angelegt.
+
+                        {repeatWeekly && repeatPeriods.length > 0 && (
+                          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                            {repeatPeriods.map((period, idx) => (
+                              <div key={idx} className="row" style={{ alignItems: "end" }}>
+                                <div className="field" style={{ minWidth: 180 }}>
+                                  <label>Zeitraum {idx + 1} – Von</label>
+                                  <input
+                                    type="date"
+                                    value={period.von}
+                                    onChange={(e) => {
+                                      const updated = [...repeatPeriods];
+                                      updated[idx] = { ...updated[idx], von: e.target.value };
+                                      setRepeatPeriods(updated);
+                                    }}
+                                  />
+                                </div>
+                                <div className="field" style={{ minWidth: 180 }}>
+                                  <label>Bis</label>
+                                  <input
+                                    type="date"
+                                    value={period.bis}
+                                    onChange={(e) => {
+                                      const updated = [...repeatPeriods];
+                                      updated[idx] = { ...updated[idx], bis: e.target.value };
+                                      setRepeatPeriods(updated);
+                                    }}
+                                  />
+                                </div>
+                                <button
+                                  className="btn btnWarn"
+                                  style={{ padding: "6px 12px", minWidth: "auto" }}
+                                  onClick={() => {
+                                    setRepeatPeriods(repeatPeriods.filter((_, i) => i !== idx));
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {repeatWeekly && (
+                          <div style={{ marginTop: 8 }}>
+                            <button
+                              className="btn btnGhost"
+                              style={{ padding: "4px 12px", fontSize: 13 }}
+                              onClick={() => {
+                                const lastPeriod = repeatPeriods[repeatPeriods.length - 1];
+                                const newVon = lastPeriod ? addDaysISO(lastPeriod.bis, 1) : tDatum;
+                                const newBis = repeatPeriods.length === 0 ? repeatUntil : addDaysISO(newVon, 90);
+                                setRepeatPeriods([...repeatPeriods, { von: newVon, bis: newBis }]);
+                              }}
+                            >
+                              + Zeitraum hinzufügen
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="muted" style={{ marginTop: 6 }}>
+                          {repeatPeriods.length > 0
+                            ? `Trainings werden wöchentlich in ${repeatPeriods.length} Zeiträumen angelegt (z.B. Ferien auslassen).`
+                            : "Wenn aktiv: Es werden alle Termine wöchentlich bis zum Bis Datum angelegt."}
                         </div>
                       </div>
                     )}
