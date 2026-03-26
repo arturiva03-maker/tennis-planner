@@ -5073,6 +5073,12 @@ Deine Tennisschule`;
                                   setTDatum(day);
                                   setTVon(`${pad2(h)}:00`);
                                   setTBis(`${pad2(h + 1)}:00`);
+                                  if (kalenderTrainerFilter.length === 1) {
+                                    setTTrainerId(kalenderTrainerFilter[0]);
+                                  }
+                                  if (kalenderAnlageFilter !== "alle") {
+                                    setTAnlage(kalenderAnlageFilter);
+                                  }
                                   setTab("training");
                                 }}
                               />
