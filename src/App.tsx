@@ -5094,12 +5094,13 @@ Deine Tennisschule`;
                               const tarif = t.tarifId
                                 ? tarifById.get(t.tarifId)
                                 : undefined;
+                              const abrechnungLabel = (a: string) => a === "proSpieler" ? "pro Spieler" : a === "monatlich" ? "monatlich" : "pro Training";
                               const ta = tarif
                                 ? tarif.abrechnung === "monatlich"
                                   ? `${tarif.name} (monatlich ${tarif.preisProStunde} EUR)`
-                                  : tarif.name
+                                  : `${tarif.name} (${tarif.preisProStunde} EUR/Std, ${abrechnungLabel(tarif.abrechnung)})`
                                 : t.customPreisProStunde
-                                ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                                ? `Individuell (${t.customPreisProStunde} EUR/Std, ${abrechnungLabel(t.customAbrechnung || "proTraining")})`
                                 : "Tarif";
                               const sp = t.spielerIds
                                 .map(
