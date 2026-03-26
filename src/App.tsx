@@ -5042,7 +5042,7 @@ Deine Tennisschule`;
                     <div className="kHeadCell">Zeit</div>
                     {(viewMode === "week" ? weekDays : [weekDays[dayIndex]]).map(
                       (d) => (
-                        <div key={d} className="kHeadCell">
+                        <div key={d} className={`kHeadCell${d === todayISO() ? " kHeadToday" : ""}`}>
                           {formatShort(d)}
                         </div>
                       )
@@ -5091,8 +5091,10 @@ Deine Tennisschule`;
                           }
                         });
 
+                        const isToday = day === todayISO();
+
                         return (
-                          <div key={day} className="kDayCol">
+                          <div key={day} className={`kDayCol${isToday ? " kDayToday" : ""}`}>
                             {hours.map((h) => (
                               <div
                                 key={h}
@@ -5272,24 +5274,42 @@ Deine Tennisschule`;
                                   >
                                     <div
                                       style={{
-                                        fontSize: 13,
+                                        fontSize: 12,
                                         fontWeight: 600,
                                         whiteSpace: "nowrap",
                                         textOverflow: "ellipsis",
                                         overflow: "hidden",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 4,
                                       }}
                                     >
-                                      {sp}
+                                      {t.spielerIds.length > 0 && (
+                                        <span style={{
+                                          fontSize: 9,
+                                          fontWeight: 700,
+                                          background: "rgba(0,0,0,0.12)",
+                                          color: "rgba(0,0,0,0.6)",
+                                          borderRadius: 3,
+                                          padding: "0 4px",
+                                          lineHeight: "16px",
+                                          flexShrink: 0,
+                                        }}>
+                                          {t.spielerIds.length}
+                                        </span>
+                                      )}
+                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{sp || "Privat"}</span>
                                     </div>
                                     <div
                                       style={{
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         whiteSpace: "nowrap",
                                         textOverflow: "ellipsis",
                                         overflow: "hidden",
+                                        opacity: 0.7,
                                       }}
                                     >
-                                      {taLine}
+                                      {t.uhrzeitVon}–{t.uhrzeitBis} · {taLine}
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>

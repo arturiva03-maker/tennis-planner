@@ -485,16 +485,34 @@ input::placeholder {
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
   background: var(--bg-inset);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
 }
 
 .kHeadCell {
-  padding: 12px 8px;
+  padding: 14px 8px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   border-left: 1px solid var(--border);
   text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.kHeadToday {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  font-weight: 700;
+  position: relative;
+}
+.kHeadToday::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: #2563eb;
+  border-radius: 1px;
 }
 
 .kHeadCell:first-child {
@@ -540,6 +558,9 @@ input::placeholder {
   position: relative;
   border-left: 1px solid var(--border);
   background: var(--bg-card);
+}
+.kDayToday {
+  background: rgba(37, 99, 235, 0.03);
 }
 
 .kHourLine {
