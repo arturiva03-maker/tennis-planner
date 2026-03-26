@@ -3587,7 +3587,7 @@ Deine Tennisschule`;
         ? tCustomPreisProStunde
         : undefined;
 
-    if (!tDatum || !tVon || !tBis || tSpielerIds.length === 0) return;
+    if (!tDatum || !tVon || !tBis || (!tIsPrivat && tSpielerIds.length === 0)) return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
     if (!tIsPrivat && !hasTarif && !customPreis) return;
