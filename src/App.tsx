@@ -5064,7 +5064,18 @@ Deine Tennisschule`;
                         return (
                           <div key={day} className="kDayCol">
                             {hours.map((h) => (
-                              <div key={h} className="kHourLine" />
+                              <div
+                                key={h}
+                                className="kHourLine kHourLineClickable"
+                                onClick={() => {
+                                  if (isTrainer) return;
+                                  resetTrainingForm();
+                                  setTDatum(day);
+                                  setTVon(`${pad2(h)}:00`);
+                                  setTBis(`${pad2(h + 1)}:00`);
+                                  setTab("training");
+                                }}
+                              />
                             ))}
 
                             {dayEvents.map((t) => {

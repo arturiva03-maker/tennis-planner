@@ -546,6 +546,12 @@ input::placeholder {
   height: 40px;
   border-bottom: 1px dashed var(--border-light);
 }
+.kHourLineClickable {
+  cursor: pointer;
+}
+.kHourLineClickable:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
 
 .kEvent {
   position: absolute;
