@@ -169,6 +169,7 @@ type Training = {
   barBezahlt?: boolean;
   anlage?: string;
   isSpontanBuchung?: boolean;
+  isPrivat?: boolean;
 };
 
 type SpontaneStundeBuchung = {
@@ -1290,6 +1291,7 @@ export default function App() {
   const [tCustomAbrechnung, setTCustomAbrechnung] =
     useState<"proTraining" | "proSpieler">("proTraining");
   const [tAnlage, setTAnlage] = useState("Wedding");
+  const [tIsPrivat, setTIsPrivat] = useState(false);
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
@@ -3101,6 +3103,7 @@ export default function App() {
 
 
   const trainingPreisGesamt = useCallback((t: Training) => {
+    if (t.isPrivat) return 0;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -3116,6 +3119,7 @@ export default function App() {
   }, [tarifById]);
 
   const priceFuerSpieler = useCallback((t: Training) => {
+    if (t.isPrivat) return 0;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -3130,6 +3134,7 @@ export default function App() {
   }, [tarifById]);
 
   const trainerHonorarFuerTraining = useCallback((t: Training) => {
+    if (t.isPrivat) return 0;
     // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
     const vertretung = vertretungen.find(v => v.trainingId === t.id);
     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
@@ -3160,6 +3165,7 @@ export default function App() {
     );
     setTCustomAbrechnung(t.customAbrechnung ?? "proTraining");
     setTAnlage(t.anlage ?? "Wedding");
+    setTIsPrivat(t.isPrivat ?? false);
     setTab("training");
   }
 
@@ -3181,6 +3187,7 @@ export default function App() {
     setTCustomPreisProStunde("");
     setTCustomAbrechnung("proTraining");
     setTAnlage("Wedding");
+    setTIsPrivat(false);
   }
 
   function deleteTraining(id: string) {
@@ -3734,6 +3741,7 @@ Deine Tennisschule`;
         customPreisProStunde: customPreis,
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
+        isPrivat: tIsPrivat || undefined,
       };
 
       if (existing.serieId && applySerieScope === "abHeute") {
@@ -3760,6 +3768,7 @@ Deine Tennisschule`;
               customPreisProStunde: payload.customPreisProStunde,
               customAbrechnung: payload.customAbrechnung,
               anlage: payload.anlage,
+              isPrivat: payload.isPrivat,
             };
           })
         );
@@ -3824,6 +3833,7 @@ Deine Tennisschule`;
             customPreisProStunde: customPreis,
             customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
             anlage: tAnlage,
+            isPrivat: tIsPrivat || undefined,
           });
           d = addDaysISO(d, 7);
         }
@@ -3850,6 +3860,7 @@ Deine Tennisschule`;
         customPreisProStunde: customPreis,
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
+        isPrivat: tIsPrivat || undefined,
       },
     ]);
 
@@ -3905,6 +3916,7 @@ Deine Tennisschule`;
       trainings
         .filter((t) => t.datum.startsWith(abrechnungMonat))
         .filter((t) => t.status === "durchgefuehrt")
+        .filter((t) => !t.isPrivat)
         .filter((t) => {
           if (abrechnungTrainerFilter === "alle") return true;
           // Vertretungstrainer berücksichtigen
@@ -5247,7 +5259,7 @@ Deine Tennisschule`;
                                       : ""
                                   }\nStatus: ${statusLabel(
                                     t.status
-                                  )}`}
+                                  )}${t.isPrivat ? "\n⚡ Privat (keine Abrechnung)" : ""}`}
                                 >
                                   <div
                                     style={{
@@ -5412,6 +5424,15 @@ Deine Tennisschule`;
                           <option value="Britz">Britz</option>
                         </select>
                       </div>
+                      <label className="pill" style={{ cursor: "pointer", alignSelf: "end", marginBottom: 6 }}>
+                        <input
+                          type="checkbox"
+                          checked={tIsPrivat}
+                          onChange={(e) => setTIsPrivat(e.target.checked)}
+                          style={{ marginRight: 8 }}
+                        />
+                        Privat
+                      </label>
                     </div>
 
                     <div className="row">
