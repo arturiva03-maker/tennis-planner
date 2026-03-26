@@ -475,45 +475,32 @@ input::placeholder {
 
 .kgrid {
   margin-top: 16px;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   overflow: hidden;
   background: var(--bg-card);
-  box-shadow: var(--shadow-sm);
 }
 
 .kHead {
   display: grid;
-  grid-template-columns: 54px repeat(7, 1fr);
-  background: linear-gradient(180deg, #fafbfc 0%, var(--bg-inset) 100%);
+  grid-template-columns: 56px repeat(7, 1fr);
+  background: var(--bg-inset);
   border-bottom: 1px solid var(--border);
 }
 
 .kHeadCell {
-  padding: 16px 6px 12px;
-  font-size: 11px;
+  padding: 12px 6px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-left: none;
+  border-left: 1px solid var(--border-light);
 }
 
 .kHeadToday {
+  background: rgba(37, 99, 235, 0.06);
   color: #2563eb;
   font-weight: 700;
-  position: relative;
-}
-.kHeadToday::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 25%;
-  right: 25%;
-  height: 3px;
-  background: #2563eb;
-  border-radius: 3px 3px 0 0;
 }
 
 .kHeadCell:first-child {
@@ -524,15 +511,15 @@ input::placeholder {
 
 .kBody {
   display: grid;
-  grid-template-columns: 54px repeat(7, 1fr);
+  grid-template-columns: 56px repeat(7, 1fr);
 }
 
 .kgridDay .kHead {
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 56px 1fr;
 }
 
 .kgridDay .kBody {
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 56px 1fr;
 }
 
 .kgridDay .kHeadCell:nth-child(2) {
@@ -540,20 +527,19 @@ input::placeholder {
 }
 
 .kTimeCol {
-  border-right: 1px solid var(--border-light);
-  background: transparent;
+  border-right: 1px solid var(--border);
+  background: var(--bg-inset);
 }
 
 .kTime {
   height: 40px;
-  font-size: 10px;
-  padding: 2px 8px 0 0;
+  font-size: 11px;
+  padding: 4px 8px;
   color: var(--text-muted);
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
   font-weight: 500;
-  opacity: 0.7;
 }
 
 .kDayCol {
@@ -562,16 +548,15 @@ input::placeholder {
   background: var(--bg-card);
 }
 .kDayToday {
-  background: rgba(37, 99, 235, 0.025);
+  background: rgba(37, 99, 235, 0.03);
 }
 
 .kHourLine {
   height: 40px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px dashed var(--border-light);
 }
 .kHourLineClickable {
   cursor: pointer;
-  transition: background var(--transition-fast);
 }
 .kHourLineClickable:hover {
   background: rgba(37, 99, 235, 0.05);
@@ -581,16 +566,14 @@ input::placeholder {
   position: absolute;
   left: 3px;
   right: 3px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
-  backdrop-filter: blur(4px);
+  transition: box-shadow var(--transition-fast);
 }
 
 .kEvent:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 

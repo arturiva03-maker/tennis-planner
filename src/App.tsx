@@ -5191,14 +5191,14 @@ Deine Tennisschule`;
                                 ? "#ef4444"
                                 : "#3b82f6";
                               const bg = isSelected
-                                ? "rgba(139, 92, 246, 0.12)"
+                                ? "rgba(139, 92, 246, 0.18)"
                                 : isDone
-                                ? "rgba(34, 197, 94, 0.08)"
+                                ? "rgba(34, 197, 94, 0.14)"
                                 : isCancel
-                                ? "rgba(239, 68, 68, 0.06)"
+                                ? "rgba(239, 68, 68, 0.10)"
                                 : t.isPrivat
-                                ? "rgba(234, 179, 8, 0.08)"
-                                : "rgba(59, 130, 246, 0.07)";
+                                ? "rgba(234, 179, 8, 0.12)"
+                                : "rgba(59, 130, 246, 0.12)";
                               const border = accentColor;
 
                               // Position für überlappende Trainings berechnen
@@ -5233,15 +5233,15 @@ Deine Tennisschule`;
                                     borderTop: "none",
                                     borderRight: "none",
                                     borderBottom: "none",
-                                    opacity: isCancel ? 0.7 : 1,
+                                    opacity: isCancel ? 0.8 : 1,
                                     transform: isPulse
-                                      ? "scale(1.04)"
+                                      ? "scale(1.05)"
                                       : undefined,
                                     filter: isPulse
-                                      ? "brightness(1.1)"
+                                      ? "brightness(1.12)"
                                       : undefined,
                                     transition:
-                                      "transform 120ms ease, filter 120ms ease, background-color 150ms ease",
+                                      "transform 150ms ease, filter 150ms ease, background-color 150ms ease",
                                     display: "flex",
                                     flexDirection: "row",
                                     alignItems: "center",
