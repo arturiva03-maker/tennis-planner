@@ -11092,7 +11092,7 @@ Trainerteam A bis Z`
 
       {cancelTrainingDialog && (
         <div className="modalOverlay">
-          <div className="modalCard" style={{ maxWidth: 500 }}>
+          <div className="modalCard" style={{ maxWidth: 500, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
             <div className="modalHeader">
               <div className="modalPill">
                 {cancelTrainingDialog.action === 'delete' ? 'Gruppentraining löschen' : 'Gruppentraining absagen'}
@@ -11106,10 +11106,10 @@ Trainerteam A bis Z`
               </p>
             </div>
 
-            <div style={{ padding: "0 20px", marginBottom: 16 }}>
+            <div style={{ padding: "0 20px", marginBottom: 16, overflowY: "auto", flex: 1 }}>
               <div style={{ marginBottom: 12 }}>
-                <strong>Betroffene Trainings:</strong>
-                <ul style={{ margin: "8px 0", paddingLeft: 20, fontSize: 13 }}>
+                <strong>Betroffene Trainings ({cancelTrainingDialog.trainings.length}):</strong>
+                <ul style={{ margin: "8px 0", paddingLeft: 20, fontSize: 13, maxHeight: 200, overflowY: "auto" }}>
                   {cancelTrainingDialog.trainings.map((t) => {
                     const spielerNamen = t.spielerIds
                       .map((id) => getSpielerFullName(id))
