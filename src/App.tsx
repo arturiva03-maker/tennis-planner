@@ -3072,10 +3072,28 @@ export default function App() {
     }
   }
 
+  function autoSelectTarif(spielerCount: number) {
+    const tarifList = tarife;
+    const nameLC = (t: Tarif) => t.name.toLowerCase();
+    if (spielerCount === 1) {
+      const found = tarifList.find(t => nameLC(t).includes("einzel"));
+      if (found) setTTarifId(found.id);
+    } else if (spielerCount === 2) {
+      const found = tarifList.find(t => nameLC(t).includes("2er") && t.preisProStunde === 25);
+      if (found) setTTarifId(found.id);
+    } else if (spielerCount === 4) {
+      const found = tarifList.find(t => t.abrechnung === "monatlich" && t.preisProStunde === 60);
+      if (found) setTTarifId(found.id);
+    }
+    // Bei 3 Spielern: nichts automatisch auswählen
+  }
+
   function toggleSpielerPick(id: string) {
-    setTSpielerIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setTSpielerIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      autoSelectTarif(next.length);
+      return next;
+    });
   }
 
 
