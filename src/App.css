@@ -475,31 +475,32 @@ input::placeholder {
 
 .kgrid {
   margin-top: 16px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   overflow: hidden;
   background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .kHead {
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  background: var(--bg-inset);
-  border-bottom: 2px solid var(--border);
+  grid-template-columns: 54px repeat(7, 1fr);
+  background: linear-gradient(180deg, #fafbfc 0%, var(--bg-inset) 100%);
+  border-bottom: 1px solid var(--border);
 }
 
 .kHeadCell {
-  padding: 14px 8px;
-  font-size: 12px;
+  padding: 16px 6px 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-secondary);
-  border-left: 1px solid var(--border);
+  color: var(--text-muted);
   text-align: center;
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-left: none;
 }
 
 .kHeadToday {
-  background: rgba(37, 99, 235, 0.08);
   color: #2563eb;
   font-weight: 700;
   position: relative;
@@ -507,31 +508,31 @@ input::placeholder {
 .kHeadToday::after {
   content: "";
   position: absolute;
-  bottom: -2px;
-  left: 20%;
-  right: 20%;
-  height: 2px;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
   background: #2563eb;
-  border-radius: 1px;
+  border-radius: 3px 3px 0 0;
 }
 
 .kHeadCell:first-child {
   border-left: none;
   text-align: right;
-  padding-right: 12px;
+  padding-right: 10px;
 }
 
 .kBody {
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-columns: 54px repeat(7, 1fr);
 }
 
 .kgridDay .kHead {
-  grid-template-columns: 60px 1fr;
+  grid-template-columns: 54px 1fr;
 }
 
 .kgridDay .kBody {
-  grid-template-columns: 60px 1fr;
+  grid-template-columns: 54px 1fr;
 }
 
 .kgridDay .kHeadCell:nth-child(2) {
@@ -539,54 +540,57 @@ input::placeholder {
 }
 
 .kTimeCol {
-  border-right: 1px solid var(--border);
-  background: var(--bg-inset);
+  border-right: 1px solid var(--border-light);
+  background: transparent;
 }
 
 .kTime {
   height: 40px;
-  font-size: 11px;
-  padding: 4px 8px;
+  font-size: 10px;
+  padding: 2px 8px 0 0;
   color: var(--text-muted);
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
   font-weight: 500;
+  opacity: 0.7;
 }
 
 .kDayCol {
   position: relative;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-light);
   background: var(--bg-card);
 }
 .kDayToday {
-  background: rgba(37, 99, 235, 0.03);
+  background: rgba(37, 99, 235, 0.025);
 }
 
 .kHourLine {
   height: 40px;
-  border-bottom: 1px dashed var(--border-light);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 .kHourLineClickable {
   cursor: pointer;
+  transition: background var(--transition-fast);
 }
 .kHourLineClickable:hover {
-  background: rgba(37, 99, 235, 0.06);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 .kEvent {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  border-radius: var(--radius-md);
+  left: 3px;
+  right: 3px;
+  border-radius: 8px;
   font-size: 11px;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  backdrop-filter: blur(4px);
 }
 
 .kEvent:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   z-index: 10;
 }
 

@@ -5178,26 +5178,28 @@ Deine Tennisschule`;
                                 t.id
                               );
 
-                              // Ausgewählte Trainings haben eine violette Hintergrundfarbe
-                              // Vertretungen bekommen einen roten Rand + "V"
-                              const bg = isSelected
-                                ? "rgba(139, 92, 246, 0.35)"
-                                : isDone
-                                ? "rgba(34, 197, 94, 0.22)"
-                                : isCancel
-                                ? "rgba(239, 68, 68, 0.14)"
-                                : "rgba(59, 130, 246, 0.18)";
-                              const border = t.isPrivat
-                                ? "rgba(234, 179, 8, 0.8)"
+                              // Farbschema: dezente Hintergründe mit farbigem linken Rand
+                              const accentColor = t.isPrivat
+                                ? "#eab308"
                                 : hasVertretung
-                                ? isVertretungOffen ? "rgba(220, 38, 38, 0.8)" : "rgba(34, 197, 94, 0.8)"
+                                ? isVertretungOffen ? "#dc2626" : "#22c55e"
                                 : isSelected
-                                ? "rgba(139, 92, 246, 0.6)"
+                                ? "#8b5cf6"
                                 : isDone
-                                ? "rgba(34, 197, 94, 0.45)"
+                                ? "#22c55e"
                                 : isCancel
-                                ? "rgba(239, 68, 68, 0.34)"
-                                : "rgba(59, 130, 246, 0.30)";
+                                ? "#ef4444"
+                                : "#3b82f6";
+                              const bg = isSelected
+                                ? "rgba(139, 92, 246, 0.12)"
+                                : isDone
+                                ? "rgba(34, 197, 94, 0.08)"
+                                : isCancel
+                                ? "rgba(239, 68, 68, 0.06)"
+                                : t.isPrivat
+                                ? "rgba(234, 179, 8, 0.08)"
+                                : "rgba(59, 130, 246, 0.07)";
+                              const border = accentColor;
 
                               // Position für überlappende Trainings berechnen
                               let groupSize = 1;
@@ -5227,22 +5229,25 @@ Deine Tennisschule`;
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
                                     backgroundColor: bg,
-                                    border: hasVertretung ? `2px solid ${border}` : `1px solid ${border}`,
-                                    opacity: isCancel ? 0.85 : 1,
+                                    borderLeft: `3px solid ${border}`,
+                                    borderTop: "none",
+                                    borderRight: "none",
+                                    borderBottom: "none",
+                                    opacity: isCancel ? 0.7 : 1,
                                     transform: isPulse
-                                      ? "scale(1.06)"
+                                      ? "scale(1.04)"
                                       : undefined,
                                     filter: isPulse
-                                      ? "brightness(1.15)"
+                                      ? "brightness(1.1)"
                                       : undefined,
                                     transition:
-                                      "transform 160ms ease, filter 160ms ease, background-color 180ms ease, border-color 180ms ease",
+                                      "transform 120ms ease, filter 120ms ease, background-color 150ms ease",
                                     display: "flex",
                                     flexDirection: "row",
                                     alignItems: "center",
                                     justifyContent: "space-between",
                                     overflow: "hidden",
-                                    padding: 8,
+                                    padding: "6px 8px",
                                     gap: 6,
                                   }}
                                   onClick={(e) => handleCalendarEventClick(t, e)}
