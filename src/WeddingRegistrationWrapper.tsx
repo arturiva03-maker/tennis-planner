@@ -28,7 +28,13 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
 
   // If user selected new, show probetraining form
   if (userType === "new") {
-    return <ProbetrainingForm onBack={() => setUserType(null)} />;
+    return <ProbetrainingForm onBack={() => {
+      if (directToProbetraining) {
+        navigate("/wedding");
+      } else {
+        setUserType(null);
+      }
+    }} />;
   }
 
   // Show selection screen
