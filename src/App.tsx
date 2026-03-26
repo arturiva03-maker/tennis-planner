@@ -8561,8 +8561,16 @@ Trainerteam A bis Z`
                               body: JSON.stringify({
                                 to: allEmails,
                                 subject: newsletterSubject.trim(),
-                                body: newsletterBody.trim(),
-                                html: newsletterBody.trim().replace(/\n/g, "<br>"),
+                                body: newsletterBody.trim() + (
+                                  newsletterLabelFilter === "Britz"
+                                    ? "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
+                                    : "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"
+                                ),
+                                html: (newsletterBody.trim() + (
+                                  newsletterLabelFilter === "Britz"
+                                    ? "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
+                                    : "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"
+                                )).replace(/\n/g, "<br>"),
                                 fromName: "Tennisschule A bis Z"
                               })
                             });
