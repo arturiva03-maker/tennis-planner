@@ -981,6 +981,7 @@ export default function App() {
   const [kalenderTrainerFilter, setKalenderTrainerFilter] =
     useState<string[]>([]);
   const [showTrainerDropdown, setShowTrainerDropdown] = useState(false);
+  const [kalenderAnlageFilter, setKalenderAnlageFilter] = useState<"alle" | "Wedding" | "Britz">("alle");
 
   const [abrechnungTab, setAbrechnungTab] =
     useState<AbrechnungTab>("spieler");
@@ -2044,6 +2045,7 @@ export default function App() {
     return trainings
       .filter((t) => t.datum >= weekStart && t.datum < end)
       .filter((t) => {
+        if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
         if (kalenderTrainerFilter.length === 0) return true;
         const tid = t.trainerId || defaultTrainerId;
         // Bei Vertretung: NUR beim Vertretungstrainer anzeigen, nicht mehr beim ursprünglichen Trainer
@@ -2060,7 +2062,7 @@ export default function App() {
       .sort((a, b) =>
         (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
       );
-  }, [trainings, weekStart, kalenderTrainerFilter, defaultTrainerId, vertretungen]);
+  }, [trainings, weekStart, kalenderTrainerFilter, kalenderAnlageFilter, defaultTrainerId, vertretungen]);
 
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
@@ -4747,6 +4749,18 @@ Deine Tennisschule`;
                         )}
                       </div>
                     )}
+
+                    <div className="field" style={{ minWidth: 140 }}>
+                      <label>Anlage</label>
+                      <select
+                        value={kalenderAnlageFilter}
+                        onChange={(e) => setKalenderAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
+                      >
+                        <option value="alle">Alle Anlagen</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Britz">Britz</option>
+                      </select>
+                    </div>
 
                     {!isTrainer && (
                       <span className="pill">
