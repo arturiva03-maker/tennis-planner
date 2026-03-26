@@ -5545,9 +5545,18 @@ Deine Tennisschule`;
                               className="btn btnGhost"
                               style={{ padding: "4px 12px", fontSize: 13 }}
                               onClick={() => {
-                                const newVon = repeatPeriods.length === 0 ? "2026-08-24" : addDaysISO(repeatPeriods[repeatPeriods.length - 1].bis, 1);
-                                const newBis = repeatPeriods.length === 0 ? "2026-09-30" : addDaysISO(newVon, 90);
-                                setRepeatPeriods([...repeatPeriods, { von: newVon, bis: newBis }]);
+                                if (repeatPeriods.length === 0) {
+                                  // Ersten Zeitraum (bis Sommerferien) + zweiten (nach Sommerferien) zusammen anlegen
+                                  setRepeatPeriods([
+                                    { von: tDatum, bis: "2026-07-12" },
+                                    { von: "2026-08-24", bis: "2026-09-30" },
+                                  ]);
+                                } else {
+                                  const lastPeriod = repeatPeriods[repeatPeriods.length - 1];
+                                  const newVon = addDaysISO(lastPeriod.bis, 1);
+                                  const newBis = addDaysISO(newVon, 90);
+                                  setRepeatPeriods([...repeatPeriods, { von: newVon, bis: newBis }]);
+                                }
                               }}
                             >
                               + Zeitraum hinzufügen
