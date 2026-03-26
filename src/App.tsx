@@ -8530,6 +8530,11 @@ Trainerteam A bis Z`
                         placeholder="Ihre Nachricht hier eingeben..."
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
+                      <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, whiteSpace: "pre-wrap", color: "var(--text-muted, #6b7280)" }}>
+                        {newsletterLabelFilter === "Britz"
+                          ? "Sportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
+                          : "Sportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"}
+                      </div>
                     </div>
 
                     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
