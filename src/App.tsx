@@ -8725,7 +8725,15 @@ Trainerteam A bis Z`
                         }
                       >
                         <option value="alle">Alle Trainer</option>
-                        {trainers.map((tr) => (
+                        {trainers.filter((tr) => {
+                          return trainings.some((t) =>
+                            t.datum.startsWith(abrechnungMonat) &&
+                            t.status === "durchgefuehrt" &&
+                            !t.isPrivat &&
+                            ((t.trainerId || defaultTrainerId) === tr.id ||
+                              vertretungen.some(v => v.trainingId === t.id && v.vertretungTrainerId === tr.id))
+                          );
+                        }).map((tr) => (
                           <option key={tr.id} value={tr.id}>
                             {tr.name}
                           </option>
