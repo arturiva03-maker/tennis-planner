@@ -1296,9 +1296,9 @@ export default function App() {
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
 
-  const [repeatWeekly, setRepeatWeekly] = useState(false);
+  const [repeatWeekly, setRepeatWeekly] = useState(true);
   const [repeatUntil, setRepeatUntil] = useState("2026-07-12");
-  const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([]);
+  const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([{ von: todayISO(), bis: "2026-07-12" }]);
   const [applySerieScope, setApplySerieScope] =
     useState<"nurDieses" | "abHeute">("nurDieses");
 
@@ -3179,9 +3179,9 @@ export default function App() {
     setTNotiz("");
     setSpielerSuche("");
     setTSpielerIds([]);
-    setRepeatWeekly(false);
+    setRepeatWeekly(true);
     setRepeatUntil("2026-07-12");
-    setRepeatPeriods([]);
+    setRepeatPeriods([{ von: todayISO(), bis: "2026-07-12" }]);
     setApplySerieScope("nurDieses");
     setTTarifId("");
     setTCustomPreisProStunde("");
@@ -5101,6 +5101,7 @@ Deine Tennisschule`;
                                   if (isTrainer) return;
                                   resetTrainingForm();
                                   setTDatum(day);
+                                  setRepeatPeriods([{ von: day, bis: "2026-07-12" }]);
                                   setTVon(`${pad2(h)}:00`);
                                   setTBis(`${pad2(h + 1)}:00`);
                                   if (kalenderTrainerFilter.length === 1) {
@@ -5637,15 +5638,12 @@ Deine Tennisschule`;
                               className="btn btnGhost"
                               style={{ padding: "4px 12px", fontSize: 13 }}
                               onClick={() => {
-                                if (repeatPeriods.length === 0) {
-                                  // Ersten Zeitraum (bis Sommerferien) + zweiten (nach Sommerferien) zusammen anlegen
-                                  setRepeatPeriods([
-                                    { von: tDatum, bis: "2026-07-12" },
-                                    { von: "2026-08-24", bis: "2026-09-30" },
-                                  ]);
+                                if (repeatPeriods.length === 1 && repeatPeriods[0].bis === "2026-07-12") {
+                                  // Zweiten Zeitraum (nach Sommerferien) hinzufügen
+                                  setRepeatPeriods([...repeatPeriods, { von: "2026-08-24", bis: "2026-09-30" }]);
                                 } else {
                                   const lastPeriod = repeatPeriods[repeatPeriods.length - 1];
-                                  const newVon = addDaysISO(lastPeriod.bis, 1);
+                                  const newVon = lastPeriod ? addDaysISO(lastPeriod.bis, 1) : tDatum;
                                   const newBis = addDaysISO(newVon, 90);
                                   setRepeatPeriods([...repeatPeriods, { von: newVon, bis: newBis }]);
                                 }
