@@ -1294,7 +1294,7 @@ export default function App() {
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
 
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-  const [repeatUntil, setRepeatUntil] = useState("2026-03-28");
+  const [repeatUntil, setRepeatUntil] = useState("2026-07-12");
   const [repeatPeriods, setRepeatPeriods] = useState<{von: string; bis: string}[]>([]);
   const [applySerieScope, setApplySerieScope] =
     useState<"nurDieses" | "abHeute">("nurDieses");
@@ -3154,7 +3154,7 @@ export default function App() {
     setSpielerSuche("");
     setTSpielerIds([]);
     setRepeatWeekly(false);
-    setRepeatUntil("2026-03-28");
+    setRepeatUntil("2026-07-12");
     setRepeatPeriods([]);
     setApplySerieScope("nurDieses");
     setTTarifId("");
@@ -5545,9 +5545,8 @@ Deine Tennisschule`;
                               className="btn btnGhost"
                               style={{ padding: "4px 12px", fontSize: 13 }}
                               onClick={() => {
-                                const lastPeriod = repeatPeriods[repeatPeriods.length - 1];
-                                const newVon = lastPeriod ? addDaysISO(lastPeriod.bis, 1) : tDatum;
-                                const newBis = repeatPeriods.length === 0 ? repeatUntil : addDaysISO(newVon, 90);
+                                const newVon = repeatPeriods.length === 0 ? "2026-08-24" : addDaysISO(repeatPeriods[repeatPeriods.length - 1].bis, 1);
+                                const newBis = repeatPeriods.length === 0 ? "2026-09-30" : addDaysISO(newVon, 90);
                                 setRepeatPeriods([...repeatPeriods, { von: newVon, bis: newBis }]);
                               }}
                             >
