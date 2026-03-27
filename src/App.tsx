@@ -6496,7 +6496,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       return [...prev, ...newEntries];
                                     });
                                     setNewsletterSubject("Anfrage zum Tennistraining");
-                                    setNewsletterLabelFilter("keine");
+                                    setNewsletterLabelFilter(spielerLabels.includes("Britz") ? "Britz" : spielerLabels.includes("Wedding") ? "Wedding" : "keine");
                                     setTab("verwaltung");
                                     setVerwaltungTab("newsletter");
                                   }}
@@ -7541,7 +7541,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                                 : [...prev, { email: req.email, name: req.name }]
                                             );
                                             setNewsletterSubject("Anfrage zum Tennistraining");
-                                            setNewsletterLabelFilter("keine");
+                                            setNewsletterLabelFilter(req.anlage === "Britz" ? "Britz" : req.anlage === "Wedding" ? "Wedding" : "keine");
                                             setTab("verwaltung");
                                             setVerwaltungTab("newsletter");
                                           }}
