@@ -6,7 +6,7 @@ export default function AbsagePage() {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"confirm" | "success" | "error" | "already" | "notfound">("confirm");
-  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string } | null>(null);
+  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string; accountId?: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,6 +32,7 @@ export default function AbsagePage() {
           trainingId: data.training_id ?? undefined,
           buchungEmail: data.buchung?.email ?? undefined,
           buchungName: data.buchung?.name ?? undefined,
+          accountId: data.account_id ?? undefined,
         });
         setStatus("confirm");
       }
@@ -62,10 +63,29 @@ export default function AbsagePage() {
         return;
       }
 
-      // Verknüpftes Training aus dem Kalender löschen
-      if (slotInfo?.trainingId) {
+      // Verknüpftes Training aus dem Kalender (account_state) löschen
+      if (slotInfo?.trainingId && slotInfo?.accountId) {
         try {
-          await supabase.from("trainings").delete().eq("id", slotInfo.trainingId);
+          const { data: stateRow } = await supabase
+            .from("account_state")
+            .select("data, updated_at")
+            .eq("account_id", slotInfo.accountId)
+            .single();
+
+          if (stateRow?.data) {
+            const appState = stateRow.data as { trainings?: { id: string }[] };
+            if (appState.trainings) {
+              appState.trainings = appState.trainings.filter(
+                (t) => t.id !== slotInfo.trainingId
+              );
+              const updatedAt = new Date().toISOString();
+              await supabase.from("account_state").upsert({
+                account_id: slotInfo.accountId,
+                data: appState,
+                updated_at: updatedAt,
+              });
+            }
+          }
         } catch {
           // Training-Löschung nicht blockieren
         }
