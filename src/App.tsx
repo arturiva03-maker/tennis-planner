@@ -5543,7 +5543,13 @@ Deine Tennisschule`;
                         <input
                           type="checkbox"
                           checked={tIsKurzfristig}
-                          onChange={(e) => setTIsKurzfristig(e.target.checked)}
+                          onChange={(e) => {
+                            setTIsKurzfristig(e.target.checked);
+                            if (e.target.checked) {
+                              setRepeatWeekly(false);
+                              setRepeatPeriods([]);
+                            }
+                          }}
                           style={{ marginRight: 8 }}
                         />
                         Kurzfristiges Training
@@ -5652,7 +5658,7 @@ Deine Tennisschule`;
 
                     <div style={{ height: 10 }} />
 
-                    {!selectedTrainingId && (
+                    {!selectedTrainingId && !tIsKurzfristig && (
                       <div className="card cardInset">
                         <h2>Wiederholung</h2>
                         <div className="row">
