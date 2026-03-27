@@ -2912,6 +2912,12 @@ export default function App() {
         return;
       }
 
+      // Verknüpftes Training aus dem Kalender entfernen
+      const spontanStunde = spontaneStunden.find((s) => s.id === id);
+      if (spontanStunde?.trainingId) {
+        setTrainings((prev) => prev.filter((t) => t.id !== spontanStunde.trainingId));
+      }
+
       setSpontaneStunden((prev) => prev.filter((s) => s.id !== id));
       if (editingSpontanId === id) {
         resetSpontanForm();
