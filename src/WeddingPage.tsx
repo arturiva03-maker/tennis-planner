@@ -450,6 +450,14 @@ export default function WeddingPage() {
             </td>
           </tr>
 
+          <!-- Cancel Link -->
+          <tr>
+            <td style="padding: 0 40px 24px; text-align: center;">
+              <p style="margin: 0 0 12px; color: ${colors.textMuted}; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
+              <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: ${colors.bgLight}; color: ${colors.primary}; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid ${colors.border};">Termin absagen</a>
+            </td>
+          </tr>
+
           <!-- Contact Info -->
           <tr>
             <td style="padding: 0 40px 32px; text-align: center;">
@@ -489,7 +497,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie bitte rechtzeitig ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),

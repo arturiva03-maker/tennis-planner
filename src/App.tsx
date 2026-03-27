@@ -3295,6 +3295,16 @@ export default function App() {
     }
 
     const idsToDelete = new Set(affectedTrainings.map((t) => t.id));
+
+    // Verknüpfte spontane Stunden löschen
+    idsToDelete.forEach((tid) => {
+      const linked = spontaneStunden.find((s) => s.trainingId === tid);
+      if (linked) {
+        supabase.from("spontane_stunden").delete().eq("id", linked.id).then(() => {});
+        setSpontaneStunden((prev) => prev.filter((s) => s.id !== linked.id));
+      }
+    });
+
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
 
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
@@ -3305,6 +3315,16 @@ export default function App() {
   function executeDeleteTrainings(trainingsList: Training[]) {
     saveUndoSnapshot(`${trainingsList.length} Training(s) gelöscht`);
     const idsToDelete = new Set(trainingsList.map((t) => t.id));
+
+    // Verknüpfte spontane Stunden löschen
+    idsToDelete.forEach((tid) => {
+      const linked = spontaneStunden.find((s) => s.trainingId === tid);
+      if (linked) {
+        supabase.from("spontane_stunden").delete().eq("id", linked.id).then(() => {});
+        setSpontaneStunden((prev) => prev.filter((s) => s.id !== linked.id));
+      }
+    });
+
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
       resetTrainingForm();
