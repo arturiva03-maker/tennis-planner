@@ -5922,10 +5922,7 @@ Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen zur sp�
 
 Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
 
-Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.
-
-Sportliche Grüße
-Trainerteam A bis Z`
+Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.`
                             );
                             setShowTrainingInfoEmail(true);
                           }}
@@ -12471,8 +12468,8 @@ Deine Tennisschule`;
                         body: JSON.stringify({
                           to: recipients,
                           subject: trainingInfoEmailSubject,
-                          body: personalizedBody,
-                          html: personalizedBody.replace(/\n/g, "<br>"),
+                          body: personalizedBody + "\n\nSportliche Grüße\nTennisschule A bis Z",
+                          html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 0;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06);"><tr><td style="padding:32px 40px;color:#1a1a1a;font-size:15px;line-height:1.7;">${personalizedBody.replace(/\n/g, "<br>")}</td></tr><tr><td style="background-color:#f8faf8;padding:24px 40px;border-top:1px solid #e5e7eb;"><p style="margin:0 0 4px;color:#333;font-size:14px;font-weight:600;">Sportliche Grüße</p><p style="margin:0;color:#1b471b;font-size:15px;font-weight:700;">Tennisschule A bis Z</p></td></tr></table></td></tr></table></body></html>`,
                           fromName: "Tennisschule A bis Z",
                         }),
                       });
