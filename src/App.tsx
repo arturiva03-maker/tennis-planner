@@ -1292,6 +1292,7 @@ export default function App() {
     useState<"proTraining" | "proSpieler">("proTraining");
   const [tAnlage, setTAnlage] = useState("Wedding");
   const [tIsPrivat, setTIsPrivat] = useState(false);
+  const [tIsKurzfristig, setTIsKurzfristig] = useState(false);
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
@@ -2791,6 +2792,61 @@ export default function App() {
     }
   }
 
+  async function createSpontaneStundeFromTraining(
+    trainingId: string,
+    trainerId: string,
+    datum: string,
+    von: string,
+    bis: string,
+    tarifId?: string,
+    customPreis?: number,
+    anlage: "Wedding" | "Britz" = "Wedding"
+  ) {
+    if (!authUser?.accountId) return;
+    try {
+      const { data, error } = await supabase
+        .from("spontane_stunden")
+        .insert({
+          account_id: authUser.accountId,
+          datum,
+          uhrzeit_von: von,
+          uhrzeit_bis: bis,
+          trainer_id: trainerId,
+          tarif_id: tarifId || null,
+          custom_preis_pro_stunde: customPreis ?? null,
+          status: "offen",
+          anlage,
+          veroeffentlicht: true,
+          training_id: trainingId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating spontane stunde from training:", error);
+        return;
+      }
+
+      const created: SpontaneStunde = {
+        id: data.id,
+        datum: data.datum,
+        uhrzeitVon: data.uhrzeit_von,
+        uhrzeitBis: data.uhrzeit_bis,
+        trainerId: data.trainer_id,
+        tarifId: data.tarif_id,
+        customPreisProStunde: data.custom_preis_pro_stunde,
+        status: data.status,
+        anlage: data.anlage,
+        veroeffentlicht: data.veroeffentlicht,
+        buchung: data.buchung,
+        trainingId: data.training_id,
+      };
+      setSpontaneStunden((prev) => [...prev, created]);
+    } catch (err) {
+      console.error("Error creating spontane stunde from training:", err);
+    }
+  }
+
   async function updateSpontaneStunde() {
     if (!editingSpontanId || !authUser?.accountId) return;
 
@@ -3188,6 +3244,7 @@ export default function App() {
     setTCustomAbrechnung("proTraining");
     setTAnlage("Wedding");
     setTIsPrivat(false);
+    setTIsKurzfristig(false);
   }
 
   function deleteTraining(id: string) {
@@ -3845,10 +3902,12 @@ Deine Tennisschule`;
       return;
     }
 
+    const newTrainingId = uid();
+
     setTrainings((prev) => [
       ...prev,
       {
-        id: uid(),
+        id: newTrainingId,
         trainerId: trainerIdForSave,
         datum: tDatum,
         uhrzeitVon: tVon,
@@ -3861,8 +3920,13 @@ Deine Tennisschule`;
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
+        isSpontanBuchung: tIsKurzfristig || undefined,
       },
     ]);
+
+    if (tIsKurzfristig && authUser?.accountId) {
+      createSpontaneStundeFromTraining(newTrainingId, trainerIdForSave, tDatum, tVon, tBis, hasTarif ? tTarifId : undefined, customPreis, tAnlage as "Wedding" | "Britz");
+    }
 
     resetTrainingForm();
     setTab("kalender");
@@ -5474,6 +5538,15 @@ Deine Tennisschule`;
                           style={{ marginRight: 8 }}
                         />
                         Privat
+                      </label>
+                      <label className="pill" style={{ cursor: "pointer", alignSelf: "end", marginBottom: 6, background: tIsKurzfristig ? "rgba(234, 179, 8, 0.15)" : undefined }}>
+                        <input
+                          type="checkbox"
+                          checked={tIsKurzfristig}
+                          onChange={(e) => setTIsKurzfristig(e.target.checked)}
+                          style={{ marginRight: 8 }}
+                        />
+                        Kurzfristiges Training
                       </label>
                     </div>
 
