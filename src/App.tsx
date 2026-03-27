@@ -1838,6 +1838,9 @@ export default function App() {
         setSpontanTrainerId(trainers[0].id);
       }
     }
+    if (tab === "kalender" && authUser?.accountId) {
+      fetchSpontaneStunden();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
 
@@ -2994,7 +2997,20 @@ export default function App() {
       spielerId = neuerSpieler.id;
     }
 
-    // Training erstellen
+    // Wenn Training bereits existiert (z.B. über Kalender erstellt), Spieler hinzufügen
+    if (s.trainingId) {
+      setTrainings((prev) =>
+        prev.map((t) => {
+          if (t.id !== s.trainingId) return t;
+          if (t.spielerIds.includes(spielerId)) return t;
+          return { ...t, spielerIds: [...t.spielerIds, spielerId], isSpontanBuchung: true };
+        })
+      );
+      alert(`"${name}" wurde zum bestehenden Training hinzugefügt!`);
+      return;
+    }
+
+    // Neues Training erstellen
     const trainingId = uid();
     const neuesTraining: Training = {
       id: trainingId,
@@ -11211,16 +11227,33 @@ Trainerteam A bis Z`
                                     </div>
                                   </div>
                                   <div className="smallActions" style={{ justifyContent: "flex-end" }}>
-                                    {s.status === "gebucht" && s.buchung && !s.trainingId && (
-                                      <button
-                                        className="btn micro"
-                                        style={{ background: "#eab308" }}
-                                        onClick={() => uebernehmenSpontanBuchung(s)}
-                                      >
-                                        In Kalender übernehmen
-                                      </button>
-                                    )}
-                                    {s.trainingId && (
+                                    {s.status === "gebucht" && s.buchung && (() => {
+                                      const linkedTraining = s.trainingId ? trainings.find(t => t.id === s.trainingId) : null;
+                                      const spielerUebernommen = linkedTraining && linkedTraining.spielerIds.length > 0 && s.buchung && (() => {
+                                        const buchungsEmail = s.buchung!.email.toLowerCase();
+                                        return linkedTraining.spielerIds.some(id => {
+                                          const sp = spielerById.get(id);
+                                          return sp?.kontaktEmail?.toLowerCase() === buchungsEmail;
+                                        });
+                                      })();
+                                      if (spielerUebernommen) {
+                                        return (
+                                          <span className="muted" style={{ fontSize: 12 }}>
+                                            ✓ Übernommen
+                                          </span>
+                                        );
+                                      }
+                                      return (
+                                        <button
+                                          className="btn micro"
+                                          style={{ background: "#eab308" }}
+                                          onClick={() => uebernehmenSpontanBuchung(s)}
+                                        >
+                                          In Kalender übernehmen
+                                        </button>
+                                      );
+                                    })()}
+                                    {s.status !== "gebucht" && s.trainingId && (
                                       <span className="muted" style={{ fontSize: 12 }}>
                                         ✓ Im Kalender
                                       </span>
