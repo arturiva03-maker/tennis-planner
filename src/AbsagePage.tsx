@@ -6,7 +6,7 @@ export default function AbsagePage() {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"confirm" | "success" | "error" | "already" | "notfound">("confirm");
-  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string } | null>(null);
+  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -29,6 +29,9 @@ export default function AbsagePage() {
           von: data.uhrzeit_von,
           bis: data.uhrzeit_bis,
           anlage: data.anlage,
+          trainingId: data.training_id ?? undefined,
+          buchungEmail: data.buchung?.email ?? undefined,
+          buchungName: data.buchung?.name ?? undefined,
         });
         setStatus("confirm");
       }
@@ -59,6 +62,15 @@ export default function AbsagePage() {
         return;
       }
 
+      // Verknüpftes Training aus dem Kalender löschen
+      if (slotInfo?.trainingId) {
+        try {
+          await supabase.from("trainings").delete().eq("id", slotInfo.trainingId);
+        } catch {
+          // Training-Löschung nicht blockieren
+        }
+      }
+
       // Benachrichtigung an tennisabisz@gmail.com senden
       const datumFormatted = slotInfo
         ? new Date(slotInfo.datum + "T12:00:00").toLocaleDateString("de-DE", {
@@ -81,6 +93,25 @@ export default function AbsagePage() {
         });
       } catch {
         // E-Mail-Fehler nicht blockieren
+      }
+
+      // Absagebestätigung an den Bucher senden
+      if (slotInfo?.buchungEmail) {
+        try {
+          await fetch("/api/send-newsletter", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: [slotInfo.buchungEmail],
+              subject: `Absagebestätigung: Training am ${datumFormatted}`,
+              body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}\n\nBei Fragen erreichen Sie uns unter tennisabisz@gmail.com.\n\nMit freundlichen Grüßen\nTennisschule A bis Z`,
+              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}</p><p>Bei Fragen erreichen Sie uns unter <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.</p><p>Mit freundlichen Grüßen<br>Tennisschule A bis Z</p>`,
+              fromName: "Tennisschule A bis Z",
+            }),
+          });
+        } catch {
+          // E-Mail-Fehler nicht blockieren
+        }
       }
 
       setStatus("success");
