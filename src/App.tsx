@@ -5899,6 +5899,14 @@ Deine Tennisschule`;
                               ? `\nPreis: ${Number(tCustomPreisProStunde).toFixed(2).replace(".", ",")} EUR pro Stunde`
                               : "";
 
+                            const selectedTraining = selectedTrainingId ? trainings.find(t => t.id === selectedTrainingId) : undefined;
+                            let startdatum = tDatum;
+                            if (selectedTraining?.serieId) {
+                              const serieTermine = trainings.filter(t => t.serieId === selectedTraining.serieId).map(t => t.datum).sort();
+                              if (serieTermine.length > 0) startdatum = serieTermine[0];
+                            }
+                            const startdatumFormatted = new Date(startdatum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+
                             setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
@@ -5909,7 +5917,7 @@ Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
-Startdatum: Erste Woche nach den Osterferien
+Startdatum: ${startdatumFormatted}
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
 ${sepaLink}
