@@ -6,7 +6,7 @@ export default function AbsagePage() {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"confirm" | "success" | "error" | "already" | "notfound">("confirm");
-  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string; accountId?: string } | null>(null);
+  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string; accountId?: string; preis?: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function AbsagePage() {
           buchungEmail: data.buchung?.email ?? undefined,
           buchungName: data.buchung?.name ?? undefined,
           accountId: data.account_id ?? undefined,
+          preis: data.custom_preis_pro_stunde ?? undefined,
         });
         setStatus("confirm");
       }
@@ -124,8 +125,8 @@ export default function AbsagePage() {
             body: JSON.stringify({
               to: [slotInfo.buchungEmail],
               subject: `Absagebestätigung: Training am ${datumFormatted}`,
-              body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}\n\nBei Fragen erreichen Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
-              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:tennisabisz@gmail.com" style="color: #1b5e20; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a></p><div style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
+              body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}${slotInfo.preis ? `\nPreis: ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}\n\nBei Fragen erreichen Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}${slotInfo.preis ? `<br><strong>Preis:</strong> ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:tennisabisz@gmail.com" style="color: #1b5e20; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a></p><div style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
               fromName: "Tennisschule A bis Z",
             }),
           });
