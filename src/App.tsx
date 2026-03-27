@@ -5917,7 +5917,8 @@ Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
-${tAnlage === "Wedding" ? `Voraussichtliches Startdatum: ${startdatumFormatted}\nSollte sich das Datum ändern, erhältst du noch eine E-Mail.` : `Startdatum: ${startdatumFormatted}`}
+Voraussichtliches Startdatum: ${startdatumFormatted}
+Sollte sich das Datum ändern, erhältst du noch eine E-Mail.
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
 ${sepaLink}
