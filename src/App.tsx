@@ -5892,6 +5892,10 @@ Deine Tennisschule`;
                             const sepaLink = tAnlage === "Britz"
                               ? `${window.location.origin}/sepa-britz`
                               : `${window.location.origin}/sepa`;
+                            const tarif = tTarifId ? tarifById.get(tTarifId) : undefined;
+                            const tarifInfo = tarif
+                              ? `\nTarif: ${tarif.name} (${tarif.preisProStunde.toFixed(2).replace(".", ",")} EUR${tarif.abrechnung === "monatlich" ? " monatlich" : tarif.abrechnung === "proSpieler" ? " pro Spieler" : " pro Training"})`
+                              : "";
 
                             setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
                             setTrainingInfoEmailBody(
@@ -5902,7 +5906,7 @@ hiermit informiere ich dich über dein Training für die Sommersaison:
 Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
-Teilnehmer: {ANDERE_TEILNEHMER}
+Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
 Startdatum: Erste Woche nach den Osterferien
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
