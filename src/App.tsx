@@ -3647,7 +3647,7 @@ Deine Tennisschule`;
     if (!tDatum || !tVon || !tBis || (!tIsPrivat && !tIsKurzfristig && tSpielerIds.length === 0)) return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
-    if (!tIsPrivat && !hasTarif && !customPreis) return;
+    if (!tIsPrivat && !tIsKurzfristig && !hasTarif && !customPreis) return;
     const trainerIdForSave = tTrainerId || defaultTrainerId;
     if (!trainerIdForSave) return;
 
