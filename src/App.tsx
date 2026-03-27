@@ -5895,6 +5895,8 @@ Deine Tennisschule`;
                             const tarif = tTarifId ? tarifById.get(tTarifId) : undefined;
                             const tarifInfo = tarif
                               ? `\nTarif: ${tarif.name} (${tarif.preisProStunde.toFixed(2).replace(".", ",")} EUR${tarif.abrechnung === "monatlich" ? " monatlich" : tarif.abrechnung === "proSpieler" ? " pro Spieler" : " pro Training"})`
+                              : tCustomPreisProStunde
+                              ? `\nPreis: ${Number(tCustomPreisProStunde).toFixed(2).replace(".", ",")} EUR pro Stunde`
                               : "";
 
                             setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
