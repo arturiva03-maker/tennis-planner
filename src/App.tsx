@@ -5091,52 +5091,63 @@ Deine Tennisschule`;
                   <span>← Wischen für Navigation →</span>
                 </div>
 
-                {/* Trainer-Filter für Mobile (nur Hauptaccount) */}
-                {!isTrainer && trainers.length > 1 && (
-                  <div className="mobileTrainerFilter" style={{ position: "relative" }}>
-                    <button
-                      type="button"
-                      className="dropdownToggle"
-                      onClick={() => setShowTrainerDropdown(!showTrainerDropdown)}
-                    >
-                      {kalenderTrainerFilter.length === 0
-                        ? "Alle Trainer"
-                        : kalenderTrainerFilter.length === 1
-                          ? trainerById.get(kalenderTrainerFilter[0])?.name
-                          : `${kalenderTrainerFilter.length} Trainer`}
-                      <span className="dropdownArrow">▼</span>
-                    </button>
-                    {showTrainerDropdown && (
-                      <div className="dropdownMenu">
-                        {trainers.map((tr) => (
-                          <label key={tr.id} className="dropdownItem">
-                            <input
-                              type="checkbox"
-                              checked={kalenderTrainerFilter.includes(tr.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
-                                } else {
-                                  setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
-                                }
-                              }}
-                            />
-                            {tr.name}
-                          </label>
-                        ))}
-                        {kalenderTrainerFilter.length > 0 && (
-                          <button
-                            type="button"
-                            className="dropdownReset"
-                            onClick={() => setKalenderTrainerFilter([])}
-                          >
-                            Auswahl zurücksetzen
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Filter für Mobile */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "0 8px" }}>
+                  {!isTrainer && trainers.length > 1 && (
+                    <div className="mobileTrainerFilter" style={{ position: "relative" }}>
+                      <button
+                        type="button"
+                        className="dropdownToggle"
+                        onClick={() => setShowTrainerDropdown(!showTrainerDropdown)}
+                      >
+                        {kalenderTrainerFilter.length === 0
+                          ? "Alle Trainer"
+                          : kalenderTrainerFilter.length === 1
+                            ? trainerById.get(kalenderTrainerFilter[0])?.name
+                            : `${kalenderTrainerFilter.length} Trainer`}
+                        <span className="dropdownArrow">▼</span>
+                      </button>
+                      {showTrainerDropdown && (
+                        <div className="dropdownMenu">
+                          {trainers.map((tr) => (
+                            <label key={tr.id} className="dropdownItem">
+                              <input
+                                type="checkbox"
+                                checked={kalenderTrainerFilter.includes(tr.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setKalenderTrainerFilter([...kalenderTrainerFilter, tr.id]);
+                                  } else {
+                                    setKalenderTrainerFilter(kalenderTrainerFilter.filter(id => id !== tr.id));
+                                  }
+                                }}
+                              />
+                              {tr.name}
+                            </label>
+                          ))}
+                          {kalenderTrainerFilter.length > 0 && (
+                            <button
+                              type="button"
+                              className="dropdownReset"
+                              onClick={() => setKalenderTrainerFilter([])}
+                            >
+                              Auswahl zurücksetzen
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <select
+                    value={kalenderAnlageFilter}
+                    onChange={(e) => setKalenderAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
+                    style={{ fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border, #d1d5db)", background: "var(--bg, #fff)" }}
+                  >
+                    <option value="alle">Alle Anlagen</option>
+                    <option value="Wedding">Wedding</option>
+                    <option value="Britz">Britz</option>
+                  </select>
+                </div>
 
                 <div 
                   className={`kgrid ${viewMode === "day" ? "kgridDay" : ""}`}
@@ -5424,6 +5435,20 @@ Deine Tennisschule`;
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
+                                    {kalenderAnlageFilter === "alle" && (
+                                      <span
+                                        style={{
+                                          fontSize: 8,
+                                          fontWeight: 700,
+                                          background: (t.anlage ?? "Wedding") === "Britz" ? "#f59e0b" : "#2563eb",
+                                          color: "white",
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
+                                        }}
+                                      >
+                                        {(t.anlage ?? "Wedding") === "Britz" ? "B" : "W"}
+                                      </span>
+                                    )}
                                     {t.isPrivat && (
                                       <span
                                         style={{
