@@ -5436,7 +5436,7 @@ Deine Tennisschule`;
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
-                                    {kalenderAnlageFilter === "alle" && (
+                                    {!isTrainer && kalenderAnlageFilter === "alle" && (
                                       <span
                                         style={{
                                           fontSize: 8,
