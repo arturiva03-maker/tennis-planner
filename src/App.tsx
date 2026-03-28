@@ -3671,6 +3671,7 @@ Deine Tennisschule`;
   }
 
   function handleCalendarEventDoubleClick(t: Training) {
+    if (isTrainer) return;
     if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
     clickTimerRef.current = null;
     markTrainingDone(t.id);
