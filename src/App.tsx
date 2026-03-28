@@ -5278,7 +5278,7 @@ Deine Tennisschule`;
                               const isVertretungOffen = trainingVertretung && !trainingVertretung.vertretungTrainerId;
 
                               const taLine = isTrainer
-                                ? `Trainer: ${trainerName}`
+                                ? (t.anlage ?? "Wedding")
                                 : trainers.length > 1
                                 ? trainingVertretung
                                   ? isVertretungOffen
