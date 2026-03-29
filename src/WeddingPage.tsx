@@ -1416,11 +1416,11 @@ export default function WeddingPage() {
                   height: "100%",
                   objectFit: "cover",
                   objectPosition: "40% 40%",
-                  transform: "scale(0.9)",
+                  transform: "scale(0.8)",
                   transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(0.95)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(0.9)"}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(0.85)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(0.8)"}
               />
               {/* Gradient overlay on photo */}
               <div style={{
