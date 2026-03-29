@@ -1399,7 +1399,7 @@ export default function WeddingPage() {
               boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              minHeight: 360,
+              minHeight: 420,
             }}
             className="camp-card"
           >
