@@ -370,6 +370,9 @@ export default function SepaForm({ anlage = "Wedding" }: SepaFormProps) {
                 </a>
                 .
               </p>
+              <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "12px 0 0", lineHeight: 1.5 }}>
+                <strong>Datenschutzhinweis:</strong> Ihre persönlichen Daten und Bankverbindung werden ausschließlich zur Abwicklung der Trainingsbeiträge verwendet und nicht an Dritte weitergegeben. Die Daten werden verschlüsselt gespeichert und nach Beendigung des Trainingsverhältnisses gelöscht. Sie haben jederzeit das Recht auf Auskunft, Berichtigung und Löschung Ihrer Daten. Kontakt: <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)" }}>tennisabisz@gmail.com</a>.
+              </p>
             </div>
           </div>
 
