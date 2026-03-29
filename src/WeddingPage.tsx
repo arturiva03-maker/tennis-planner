@@ -1407,7 +1407,6 @@ export default function WeddingPage() {
             <div style={{
               position: "relative",
               overflow: "hidden",
-              background: colors.primary,
             }}>
               <img
                 src="/tenniscamp.jpg"
@@ -1415,8 +1414,8 @@ export default function WeddingPage() {
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "contain",
-                  objectPosition: "center bottom",
+                  objectFit: "cover",
+                  objectPosition: "80% 40%",
                   transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
