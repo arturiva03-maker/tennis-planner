@@ -1398,8 +1398,8 @@ export default function WeddingPage() {
               margin: "0 auto",
               boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
               display: "grid",
-              gridTemplateColumns: "3fr 2fr",
-              minHeight: 400,
+              gridTemplateColumns: "1fr 1fr",
+              minHeight: 360,
             }}
             className="camp-card"
           >
@@ -1407,6 +1407,7 @@ export default function WeddingPage() {
             <div style={{
               position: "relative",
               overflow: "hidden",
+              background: colors.primary,
             }}>
               <img
                 src="/tenniscamp.jpg"
@@ -1414,8 +1415,8 @@ export default function WeddingPage() {
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: "cover",
-                  objectPosition: "left 60%",
+                  objectFit: "contain",
+                  objectPosition: "center bottom",
                   transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
