@@ -1394,12 +1394,12 @@ export default function WeddingPage() {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              maxWidth: 720,
+              maxWidth: 790,
               margin: "0 auto",
               boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              minHeight: 360,
+              minHeight: 396,
             }}
             className="camp-card"
           >
