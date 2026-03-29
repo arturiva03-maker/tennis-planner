@@ -2714,6 +2714,9 @@ export default function WeddingPage() {
           .camp-card { grid-template-columns: 1fr !important; }
           .camp-card > div:first-child { min-height: 220px; }
         }
+        @media (max-width: 1100px) {
+          .camp-card { max-width: 100% !important; }
+        }
 
         /* ── Flip card hover ── */
         .flip-card:hover .flip-card-inner,
