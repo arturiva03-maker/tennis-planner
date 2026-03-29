@@ -1415,7 +1415,7 @@ export default function WeddingPage() {
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  objectPosition: "20% 40%",
+                  objectPosition: "10% 40%",
                   transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
