@@ -1394,7 +1394,7 @@ export default function WeddingPage() {
             style={{
               borderRadius: 20,
               overflow: "hidden",
-              maxWidth: "min(720px, 100%)",
+              maxWidth: 720,
               margin: "0 auto",
               boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
               display: "grid",
