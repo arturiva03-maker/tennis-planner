@@ -1492,8 +1492,11 @@ export default function WeddingPage() {
                   </div>
                 </div>
 
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 24, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 12, lineHeight: 1.5 }}>
                   13.–17. Juli & 17.–21. August
+                </p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 24, lineHeight: 1.5 }}>
+                  Bei nicht ausreichender Teilnehmerzahl kann ein Camp abgesagt werden. In diesem Fall bieten wir die Teilnahme in einer anderen Woche an oder erstatten die Gebühr vollständig zurück.
                 </p>
 
                 <a
