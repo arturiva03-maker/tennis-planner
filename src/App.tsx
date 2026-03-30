@@ -8317,7 +8317,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                               setNewsletterExtraEmails(prev =>
                                                 prev.some(em => em.email === anfrage.email)
                                                   ? prev
-                                                  : [...prev, { email: anfrage.email, name: `${anfrage.vorname} ${anfrage.nachname}` }]
+                                                  : [...prev, { email: anfrage.email!, name: `${anfrage.vorname} ${anfrage.nachname}` }]
                                               );
                                               setNewsletterSubject("Anfrage zum Probetraining");
                                               setNewsletterLabelFilter("keine");
