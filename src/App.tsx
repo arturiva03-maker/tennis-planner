@@ -8274,7 +8274,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         ) : (
                           <ul className="list">
                             {probetrainingAnfragen.map((anfrage) => (
-                              <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedProbetrainingId === anfrage.id ? undefined : "8px 12px" }}>
                                 <div
                                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
                                   onClick={() => setExpandedProbetrainingId(expandedProbetrainingId === anfrage.id ? null : anfrage.id)}
@@ -8297,63 +8297,112 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       {anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}
                                     </span>
                                   </div>
-                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      background: anfrage.status === "neu" ? "#f59e0b" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "erledigt" ? "#22c55e" : "var(--text-muted)",
-                                      color: "#fff",
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                    }}>
-                                      {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "erledigt" ? "Erledigt" : anfrage.status}
-                                    </span>
-                                    <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedProbetrainingId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
-                                      ▶
-                                    </span>
-                                  </div>
+                                  <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedProbetrainingId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                    ▶
+                                  </span>
                                 </div>
 
                                 {expandedProbetrainingId === anfrage.id && (
                                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 13 }}>
-                                      <div>
-                                        <span className="muted">E-Mail:</span>{" "}
-                                        <span style={{ fontWeight: 500 }}>{anfrage.email || "-"}</span>
-                                      </div>
-                                      <div>
-                                        <span className="muted">Telefon:</span>{" "}
-                                        <span style={{ fontWeight: 500 }}>{anfrage.telefon || "-"}</span>
-                                      </div>
-                                      <div>
-                                        <span className="muted">Tennis gespielt:</span>{" "}
-                                        <span style={{ fontWeight: 500 }}>{anfrage.hat_tennis_gespielt ? "Ja" : "Nein"}</span>
-                                      </div>
-                                      <div>
-                                        <span className="muted">Vereinsmitglied:</span>{" "}
-                                        <span style={{ fontWeight: 500 }}>{anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</span>
-                                      </div>
-                                    </div>
-                                    <div style={{ marginTop: 12 }}>
-                                      <span className="muted" style={{ fontSize: 13 }}>Verfügbarkeit:</span>
-                                      <div style={{ marginTop: 4, fontSize: 13 }}>
-                                        {Object.entries(anfrage.verfuegbarkeit || {}).map(([tag, zeit]) => (
-                                          zeit && zeit !== "nicht verfügbar" && (
-                                            <span key={tag} style={{
-                                              display: "inline-block",
-                                              background: "var(--bg-inset)",
-                                              padding: "2px 8px",
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span className="muted">{anfrage.email || "-"}</span>
+                                        {anfrage.email && (
+                                          <button
+                                            type="button"
+                                            title="E-Mail senden"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setNewsletterExtraEmails(prev =>
+                                                prev.some(em => em.email === anfrage.email)
+                                                  ? prev
+                                                  : [...prev, { email: anfrage.email, name: `${anfrage.vorname} ${anfrage.nachname}` }]
+                                              );
+                                              setNewsletterSubject("Anfrage zum Probetraining");
+                                              setNewsletterLabelFilter("keine");
+                                              setTab("verwaltung");
+                                              setVerwaltungTab("newsletter");
+                                            }}
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              width: 22,
+                                              height: 22,
                                               borderRadius: 4,
-                                              marginRight: 6,
-                                              marginBottom: 4,
-                                            }}>
-                                              {tag.charAt(0).toUpperCase() + tag.slice(1)}: {zeit}
-                                            </span>
-                                          )
-                                        ))}
+                                              background: "var(--primary)",
+                                              color: "#fff",
+                                              border: "none",
+                                              cursor: "pointer",
+                                              fontSize: 12,
+                                            }}
+                                          >
+                                            ✉
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <span className="muted" style={{ fontSize: 12 }}>
+                                          {new Date(anfrage.created_at).toLocaleDateString("de-DE", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit"
+                                          })}
+                                        </span>
+                                        <span
+                                          className="pill"
+                                          style={{
+                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : "var(--warning)",
+                                            color: "white",
+                                            fontSize: 12,
+                                            padding: "4px 10px"
+                                          }}
+                                        >
+                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
+                                        </span>
                                       </div>
                                     </div>
-                                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                                      {anfrage.telefon && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Telefon</div>
+                                          <div>{anfrage.telefon}</div>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Alter</div>
+                                        <div>{anfrage.alter} Jahre</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Spielstand</div>
+                                        <div>{anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Tennis gespielt</div>
+                                        <div>{anfrage.hat_tennis_gespielt ? "Ja" : "Nein"}</div>
+                                      </div>
+                                      <div>
+                                        <div className="muted" style={{ fontSize: 11 }}>Vereinsmitglied</div>
+                                        <div>{anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</div>
+                                      </div>
+                                    </div>
+                                    {anfrage.verfuegbarkeit && (
+                                      <div style={{ marginBottom: 12 }}>
+                                        <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>Verfügbarkeit</div>
+                                        <table className="verfuegbarkeitTable" style={{ fontSize: 13 }}>
+                                          <tbody>
+                                            {Object.entries(anfrage.verfuegbarkeit).map(([tag, zeit]) => (
+                                              zeit && zeit !== "nicht verfügbar" && (
+                                                <tr key={tag}><td>{tag.charAt(0).toUpperCase() + tag.slice(1)}</td><td>{zeit as string}</td></tr>
+                                              )
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                                       <select
                                         value={anfrage.status}
                                         onChange={(e) => updateProbetrainingStatus(anfrage.id, e.target.value)}
@@ -8370,9 +8419,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         Löschen
                                       </button>
-                                    </div>
-                                    <div style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)" }}>
-                                      Anfrage vom {new Date(anfrage.created_at).toLocaleDateString("de-DE")}
                                     </div>
                                   </div>
                                 )}

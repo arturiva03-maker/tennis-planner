@@ -1364,6 +1364,15 @@ export default function WeddingPage() {
           }}>
             Im Winter zzgl. Hallengebühren
           </p>
+          <p style={{
+            marginTop: 8,
+            fontSize: 13,
+            textAlign: "center",
+          }}>
+            <a href="/agb" style={{ color: colors.primary, textDecoration: "none", fontWeight: 500 }}>
+              Trainingsbedingungen und Preise ansehen
+            </a>
+          </p>
         </div>
       </section>
 
