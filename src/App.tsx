@@ -1355,6 +1355,7 @@ export default function App() {
   const [trainingInfoEmailSubject, setTrainingInfoEmailSubject] = useState("");
   const [trainingInfoEmailBody, setTrainingInfoEmailBody] = useState("");
   const [trainingInfoEmailSending, setTrainingInfoEmailSending] = useState(false);
+  const [trainingInfoExcluded, setTrainingInfoExcluded] = useState<string[]>([]);
 
   const clickTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
@@ -5959,6 +5960,7 @@ Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
 
 Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.`
                             );
+                            setTrainingInfoExcluded([]);
                             setShowTrainingInfoEmail(true);
                           }}
                         >
@@ -12426,13 +12428,42 @@ Deine Tennisschule`;
               <p style={{ margin: "0 0 8px 0" }}>
                 Jeder Spieler erhält eine individuelle E-Mail mit seinem Namen.
               </p>
-              <p style={{ margin: 0 }}>
-                Empfänger: {tSpielerIds
-                  .map(id => spielerById.get(id))
-                  .filter(s => s?.kontaktEmail)
-                  .map(s => `${getFullName(s!)}`)
-                  .join(", ") || "Keine Spieler mit E-Mail"}
-              </p>
+              <div style={{ margin: 0 }}>
+                <span>Empfänger:</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+                  {tSpielerIds
+                    .map(id => spielerById.get(id))
+                    .filter(s => s?.kontaktEmail)
+                    .map(s => {
+                      const excluded = trainingInfoExcluded.includes(s!.id);
+                      return (
+                        <label key={s!.id} style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          padding: "3px 8px", borderRadius: 6, fontSize: 13, cursor: "pointer",
+                          background: excluded ? "var(--bg-subtle, #f3f4f6)" : "var(--primary)",
+                          color: excluded ? "var(--text-muted, #9ca3af)" : "#fff",
+                          textDecoration: excluded ? "line-through" : "none",
+                          opacity: excluded ? 0.6 : 1,
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={!excluded}
+                            onChange={() => setTrainingInfoExcluded(prev =>
+                              excluded ? prev.filter(id => id !== s!.id) : [...prev, s!.id]
+                            )}
+                            style={{ display: "none" }}
+                          />
+                          {getFullName(s!)}
+                        </label>
+                      );
+                    })}
+                </div>
+                {trainingInfoExcluded.length > 0 && (
+                  <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                    Klicke auf einen Namen, um ihn wieder hinzuzufügen.
+                  </p>
+                )}
+              </div>
               <p style={{ margin: "8px 0 0 0", fontSize: 12 }}>
                 Platzhalter: {"{SPIELERNAME}"} = Vorname, {"{ANDERE_TEILNEHMER}"} = andere Gruppenmitglieder
               </p>
@@ -12471,7 +12502,7 @@ Deine Tennisschule`;
                 onClick={async () => {
                   const spielerMitEmail = tSpielerIds
                     .map(id => spielerById.get(id))
-                    .filter(s => s && s.kontaktEmail) as Spieler[];
+                    .filter(s => s && s.kontaktEmail && !trainingInfoExcluded.includes(s.id)) as Spieler[];
 
                   if (spielerMitEmail.length === 0) {
                     alert("Keine Spieler mit E-Mail-Adresse gefunden.");
