@@ -8394,11 +8394,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>Verfügbarkeit</div>
                                         <table className="verfuegbarkeitTable" style={{ fontSize: 13 }}>
                                           <tbody>
-                                            {Object.entries(anfrage.verfuegbarkeit).map(([tag, zeit]) => (
-                                              zeit && zeit !== "nicht verfügbar" && (
-                                                <tr key={tag}><td>{tag.charAt(0).toUpperCase() + tag.slice(1)}</td><td>{zeit as string}</td></tr>
-                                              )
-                                            ))}
+                                            {["montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag"]
+                                              .filter(tag => {
+                                                const zeit = (anfrage.verfuegbarkeit as Record<string, string>)?.[tag];
+                                                return zeit && zeit !== "nicht verfügbar";
+                                              })
+                                              .map(tag => (
+                                                <tr key={tag}><td>{tag.charAt(0).toUpperCase() + tag.slice(1)}</td><td>{(anfrage.verfuegbarkeit as Record<string, string>)[tag]}</td></tr>
+                                              ))}
                                           </tbody>
                                         </table>
                                       </div>
