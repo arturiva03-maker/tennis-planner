@@ -582,8 +582,9 @@ input::placeholder {
   display: none;
 }
 
-/* Mobile Trainer-Filter - standardmäßig versteckt auf Desktop */
-.mobileTrainerFilter {
+/* Mobile Trainer-Filter und Anlage-Filter - standardmäßig versteckt auf Desktop */
+.mobileTrainerFilter,
+.mobileAnlageFilter {
   display: none;
 }
 
@@ -1379,11 +1380,15 @@ input::placeholder {
     opacity: 0.6;
   }
 
-  /* Mobile Trainer-Filter */
+  /* Mobile Trainer-Filter und Anlage-Filter */
   .mobileTrainerFilter {
     display: block;
     margin-bottom: 12px;
     padding: 0 4px;
+  }
+
+  .mobileAnlageFilter {
+    display: block;
   }
 
   .mobileTrainerFilter select {

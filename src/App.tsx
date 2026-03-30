@@ -5141,6 +5141,7 @@ Deine Tennisschule`;
                     </div>
                   )}
                   <select
+                    className="mobileAnlageFilter"
                     value={kalenderAnlageFilter}
                     onChange={(e) => setKalenderAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
                     style={{ fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border, #d1d5db)", background: "var(--bg, #fff)" }}
