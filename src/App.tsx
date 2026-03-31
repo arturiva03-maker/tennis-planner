@@ -145,6 +145,7 @@ type ProbetrainingAnfrage = {
   alter: number;
   hat_tennis_gespielt: boolean;
   spielstand: string;
+  trainingsart?: string;
   ist_vereinsmitglied: boolean;
   email: string | null;
   telefon: string | null;
