@@ -8384,6 +8384,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <div className="muted" style={{ fontSize: 11 }}>Tennis gespielt</div>
                                         <div>{anfrage.hat_tennis_gespielt ? "Ja" : "Nein"}</div>
                                       </div>
+                                      {anfrage.trainingsart && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Trainingsart</div>
+                                          <div>{anfrage.trainingsart === "einzel" ? "Einzeltraining" : anfrage.trainingsart === "gruppe" ? "Gruppentraining" : "Beides möglich"}</div>
+                                        </div>
+                                      )}
                                       <div>
                                         <div className="muted" style={{ fontSize: 11 }}>Vereinsmitglied</div>
                                         <div>{anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</div>

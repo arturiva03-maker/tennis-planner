@@ -11,6 +11,7 @@ type FormData = {
   alter: string;
   hatTennisGespielt: string;
   spielstand: string;
+  trainingsart: string;
   istVreinsmitglied: string;
   email: string;
   telefon: string;
@@ -53,6 +54,7 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
     alter: "",
     hatTennisGespielt: "",
     spielstand: "",
+    trainingsart: "",
     istVreinsmitglied: "",
     email: "",
     telefon: "",
@@ -152,6 +154,10 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
       setError("Bitte wählen Sie Ihren Spielstand aus.");
       return false;
     }
+    if (!formData.trainingsart) {
+      setError("Bitte wählen Sie die gewünschte Trainingsart aus.");
+      return false;
+    }
     if (!formData.istVreinsmitglied) {
       setError("Bitte geben Sie an, ob Sie bereits Vereinsmitglied sind.");
       return false;
@@ -238,6 +244,8 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
     // E-Mail-HTML erstellen
     const spielstandText = formData.spielstand === "anfaenger" ? "Anfänger" :
       formData.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampfspieler";
+    const trainingsartText = formData.trainingsart === "einzel" ? "Einzeltraining" :
+      formData.trainingsart === "gruppe" ? "Gruppentraining" : "Beides möglich";
 
     const hatGespieltText = formData.hatTennisGespielt === "ja" ? "Ja" : "Nein";
     const mitgliedText = formData.istVreinsmitglied === "ja" ? "Ja" : "Nein";
@@ -284,6 +292,7 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
         <table>
           <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Schon Tennis gespielt?</td><td style="padding: 8px 0; font-weight: 500;">${hatGespieltText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Spielstand</td><td style="padding: 8px 0; font-weight: 500;">${spielstandText}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Gewünschte Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Bereits Vereinsmitglied?</td><td style="padding: 8px 0; font-weight: 500;">${mitgliedText}</td></tr>
         </table>
       </div>
@@ -325,6 +334,7 @@ Alter: ${formData.alter} Jahre
 Tenniserfahrung:
 Schon Tennis gespielt: ${hatGespieltText}
 Spielstand: ${spielstandText}
+Gewünschte Trainingsart: ${trainingsartText}
 Vereinsmitglied: ${mitgliedText}
 
 Verfügbarkeit:
@@ -347,6 +357,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
           alter: parseInt(formData.alter, 10),
           hat_tennis_gespielt: formData.hatTennisGespielt === "ja",
           spielstand: formData.spielstand,
+          trainingsart: formData.trainingsart,
           ist_vereinsmitglied: formData.istVreinsmitglied === "ja",
           email: formData.email || null,
           telefon: formData.telefon || null,
@@ -575,6 +586,27 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
                   <option value="fortgeschritten">Fortgeschritten</option>
                   <option value="wettkampf">Wettkampfspieler</option>
                 </select>
+              </div>
+
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>
+                  Für welche Art von Training sind Sie interessiert? <span style={{ color: "var(--danger)" }}>*</span>
+                </label>
+                <select
+                  name="trainingsart"
+                  value={formData.trainingsart}
+                  onChange={handleChange}
+                >
+                  <option value="">Bitte auswählen...</option>
+                  <option value="einzel">Einzeltraining</option>
+                  <option value="gruppe">Gruppentraining</option>
+                  <option value="beides">Beides möglich</option>
+                </select>
+                {formData.spielstand === "anfaenger" && (
+                  <p style={{ margin: "8px 0 0", fontSize: 13, color: "#92400e", background: "#fef3c7", padding: "8px 12px", borderRadius: 6, border: "1px solid #f59e0b" }}>
+                    Für Anfänger empfehlen wir Einzeltraining, um die Grundlagen gezielt zu erlernen.
+                  </p>
+                )}
               </div>
 
               <div className="field" style={{ gridColumn: "1 / -1" }}>
