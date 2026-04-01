@@ -574,7 +574,7 @@ export default function BritzPage() {
     },
     {
       name: "Konstantin Klein",
-      qualification: "C-Trainer Leistungssport",
+      qualification: "C-Lizenz Leistungssport",
       bio: "Als Kind und Jugendlicher täglich auf dem Platz. Viel Spaß am Training mit Erwachsenen und Kindern.",
       image: "/konstantin-klein.jpg",
       imageZoom: 1.2,
