@@ -8268,6 +8268,28 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               Kopieren
                             </button>
                           </p>
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Probetraining Britz:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                            }}>
+                              {window.location.origin}/probetraining-britz
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/probetraining-britz`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
                         </div>
 
                         {loadingProbetrainingAnfragen ? (
