@@ -93,6 +93,7 @@ type RegistrationRequest = {
   created_at: string;
   status: string;
   anlage?: string | null;
+  ist_vereinsmitglied?: boolean | null;
 };
 
 type SepaMandate = {
@@ -7683,6 +7684,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                               ? "Fortgeschritten"
                                               : "Profi"}
                                           </div>
+                                        </div>
+                                      )}
+                                      {req.ist_vereinsmitglied != null && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Vereinsmitglied</div>
+                                          <div>{req.ist_vereinsmitglied ? "Ja" : "Nein"}</div>
                                         </div>
                                       )}
                                     </div>
