@@ -710,7 +710,7 @@ export default function WeddingPage() {
     },
     {
       name: "Konstantin Klein",
-      qualification: "C-Lizenz Leistungssport (in Ausbildung)",
+      qualification: "C-Trainer Leistungssport",
       bio: "Als Kind und Jugendlicher täglich auf dem Platz. Viel Spaß am Training mit Erwachsenen und Kindern.",
       image: "/konstantin-klein.jpg",
       imageZoom: 1.2,

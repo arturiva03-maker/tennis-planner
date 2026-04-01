@@ -7468,6 +7468,30 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   Als Spieler übernehmen
                                 </button>
                                 <button
+                                  className="btn micro"
+                                  style={{ backgroundColor: "#22c55e", borderColor: "#22c55e" }}
+                                  onClick={async () => {
+                                    for (const id of selectedRequestIds) {
+                                      await updateRequestStatus(id, "erledigt");
+                                    }
+                                    setSelectedRequestIds(new Set());
+                                  }}
+                                >
+                                  Als erledigt markieren
+                                </button>
+                                <button
+                                  className="btn micro"
+                                  style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b" }}
+                                  onClick={async () => {
+                                    for (const id of selectedRequestIds) {
+                                      await updateRequestStatus(id, "offen");
+                                    }
+                                    setSelectedRequestIds(new Set());
+                                  }}
+                                >
+                                  Als offen markieren
+                                </button>
+                                <button
                                   className="btn micro btnGhost"
                                   onClick={() => setSelectedRequestIds(new Set())}
                                 >

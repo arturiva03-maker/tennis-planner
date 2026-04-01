@@ -16,6 +16,7 @@ type RegistrationData = {
   alter_jahre: string;
   nachricht: string;
   gruppenwuensche: string;
+  ist_vereinsmitglied: string;
 };
 
 const WOCHENTAGE_ALL: { key: Wochentag; label: string }[] = [
@@ -87,6 +88,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
     alter_jahre: "",
     nachricht: "",
     gruppenwuensche: "",
+    ist_vereinsmitglied: "",
   });
 
   const [zeitVon, setZeitVon] = useState<Record<Wochentag, string>>({
@@ -281,6 +283,7 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
             ? `${formData.nachricht.trim()}\n\nGruppenwünsche: ${formData.gruppenwuensche.trim()}`.trim()
             : formData.nachricht.trim() || null,
           anlage: anlage,
+          ist_vereinsmitglied: formData.ist_vereinsmitglied === "ja" ? true : formData.ist_vereinsmitglied === "nein" ? false : null,
         });
 
       if (insertError) {
@@ -709,6 +712,19 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
                 <option value="anfaenger">Anfänger</option>
                 <option value="fortgeschritten">Fortgeschritten</option>
                 <option value="profi">Profi / Wettkampfspieler</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Vereinsmitglied? <span style={{ color: "var(--danger)" }}>*</span></label>
+              <select
+                name="ist_vereinsmitglied"
+                value={formData.ist_vereinsmitglied}
+                onChange={handleChange}
+              >
+                <option value="">Bitte auswählen...</option>
+                <option value="ja">Ja</option>
+                <option value="nein">Nein</option>
               </select>
             </div>
 
