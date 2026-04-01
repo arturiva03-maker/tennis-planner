@@ -146,6 +146,7 @@ type ProbetrainingAnfrage = {
   hat_tennis_gespielt: boolean;
   spielstand: string;
   trainingsart?: string;
+  anlage?: string;
   ist_vereinsmitglied: boolean;
   email: string | null;
   telefon: string | null;
@@ -8298,6 +8299,20 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     }}>
                                       {anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}
                                     </span>
+                                    {anfrage.anlage && (
+                                      <span style={{
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        background: anfrage.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                                        color: anfrage.anlage === "Britz" ? "#000" : "#fff",
+                                        padding: "2px 6px",
+                                        borderRadius: 4,
+                                        minWidth: 16,
+                                        textAlign: "center"
+                                      }}>
+                                        {anfrage.anlage === "Britz" ? "B" : "W"}
+                                      </span>
+                                    )}
                                   </div>
                                   <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedProbetrainingId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
                                     ▶
