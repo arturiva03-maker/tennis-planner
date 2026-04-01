@@ -13,6 +13,7 @@ import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import AbsagePage from './AbsagePage';
+import ProbetrainingForm from './ProbetrainingForm';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -35,6 +36,7 @@ root.render(
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
         <Route path="/anmeldung-wedding-probetraining" element={<WeddingRegistrationWrapper directToProbetraining />} />
+        <Route path="/probetraining-britz" element={<ProbetrainingForm anlage="Britz" onBack={() => window.location.href = "/britz"} />} />
         <Route path="/absage/:id" element={<AbsagePage />} />
       </Routes>
     </BrowserRouter>

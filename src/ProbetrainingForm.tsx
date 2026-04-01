@@ -34,11 +34,12 @@ const UHRZEITEN = [
 
 type ProbetrainingFormProps = {
   onBack: () => void;
+  anlage?: "Wedding" | "Britz";
 };
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
+export default function ProbetrainingForm({ onBack, anlage = "Wedding" }: ProbetrainingFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
@@ -275,7 +276,7 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
   <div class="container">
     <div class="header">
       <h1 style="margin: 0; font-size: 24px;">Neue Probetraining-Anfrage</h1>
-      <p style="margin: 8px 0 0 0; opacity: 0.9;">Wedding</p>
+      <p style="margin: 8px 0 0 0; opacity: 0.9;">${anlage}</p>
     </div>
     <div class="content">
       <div class="section">
@@ -324,7 +325,7 @@ export default function ProbetrainingForm({ onBack }: ProbetrainingFormProps) {
 </body>
 </html>`;
 
-    const textVersion = `Neue Probetraining-Anfrage Wedding
+    const textVersion = `Neue Probetraining-Anfrage ${anlage}
 
 Persönliche Daten:
 Vorname: ${formData.vorname}
@@ -359,6 +360,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
           spielstand: formData.spielstand,
           trainingsart: formData.trainingsart,
           ist_vereinsmitglied: formData.istVreinsmitglied === "ja",
+          anlage: anlage,
           email: formData.email || null,
           telefon: formData.telefon || null,
           verfuegbarkeit: verfuegbarkeitFinal,
@@ -375,7 +377,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: ["tennisabisz@gmail.com"],
-          subject: `Neue Probetraining-Anfrage: ${formData.vorname} ${formData.nachname}`,
+          subject: `Neue Probetraining-Anfrage ${anlage}: ${formData.vorname} ${formData.nachname}`,
           body: textVersion,
           html: emailHtml,
           fromName: "Tennisschule A bis Z",
@@ -394,11 +396,11 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
   if (success) {
     // Automatisch zur Wedding-Seite weiterleiten nach 3 Sekunden
     setTimeout(() => {
-      window.location.href = "/wedding";
+      window.location.href = anlage === "Britz" ? "/britz" : "/wedding";
     }, 3000);
 
     return (
-      <div className="registrationPage weddingTheme">
+      <div className={`registrationPage ${anlage === "Britz" ? "britzTheme" : "weddingTheme"}`}>
         <div className="card registrationCard">
           <div className="successIcon">&#10003;</div>
           <h1>Anfrage erfolgreich gesendet!</h1>
@@ -416,7 +418,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
   const progressWidth = (step / 4) * 100;
 
   return (
-    <div className="registrationPage weddingTheme">
+    <div className={`registrationPage ${anlage === "Britz" ? "britzTheme" : "weddingTheme"}`}>
       <div className="card registrationCard" style={{ maxWidth: 600 }}>
         <h1 style={{ marginBottom: 8 }}>Probetraining buchen</h1>
         <p className="muted" style={{ marginBottom: 16 }}>
@@ -650,12 +652,12 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
                     <p style={{ margin: 0, color: "#92400e", lineHeight: 1.6 }}>
                       Nach dem Probetraining erhalten Sie Informationen zum Aufnahmeprozess. Bitte erkundigen Sie sich zu Mitgliedsbedingungen auf der Website des Tennisvereins:{" "}
                       <a
-                        href="https://bscrehberge-tennis.de/verein/mitgliedschaft/"
+                        href={anlage === "Britz" ? "https://tc-britz.de" : "https://bscrehberge-tennis.de/verein/mitgliedschaft/"}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "#92400e", fontWeight: 600 }}
                       >
-                        bscrehberge-tennis.de
+                        {anlage === "Britz" ? "tc-britz.de" : "bscrehberge-tennis.de"}
                       </a>
                     </p>
                     <p style={{ margin: "12px 0 0 0", color: "#92400e", fontWeight: 500 }}>

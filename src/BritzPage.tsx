@@ -1257,25 +1257,47 @@ export default function BritzPage() {
                 Anmeldung bis 10.3.!
               </p>
 
-              <a
-                href="/anmeldung-britz"
-                style={{
-                  display: "inline-block",
-                  background: "#fff",
-                  color: colors.primary,
-                  padding: "12px 24px",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  textAlign: "center",
-                  transition: "transform 0.2s",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-              >
-                Jetzt anmelden
-              </a>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <a
+                  href="/anmeldung-britz"
+                  style={{
+                    display: "inline-block",
+                    background: "#fff",
+                    color: colors.primary,
+                    padding: "12px 24px",
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: "none",
+                    textAlign: "center",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                >
+                  Jetzt anmelden
+                </a>
+                <a
+                  href="/probetraining-britz"
+                  style={{
+                    display: "inline-block",
+                    background: "transparent",
+                    color: "#fff",
+                    padding: "12px 24px",
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    textDecoration: "none",
+                    textAlign: "center",
+                    border: "2px solid rgba(255,255,255,0.5)",
+                    transition: "transform 0.2s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                >
+                  Probetraining buchen
+                </a>
+              </div>
             </div>
           </div>
         </div>
