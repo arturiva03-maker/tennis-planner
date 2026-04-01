@@ -999,7 +999,7 @@ export default function App() {
   const [anmeldungTagFilter, setAnmeldungTagFilter] =
     useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
   const [anmeldungStatusFilter, setAnmeldungStatusFilter] =
-    useState<"alle" | "offen" | "erledigt">("alle");
+    useState<"alle" | "offen" | "erledigt">("offen");
 
   // Newsletter State
   const [newsletterSubject, setNewsletterSubject] = useState("");
