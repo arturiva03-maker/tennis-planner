@@ -7471,7 +7471,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   className="btn micro"
                                   style={{ backgroundColor: "#22c55e", borderColor: "#22c55e" }}
                                   onClick={async () => {
-                                    for (const id of selectedRequestIds) {
+                                    const ids = Array.from(selectedRequestIds);
+                                    for (const id of ids) {
                                       await updateRequestStatus(id, "erledigt");
                                     }
                                     setSelectedRequestIds(new Set());
@@ -7483,7 +7484,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   className="btn micro"
                                   style={{ backgroundColor: "#f59e0b", borderColor: "#f59e0b" }}
                                   onClick={async () => {
-                                    for (const id of selectedRequestIds) {
+                                    const ids = Array.from(selectedRequestIds);
+                                    for (const id of ids) {
                                       await updateRequestStatus(id, "offen");
                                     }
                                     setSelectedRequestIds(new Set());
