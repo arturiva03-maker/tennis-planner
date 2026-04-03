@@ -81,7 +81,7 @@ export default function ProbetrainingForm({ onBack, anlage = "Wedding" }: Probet
     montag: false, dienstag: false, mittwoch: false, donnerstag: false, freitag: false, samstag: false
   });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
