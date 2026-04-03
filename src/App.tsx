@@ -8897,9 +8897,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, whiteSpace: "pre-wrap", color: "var(--text-muted, #6b7280)" }}>
-                        {newsletterLabelFilter === "Britz"
-                          ? "Sportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
-                          : "Sportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"}
+                        {"Sportliche Grüße\nTennisschule A bis Z"}
                       </div>
                     </div>
 
@@ -8939,16 +8937,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               body: JSON.stringify({
                                 to: allEmails,
                                 subject: newsletterSubject.trim(),
-                                body: newsletterBody.trim() + (
-                                  newsletterLabelFilter === "Britz"
-                                    ? "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
-                                    : "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"
-                                ),
-                                html: (newsletterBody.trim() + (
-                                  newsletterLabelFilter === "Britz"
-                                    ? "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: TC Blau-Weiß Britz 1950 e.V.\nBuschkrugallee 159, 12359 Berlin-Britz"
-                                    : "\n\nSportliche Grüße,\nTennisschule A bis Z\nTrainingsort: BSC Rehberge 1945 e.V. Abt. Tennis\nSambesistraße 11, 13351 Berlin-Wedding"
-                                )).replace(/\n/g, "<br>"),
+                                body: newsletterBody.trim() + "\n\nSportliche Grüße\nTennisschule A bis Z",
+                                html: (newsletterBody.trim() + "\n\nSportliche Grüße\nTennisschule A bis Z").replace(/\n/g, "<br>"),
                                 fromName: "Tennisschule A bis Z"
                               })
                             });
