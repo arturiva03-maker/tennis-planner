@@ -1269,6 +1269,10 @@ export default function App() {
   const [loadingProbetrainingAnfragen, setLoadingProbetrainingAnfragen] = useState(false);
   const [expandedProbetrainingId, setExpandedProbetrainingId] = useState<string | null>(null);
   const [selectedProbetrainingIds, setSelectedProbetrainingIds] = useState<Set<string>>(new Set());
+  const [probetrainingAnlageFilter, setProbetrainingAnlageFilter] = useState<"alle" | "Wedding" | "Britz">("alle");
+  const [probetrainingNameSuche, setProbetrainingNameSuche] = useState("");
+  const [probetrainingTagFilter, setProbetrainingTagFilter] = useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
+  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<"alle" | "offen" | "erledigt">("offen");
 
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
@@ -8333,9 +8337,75 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           <p className="muted">Keine Probetraining-Anfragen vorhanden.</p>
                         ) : (
                           <>
+                          {/* Filter */}
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label>Suche</label>
+                              <input
+                                type="text"
+                                placeholder="Name suchen..."
+                                value={probetrainingNameSuche}
+                                onChange={(e) => setProbetrainingNameSuche(e.target.value)}
+                                style={{ padding: "4px 8px", width: 150 }}
+                              />
+                            </div>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label>Anlage</label>
+                              <select
+                                value={probetrainingAnlageFilter}
+                                onChange={(e) => setProbetrainingAnlageFilter(e.target.value as "alle" | "Wedding" | "Britz")}
+                                style={{ padding: "4px 8px" }}
+                              >
+                                <option value="alle">Alle</option>
+                                <option value="Wedding">Wedding</option>
+                                <option value="Britz">Britz</option>
+                              </select>
+                            </div>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label>Verfügbar am</label>
+                              <select
+                                value={probetrainingTagFilter}
+                                onChange={(e) => setProbetrainingTagFilter(e.target.value as typeof probetrainingTagFilter)}
+                                style={{ padding: "4px 8px" }}
+                              >
+                                <option value="alle">Alle Tage</option>
+                                <option value="montag">Montag</option>
+                                <option value="dienstag">Dienstag</option>
+                                <option value="mittwoch">Mittwoch</option>
+                                <option value="donnerstag">Donnerstag</option>
+                                <option value="freitag">Freitag</option>
+                                <option value="samstag">Samstag</option>
+                                <option value="sonntag">Sonntag</option>
+                              </select>
+                            </div>
+                            <div className="field" style={{ margin: 0 }}>
+                              <label>Status</label>
+                              <select
+                                value={probetrainingStatusFilter}
+                                onChange={(e) => setProbetrainingStatusFilter(e.target.value as typeof probetrainingStatusFilter)}
+                                style={{ padding: "4px 8px" }}
+                              >
+                                <option value="alle">Alle</option>
+                                <option value="offen">Offen</option>
+                                <option value="erledigt">Erledigt</option>
+                              </select>
+                            </div>
+                          </div>
+
                           {/* Aktionsleiste */}
                           {(() => {
-                            const withEmail = probetrainingAnfragen.filter(a => a.email);
+                            const filtered = probetrainingAnfragen.filter(a => {
+                              if (probetrainingAnlageFilter !== "alle" && a.anlage !== probetrainingAnlageFilter) return false;
+                              if (probetrainingNameSuche && !`${a.vorname} ${a.nachname}`.toLowerCase().includes(probetrainingNameSuche.toLowerCase())) return false;
+                              if (probetrainingTagFilter !== "alle" && a.verfuegbarkeit) {
+                                const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
+                                if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                              }
+                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
+                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              return true;
+                            });
+                            const withEmail = filtered.filter(a => a.email);
                             const allSelected = withEmail.length > 0 && withEmail.every(a => selectedProbetrainingIds.has(a.id));
                             return (
                               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
@@ -8377,7 +8447,29 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             );
                           })()}
                           <ul className="list">
-                            {probetrainingAnfragen.map((anfrage) => (
+                            {probetrainingAnfragen.filter(a => {
+                              if (probetrainingAnlageFilter !== "alle" && a.anlage !== probetrainingAnlageFilter) return false;
+                              if (probetrainingNameSuche && !`${a.vorname} ${a.nachname}`.toLowerCase().includes(probetrainingNameSuche.toLowerCase())) return false;
+                              if (probetrainingTagFilter !== "alle" && a.verfuegbarkeit) {
+                                const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
+                                if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                              }
+                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
+                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              return true;
+                            }).length === 0 ? (
+                              <p className="muted">Keine Anfragen für diesen Filter.</p>
+                            ) : probetrainingAnfragen.filter(a => {
+                              if (probetrainingAnlageFilter !== "alle" && a.anlage !== probetrainingAnlageFilter) return false;
+                              if (probetrainingNameSuche && !`${a.vorname} ${a.nachname}`.toLowerCase().includes(probetrainingNameSuche.toLowerCase())) return false;
+                              if (probetrainingTagFilter !== "alle" && a.verfuegbarkeit) {
+                                const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
+                                if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
+                              }
+                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
+                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              return true;
+                            }).map((anfrage) => (
                               <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedProbetrainingId === anfrage.id ? undefined : "8px 12px" }}>
                                 <div
                                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
