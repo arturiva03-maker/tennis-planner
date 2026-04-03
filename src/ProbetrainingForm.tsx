@@ -11,6 +11,7 @@ type FormData = {
   alter: string;
   hatTennisGespielt: string;
   spielstand: string;
+  spielstaerkeBeschreibung: string;
   trainingsart: string;
   istVreinsmitglied: string;
   email: string;
@@ -55,6 +56,7 @@ export default function ProbetrainingForm({ onBack, anlage = "Wedding" }: Probet
     alter: "",
     hatTennisGespielt: "",
     spielstand: "",
+    spielstaerkeBeschreibung: "",
     trainingsart: "",
     istVreinsmitglied: "",
     email: "",
@@ -293,6 +295,7 @@ export default function ProbetrainingForm({ onBack, anlage = "Wedding" }: Probet
         <table>
           <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Schon Tennis gespielt?</td><td style="padding: 8px 0; font-weight: 500;">${hatGespieltText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Spielstand</td><td style="padding: 8px 0; font-weight: 500;">${spielstandText}</td></tr>
+          ${formData.spielstaerkeBeschreibung ? `<tr><td style="padding: 8px 0; color: #6b7280;">Beschreibung</td><td style="padding: 8px 0; font-weight: 500;">${formData.spielstaerkeBeschreibung}</td></tr>` : ""}
           <tr><td style="padding: 8px 0; color: #6b7280;">Gewünschte Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Bereits Vereinsmitglied?</td><td style="padding: 8px 0; font-weight: 500;">${mitgliedText}</td></tr>
         </table>
@@ -334,7 +337,7 @@ Alter: ${formData.alter} Jahre
 
 Tenniserfahrung:
 Schon Tennis gespielt: ${hatGespieltText}
-Spielstand: ${spielstandText}
+Spielstand: ${spielstandText}${formData.spielstaerkeBeschreibung ? `\nBeschreibung: ${formData.spielstaerkeBeschreibung}` : ""}
 Gewünschte Trainingsart: ${trainingsartText}
 Vereinsmitglied: ${mitgliedText}
 
@@ -358,6 +361,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
           alter: parseInt(formData.alter, 10),
           hat_tennis_gespielt: formData.hatTennisGespielt === "ja",
           spielstand: formData.spielstand,
+          spielstaerke_beschreibung: formData.spielstaerkeBeschreibung || null,
           trainingsart: formData.trainingsart,
           ist_vereinsmitglied: formData.istVreinsmitglied === "ja",
           anlage: anlage,
@@ -588,6 +592,18 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
                   <option value="fortgeschritten">Fortgeschritten</option>
                   <option value="wettkampf">Wettkampfspieler</option>
                 </select>
+              </div>
+
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>Beschreiben Sie kurz Ihre bisherige Tenniserfahrung</label>
+                <textarea
+                  name="spielstaerkeBeschreibung"
+                  value={formData.spielstaerkeBeschreibung}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="z.B. im Urlaub 3 mal mit einem Trainer gespielt oder als Kind 1 Jahr einmal pro Woche trainiert"
+                  style={{ resize: "vertical" }}
+                />
               </div>
 
               <div className="field" style={{ gridColumn: "1 / -1" }}>

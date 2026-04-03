@@ -146,6 +146,7 @@ type ProbetrainingAnfrage = {
   alter: number;
   hat_tennis_gespielt: boolean;
   spielstand: string;
+  spielstaerke_beschreibung?: string | null;
   trainingsart?: string;
   anlage?: string;
   ist_vereinsmitglied: boolean;
@@ -8512,6 +8513,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <div className="muted" style={{ fontSize: 11 }}>Spielstand</div>
                                         <div>{anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}</div>
                                       </div>
+                                      {anfrage.spielstaerke_beschreibung && (
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <div className="muted" style={{ fontSize: 11 }}>Spielstärke Beschreibung</div>
+                                          <div>{anfrage.spielstaerke_beschreibung}</div>
+                                        </div>
+                                      )}
                                       <div>
                                         <div className="muted" style={{ fontSize: 11 }}>Tennis gespielt</div>
                                         <div>{anfrage.hat_tennis_gespielt ? "Ja" : "Nein"}</div>
