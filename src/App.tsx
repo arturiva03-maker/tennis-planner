@@ -8678,6 +8678,38 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <option value="erledigt">Erledigt</option>
                                       </select>
                                       <button
+                                        className="btn micro"
+                                        style={{ background: "var(--primary)", color: "#fff" }}
+                                        onClick={() => {
+                                          const fullName = `${anfrage.vorname} ${anfrage.nachname}`.toLowerCase().trim();
+                                          const duplicate = spieler.find(s =>
+                                            `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullName
+                                          );
+                                          if (duplicate) {
+                                            alert(`Spieler "${anfrage.vorname} ${anfrage.nachname}" existiert bereits.`);
+                                            return;
+                                          }
+                                          const neu: Spieler = {
+                                            id: uid(),
+                                            vorname: anfrage.vorname,
+                                            nachname: anfrage.nachname || undefined,
+                                            kontaktEmail: anfrage.email || undefined,
+                                            kontaktTelefon: anfrage.telefon || undefined,
+                                            notizen: [
+                                              `Spielstand: ${anfrage.spielstand === "anfaenger" ? "Anfänger" : anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf"}`,
+                                              anfrage.spielstaerke_beschreibung ? `Beschreibung: ${anfrage.spielstaerke_beschreibung}` : "",
+                                              `Alter: ${anfrage.alter}`,
+                                              anfrage.trainingsart ? `Trainingsart: ${anfrage.trainingsart === "einzel" ? "Einzeltraining" : anfrage.trainingsart === "gruppe" ? "Gruppentraining" : "Beides"}` : "",
+                                            ].filter(Boolean).join("\n") || undefined,
+                                          };
+                                          setSpieler(prev => [...prev, neu]);
+                                          updateProbetrainingStatus(anfrage.id, "erledigt");
+                                          alert(`"${anfrage.vorname} ${anfrage.nachname}" wurde als Spieler übernommen.`);
+                                        }}
+                                      >
+                                        Spieler übernehmen
+                                      </button>
+                                      <button
                                         className="btn micro btnGhost"
                                         style={{ color: "var(--danger)" }}
                                         onClick={() => deleteProbetrainingAnfrage(anfrage.id)}
