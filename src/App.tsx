@@ -2483,7 +2483,7 @@ export default function App() {
         .from("sepa_mandates")
         .select("*")
         .eq("account_id", authUser.accountId)
-        .order("nachname", { ascending: true });
+        .order("vorname", { ascending: true });
 
       if (error) {
         console.error("Error fetching SEPA mandates:", error);
