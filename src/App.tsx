@@ -1264,6 +1264,7 @@ export default function App() {
   const [tenniscampAnmeldungen, setTenniscampAnmeldungen] = useState<TenniscampAnmeldung[]>([]);
   const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
   const [expandedTenniscampId, setExpandedTenniscampId] = useState<string | null>(null);
+  const [tenniscampStatusFilter, setTenniscampStatusFilter] = useState<"alle" | "offen" | "storniert">("offen");
 
   const [probetrainingAnfragen, setProbetrainingAnfragen] = useState<ProbetrainingAnfrage[]>([]);
   const [loadingProbetrainingAnfragen, setLoadingProbetrainingAnfragen] = useState(false);
@@ -8136,13 +8137,36 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           </p>
                         </div>
 
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Status</label>
+                            <select
+                              value={tenniscampStatusFilter}
+                              onChange={(e) => setTenniscampStatusFilter(e.target.value as typeof tenniscampStatusFilter)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle</option>
+                              <option value="offen">Offen</option>
+                              <option value="storniert">Storniert</option>
+                            </select>
+                          </div>
+                        </div>
+
                         {loadingTenniscampAnmeldungen ? (
                           <p className="muted">Laden...</p>
-                        ) : tenniscampAnmeldungen.length === 0 ? (
-                          <p className="muted">Keine Tenniscamp-Anmeldungen vorhanden.</p>
+                        ) : tenniscampAnmeldungen.filter(a => {
+                          if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
+                          if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
+                          return true;
+                        }).length === 0 ? (
+                          <p className="muted">Keine Tenniscamp-Anmeldungen für diesen Filter.</p>
                         ) : (
                           <ul className="list">
-                            {tenniscampAnmeldungen.map((anmeldung) => (
+                            {tenniscampAnmeldungen.filter(a => {
+                              if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
+                              if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
+                              return true;
+                            }).map((anmeldung) => (
                               <li key={anmeldung.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div
                                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
