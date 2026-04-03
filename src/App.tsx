@@ -1267,6 +1267,7 @@ export default function App() {
   const [probetrainingAnfragen, setProbetrainingAnfragen] = useState<ProbetrainingAnfrage[]>([]);
   const [loadingProbetrainingAnfragen, setLoadingProbetrainingAnfragen] = useState(false);
   const [expandedProbetrainingId, setExpandedProbetrainingId] = useState<string | null>(null);
+  const [selectedProbetrainingIds, setSelectedProbetrainingIds] = useState<Set<string>>(new Set());
 
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
@@ -8330,6 +8331,50 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         ) : probetrainingAnfragen.length === 0 ? (
                           <p className="muted">Keine Probetraining-Anfragen vorhanden.</p>
                         ) : (
+                          <>
+                          {/* Aktionsleiste */}
+                          {(() => {
+                            const withEmail = probetrainingAnfragen.filter(a => a.email);
+                            const allSelected = withEmail.length > 0 && withEmail.every(a => selectedProbetrainingIds.has(a.id));
+                            return (
+                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => {
+                                      if (allSelected) {
+                                        setSelectedProbetrainingIds(new Set());
+                                      } else {
+                                        setSelectedProbetrainingIds(new Set(withEmail.map(a => a.id)));
+                                      }
+                                    }}
+                                  />
+                                  Alle mit E-Mail auswählen ({withEmail.length})
+                                </label>
+                                {selectedProbetrainingIds.size > 0 && (
+                                  <button
+                                    className="btn micro"
+                                    style={{ background: "var(--primary)", color: "#fff" }}
+                                    onClick={() => {
+                                      const selected = probetrainingAnfragen.filter(a => selectedProbetrainingIds.has(a.id) && a.email);
+                                      const newExtras = selected
+                                        .filter(a => !newsletterExtraEmails.some(em => em.email === a.email))
+                                        .map(a => ({ email: a.email!, name: `${a.vorname} ${a.nachname}` }));
+                                      setNewsletterExtraEmails(prev => [...prev, ...newExtras]);
+                                      setNewsletterSubject("Anfrage zum Probetraining");
+                                      setNewsletterLabelFilter("keine");
+                                      setSelectedProbetrainingIds(new Set());
+                                      setTab("verwaltung");
+                                      setVerwaltungTab("newsletter");
+                                    }}
+                                  >
+                                    Newsletter an {selectedProbetrainingIds.size} Ausgewählte senden
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                           <ul className="list">
                             {probetrainingAnfragen.map((anfrage) => (
                               <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedProbetrainingId === anfrage.id ? undefined : "8px 12px" }}>
@@ -8338,6 +8383,22 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   onClick={() => setExpandedProbetrainingId(expandedProbetrainingId === anfrage.id ? null : anfrage.id)}
                                 >
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    {anfrage.email && (
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedProbetrainingIds.has(anfrage.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => {
+                                          setSelectedProbetrainingIds(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(anfrage.id)) next.delete(anfrage.id);
+                                            else next.add(anfrage.id);
+                                            return next;
+                                          });
+                                        }}
+                                        style={{ cursor: "pointer" }}
+                                      />
+                                    )}
                                     <span style={{ fontWeight: 500 }}>
                                       {anfrage.vorname} {anfrage.nachname}
                                     </span>
@@ -8506,6 +8567,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               </li>
                             ))}
                           </ul>
+                          </>
                         )}
                       </>
                     )}
