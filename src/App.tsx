@@ -4791,7 +4791,7 @@ Deine Tennisschule`;
                 {t === "formulare" && (
                   <>
                     Formulare
-                    {(registrationRequests.filter(r => r.status === "neu").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length) > 0 && (
+                    {(registrationRequests.filter(r => r.status !== "erledigt").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length) > 0 && (
                       <span style={{
                         marginLeft: 6,
                         background: "var(--danger)",
@@ -4805,7 +4805,7 @@ Deine Tennisschule`;
                         fontSize: 11,
                         fontWeight: 700
                       }}>
-                        {registrationRequests.filter(r => r.status === "neu").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length}
+                        {registrationRequests.filter(r => r.status !== "erledigt").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length}
                       </span>
                     )}
                   </>
@@ -7113,7 +7113,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         onClick={() => setFormulareTab("anmeldung")}
                       >
                         Anmeldung
-                        {registrationRequests.filter(r => r.status === "neu").length > 0 && (
+                        {registrationRequests.filter(r => r.status !== "erledigt").length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "var(--danger)",
@@ -7126,7 +7126,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             justifyContent: "center",
                             fontSize: 11
                           }}>
-                            {registrationRequests.filter(r => r.status === "neu").length}
+                            {registrationRequests.filter(r => r.status !== "erledigt").length}
                           </span>
                         )}
                       </button>
