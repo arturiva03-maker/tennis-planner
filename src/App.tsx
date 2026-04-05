@@ -9253,11 +9253,16 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             ((t.trainerId || defaultTrainerId) === tr.id ||
                               vertretungen.some(v => v.trainingId === t.id && v.vertretungTrainerId === tr.id))
                           );
-                        }).map((tr) => (
-                          <option key={tr.id} value={tr.id}>
-                            {tr.name}
-                          </option>
-                        ))}
+                        }).map((tr) => {
+                          const honorarDone = !!trainerMonthSettled[trainerMonthSettledKey(abrechnungMonat, tr.id)];
+                          const barDone = !!trainerBarSettled[trainerBarSettledKey(abrechnungMonat, tr.id)];
+                          const fullySettled = honorarDone && barDone;
+                          return (
+                            <option key={tr.id} value={tr.id}>
+                              {fullySettled ? "\u2713 " : ""}{tr.name}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   )}
