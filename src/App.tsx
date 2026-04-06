@@ -1013,6 +1013,7 @@ export default function App() {
   const [newsletterPlayerSearch, setNewsletterPlayerSearch] = useState("");
   const [newsletterExcludedPlayers, setNewsletterExcludedPlayers] = useState<string[]>([]);
   const [newsletterExtraEmails, setNewsletterExtraEmails] = useState<{email: string, name: string}[]>([]);
+  const [newsletterAbsender, setNewsletterAbsender] = useState<"Artur" | "Zlatan">("Artur");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
   const [spieler, setSpieler] = useState<Spieler[]>(initial.state.spieler);
@@ -9114,7 +9115,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, color: "var(--text-muted, #6b7280)" }}>
-                        <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße,\nArtur,\nTennisschule A bis Z"}</div>
+                        <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße\n"}<select
+                          value={newsletterAbsender}
+                          onChange={(e) => setNewsletterAbsender(e.target.value as "Artur" | "Zlatan")}
+                          style={{ fontSize: 13, padding: "2px 4px", margin: "2px 0" }}
+                        >
+                          <option value="Artur">Artur</option>
+                          <option value="Zlatan">Zlatan</option>
+                        </select>{"\nTennisschule A bis Z"}</div>
                         <img src="/logo.png" alt="Tennisschule A bis Z" style={{ width: 120, marginTop: 8, borderRadius: 6 }} />
                       </div>
                     </div>
@@ -9155,8 +9163,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               body: JSON.stringify({
                                 to: allEmails,
                                 subject: newsletterSubject.trim(),
-                                body: newsletterBody.trim() + "\n\nSportliche Grüße,\nArtur,\nTennisschule A bis Z",
-                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße,<br>Artur,<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
+                                body: newsletterBody.trim() + `\n\nSportliche Grüße\n${newsletterAbsender}\nTennisschule A bis Z`,
+                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße<br>${newsletterAbsender}<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
                                 fromName: "Tennisschule A bis Z"
                               })
                             });
