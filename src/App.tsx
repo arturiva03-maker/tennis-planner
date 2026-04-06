@@ -9114,7 +9114,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, color: "var(--text-muted, #6b7280)" }}>
-                        <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße\nTennisschule A bis Z"}</div>
+                        <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße,\nArtur,\nTennisschule A bis Z"}</div>
                         <img src="/logo.png" alt="Tennisschule A bis Z" style={{ width: 120, marginTop: 8, borderRadius: 6 }} />
                       </div>
                     </div>
@@ -9155,8 +9155,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               body: JSON.stringify({
                                 to: allEmails,
                                 subject: newsletterSubject.trim(),
-                                body: newsletterBody.trim() + "\n\nSportliche Grüße\nTennisschule A bis Z",
-                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
+                                body: newsletterBody.trim() + "\n\nSportliche Grüße,\nArtur,\nTennisschule A bis Z",
+                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße,<br>Artur,<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
                                 fromName: "Tennisschule A bis Z"
                               })
                             });
