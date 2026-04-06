@@ -8824,6 +8824,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   onClick={() => {
                                     setNewsletterSelectedPlayers(prev => [...prev, s.id]);
                                     setNewsletterPlayerSearch("");
+                                    setNewsletterLabelFilter("keine");
                                   }}
                                   onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
                                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
