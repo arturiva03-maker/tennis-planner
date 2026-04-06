@@ -8987,7 +8987,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           borderRadius: 8,
                           fontSize: 14
                         }}>
-                          {getNewsletterRecipients().length} Empfänger
+                          {getNewsletterRecipients().length + newsletterExtraEmails.length} Empfänger
                         </span>
                       </div>
                     </div>
@@ -9001,7 +9001,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         marginBottom: 12
                       }}>
                         <label style={{ margin: 0 }}>
-                          Empfänger-Vorschau ({getNewsletterRecipients().length})
+                          Empfänger-Vorschau ({getNewsletterRecipients().length + newsletterExtraEmails.length})
                         </label>
                         {newsletterExcludedPlayers.length > 0 && (
                           <button
