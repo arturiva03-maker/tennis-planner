@@ -9113,8 +9113,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         placeholder="Ihre Nachricht hier eingeben..."
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
-                      <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, whiteSpace: "pre-wrap", color: "var(--text-muted, #6b7280)" }}>
-                        {"Sportliche Grüße\nTennisschule A bis Z"}
+                      <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, color: "var(--text-muted, #6b7280)" }}>
+                        <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße\nTennisschule A bis Z"}</div>
+                        <img src="/logo.png" alt="Tennisschule A bis Z" style={{ width: 120, marginTop: 8, borderRadius: 6 }} />
                       </div>
                     </div>
 
@@ -9155,7 +9156,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 to: allEmails,
                                 subject: newsletterSubject.trim(),
                                 body: newsletterBody.trim() + "\n\nSportliche Grüße\nTennisschule A bis Z",
-                                html: (newsletterBody.trim() + "\n\nSportliche Grüße\nTennisschule A bis Z").replace(/\n/g, "<br>"),
+                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
                                 fromName: "Tennisschule A bis Z"
                               })
                             });
