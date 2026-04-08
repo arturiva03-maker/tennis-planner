@@ -5956,8 +5956,7 @@ Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
-Voraussichtliches Startdatum: ${startdatumFormatted}
-Das genaue Startdatum ist wetterabhängig, da die Plätze erst fest werden müssen. Sollte sich das Datum ändern, erhältst du rechtzeitig eine E-Mail.
+Startdatum: ${startdatumFormatted}
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
 ${sepaLink}
