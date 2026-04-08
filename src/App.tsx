@@ -1122,12 +1122,25 @@ export default function App() {
   // Newsletter: Finale Empfängerliste berechnen
   const getNewsletterRecipients = useCallback(() => {
     // Label-gefilterte Spieler
-    const labelFiltered = newsletterLabelFilter === "keine"
-      ? []
-      : spieler.filter(s =>
-          s.kontaktEmail &&
-          (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
-        );
+    let labelFiltered: Spieler[];
+    if (newsletterLabelFilter === "keine") {
+      labelFiltered = [];
+    } else if (newsletterLabelFilter === "aktive_wedding" || newsletterLabelFilter === "aktive_britz") {
+      const anlage = newsletterLabelFilter === "aktive_wedding" ? "Wedding" : "Britz";
+      const today = new Date().toISOString().slice(0, 10);
+      const aktiveSpielerIds = new Set<string>();
+      trainings.forEach(t => {
+        if (t.datum >= today && t.status !== "abgesagt" && (!t.anlage || t.anlage === anlage)) {
+          t.spielerIds.forEach(id => aktiveSpielerIds.add(id));
+        }
+      });
+      labelFiltered = spieler.filter(s => s.kontaktEmail && aktiveSpielerIds.has(s.id));
+    } else {
+      labelFiltered = spieler.filter(s =>
+        s.kontaktEmail &&
+        (newsletterLabelFilter === "alle" || s.labels?.includes(newsletterLabelFilter))
+      );
+    }
 
     // Manuell ausgewählte Spieler
     const selectedPlayers = spieler.filter(s =>
@@ -1146,7 +1159,7 @@ export default function App() {
     });
 
     return Array.from(recipientMap.values());
-  }, [spieler, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
+  }, [spieler, trainings, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
 
   // Undo nach 60 Sekunden automatisch entfernen
   useEffect(() => {
@@ -8975,6 +8988,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         >
                           <option value="alle">Alle Spieler mit E-Mail</option>
                           <option value="keine">Keine (nur ausgewählte Spieler)</option>
+                          <option value="aktive_wedding">Aktive Spieler – Wedding</option>
+                          <option value="aktive_britz">Aktive Spieler – Britz</option>
                           {allLabels.map((label) => (
                             <option key={label} value={label}>{label}</option>
                           ))}
