@@ -7186,7 +7186,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         onClick={() => setFormulareTab("probetraining")}
                       >
                         Probetraining (pw)
-                        {probetrainingAnfragen.filter(a => a.status === "neu").length > 0 && (
+                        {probetrainingAnfragen.filter(a => a.status === "offen").length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "#f59e0b",
@@ -7196,7 +7196,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             fontSize: 11,
                             fontWeight: 600
                           }}>
-                            {probetrainingAnfragen.filter(a => a.status === "neu").length}
+                            {probetrainingAnfragen.filter(a => a.status === "offen").length}
                           </span>
                         )}
                       </button>
