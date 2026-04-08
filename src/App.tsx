@@ -1287,7 +1287,7 @@ export default function App() {
   const [probetrainingAnlageFilter, setProbetrainingAnlageFilter] = useState<"alle" | "Wedding" | "Britz">("alle");
   const [probetrainingNameSuche, setProbetrainingNameSuche] = useState("");
   const [probetrainingTagFilter, setProbetrainingTagFilter] = useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
-  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("offen");
+  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("neu");
 
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
