@@ -8440,8 +8440,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
-                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
+                              if (probetrainingStatusFilter !== "alle" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             });
                             const withEmail = filtered.filter(a => a.email);
@@ -8493,8 +8492,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
-                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
+                              if (probetrainingStatusFilter !== "alle" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             }).length === 0 ? (
                               <p className="muted">Keine Anfragen für diesen Filter.</p>
@@ -8505,8 +8503,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 const tagWert = (a.verfuegbarkeit as Record<string, string>)[probetrainingTagFilter];
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
-                              if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
+                              if (probetrainingStatusFilter !== "alle" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             }).map((anfrage) => (
                               <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedProbetrainingId === anfrage.id ? undefined : "8px 12px" }}>
