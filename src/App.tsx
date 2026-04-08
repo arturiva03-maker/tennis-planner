@@ -8424,7 +8424,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               >
                                 <option value="alle">Alle</option>
                                 <option value="offen">Offen</option>
-                                <option value="kontaktiert">Kontaktiert</option>
                                 <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                 <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                 <option value="erledigt">Erledigt</option>
@@ -8626,7 +8625,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             padding: "4px 10px"
                                           }}
                                         >
-                                          {anfrage.status === "kontaktiert" || anfrage.status === "neu" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet / Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
+                                          {anfrage.status === "geantwortet" ? "Geantwortet / Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : anfrage.status === "erledigt" ? "Erledigt" : "Offen"}
                                         </span>
                                       </div>
                                     </div>
@@ -8689,6 +8688,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         onChange={(e) => updateProbetrainingStatus(anfrage.id, e.target.value)}
                                         style={{ fontSize: 13, padding: "6px 10px" }}
                                       >
+                                        <option value="offen">Offen</option>
                                         <option value="kontaktiert">Kontaktiert</option>
                                         <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                         <option value="probetraining_ausstehend">Probetraining ausstehend</option>
