@@ -1287,7 +1287,7 @@ export default function App() {
   const [probetrainingAnlageFilter, setProbetrainingAnlageFilter] = useState<"alle" | "Wedding" | "Britz">("alle");
   const [probetrainingNameSuche, setProbetrainingNameSuche] = useState("");
   const [probetrainingTagFilter, setProbetrainingTagFilter] = useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
-  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<"alle" | "offen" | "erledigt">("offen");
+  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("offen");
 
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
@@ -8419,11 +8419,16 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               <label>Status</label>
                               <select
                                 value={probetrainingStatusFilter}
-                                onChange={(e) => setProbetrainingStatusFilter(e.target.value as typeof probetrainingStatusFilter)}
+                                onChange={(e) => setProbetrainingStatusFilter(e.target.value)}
                                 style={{ padding: "4px 8px" }}
                               >
                                 <option value="alle">Alle</option>
                                 <option value="offen">Offen</option>
+                                <option value="neu">Neu</option>
+                                <option value="kontaktiert">Kontaktiert</option>
+                                <option value="geantwortet">Geantwortet</option>
+                                <option value="warte_auf_email">Warte auf E-Mail</option>
+                                <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                 <option value="erledigt">Erledigt</option>
                               </select>
                             </div>
@@ -8439,7 +8444,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
                               if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             });
                             const withEmail = filtered.filter(a => a.email);
@@ -8492,7 +8497,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
                               if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             }).length === 0 ? (
                               <p className="muted">Keine Anfragen für diesen Filter.</p>
@@ -8504,7 +8509,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 if (!tagWert || tagWert === "" || tagWert.toLowerCase() === "nicht verfügbar") return false;
                               }
                               if (probetrainingStatusFilter === "offen" && a.status === "erledigt") return false;
-                              if (probetrainingStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              if (probetrainingStatusFilter !== "alle" && probetrainingStatusFilter !== "offen" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             }).map((anfrage) => (
                               <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedProbetrainingId === anfrage.id ? undefined : "8px 12px" }}>
@@ -8617,13 +8622,13 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <span
                                           className="pill"
                                           style={{
-                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : "var(--warning)",
+                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "geantwortet" ? "#8b5cf6" : anfrage.status === "warte_auf_email" ? "#f59e0b" : anfrage.status === "probetraining_ausstehend" ? "#06b6d4" : "var(--warning)",
                                             color: "white",
                                             fontSize: 12,
                                             padding: "4px 10px"
                                           }}
                                         >
-                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : "Erledigt"}
+                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet" : anfrage.status === "warte_auf_email" ? "Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
                                         </span>
                                       </div>
                                     </div>
@@ -8688,6 +8693,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         <option value="neu">Neu</option>
                                         <option value="kontaktiert">Kontaktiert</option>
+                                        <option value="geantwortet">Geantwortet</option>
+                                        <option value="warte_auf_email">Warte auf E-Mail</option>
+                                        <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                         <option value="erledigt">Erledigt</option>
                                       </select>
                                       <button
