@@ -1287,7 +1287,7 @@ export default function App() {
   const [probetrainingAnlageFilter, setProbetrainingAnlageFilter] = useState<"alle" | "Wedding" | "Britz">("alle");
   const [probetrainingNameSuche, setProbetrainingNameSuche] = useState("");
   const [probetrainingTagFilter, setProbetrainingTagFilter] = useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
-  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("neu");
+  const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("offen");
 
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
@@ -8424,7 +8424,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               >
                                 <option value="alle">Alle</option>
                                 <option value="offen">Offen</option>
-                                <option value="neu">Neu</option>
                                 <option value="kontaktiert">Kontaktiert</option>
                                 <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                 <option value="probetraining_ausstehend">Probetraining ausstehend</option>
@@ -8627,7 +8626,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             padding: "4px 10px"
                                           }}
                                         >
-                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet / Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
+                                          {anfrage.status === "kontaktiert" || anfrage.status === "neu" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet / Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
                                         </span>
                                       </div>
                                     </div>
@@ -8690,7 +8689,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         onChange={(e) => updateProbetrainingStatus(anfrage.id, e.target.value)}
                                         style={{ fontSize: 13, padding: "6px 10px" }}
                                       >
-                                        <option value="neu">Neu</option>
                                         <option value="kontaktiert">Kontaktiert</option>
                                         <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                         <option value="probetraining_ausstehend">Probetraining ausstehend</option>

@@ -368,7 +368,7 @@ ${formData.istVreinsmitglied === "nein" ? "Hinweis: Noch kein Vereinsmitglied." 
           email: formData.email || null,
           telefon: formData.telefon || null,
           verfuegbarkeit: verfuegbarkeitFinal,
-          status: "neu",
+          status: "kontaktiert",
         });
 
       if (dbError) {
