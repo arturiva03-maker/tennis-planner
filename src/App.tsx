@@ -8443,8 +8443,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               if (probetrainingStatusFilter !== "alle" && a.status !== probetrainingStatusFilter) return false;
                               return true;
                             });
-                            const withEmail = filtered.filter(a => a.email);
-                            const allSelected = withEmail.length > 0 && withEmail.every(a => selectedProbetrainingIds.has(a.id));
+                            const allSelected = filtered.length > 0 && filtered.every(a => selectedProbetrainingIds.has(a.id));
                             return (
                               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
                                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
@@ -8455,13 +8454,17 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       if (allSelected) {
                                         setSelectedProbetrainingIds(new Set());
                                       } else {
-                                        setSelectedProbetrainingIds(new Set(withEmail.map(a => a.id)));
+                                        setSelectedProbetrainingIds(new Set(filtered.map(a => a.id)));
                                       }
                                     }}
                                   />
-                                  Alle mit E-Mail auswählen ({withEmail.length})
+                                  Alle auswählen ({filtered.length})
                                 </label>
                                 {selectedProbetrainingIds.size > 0 && (
+                                  <>
+                                  <span className="muted" style={{ fontSize: 13 }}>
+                                    {selectedProbetrainingIds.size} ausgewählt
+                                  </span>
                                   <button
                                     className="btn micro"
                                     style={{ background: "var(--primary)", color: "#fff" }}
@@ -8478,8 +8481,113 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       setVerwaltungTab("newsletter");
                                     }}
                                   >
-                                    Newsletter an {selectedProbetrainingIds.size} Ausgewählte senden
+                                    Newsletter senden
                                   </button>
+                                  <button
+                                    className="btn micro btnGhost"
+                                    onClick={async () => {
+                                      const selectedAnfragen = probetrainingAnfragen.filter(a => selectedProbetrainingIds.has(a.id));
+                                      if (selectedAnfragen.length === 0) return;
+
+                                      const generateProbeCardHTML = (a: ProbetrainingAnfrage) => {
+                                        const spielstandText = a.spielstand === "anfaenger" ? "Anfänger" : a.spielstand === "fortgeschritten" ? "Fortgeschritten" : "Wettkampf";
+                                        const trainingsartText = a.trainingsart === "einzel" ? "Einzeltraining" : a.trainingsart === "gruppe" ? "Gruppentraining" : a.trainingsart === "beides" ? "Beides" : "-";
+                                        const verfuegbarkeitRows = a.verfuegbarkeit ? ["montag","dienstag","mittwoch","donnerstag","freitag","samstag","sonntag"]
+                                          .filter(tag => {
+                                            const zeit = (a.verfuegbarkeit as Record<string, string>)?.[tag];
+                                            return zeit && zeit !== "nicht verfügbar";
+                                          })
+                                          .map(tag => `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">${tag.slice(0,2).toUpperCase()}</td><td style="padding:1px 0;">${escapeHtml((a.verfuegbarkeit as Record<string, string>)[tag])}</td></tr>`)
+                                          .join("") : "";
+
+                                        return `
+                                          <div class="card">
+                                            <div class="header">
+                                              <p class="name">${escapeHtml(a.vorname)} ${escapeHtml(a.nachname)}</p>
+                                              ${a.anlage ? `<span class="anlage" style="background:${a.anlage === "Britz" ? "#f59e0b" : "#2563eb"};">${escapeHtml(a.anlage)}</span>` : ""}
+                                            </div>
+                                            <div class="info-grid">
+                                              <div class="info-item"><label>Telefon</label><span>${a.telefon ? escapeHtml(a.telefon) : "-"}</span></div>
+                                              <div class="info-item"><label>E-Mail</label><span style="font-size:7pt;word-break:break-all;">${a.email ? escapeHtml(a.email) : "-"}</span></div>
+                                              <div class="info-item"><label>Alter</label><span>${a.alter} J.</span></div>
+                                              <div class="info-item"><label>Spielstand</label><span>${spielstandText}</span></div>
+                                              <div class="info-item"><label>Art</label><span>${trainingsartText}</span></div>
+                                              <div class="info-item"><label>Mitglied</label><span>${a.ist_vereinsmitglied ? "Ja" : "Nein"}</span></div>
+                                            </div>
+                                            ${a.spielstaerke_beschreibung ? `<div class="nachricht"><label>Beschreibung</label><span>${escapeHtml(a.spielstaerke_beschreibung)}</span></div>` : ""}
+                                            ${verfuegbarkeitRows ? `<div class="verfuegbarkeit"><h4>Verfügbarkeit</h4><table>${verfuegbarkeitRows}</table></div>` : ""}
+                                            <div class="footer">Anfrage vom ${new Date(a.created_at).toLocaleDateString("de-DE")}</div>
+                                          </div>
+                                        `;
+                                      };
+
+                                      const cardGroups: typeof selectedAnfragen[] = [];
+                                      for (let i = 0; i < selectedAnfragen.length; i += 4) {
+                                        cardGroups.push(selectedAnfragen.slice(i, i + 4));
+                                      }
+
+                                      const cardsHTML = `
+                                        <div style="font-family: Arial, sans-serif;">
+                                          <style>
+                                            .print-page {
+                                              width: 190mm;
+                                              display: grid;
+                                              grid-template-columns: 1fr 1fr;
+                                              gap: 4mm;
+                                              margin-bottom: 10mm;
+                                            }
+                                            .card {
+                                              border: 1px solid #ccc;
+                                              border-radius: 3px;
+                                              padding: 3mm;
+                                              box-sizing: border-box;
+                                              font-size: 8pt;
+                                              height: 134mm;
+                                              overflow: hidden;
+                                            }
+                                            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #ddd; padding-bottom: 1.5mm; margin-bottom: 1.5mm; }
+                                            .name { font-size: 10pt; font-weight: bold; margin: 0; }
+                                            .anlage { color: white; padding: 1px 5px; border-radius: 2px; font-size: 7pt; }
+                                            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; margin-bottom: 1.5mm; }
+                                            .info-item label { font-size: 6pt; color: #666; display: block; }
+                                            .info-item span { font-size: 8pt; }
+                                            .verfuegbarkeit { margin-top: 1mm; }
+                                            .verfuegbarkeit h4 { font-size: 7pt; margin: 0 0 0.5mm 0; color: #666; }
+                                            .verfuegbarkeit table { font-size: 7pt; border-collapse: collapse; }
+                                            .nachricht { margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px dashed #ddd; }
+                                            .nachricht label { font-size: 6pt; color: #666; display: block; margin-bottom: 0.5mm; }
+                                            .nachricht span { font-size: 7pt; display: block; white-space: pre-wrap; }
+                                            .footer { font-size: 6pt; color: #999; margin-top: 1mm; text-align: right; }
+                                          </style>
+                                          ${cardGroups.map(group => `
+                                            <div class="print-page">
+                                              ${group.map(generateProbeCardHTML).join("")}
+                                            </div>
+                                          `).join("")}
+                                        </div>
+                                      `;
+
+                                      const html2pdf = (await import('html2pdf.js')).default;
+                                      const container = document.createElement('div');
+                                      container.innerHTML = cardsHTML;
+                                      document.body.appendChild(container);
+
+                                      await html2pdf()
+                                        .set({
+                                          margin: 10,
+                                          filename: `Probetraining_${new Date().toISOString().split('T')[0]}.pdf`,
+                                          html2canvas: { scale: 2 },
+                                          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+                                        })
+                                        .from(container.firstElementChild as HTMLElement)
+                                        .save();
+
+                                      document.body.removeChild(container);
+                                    }}
+                                  >
+                                    Ausgewählte drucken
+                                  </button>
+                                  </>
                                 )}
                               </div>
                             );
@@ -8512,22 +8620,20 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   onClick={() => setExpandedProbetrainingId(expandedProbetrainingId === anfrage.id ? null : anfrage.id)}
                                 >
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    {anfrage.email && (
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedProbetrainingIds.has(anfrage.id)}
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={() => {
-                                          setSelectedProbetrainingIds(prev => {
-                                            const next = new Set(prev);
-                                            if (next.has(anfrage.id)) next.delete(anfrage.id);
-                                            else next.add(anfrage.id);
-                                            return next;
-                                          });
-                                        }}
-                                        style={{ cursor: "pointer" }}
-                                      />
-                                    )}
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedProbetrainingIds.has(anfrage.id)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={() => {
+                                        setSelectedProbetrainingIds(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(anfrage.id)) next.delete(anfrage.id);
+                                          else next.add(anfrage.id);
+                                          return next;
+                                        });
+                                      }}
+                                      style={{ cursor: "pointer" }}
+                                    />
                                     <span style={{ fontWeight: 500 }}>
                                       {anfrage.vorname} {anfrage.nachname}
                                     </span>
