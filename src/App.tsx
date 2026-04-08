@@ -9129,6 +9129,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         placeholder="Ihre Nachricht hier eingeben..."
                         style={{ fontFamily: "inherit", resize: "vertical" }}
                       />
+                      <div style={{ marginTop: 4, padding: "6px 10px", background: "var(--bg-inset)", borderRadius: 4, fontSize: 12, color: "var(--text-muted)" }}>
+                        Tipp: <code>{"{NAME}"}</code> wird automatisch durch den Vornamen des Empfängers ersetzt.
+                      </div>
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg-subtle, #f3f4f6)", borderRadius: 6, fontSize: 13, color: "var(--text-muted, #6b7280)" }}>
                         <div style={{ whiteSpace: "pre-wrap" }}>{"Sportliche Grüße\n"}<select
                           value={newsletterAbsender}
@@ -9148,20 +9151,28 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim() || (getNewsletterRecipients().length === 0 && newsletterExtraEmails.length === 0)}
                         onClick={async () => {
                           const recipients = getNewsletterRecipients();
-                          const allEmails = [
-                            ...recipients.flatMap(r => [
-                              r.kontaktEmail,
-                              ...(r.zusaetzlicheEmails || [])
-                            ].filter(Boolean)),
-                            ...newsletterExtraEmails.map(e => e.email)
+                          const extraEmails = newsletterExtraEmails;
+
+                          // Empfänger-Liste mit Name + Emails aufbauen
+                          const recipientList: { name: string; emails: string[] }[] = [
+                            ...recipients.map(r => ({
+                              name: r.vorname,
+                              emails: [r.kontaktEmail, ...(r.zusaetzlicheEmails || [])].filter(Boolean) as string[]
+                            })),
+                            ...extraEmails.map(e => ({
+                              name: e.name.split(" ")[0],
+                              emails: [e.email]
+                            }))
                           ];
 
-                          if (allEmails.length === 0) {
+                          const totalEmails = recipientList.reduce((sum, r) => sum + r.emails.length, 0);
+
+                          if (totalEmails === 0) {
                             setNewsletterError("Keine Empfänger mit E-Mail-Adresse gefunden.");
                             return;
                           }
 
-                          if (!window.confirm(`Newsletter an ${allEmails.length} Empfänger senden?`)) {
+                          if (!window.confirm(`Newsletter an ${totalEmails} Empfänger senden?`)) {
                             return;
                           }
 
@@ -9170,23 +9181,47 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           setNewsletterSuccess(false);
 
                           try {
-                            const response = await fetch("/api/send-newsletter", {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                to: allEmails,
-                                subject: newsletterSubject.trim(),
-                                body: newsletterBody.trim() + `\n\nSportliche Grüße\n${newsletterAbsender}\nTennisschule A bis Z`,
-                                html: newsletterBody.trim().replace(/\n/g, "<br>") + `<br><br>Sportliche Grüße<br>${newsletterAbsender}<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`,
-                                fromName: "Tennisschule A bis Z"
-                              })
-                            });
+                            const bodyTemplate = newsletterBody.trim();
+                            const footer = `\n\nSportliche Grüße\n${newsletterAbsender}\nTennisschule A bis Z`;
+                            const htmlFooter = `<br><br>Sportliche Grüße<br>${newsletterAbsender}<br>Tennisschule A bis Z<br><br><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:180px;height:auto;border-radius:8px;" />`;
+                            const hasPlaceholder = bodyTemplate.includes("{NAME}");
 
-                            if (!response.ok) {
-                              const error = await response.json();
-                              throw new Error(error.message || "Fehler beim Versenden");
+                            let totalSent = 0;
+                            let totalFailed = 0;
+                            const allErrors: string[] = [];
+
+                            for (const recipient of recipientList) {
+                              const personalBody = hasPlaceholder
+                                ? bodyTemplate.replace(/\{NAME\}/g, recipient.name)
+                                : bodyTemplate;
+                              const personalHtml = personalBody.replace(/\n/g, "<br>") + htmlFooter;
+
+                              const response = await fetch("/api/send-newsletter", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  to: recipient.emails,
+                                  subject: newsletterSubject.trim(),
+                                  body: personalBody + footer,
+                                  html: personalHtml,
+                                  fromName: "Tennisschule A bis Z"
+                                })
+                              });
+
+                              if (response.ok) {
+                                const result = await response.json();
+                                totalSent += result.sent || 0;
+                                totalFailed += result.failed || 0;
+                                if (result.errors) allErrors.push(...result.errors);
+                              } else {
+                                const error = await response.json();
+                                totalFailed += recipient.emails.length;
+                                allErrors.push(error.message || "Fehler beim Versenden");
+                              }
+                            }
+
+                            if (totalFailed > 0 && totalSent === 0) {
+                              throw new Error(allErrors.join(", "));
                             }
 
                             setNewsletterSuccess(true);
