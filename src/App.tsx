@@ -8426,8 +8426,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 <option value="offen">Offen</option>
                                 <option value="neu">Neu</option>
                                 <option value="kontaktiert">Kontaktiert</option>
-                                <option value="geantwortet">Geantwortet</option>
-                                <option value="warte_auf_email">Warte auf E-Mail</option>
+                                <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                 <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                 <option value="erledigt">Erledigt</option>
                               </select>
@@ -8622,13 +8621,13 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <span
                                           className="pill"
                                           style={{
-                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "geantwortet" ? "#8b5cf6" : anfrage.status === "warte_auf_email" ? "#f59e0b" : anfrage.status === "probetraining_ausstehend" ? "#06b6d4" : "var(--warning)",
+                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "geantwortet" ? "#8b5cf6" : anfrage.status === "probetraining_ausstehend" ? "#06b6d4" : "var(--warning)",
                                             color: "white",
                                             fontSize: 12,
                                             padding: "4px 10px"
                                           }}
                                         >
-                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet" : anfrage.status === "warte_auf_email" ? "Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
+                                          {anfrage.status === "neu" ? "Neu" : anfrage.status === "kontaktiert" ? "Kontaktiert" : anfrage.status === "geantwortet" ? "Geantwortet / Warte auf E-Mail" : anfrage.status === "probetraining_ausstehend" ? "Probetraining ausstehend" : "Erledigt"}
                                         </span>
                                       </div>
                                     </div>
@@ -8693,8 +8692,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         <option value="neu">Neu</option>
                                         <option value="kontaktiert">Kontaktiert</option>
-                                        <option value="geantwortet">Geantwortet</option>
-                                        <option value="warte_auf_email">Warte auf E-Mail</option>
+                                        <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                         <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                         <option value="erledigt">Erledigt</option>
                                       </select>
