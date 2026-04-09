@@ -13405,15 +13405,30 @@ Deine Tennisschule`;
 
       {/* PDF-Export Modal mit Vorschau */}
       {showPdfExportModal && (() => {
-        const filteredSpieler = spieler
-          .filter((s) => {
-            if (pdfExportLabelFilter === "ohne") {
-              return !s.labels || s.labels.length === 0;
-            } else if (pdfExportLabelFilter !== "alle") {
-              return s.labels?.includes(pdfExportLabelFilter);
-            }
-            return true;
-          })
+        const filteredSpieler = (() => {
+          let baseFiltered: Spieler[];
+          if (pdfExportLabelFilter === "aktive_wedding" || pdfExportLabelFilter === "aktive_britz") {
+            const anlage = pdfExportLabelFilter === "aktive_wedding" ? "Wedding" : "Britz";
+            const today = new Date().toISOString().slice(0, 10);
+            const aktiveSpielerIds = new Set<string>();
+            trainings.forEach(t => {
+              if (t.datum >= today && t.status !== "abgesagt" && (!t.anlage || t.anlage === anlage)) {
+                t.spielerIds.forEach(id => aktiveSpielerIds.add(id));
+              }
+            });
+            baseFiltered = spieler.filter(s => aktiveSpielerIds.has(s.id));
+          } else {
+            baseFiltered = spieler.filter((s) => {
+              if (pdfExportLabelFilter === "ohne") {
+                return !s.labels || s.labels.length === 0;
+              } else if (pdfExportLabelFilter !== "alle") {
+                return s.labels?.includes(pdfExportLabelFilter);
+              }
+              return true;
+            });
+          }
+          return baseFiltered;
+        })()
           .filter((s) => !pdfExportExcluded.has(s.id))
           .sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
 
@@ -13449,6 +13464,8 @@ Deine Tennisschule`;
                   >
                     <option value="alle">Alle Spieler</option>
                     <option value="ohne">Ohne Label</option>
+                    <option value="aktive_wedding">Aktive Spieler – Wedding</option>
+                    <option value="aktive_britz">Aktive Spieler – Britz</option>
                     {allLabels.map((label) => (
                       <option key={label} value={label}>{label}</option>
                     ))}
@@ -13472,6 +13489,7 @@ Deine Tennisschule`;
                       <th style={{ padding: "8px 12px", textAlign: "left", width: 40 }}>#</th>
                       <th style={{ padding: "8px 12px", textAlign: "left" }}>Vorname</th>
                       <th style={{ padding: "8px 12px", textAlign: "left" }}>Nachname</th>
+                      <th style={{ padding: "8px 12px", textAlign: "left" }}>E-Mail</th>
                       <th style={{ padding: "8px 12px", textAlign: "center", width: 80 }}>Entfernen</th>
                     </tr>
                   </thead>
@@ -13481,6 +13499,7 @@ Deine Tennisschule`;
                         <td style={{ padding: "8px 12px" }}>{idx + 1}</td>
                         <td style={{ padding: "8px 12px" }}>{s.vorname}</td>
                         <td style={{ padding: "8px 12px" }}>{s.nachname || ""}</td>
+                        <td style={{ padding: "8px 12px", fontSize: 13, color: "#555" }}>{s.kontaktEmail || ""}</td>
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
                           <button
                             className="btn btnGhost"
@@ -13538,13 +13557,14 @@ Deine Tennisschule`;
                         </style>
                       </head>
                       <body>
-                        <h1>Spielerliste (${filteredSpieler.length} Spieler)${pdfExportLabelFilter !== "alle" ? ` - ${pdfExportLabelFilter === "ohne" ? "Ohne Label" : pdfExportLabelFilter}` : ""}</h1>
+                        <h1>Spielerliste (${filteredSpieler.length} Spieler)${pdfExportLabelFilter !== "alle" ? ` - ${pdfExportLabelFilter === "ohne" ? "Ohne Label" : pdfExportLabelFilter === "aktive_wedding" ? "Aktive Spieler – Wedding" : pdfExportLabelFilter === "aktive_britz" ? "Aktive Spieler – Britz" : pdfExportLabelFilter}` : ""}</h1>
                         <table>
                           <thead>
                             <tr>
                               <th style="width: 40px;">#</th>
                               <th>Vorname</th>
                               <th>Nachname</th>
+                              <th>E-Mail</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -13553,6 +13573,7 @@ Deine Tennisschule`;
                                 <td>${idx + 1}</td>
                                 <td>${escapeHtml(s.vorname)}</td>
                                 <td>${escapeHtml(s.nachname) || ""}</td>
+                                <td>${escapeHtml(s.kontaktEmail) || ""}</td>
                               </tr>
                             `).join("")}
                           </tbody>
