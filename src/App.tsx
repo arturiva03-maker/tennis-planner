@@ -8722,7 +8722,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <span
                                           className="pill"
                                           style={{
-                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "kontaktiert" ? "#3b82f6" : anfrage.status === "geantwortet" ? "#8b5cf6" : anfrage.status === "probetraining_ausstehend" ? "#06b6d4" : "var(--warning)",
+                                            background: anfrage.status === "erledigt" ? "var(--success)" : anfrage.status === "geantwortet" ? "#8b5cf6" : anfrage.status === "probetraining_ausstehend" ? "#06b6d4" : "var(--warning)",
                                             color: "white",
                                             fontSize: 12,
                                             padding: "4px 10px"
@@ -8792,7 +8792,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         style={{ fontSize: 13, padding: "6px 10px" }}
                                       >
                                         <option value="offen">Offen</option>
-                                        <option value="kontaktiert">Kontaktiert</option>
                                         <option value="geantwortet">Geantwortet / Warte auf E-Mail</option>
                                         <option value="probetraining_ausstehend">Probetraining ausstehend</option>
                                         <option value="erledigt">Erledigt</option>
