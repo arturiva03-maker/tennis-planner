@@ -6476,6 +6476,16 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           >
                             Excel exportieren
                           </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setPdfExportLabelFilter("alle");
+                              setPdfExportExcluded(new Set());
+                              setShowPdfExportModal(true);
+                            }}
+                          >
+                            PDF exportieren
+                          </button>
                         </>
                       )}
                     </div>
