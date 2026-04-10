@@ -66,7 +66,7 @@ type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
 type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
-type FormulareTab = "anmeldung" | "sepa" | "tenniscamp" | "probetraining";
+type FormulareTab = "anmeldung" | "sepa" | "tenniscamp" | "probetraining" | "kennlerntennis";
 
 type Verfuegbarkeit = {
   montag: string;
@@ -7210,6 +7210,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           </span>
                         )}
                       </button>
+                      <button
+                        className={`tabBtn ${formulareTab === "kennlerntennis" ? "tabBtnActive" : ""}`}
+                        onClick={() => setFormulareTab("kennlerntennis")}
+                      >
+                        Kennlerntennis
+                      </button>
                     </div>
 
                     {/* Anmeldung Tab */}
@@ -8853,6 +8859,39 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           </ul>
                           </>
                         )}
+                      </>
+                    )}
+
+                    {/* Kennlerntennis Tab */}
+                    {formulareTab === "kennlerntennis" && (
+                      <>
+                        <div style={{ marginBottom: 16 }}>
+                          <p className="muted" style={{ marginBottom: 12 }}>
+                            <strong>Kennlerntennis-Formular:</strong>{" "}
+                            <code style={{
+                              background: "var(--bg-inset)",
+                              padding: "4px 8px",
+                              borderRadius: 4,
+                              fontSize: 13,
+                            }}>
+                              {window.location.origin}/kennlerntennis
+                            </code>
+                            <button
+                              className="btn micro btnGhost"
+                              style={{ marginLeft: 8 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/kennlerntennis`
+                                );
+                              }}
+                            >
+                              Kopieren
+                            </button>
+                          </p>
+                          <p className="muted" style={{ fontSize: 13 }}>
+                            Teilen Sie diesen Link mit Interessenten, um eine Kennlerntennis-Anfrage zu erhalten.
+                          </p>
+                        </div>
                       </>
                     )}
                 </div>
