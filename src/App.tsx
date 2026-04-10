@@ -157,6 +157,22 @@ type ProbetrainingAnfrage = {
   created_at: string;
 };
 
+type KennlerntennisAnfrage = {
+  id: string;
+  account_id: string;
+  vorname: string;
+  nachname: string;
+  alter: number;
+  email: string;
+  telefon: string;
+  spielstand: string;
+  spielstaerke_beschreibung?: string | null;
+  ist_vereinsmitglied: boolean;
+  interesse_weiterfuehrend: boolean;
+  status: string;
+  created_at: string;
+};
+
 type Training = {
   id: string;
   trainerId?: string;
@@ -1289,6 +1305,11 @@ export default function App() {
   const [probetrainingTagFilter, setProbetrainingTagFilter] = useState<"alle" | "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag">("alle");
   const [probetrainingStatusFilter, setProbetrainingStatusFilter] = useState<string>("offen");
 
+  const [kennlerntennisAnfragen, setKennlerntennisAnfragen] = useState<KennlerntennisAnfrage[]>([]);
+  const [loadingKennlerntennisAnfragen, setLoadingKennlerntennisAnfragen] = useState(false);
+  const [expandedKennlerntennisId, setExpandedKennlerntennisId] = useState<string | null>(null);
+  const [kennlerntennisStatusFilter, setKennlerntennisStatusFilter] = useState<string>("offen");
+
   // Spontane Stunden Form
   const [spontanDatum, setSpontanDatum] = useState(todayISO());
   const [spontanVon, setSpontanVon] = useState("14:00");
@@ -1856,6 +1877,7 @@ export default function App() {
       fetchSepaMandates();
       fetchTenniscampAnmeldungen();
       fetchProbetrainingAnfragen();
+      fetchKennlerntennisAnfragen();
     }
     if (tab === "weiteres" && weiteresTabs === "spontan" && authUser?.accountId) {
       fetchSpontaneStunden();
@@ -2622,6 +2644,63 @@ export default function App() {
       fetchProbetrainingAnfragen();
     } catch (err) {
       console.error("Error deleting Probetraining-Anfrage:", err);
+    }
+  }
+
+  async function fetchKennlerntennisAnfragen() {
+    if (!authUser?.accountId) return;
+    setLoadingKennlerntennisAnfragen(true);
+    try {
+      const { data, error } = await supabase
+        .from("kennlerntennis_anfragen")
+        .select("*")
+        .in("account_id", [authUser.accountId, "public"])
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching Kennlerntennis-Anfragen:", error);
+        return;
+      }
+      setKennlerntennisAnfragen(data || []);
+    } catch (err) {
+      console.error("Error fetching Kennlerntennis-Anfragen:", err);
+    } finally {
+      setLoadingKennlerntennisAnfragen(false);
+    }
+  }
+
+  async function updateKennlerntennisStatus(anfragenId: string, newStatus: string) {
+    try {
+      const { error } = await supabase
+        .from("kennlerntennis_anfragen")
+        .update({ status: newStatus })
+        .eq("id", anfragenId);
+
+      if (error) {
+        console.error("Error updating Kennlerntennis status:", error);
+        return;
+      }
+      fetchKennlerntennisAnfragen();
+    } catch (err) {
+      console.error("Error updating Kennlerntennis status:", err);
+    }
+  }
+
+  async function deleteKennlerntennisAnfrage(anfragenId: string) {
+    if (!window.confirm("Möchten Sie diese Anfrage wirklich löschen?")) return;
+    try {
+      const { error } = await supabase
+        .from("kennlerntennis_anfragen")
+        .delete()
+        .eq("id", anfragenId);
+
+      if (error) {
+        console.error("Error deleting Kennlerntennis-Anfrage:", error);
+        return;
+      }
+      fetchKennlerntennisAnfragen();
+    } catch (err) {
+      console.error("Error deleting Kennlerntennis-Anfrage:", err);
     }
   }
 
@@ -7215,6 +7294,19 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         onClick={() => setFormulareTab("kennlerntennis")}
                       >
                         Kennlerntennis
+                        {kennlerntennisAnfragen.filter(a => a.status === "offen").length > 0 && (
+                          <span style={{
+                            marginLeft: 6,
+                            background: "#3b82f6",
+                            color: "#fff",
+                            borderRadius: 10,
+                            padding: "2px 6px",
+                            fontSize: 11,
+                            fontWeight: 600
+                          }}>
+                            {kennlerntennisAnfragen.filter(a => a.status === "offen").length}
+                          </span>
+                        )}
                       </button>
                     </div>
 
@@ -8889,9 +8981,117 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             </button>
                           </p>
                           <p className="muted" style={{ fontSize: 13 }}>
-                            Teilen Sie diesen Link mit Interessenten, um eine Kennlerntennis-Anfrage zu erhalten.
+                            Termin: <strong>31.5. um 16 Uhr</strong>
                           </p>
                         </div>
+
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Status</label>
+                            <select
+                              value={kennlerntennisStatusFilter}
+                              onChange={(e) => setKennlerntennisStatusFilter(e.target.value)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle</option>
+                              <option value="offen">Offen</option>
+                              <option value="erledigt">Erledigt</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {loadingKennlerntennisAnfragen ? (
+                          <p className="muted">Laden...</p>
+                        ) : kennlerntennisAnfragen.length === 0 ? (
+                          <p className="muted">Keine Kennlerntennis-Anfragen vorhanden.</p>
+                        ) : (
+                          <ul className="list">
+                            {kennlerntennisAnfragen
+                              .filter(a => {
+                                if (kennlerntennisStatusFilter === "offen" && a.status === "erledigt") return false;
+                                if (kennlerntennisStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                                return true;
+                              })
+                              .map(anfrage => {
+                                const spielstandText =
+                                  anfrage.spielstand === "anfaenger" ? "Anfänger" :
+                                  anfrage.spielstand === "fortgeschritten" ? "Fortgeschritten" :
+                                  "Turnierspieler";
+                                return (
+                                  <li key={anfrage.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", padding: expandedKennlerntennisId === anfrage.id ? undefined : "8px 12px" }}>
+                                    <div
+                                      style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", width: "100%" }}
+                                      onClick={() => setExpandedKennlerntennisId(expandedKennlerntennisId === anfrage.id ? null : anfrage.id)}
+                                    >
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600 }}>
+                                          {anfrage.vorname} {anfrage.nachname}
+                                          {anfrage.status === "erledigt" && (
+                                            <span style={{
+                                              marginLeft: 8,
+                                              background: "#d1fae5",
+                                              color: "#065f46",
+                                              padding: "2px 8px",
+                                              borderRadius: 10,
+                                              fontSize: 11,
+                                              fontWeight: 600
+                                            }}>Erledigt</span>
+                                          )}
+                                        </div>
+                                        <div className="muted" style={{ fontSize: 12 }}>
+                                          {spielstandText} · {anfrage.alter} Jahre · {new Date(anfrage.created_at).toLocaleDateString("de-DE")}
+                                        </div>
+                                      </div>
+                                      <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedKennlerntennisId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                        ›
+                                      </span>
+                                    </div>
+
+                                    {expandedKennlerntennisId === anfrage.id && (
+                                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 14 }}>
+                                          <div><strong>Vorname:</strong> {anfrage.vorname}</div>
+                                          <div><strong>Nachname:</strong> {anfrage.nachname}</div>
+                                          <div><strong>Alter:</strong> {anfrage.alter}</div>
+                                          <div><strong>Spielstand:</strong> {spielstandText}</div>
+                                          <div><strong>E-Mail:</strong> <a href={`mailto:${anfrage.email}`}>{anfrage.email}</a></div>
+                                          <div><strong>Telefon:</strong> <a href={`tel:${anfrage.telefon}`}>{anfrage.telefon}</a></div>
+                                          <div><strong>Vereinsmitglied:</strong> {anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</div>
+                                          <div><strong>Interesse weiterführendes Training:</strong> {anfrage.interesse_weiterfuehrend ? "Ja" : "Nein"}</div>
+                                        </div>
+                                        {anfrage.spielstaerke_beschreibung && (
+                                          <div style={{ marginTop: 12, fontSize: 14 }}>
+                                            <strong>Beschreibung Spielstärke:</strong>
+                                            <div style={{ marginTop: 4, padding: 8, background: "var(--bg-inset)", borderRadius: 6 }}>
+                                              {anfrage.spielstaerke_beschreibung}
+                                            </div>
+                                          </div>
+                                        )}
+                                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                                          <label style={{ fontSize: 13 }}>Status:</label>
+                                          <select
+                                            value={anfrage.status}
+                                            onChange={(e) => updateKennlerntennisStatus(anfrage.id, e.target.value)}
+                                            style={{ padding: "4px 8px" }}
+                                          >
+                                            <option value="offen">Offen</option>
+                                            <option value="erledigt">Erledigt</option>
+                                          </select>
+                                          <button
+                                            className="btn micro btnGhost"
+                                            style={{ color: "var(--danger)", marginLeft: "auto" }}
+                                            onClick={() => deleteKennlerntennisAnfrage(anfrage.id)}
+                                          >
+                                            Löschen
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                          </ul>
+                        )}
                       </>
                     )}
                 </div>

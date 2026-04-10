@@ -214,7 +214,7 @@ Interesse weiterführendes Training: ${interesseText}`;
           <div className="successIcon">&#10003;</div>
           <h1>Anfrage erfolgreich gesendet!</h1>
           <p className="muted">
-            Vielen Dank für Ihre Kennlerntennis-Anfrage. Wir werden uns in Kürze bei Ihnen melden.
+            Vielen Dank für Ihre Kennlerntennis-Anfrage. Termin: <strong>31.5. um 16 Uhr</strong>.
           </p>
         </div>
       </div>
@@ -225,8 +225,21 @@ Interesse weiterführendes Training: ${interesseText}`;
     <div className="registrationPage weddingTheme">
       <div className="card registrationCard" style={{ maxWidth: 600 }}>
         <h1 style={{ marginBottom: 8 }}>Kennlerntennis</h1>
+        <div style={{
+          background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+          color: "#fff",
+          padding: "14px 18px",
+          borderRadius: 10,
+          marginBottom: 20,
+          textAlign: "center",
+          fontWeight: 600,
+          fontSize: 17,
+          boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
+        }}>
+          Termin: 31.5. um 16 Uhr
+        </div>
         <p className="muted" style={{ marginBottom: 24 }}>
-          Füllen Sie das Formular aus, um ein unverbindliches Kennlerntennis zu vereinbaren.
+          Füllen Sie das Formular aus, um sich unverbindlich zum Kennlerntennis anzumelden.
         </p>
 
         {error && <div className="errorBox">{error}</div>}
