@@ -800,6 +800,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
     vertretungen: parsed?.vertretungen ?? [],
     wirdAbgebucht: parsed?.wirdAbgebucht ?? {},
+    anmeldungAktiv: parsed?.anmeldungAktiv ?? { wedding: false, britz: false },
   };
 }
 
