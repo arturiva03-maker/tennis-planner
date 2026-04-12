@@ -65,7 +65,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter" | "einstellungen";
 type FormulareTab = "anmeldung" | "sepa" | "tenniscamp" | "probetraining" | "kennlerntennis";
 
 type Verfuegbarkeit = {
@@ -248,6 +248,7 @@ type AppState = {
   monthlyAdjustments?: MonthlyAdjustments;
   vertretungen?: Vertretung[];
   wirdAbgebucht?: WirdAbgebuchtMap;
+  anmeldungAktiv?: { wedding: boolean; britz: boolean };
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "formulare" | "abrechnung" | "weiteres";
@@ -1057,6 +1058,9 @@ export default function App() {
   const [wirdAbgebucht, setWirdAbgebucht] = useState<WirdAbgebuchtMap>(
     initial.state.wirdAbgebucht ?? {}
   );
+  const [anmeldungAktiv, setAnmeldungAktiv] = useState<{ wedding: boolean; britz: boolean }>(
+    initial.state.anmeldungAktiv ?? { wedding: false, britz: false }
+  );
   const [vertretungen, setVertretungen] = useState<Vertretung[]>(
     initial.state.vertretungen ?? []
   );
@@ -1450,8 +1454,9 @@ export default function App() {
       monthlyAdjustments,
       vertretungen,
       wirdAbgebucht,
+      anmeldungAktiv,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, anmeldungAktiv]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -1705,6 +1710,7 @@ export default function App() {
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
         setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+        setAnmeldungAktiv(cloud.anmeldungAktiv ?? { wedding: false, britz: false });
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1719,6 +1725,7 @@ export default function App() {
         setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
         setVertretungen(local.state.vertretungen ?? []);
         setWirdAbgebucht(local.state.wirdAbgebucht ?? {});
+        setAnmeldungAktiv(local.state.anmeldungAktiv ?? { wedding: false, britz: false });
       }
 
       setInitialSynced(true);
@@ -1775,6 +1782,7 @@ export default function App() {
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
               setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+              setAnmeldungAktiv(cloud.anmeldungAktiv ?? { wedding: false, britz: false });
             }
           }
         }
@@ -1818,6 +1826,7 @@ export default function App() {
         monthlyAdjustments,
         vertretungen,
         wirdAbgebucht,
+        anmeldungAktiv,
       };
 
       const updatedAt = new Date().toISOString();
@@ -1860,6 +1869,7 @@ export default function App() {
     monthlyAdjustments,
     vertretungen,
     wirdAbgebucht,
+    anmeldungAktiv,
   ]);
 
 
@@ -6283,6 +6293,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                   >
                     Newsletter
                   </button>
+                  <button
+                    className={`tabBtn ${
+                      verwaltungTab === "einstellungen" ? "tabBtnActive" : ""
+                    }`}
+                    onClick={() => setVerwaltungTab("einstellungen")}
+                  >
+                    Einstellungen
+                  </button>
                 </div>
 
                 <div style={{ height: 12 }} />
@@ -9625,6 +9643,39 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         um Newsletter gezielt an bestimmte Gruppen zu senden.
                       </p>
                     )}
+              </div>
+            )}
+
+            {tab === "verwaltung" && !isTrainer && verwaltungTab === "einstellungen" && (
+              <div className="card">
+                <h2>Formulare aktivieren / deaktivieren</h2>
+                <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
+                  Deaktivierte Formulare zeigen Besuchern einen Hinweis, dass die Anmeldung derzeit nicht möglich ist.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={anmeldungAktiv.wedding}
+                      onChange={(e) => setAnmeldungAktiv(prev => ({ ...prev, wedding: e.target.checked }))}
+                    />
+                    <span>
+                      Anmeldung Wedding aktiv
+                      <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>/anmeldung-wedding</span>
+                    </span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={anmeldungAktiv.britz}
+                      onChange={(e) => setAnmeldungAktiv(prev => ({ ...prev, britz: e.target.checked }))}
+                    />
+                    <span>
+                      Anmeldung Britz aktiv
+                      <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>/anmeldung-britz</span>
+                    </span>
+                  </label>
+                </div>
               </div>
             )}
 
