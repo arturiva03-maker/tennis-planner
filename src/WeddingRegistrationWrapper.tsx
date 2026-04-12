@@ -63,7 +63,25 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
     );
   }
 
-  // Show selection screen
+  // Deactivated – show message
+  if (!anmeldungAktiv) {
+    return (
+      <div className="registrationPage weddingTheme">
+        <div className="card registrationCard" style={{ maxWidth: 600, textAlign: "center", padding: "40px 20px" }}>
+          <h1 style={{ marginBottom: 16 }}>Anmeldung Wedding</h1>
+          <p style={{ color: "#6b7280", marginBottom: 8 }}>
+            Die Anmeldung ist aktuell nicht möglich.
+          </p>
+          <p style={{ color: "#6b7280" }}>
+            Bitte wenden Sie sich direkt an das Trainerteam:{" "}
+            <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Active – show selection screen
   return (
     <div className="registrationPage weddingTheme">
       <div className="card registrationCard" style={{ maxWidth: 600 }}>
@@ -73,56 +91,36 @@ export default function WeddingRegistrationWrapper({ directToProbetraining }: We
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {anmeldungAktiv ? (
-            <button
-              onClick={() => setUserType("existing")}
-              style={{
-                padding: "20px 24px",
-                background: "#fff",
-                color: "#1f2937",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                cursor: "pointer",
-                textAlign: "left",
-                transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.1)";
-                e.currentTarget.style.borderColor = "#2563eb";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderColor = "#e5e7eb";
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
-                Ich nehme bereits am Training teil oder möchte ein regelmäßiges Training buchen
-              </div>
-              <div style={{ color: "#6b7280", fontSize: 14 }}>
-                Saisonanmeldung bzw. Anmeldung für bestehende Teilnehmer
-              </div>
-            </button>
-          ) : (
-            <div
-              style={{
-                padding: "20px 24px",
-                background: "#f9fafb",
-                color: "#9ca3af",
-                border: "1px solid #e5e7eb",
-                borderRadius: 12,
-                textAlign: "left",
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
-                Saisonanmeldung / regelmäßiges Training
-              </div>
-              <div style={{ fontSize: 14 }}>
-                Die Anmeldung ist derzeit nicht möglich. Aktuell können Sie nur ein Probetraining buchen.
-              </div>
+          <button
+            onClick={() => setUserType("existing")}
+            style={{
+              padding: "20px 24px",
+              background: "#fff",
+              color: "#1f2937",
+              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "transform 0.2s, box-shadow 0.2s, border-color 0.2s",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.1)";
+              e.currentTarget.style.borderColor = "#2563eb";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.borderColor = "#e5e7eb";
+            }}
+          >
+            <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
+              Ich nehme bereits am Training teil oder möchte ein regelmäßiges Training buchen
             </div>
-          )}
+            <div style={{ color: "#6b7280", fontSize: 14 }}>
+              Saisonanmeldung bzw. Anmeldung für bestehende Teilnehmer
+            </div>
+          </button>
 
           <button
             onClick={() => setUserType("new")}

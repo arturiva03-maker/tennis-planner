@@ -35,16 +35,13 @@ export default function BritzRegistrationWrapper() {
       <div className="registrationPage britzTheme">
         <div className="card registrationCard" style={{ maxWidth: 600, textAlign: "center", padding: "40px 20px" }}>
           <h1 style={{ marginBottom: 16 }}>Anmeldung Britz</h1>
-          <p style={{ color: "#6b7280", marginBottom: 24 }}>
-            Die Anmeldung ist derzeit nicht möglich. Aktuell können Sie nur ein Probetraining buchen.
+          <p style={{ color: "#6b7280", marginBottom: 8 }}>
+            Die Anmeldung ist aktuell nicht möglich.
           </p>
-          <a
-            href="/probetraining-britz"
-            className="btn"
-            style={{ display: "inline-block" }}
-          >
-            Probetraining buchen
-          </a>
+          <p style={{ color: "#6b7280" }}>
+            Bitte wenden Sie sich direkt an das Trainerteam:{" "}
+            <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>
+          </p>
         </div>
       </div>
     );
