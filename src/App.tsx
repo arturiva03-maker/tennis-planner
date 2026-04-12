@@ -1290,6 +1290,7 @@ export default function App() {
   const [sepaMandates, setSepaMandates] = useState<SepaMandate[]>([]);
   const [loadingSepaMandates, setLoadingSepaMandates] = useState(false);
   const [expandedSepaMandateId, setExpandedSepaMandateId] = useState<string | null>(null);
+  const [sepaMandateSearch, setSepaMandateSearch] = useState("");
 
   const [tenniscampAnmeldungen, setTenniscampAnmeldungen] = useState<TenniscampAnmeldung[]>([]);
   const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
@@ -8096,6 +8097,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           </p>
                         </div>
 
+                        <input
+                          type="text"
+                          placeholder="Suche nach Name, E-Mail, IBAN..."
+                          value={sepaMandateSearch}
+                          onChange={(e) => setSepaMandateSearch(e.target.value)}
+                          style={{ width: "100%", marginBottom: 12, padding: "8px 12px", fontSize: 14 }}
+                        />
+
                         {loadingSepaMandates ? (
                           <p className="muted">Lade SEPA-Mandate...</p>
                         ) : sepaMandates.length === 0 ? (
@@ -8109,7 +8118,17 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           </div>
                         ) : (
                           <ul className="simpleList">
-                            {sepaMandates.map((mandate) => (
+                            {sepaMandates.filter((m) => {
+                              if (!sepaMandateSearch.trim()) return true;
+                              const q = sepaMandateSearch.toLowerCase();
+                              return (
+                                `${m.vorname} ${m.nachname}`.toLowerCase().includes(q) ||
+                                m.email.toLowerCase().includes(q) ||
+                                m.iban.toLowerCase().includes(q) ||
+                                (m.elternteil_name || "").toLowerCase().includes(q) ||
+                                m.mandatsreferenz.toLowerCase().includes(q)
+                              );
+                            }).map((mandate) => (
                               <li key={mandate.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                   <div
