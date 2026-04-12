@@ -27,7 +27,7 @@ root.render(
         <Route path="/" element={<App />} />
         <Route path="/anmeldung" element={<WeddingRegistrationWrapper />} />
         <Route path="/anmeldung-wedding" element={<WeddingRegistrationWrapper />} />
-        <Route path="/anmeldung-britz" element={<RegistrationForm anlage="Britz" />} />
+        <Route path="/anmeldung-britz" element={<ProbetrainingForm anlage="Britz" onBack={() => window.location.href = "/britz"} />} />
         <Route path="/sepa" element={<SepaForm />} />
         <Route path="/sepa-britz" element={<SepaForm anlage="Britz" />} />
         <Route path="/agb" element={<AGBPage />} />

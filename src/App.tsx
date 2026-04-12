@@ -7275,7 +7275,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         className={`tabBtn ${formulareTab === "probetraining" ? "tabBtnActive" : ""}`}
                         onClick={() => setFormulareTab("probetraining")}
                       >
-                        Probetraining (pw)
+                        Probetraining
                         {probetrainingAnfragen.filter(a => a.status === "offen").length > 0 && (
                           <span style={{
                             marginLeft: 6,
