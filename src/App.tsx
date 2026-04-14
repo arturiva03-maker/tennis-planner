@@ -6046,24 +6046,7 @@ Deine Tennisschule`;
 
 aufgrund von schlechten Wetterbedingungen in den letzten Tagen startet das Training nicht wie geplant diese Woche, sondern erst eine Woche später in der Woche ab dem 20.4.
 
-Tag: ${wochentag}
-Uhrzeit: ${tVon} - ${tBis} Uhr
-Trainer: ${trainerName}
-Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
-Startdatum: ${startdatumFormatted}
-
-Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
-${sepaLink}
-
-Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig.
-
-In den Sommerferien findet das Training nur nach vorheriger Absprache statt, dazu wird es ein separates Tool geben. Nach den Sommerferien geht das Tennistraining dann regulär weiter.
-
-Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen zur späteren Sommerzeit nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
-
-Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
-
-Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.`
+Viel Spaß beim Training!`
                             );
                             setTrainingInfoExcluded([]);
                             setShowTrainingInfoEmail(true);
