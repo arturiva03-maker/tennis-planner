@@ -6019,11 +6019,15 @@ Deine Tennisschule`;
                             borderColor: "#0891b2",
                           }}
                           onClick={() => {
+                            const dayOfWeek = new Date(tDatum + "T12:00:00").getDay();
+                            const weekStart = new Date("2026-04-20T12:00:00");
+                            weekStart.setDate(weekStart.getDate() + (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                            const exactDate = weekStart.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
                             setTrainingInfoEmailSubject(`Trainingsbeginn verschoben – Start in der Woche ab dem 20.4.`);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
-aufgrund von schlechten Wetterbedingungen in den letzten Tagen startet das Training nicht wie geplant diese Woche, sondern erst eine Woche später in der Woche ab dem 20.4.
+aufgrund von schlechten Wetterbedingungen in den letzten Tagen startet das Training nicht wie geplant diese Woche, sondern erst eine Woche später in der Woche ab dem 20.4. Das erste Training findet am ${exactDate} statt.
 
 Bei weiteren Fragen antworte bitte auf diese E-Mail.
 
