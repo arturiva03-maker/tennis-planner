@@ -6019,7 +6019,7 @@ Deine Tennisschule`;
                             borderColor: "#0891b2",
                           }}
                           onClick={() => {
-                            setTrainingInfoEmailSubject(`Trainingsbeginn verschoben – Start ab 20.4.`);
+                            setTrainingInfoEmailSubject(`Trainingsbeginn verschoben – Start in der Woche ab dem 20.4.`);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
