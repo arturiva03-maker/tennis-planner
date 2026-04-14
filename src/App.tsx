@@ -6046,8 +6046,6 @@ Deine Tennisschule`;
 
 aufgrund von schlechten Wetterbedingungen in den letzten Tagen startet das Training nicht wie geplant diese Woche, sondern erst eine Woche später in der Woche ab dem 20.4.
 
-hiermit informiere ich dich über dein Training für die Sommersaison:
-
 Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
 Trainer: ${trainerName}
