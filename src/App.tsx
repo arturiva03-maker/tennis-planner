@@ -6019,11 +6019,13 @@ Deine Tennisschule`;
                             borderColor: "#0891b2",
                           }}
                           onClick={() => {
-                            setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
+                            setTrainingInfoEmailSubject(`Trainingsbeginn verschoben – Start ab 20.4.`);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
 aufgrund von schlechten Wetterbedingungen in den letzten Tagen startet das Training nicht wie geplant diese Woche, sondern erst eine Woche später in der Woche ab dem 20.4.
+
+Bei weiteren Fragen antworte bitte auf diese E-Mail.
 
 Viel Spaß beim Training!`
                             );
