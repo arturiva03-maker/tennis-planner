@@ -102,7 +102,7 @@ export default function AGBPageBritz() {
             In den Berliner offiziellen Sommerferien findet das Training nur nach vorheriger Absprache statt. Dazu wird es eine separate Anmeldemöglichkeit für Einzeltraining oder auch vereinbartes Gruppentraining geben.
           </p>
           <p style={{ marginBottom: 12, lineHeight: 1.8 }}>
-            Bei unter-saisonalem Beitritt wird anteilig berechnet. Der Vertrag verlängert sich automatisch für Folgesaisons (schriftliche Bestätigung genügt). Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung.
+            Bei unter-saisonalem Beitritt wird anteilig berechnet. Die Anmeldung (der Trainingsvertrag) gilt jeweils für eine Saison (Winter oder Sommer). Nach einmaliger Anmeldung genügt für eine spätere Saisonanmeldung nur das Ausfüllen des Anmeldefragebogens – der Vertrag ist dann wieder für eine Saison aktiv. Das SEPA-Mandat muss nicht erneut unterschrieben werden. Kündigung erfolgt automatisch zum Saisonende ohne neue Anmeldung.
           </p>
         </section>
 
