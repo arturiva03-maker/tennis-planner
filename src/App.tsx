@@ -13379,10 +13379,12 @@ Deine Tennisschule`;
           return (d.getDay() + 6) % 7;
         };
 
+        const today = todayISO();
         const seenSerieIds = new Set<string>();
         const recurringTrainings = trainings
           .filter(t => {
             if (!t.serieId) return false;
+            if (t.datum < today) return false;
             if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
             if (kalenderTrainerFilter.length > 0 && !kalenderTrainerFilter.includes(t.trainerId || "")) return false;
             return true;
