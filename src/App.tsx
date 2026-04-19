@@ -13380,7 +13380,10 @@ Deine Tennisschule`;
         const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
         const weekTrainings = trainings.filter(t => {
-          return t.datum >= pdfWeekStart && t.datum <= pdfWeekDays[6];
+          if (t.datum < pdfWeekStart || t.datum > pdfWeekDays[6]) return false;
+          if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
+          if (kalenderTrainerFilter.length > 0 && !kalenderTrainerFilter.includes(t.trainerId || "")) return false;
+          return true;
         }).sort((a, b) => {
           if (a.datum !== b.datum) return a.datum.localeCompare(b.datum);
           return a.uhrzeitVon.localeCompare(b.uhrzeitVon);
