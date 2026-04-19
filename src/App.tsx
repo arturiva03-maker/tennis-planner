@@ -1386,7 +1386,7 @@ export default function App() {
 
   // States für Wochenplan PDF-Export
   const [showWeekPdfModal, setShowWeekPdfModal] = useState(false);
-  const [weekPdfDate, setWeekPdfDate] = useState<string>(todayISO());
+
 
   // State für Spieler-Label-Filter in Verwaltung
   const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
@@ -5030,10 +5030,7 @@ Deine Tennisschule`;
 
                     <button
                       className="btn btnGhost"
-                      onClick={() => {
-                        setWeekPdfDate(weekStart);
-                        setShowWeekPdfModal(true);
-                      }}
+                      onClick={() => setShowWeekPdfModal(true)}
                     >
                       Wochenplan PDF
                     </button>
