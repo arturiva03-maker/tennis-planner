@@ -5453,7 +5453,9 @@ Deine Tennisschule`;
                                     height,
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
-                                    backgroundColor: bg,
+                                    background: t.isPrivat
+                                      ? `repeating-linear-gradient(135deg, rgba(59,130,246,0.13) 0px, rgba(59,130,246,0.13) 6px, rgba(202,138,4,0.10) 6px, rgba(202,138,4,0.10) 12px)`
+                                      : bg,
                                     borderLeft: `3px solid ${border}`,
                                     borderTop: "none",
                                     borderRight: "none",
