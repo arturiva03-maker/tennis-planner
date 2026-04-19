@@ -13452,22 +13452,22 @@ Deine Tennisschule`;
               : dayTrainings.map(t => {
                   const trainer = trainerById.get(t.trainerId || "");
                   const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
-                  return `<div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;">
+                  return `<div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;page-break-inside:avoid;break-inside:avoid;">
                     <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
                     <div style="color:#374151;">${escapeHtml(trainer?.name || "–")}</div>
                     <div style="color:#6b7280;">${escapeHtml(spielerNames || "–")}</div>
                   </div>`;
                 }).join("");
-            return `<td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;">
+            return `<td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;page-break-inside:avoid;break-inside:avoid;">
               <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">${dayNames[dayIdx]}</div>
               <div style="padding:4px;">${cards}</div>
             </td>`;
           }).join("");
-          return `<div style="page-break-inside:avoid;${!isLast ? "page-break-after:always;" : ""}padding:16px;font-family:Arial,sans-serif;">
+          return `<div style="page-break-inside:avoid;break-inside:avoid;${!isLast ? "page-break-after:always;break-after:page;" : ""}padding:16px;font-family:Arial,sans-serif;">
             <h1 style="margin:0 0 4px 0;font-size:18px;color:#111;">Wochenplan Tennis – ${anlage}</h1>
             <p style="margin:0 0 14px 0;color:#666;font-size:13px;">Wiederkehrende Trainings &middot; Stand ${formatDateShort()}</p>
-            <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;">
-              <tbody><tr>${dayCols}</tr></tbody>
+            <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;page-break-inside:avoid;break-inside:avoid;">
+              <tbody><tr style="page-break-inside:avoid;break-inside:avoid;">${dayCols}</tr></tbody>
             </table>
           </div>`;
         };
