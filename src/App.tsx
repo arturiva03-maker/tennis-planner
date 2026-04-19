@@ -5454,7 +5454,7 @@ Deine Tennisschule`;
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
                                     background: t.isPrivat
-                                      ? `repeating-linear-gradient(135deg, rgba(59,130,246,0.13) 0px, rgba(59,130,246,0.13) 6px, rgba(202,138,4,0.10) 6px, rgba(202,138,4,0.10) 12px)`
+                                      ? `repeating-linear-gradient(135deg, rgba(59,130,246,0.15) 0px, rgba(59,130,246,0.15) 6px, rgba(59,130,246,0.04) 6px, rgba(59,130,246,0.04) 12px)`
                                       : bg,
                                     borderLeft: `3px solid ${border}`,
                                     borderTop: "none",
@@ -13434,66 +13434,53 @@ Deine Tennisschule`;
               <div style={{
                 border: "1px solid #ddd",
                 borderRadius: 8,
-                maxHeight: 400,
                 overflow: "auto",
                 marginBottom: 16
               }}>
-                {pdfWeekDays.map((day, dayIdx) => (
-                  <div key={day} style={{ borderBottom: dayIdx < 6 ? "1px solid #eee" : "none" }}>
-                    <div style={{
-                      background: "#f5f5f5",
-                      padding: "8px 12px",
-                      fontWeight: "bold",
-                      position: "sticky",
-                      top: 0
-                    }}>
-                      {dayNames[dayIdx]}, {formatDateFull(day)}
-                    </div>
-                    {trainingsByDay[dayIdx].length === 0 ? (
-                      <div style={{ padding: "8px 12px", color: "#999", fontStyle: "italic" }}>
-                        Keine Trainings
+                <div style={{ display: "flex", minWidth: 560 }}>
+                  {pdfWeekDays.map((day, dayIdx) => (
+                    <div key={day} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
+                      <div style={{
+                        background: "#1e3a5f",
+                        color: "white",
+                        padding: "6px 8px",
+                        fontWeight: "bold",
+                        fontSize: 12,
+                        textAlign: "center"
+                      }}>
+                        <div>{dayNames[dayIdx].slice(0, 2)}</div>
+                        <div style={{ fontWeight: "normal", fontSize: 11 }}>{formatDateFull(day)}</div>
                       </div>
-                    ) : (
-                      trainingsByDay[dayIdx].map(t => {
-                        const trainer = trainerById.get(t.trainerId || "");
-                        const spielerNames = t.spielerIds
-                          .map(id => spielerById.get(id))
-                          .filter(Boolean)
-                          .map(s => getFullName(s!))
-                          .join(", ");
-                        return (
-                          <div key={t.id} style={{
-                            padding: "8px 12px",
-                            display: "flex",
-                            gap: 12,
-                            borderTop: "1px solid #f0f0f0"
-                          }}>
-                            <span style={{ fontWeight: 500, minWidth: 100 }}>
-                              {t.uhrzeitVon} - {t.uhrzeitBis}
-                            </span>
-                            <span style={{ color: "#666", minWidth: 120 }}>
-                              {trainer?.name || "Kein Trainer"}
-                            </span>
-                            <span style={{ flex: 1 }}>
-                              {spielerNames || "Keine Spieler"}
-                            </span>
-                            <span style={{
-                              fontSize: 12,
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background: t.status === "durchgefuehrt" ? "#dcfce7" :
-                                         t.status === "abgesagt" ? "#fee2e2" : "#dbeafe",
-                              color: t.status === "durchgefuehrt" ? "#166534" :
-                                    t.status === "abgesagt" ? "#991b1b" : "#1e40af"
-                            }}>
-                              {statusLabel(t.status)}
-                            </span>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                ))}
+                      <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 4, minHeight: 60 }}>
+                        {trainingsByDay[dayIdx].length === 0 ? (
+                          <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "4px 2px" }}>–</div>
+                        ) : (
+                          trainingsByDay[dayIdx].map(t => {
+                            const trainer = trainerById.get(t.trainerId || "");
+                            const spielerNames = t.spielerIds
+                              .map(id => spielerById.get(id))
+                              .filter(Boolean)
+                              .map(s => getFullName(s!))
+                              .join(", ");
+                            return (
+                              <div key={t.id} style={{
+                                background: "rgba(59,130,246,0.10)",
+                                borderLeft: "3px solid #3b82f6",
+                                borderRadius: 4,
+                                padding: "4px 6px",
+                                fontSize: 11,
+                              }}>
+                                <div style={{ fontWeight: 600 }}>{t.uhrzeitVon}–{t.uhrzeitBis}</div>
+                                <div style={{ color: "#374151" }}>{trainer?.name || "–"}</div>
+                                <div style={{ color: "#6b7280" }}>{spielerNames || "–"}</div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
@@ -13506,80 +13493,47 @@ Deine Tennisschule`;
                 <button
                   className="btn"
                   onClick={async () => {
-                    const tableRows = pdfWeekDays.map((day, dayIdx) => {
+                    const dayCols = pdfWeekDays.map((day, dayIdx) => {
                       const dayTrainings = trainingsByDay[dayIdx];
-                      if (dayTrainings.length === 0) {
-                        return `
-                          <tr>
-                            <td style="padding: 8px 12px; font-weight: bold; background: #f9fafb; border: 1px solid #e5e7eb;">
-                              ${dayNames[dayIdx]}<br/><span style="font-weight: normal; font-size: 12px;">${formatDateFull(day)}</span>
-                            </td>
-                            <td colspan="4" style="padding: 8px 12px; color: #9ca3af; font-style: italic; border: 1px solid #e5e7eb;">
-                              Keine Trainings
-                            </td>
-                          </tr>
-                        `;
-                      }
-                      return dayTrainings.map((t, tIdx) => {
-                        const trainer = trainerById.get(t.trainerId || "");
-                        const spielerNames = t.spielerIds
-                          .map(id => spielerById.get(id))
-                          .filter(Boolean)
-                          .map(s => getFullName(s!))
-                          .join(", ");
-                        return `
-                          <tr>
-                            ${tIdx === 0 ? `
-                              <td rowspan="${dayTrainings.length}" style="padding: 8px 12px; font-weight: bold; background: #f9fafb; border: 1px solid #e5e7eb; vertical-align: top;">
-                                ${dayNames[dayIdx]}<br/><span style="font-weight: normal; font-size: 12px;">${formatDateFull(day)}</span>
-                              </td>
-                            ` : ""}
-                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; white-space: nowrap;">
-                              ${escapeHtml(t.uhrzeitVon)} - ${escapeHtml(t.uhrzeitBis)}
-                            </td>
-                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
-                              ${escapeHtml(trainer?.name) || "-"}
-                            </td>
-                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb;">
-                              ${escapeHtml(spielerNames) || "-"}
-                            </td>
-                            <td style="padding: 8px 12px; border: 1px solid #e5e7eb; text-align: center;">
-                              <span style="
-                                font-size: 11px;
-                                padding: 2px 6px;
-                                border-radius: 4px;
-                                background: ${t.status === "durchgefuehrt" ? "#dcfce7" : t.status === "abgesagt" ? "#fee2e2" : "#dbeafe"};
-                                color: ${t.status === "durchgefuehrt" ? "#166534" : t.status === "abgesagt" ? "#991b1b" : "#1e40af"};
-                              ">
-                                ${statusLabel(t.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        `;
-                      }).join("");
+                      const cards = dayTrainings.length === 0
+                        ? `<div style="color:#bbb;font-size:11px;font-style:italic;padding:4px 2px;">–</div>`
+                        : dayTrainings.map(t => {
+                            const trainer = trainerById.get(t.trainerId || "");
+                            const spielerNames = t.spielerIds
+                              .map(id => spielerById.get(id))
+                              .filter(Boolean)
+                              .map(s => getFullName(s!))
+                              .join(", ");
+                            return `
+                              <div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;">
+                                <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
+                                <div style="color:#374151;">${escapeHtml(trainer?.name || "–")}</div>
+                                <div style="color:#6b7280;">${escapeHtml(spielerNames || "–")}</div>
+                              </div>
+                            `;
+                          }).join("");
+                      return `
+                        <td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;">
+                          <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">
+                            ${dayNames[dayIdx]}<br/><span style="font-weight:normal;font-size:10px;">${formatDateFull(day)}</span>
+                          </div>
+                          <div style="padding:4px;">${cards}</div>
+                        </td>
+                      `;
                     }).join("");
 
                     const tableHTML = `
-                      <div style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h1 style="margin: 0 0 8px 0; font-size: 20px; color: #111;">Wochenplan Tennis</h1>
-                        <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
-                          ${formatWeekRange(pdfWeekStart)} (${weekTrainings.length} Trainings)
+                      <div style="font-family: Arial, sans-serif; padding: 16px;">
+                        <h1 style="margin: 0 0 4px 0; font-size: 18px; color: #111;">Wochenplan Tennis</h1>
+                        <p style="margin: 0 0 14px 0; color: #666; font-size: 13px;">
+                          ${formatWeekRange(pdfWeekStart)} &middot; ${weekTrainings.length} Trainings
                         </p>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                          <thead>
-                            <tr style="background: #1e3a5f; color: white;">
-                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Tag</th>
-                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Uhrzeit</th>
-                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Trainer</th>
-                              <th style="padding: 10px 12px; text-align: left; border: 1px solid #1e3a5f;">Spieler</th>
-                              <th style="padding: 10px 12px; text-align: center; border: 1px solid #1e3a5f;">Status</th>
-                            </tr>
-                          </thead>
+                        <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;">
                           <tbody>
-                            ${tableRows}
+                            <tr>${dayCols}</tr>
                           </tbody>
                         </table>
-                        <p style="margin-top: 20px; font-size: 11px; color: #999; text-align: right;">
+                        <p style="margin-top: 14px; font-size: 10px; color: #999; text-align: right;">
                           Erstellt am ${formatDateFull(todayISO())}
                         </p>
                       </div>
