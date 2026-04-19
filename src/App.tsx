@@ -5664,7 +5664,6 @@ Deine Tennisschule`;
                           onChange={(e) => {
                             const newVon = e.target.value;
                             setTVon(newVon);
-                            // Automatisch Endzeit auf +60 Minuten setzen
                             const vonMinutes = toMinutes(newVon);
                             const bisMinutes = vonMinutes + 60;
                             const bisH = Math.floor(bisMinutes / 60);
@@ -5681,6 +5680,8 @@ Deine Tennisschule`;
                           onChange={(e) => setTBis(e.target.value)}
                         />
                       </div>
+                    </div>
+                    <div className="row">
                       <div className="field">
                         <label>Trainer</label>
                         <select
@@ -5745,14 +5746,14 @@ Deine Tennisschule`;
                             const beschreibung =
                               t.abrechnung === "monatlich"
                                 ? `${t.preisProStunde} EUR monatlich`
-                                : `${t.preisProStunde} EUR pro Stunde, ${
+                                : `${t.preisProStunde} EUR/Std. – ${
                                     t.abrechnung === "proSpieler"
                                       ? "pro Spieler"
                                       : "pro Training"
                                   }`;
                             return (
                               <option key={t.id} value={t.id}>
-                                {t.name}, {beschreibung}
+                                {t.name} ({beschreibung})
                               </option>
                             );
                           })}
@@ -5802,6 +5803,7 @@ Deine Tennisschule`;
                           placeholder="z.B. 60"
                           disabled={!!tTarifId}
                         />
+                        {!!tTarifId && <div className="muted" style={{ fontSize: 12 }}>Durch Tarif überschrieben</div>}
                       </div>
                       <div className="field">
                         <label>Individuelle Abrechnung</label>
@@ -5817,6 +5819,7 @@ Deine Tennisschule`;
                           <option value="proTraining">Pro Training</option>
                           <option value="proSpieler">Pro Spieler</option>
                         </select>
+                        {!!tTarifId && <div className="muted" style={{ fontSize: 12 }}>Durch Tarif überschrieben</div>}
                       </div>
                     </div>
 
@@ -5977,10 +5980,7 @@ Deine Tennisschule`;
                               </span>
                             </div>
                             <div className="muted">
-                              Bei ab diesem Datum: Uhrzeiten, Spieler, Tarif,
-                              Status und Notiz werden für alle zukünftigen
-                              Termine übernommen. Beim Löschen mit dieser Option
-                              werden alle zukünftigen Termine der Serie entfernt.
+                              „Ab diesem Datum" übernimmt alle Änderungen für zukünftige Serientermine. „Löschen" entfernt alle zukünftigen Termine der Serie.
                             </div>
                           </div>
                         );
@@ -6004,12 +6004,15 @@ Deine Tennisschule`;
                         Zurück zum Kalender
                       </button>
                       {selectedTrainingId && (
-                        <button
-                          className="btn btnWarn"
-                          onClick={() => deleteTraining(selectedTrainingId)}
-                        >
-                          Training löschen
-                        </button>
+                        <>
+                          <div style={{ flex: 1 }} />
+                          <button
+                            className="btn btnWarn"
+                            onClick={() => deleteTraining(selectedTrainingId)}
+                          >
+                            Training löschen
+                          </button>
+                        </>
                       )}
                       {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
                         <button
