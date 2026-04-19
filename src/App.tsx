@@ -13375,26 +13375,36 @@ Deine Tennisschule`;
 
       {/* Wochenplan PDF Export Modal */}
       {showWeekPdfModal && (() => {
-        const pdfWeekStart = startOfWeekISO(weekPdfDate);
-        const pdfWeekDays = Array.from({ length: 7 }, (_, i) => addDaysISO(pdfWeekStart, i));
         const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
-        const weekTrainings = trainings.filter(t => {
-          if (t.datum < pdfWeekStart || t.datum > pdfWeekDays[6]) return false;
-          if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
-          if (kalenderTrainerFilter.length > 0 && !kalenderTrainerFilter.includes(t.trainerId || "")) return false;
-          return true;
-        }).sort((a, b) => {
-          if (a.datum !== b.datum) return a.datum.localeCompare(b.datum);
-          return a.uhrzeitVon.localeCompare(b.uhrzeitVon);
-        });
+        const dowISO = (dateISO: string) => {
+          const d = new Date(dateISO + "T12:00:00");
+          return (d.getDay() + 6) % 7; // 0=Mo, 6=So
+        };
 
-        const trainingsByDay = pdfWeekDays.map(day =>
-          weekTrainings.filter(t => t.datum === day)
+        const seenSerieIds = new Set<string>();
+        const recurringTrainings = trainings
+          .filter(t => {
+            if (!t.serieId) return false;
+            if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
+            if (kalenderTrainerFilter.length > 0 && !kalenderTrainerFilter.includes(t.trainerId || "")) return false;
+            return true;
+          })
+          .sort((a, b) => a.datum.localeCompare(b.datum))
+          .filter(t => {
+            if (seenSerieIds.has(t.serieId!)) return false;
+            seenSerieIds.add(t.serieId!);
+            return true;
+          });
+
+        const trainingsByDay = Array.from({ length: 7 }, (_, i) =>
+          recurringTrainings
+            .filter(t => dowISO(t.datum) === i)
+            .sort((a, b) => a.uhrzeitVon.localeCompare(b.uhrzeitVon))
         );
 
-        const formatDateFull = (dateISO: string) => {
-          const d = new Date(dateISO + "T12:00:00");
+        const formatDateShort = () => {
+          const d = new Date();
           return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
         };
 
@@ -13409,74 +13419,32 @@ Deine Tennisschule`;
                 <h2 style={{ margin: 0 }}>Wochenplan als PDF exportieren</h2>
                 <button
                   onClick={() => setShowWeekPdfModal(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 24,
-                    cursor: "pointer",
-                    color: "#666",
-                  }}
+                  style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}
                 >
                   ×
                 </button>
               </div>
 
-              <div className="row" style={{ marginBottom: 16, gap: 12, alignItems: "flex-end" }}>
-                <div className="field" style={{ flex: 1 }}>
-                  <label>Woche auswählen (Montag)</label>
-                  <input
-                    type="date"
-                    value={weekPdfDate}
-                    onChange={(e) => setWeekPdfDate(e.target.value)}
-                  />
-                </div>
-                <span className="pill">
-                  {formatWeekRange(pdfWeekStart)}
-                </span>
-                <span className="pill">
-                  {weekTrainings.length} Trainings
-                </span>
+              <div style={{ marginBottom: 12 }}>
+                <span className="pill">{recurringTrainings.length} wiederkehrende Trainings</span>
               </div>
 
-              <div style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                overflow: "auto",
-                marginBottom: 16
-              }}>
+              <div style={{ border: "1px solid #ddd", borderRadius: 8, overflow: "auto", marginBottom: 16 }}>
                 <div style={{ display: "flex", minWidth: 560 }}>
-                  {pdfWeekDays.map((day, dayIdx) => (
-                    <div key={day} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
-                      <div style={{
-                        background: "#1e3a5f",
-                        color: "white",
-                        padding: "6px 8px",
-                        fontWeight: "bold",
-                        fontSize: 12,
-                        textAlign: "center"
-                      }}>
-                        <div>{dayNames[dayIdx].slice(0, 2)}</div>
-                        <div style={{ fontWeight: "normal", fontSize: 11 }}>{formatDateFull(day)}</div>
+                  {trainingsByDay.map((dayTrainings, dayIdx) => (
+                    <div key={dayIdx} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
+                      <div style={{ background: "#1e3a5f", color: "white", padding: "6px 8px", fontWeight: "bold", fontSize: 12, textAlign: "center" }}>
+                        {dayNames[dayIdx]}
                       </div>
                       <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 4, minHeight: 60 }}>
-                        {trainingsByDay[dayIdx].length === 0 ? (
+                        {dayTrainings.length === 0 ? (
                           <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "4px 2px" }}>–</div>
                         ) : (
-                          trainingsByDay[dayIdx].map(t => {
+                          dayTrainings.map(t => {
                             const trainer = trainerById.get(t.trainerId || "");
-                            const spielerNames = t.spielerIds
-                              .map(id => spielerById.get(id))
-                              .filter(Boolean)
-                              .map(s => getFullName(s!))
-                              .join(", ");
+                            const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
                             return (
-                              <div key={t.id} style={{
-                                background: "rgba(59,130,246,0.10)",
-                                borderLeft: "3px solid #3b82f6",
-                                borderRadius: 4,
-                                padding: "4px 6px",
-                                fontSize: 11,
-                              }}>
+                              <div key={t.id} style={{ background: "rgba(59,130,246,0.10)", borderLeft: "3px solid #3b82f6", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}>
                                 <div style={{ fontWeight: 600 }}>{t.uhrzeitVon}–{t.uhrzeitBis}</div>
                                 <div style={{ color: "#374151" }}>{trainer?.name || "–"}</div>
                                 <div style={{ color: "#6b7280" }}>{spielerNames || "–"}</div>
@@ -13491,26 +13459,16 @@ Deine Tennisschule`;
               </div>
 
               <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
-                <button
-                  className="btn btnGhost"
-                  onClick={() => setShowWeekPdfModal(false)}
-                >
-                  Abbrechen
-                </button>
+                <button className="btn btnGhost" onClick={() => setShowWeekPdfModal(false)}>Abbrechen</button>
                 <button
                   className="btn"
                   onClick={async () => {
-                    const dayCols = pdfWeekDays.map((day, dayIdx) => {
-                      const dayTrainings = trainingsByDay[dayIdx];
+                    const dayCols = trainingsByDay.map((dayTrainings, dayIdx) => {
                       const cards = dayTrainings.length === 0
                         ? `<div style="color:#bbb;font-size:11px;font-style:italic;padding:4px 2px;">–</div>`
                         : dayTrainings.map(t => {
                             const trainer = trainerById.get(t.trainerId || "");
-                            const spielerNames = t.spielerIds
-                              .map(id => spielerById.get(id))
-                              .filter(Boolean)
-                              .map(s => getFullName(s!))
-                              .join(", ");
+                            const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
                             return `
                               <div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;">
                                 <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
@@ -13522,7 +13480,7 @@ Deine Tennisschule`;
                       return `
                         <td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;">
                           <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">
-                            ${dayNames[dayIdx]}<br/><span style="font-weight:normal;font-size:10px;">${formatDateFull(day)}</span>
+                            ${dayNames[dayIdx]}
                           </div>
                           <div style="padding:4px;">${cards}</div>
                         </td>
@@ -13532,17 +13490,11 @@ Deine Tennisschule`;
                     const tableHTML = `
                       <div style="font-family: Arial, sans-serif; padding: 16px; page-break-inside: avoid;">
                         <h1 style="margin: 0 0 4px 0; font-size: 18px; color: #111;">Wochenplan Tennis</h1>
-                        <p style="margin: 0 0 14px 0; color: #666; font-size: 13px;">
-                          ${formatWeekRange(pdfWeekStart)} &middot; ${weekTrainings.length} Trainings
-                        </p>
+                        <p style="margin: 0 0 14px 0; color: #666; font-size: 13px;">Wiederkehrende Trainings &middot; Stand ${formatDateShort()}</p>
                         <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;">
-                          <tbody>
-                            <tr>${dayCols}</tr>
-                          </tbody>
+                          <tbody><tr>${dayCols}</tr></tbody>
                         </table>
-                        <p style="margin-top: 14px; font-size: 10px; color: #999; text-align: right;">
-                          Erstellt am ${formatDateFull(todayISO())}
-                        </p>
+                        <p style="margin-top: 14px; font-size: 10px; color: #999; text-align: right;">Erstellt am ${formatDateShort()}</p>
                       </div>
                     `;
 
@@ -13554,7 +13506,7 @@ Deine Tennisschule`;
                     await html2pdf()
                       .set({
                         margin: 10,
-                        filename: `Wochenplan_${pdfWeekStart}.pdf`,
+                        filename: `Wochenplan_${todayISO()}.pdf`,
                         html2canvas: { scale: 2, useCORS: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
                       } as any)
