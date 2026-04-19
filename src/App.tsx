@@ -5405,7 +5405,7 @@ Deine Tennisschule`;
 
                               // Farbschema: dezente Hintergründe mit farbigem linken Rand
                               const accentColor = t.isPrivat
-                                ? "#eab308"
+                                ? "#ca8a04"
                                 : hasVertretung
                                 ? isVertretungOffen ? "#dc2626" : "#22c55e"
                                 : isSelected
@@ -5422,7 +5422,7 @@ Deine Tennisschule`;
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.10)"
                                 : t.isPrivat
-                                ? "rgba(234, 179, 8, 0.12)"
+                                ? "rgba(59, 130, 246, 0.10)"
                                 : "rgba(59, 130, 246, 0.12)";
                               const border = accentColor;
 
