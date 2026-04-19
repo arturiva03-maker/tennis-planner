@@ -13530,7 +13530,7 @@ Deine Tennisschule`;
                     }).join("");
 
                     const tableHTML = `
-                      <div style="font-family: Arial, sans-serif; padding: 16px;">
+                      <div style="font-family: Arial, sans-serif; padding: 16px; page-break-inside: avoid;">
                         <h1 style="margin: 0 0 4px 0; font-size: 18px; color: #111;">Wochenplan Tennis</h1>
                         <p style="margin: 0 0 14px 0; color: #666; font-size: 13px;">
                           ${formatWeekRange(pdfWeekStart)} &middot; ${weekTrainings.length} Trainings
@@ -13555,8 +13555,9 @@ Deine Tennisschule`;
                       .set({
                         margin: 10,
                         filename: `Wochenplan_${pdfWeekStart}.pdf`,
-                        html2canvas: { scale: 2 },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                        pagebreak: { mode: 'avoid-all' }
                       })
                       .from(container)
                       .save();
