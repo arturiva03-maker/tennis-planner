@@ -5405,7 +5405,7 @@ Deine Tennisschule`;
 
                               // Farbschema: dezente Hintergründe mit farbigem linken Rand
                               const accentColor = t.isPrivat
-                                ? "#ca8a04"
+                                ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
                                 : hasVertretung
                                 ? isVertretungOffen ? "#dc2626" : "#22c55e"
                                 : isSelected
