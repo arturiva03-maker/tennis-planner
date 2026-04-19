@@ -5454,7 +5454,11 @@ Deine Tennisschule`;
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
                                     background: t.isPrivat
-                                      ? `repeating-linear-gradient(135deg, rgba(59,130,246,0.15) 0px, rgba(59,130,246,0.15) 6px, rgba(59,130,246,0.04) 6px, rgba(59,130,246,0.04) 12px)`
+                                      ? isDone
+                                        ? `repeating-linear-gradient(135deg, rgba(34,197,94,0.18) 0px, rgba(34,197,94,0.18) 6px, rgba(34,197,94,0.05) 6px, rgba(34,197,94,0.05) 12px)`
+                                        : isCancel
+                                        ? `repeating-linear-gradient(135deg, rgba(239,68,68,0.14) 0px, rgba(239,68,68,0.14) 6px, rgba(239,68,68,0.04) 6px, rgba(239,68,68,0.04) 12px)`
+                                        : `repeating-linear-gradient(135deg, rgba(59,130,246,0.15) 0px, rgba(59,130,246,0.15) 6px, rgba(59,130,246,0.04) 6px, rgba(59,130,246,0.04) 12px)`
                                       : bg,
                                     borderLeft: `3px solid ${border}`,
                                     borderTop: "none",
