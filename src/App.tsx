@@ -13376,7 +13376,7 @@ Deine Tennisschule`;
 
         const dowISO = (dateISO: string) => {
           const d = new Date(dateISO + "T12:00:00");
-          return (d.getDay() + 6) % 7; // 0=Mo, 6=So
+          return (d.getDay() + 6) % 7;
         };
 
         const seenSerieIds = new Set<string>();
@@ -13394,15 +13394,80 @@ Deine Tennisschule`;
             return true;
           });
 
-        const trainingsByDay = Array.from({ length: 7 }, (_, i) =>
-          recurringTrainings
-            .filter(t => dowISO(t.datum) === i)
-            .sort((a, b) => a.uhrzeitVon.localeCompare(b.uhrzeitVon))
+        const anlagen = (["Wedding", "Britz"] as const).filter(a =>
+          recurringTrainings.some(t => (t.anlage ?? "Wedding") === a)
         );
+
+        const byDayForAnlage = (anlage: string) =>
+          Array.from({ length: 7 }, (_, i) =>
+            recurringTrainings
+              .filter(t => (t.anlage ?? "Wedding") === anlage && dowISO(t.datum) === i)
+              .sort((a, b) => a.uhrzeitVon.localeCompare(b.uhrzeitVon))
+          );
 
         const formatDateShort = () => {
           const d = new Date();
           return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+        };
+
+        const renderPreviewGrid = (anlage: string) => {
+          const byDay = byDayForAnlage(anlage);
+          return (
+            <div style={{ border: "1px solid #ddd", borderRadius: 8, overflow: "auto", marginBottom: 8 }}>
+              <div style={{ display: "flex", minWidth: 560 }}>
+                {byDay.map((dayTrainings, dayIdx) => (
+                  <div key={dayIdx} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
+                    <div style={{ background: "#1e3a5f", color: "white", padding: "6px 8px", fontWeight: "bold", fontSize: 12, textAlign: "center" }}>
+                      {dayNames[dayIdx]}
+                    </div>
+                    <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 4, minHeight: 48 }}>
+                      {dayTrainings.length === 0 ? (
+                        <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "4px 2px" }}>–</div>
+                      ) : dayTrainings.map(t => {
+                        const trainer = trainerById.get(t.trainerId || "");
+                        const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
+                        return (
+                          <div key={t.id} style={{ background: "rgba(59,130,246,0.10)", borderLeft: "3px solid #3b82f6", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}>
+                            <div style={{ fontWeight: 600 }}>{t.uhrzeitVon}–{t.uhrzeitBis}</div>
+                            <div style={{ color: "#374151" }}>{trainer?.name || "–"}</div>
+                            <div style={{ color: "#6b7280" }}>{spielerNames || "–"}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        const buildPdfPage = (anlage: string, isLast: boolean) => {
+          const byDay = byDayForAnlage(anlage);
+          const dayCols = byDay.map((dayTrainings, dayIdx) => {
+            const cards = dayTrainings.length === 0
+              ? `<div style="color:#bbb;font-size:11px;font-style:italic;padding:4px 2px;">–</div>`
+              : dayTrainings.map(t => {
+                  const trainer = trainerById.get(t.trainerId || "");
+                  const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
+                  return `<div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;">
+                    <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
+                    <div style="color:#374151;">${escapeHtml(trainer?.name || "–")}</div>
+                    <div style="color:#6b7280;">${escapeHtml(spielerNames || "–")}</div>
+                  </div>`;
+                }).join("");
+            return `<td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;">
+              <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">${dayNames[dayIdx]}</div>
+              <div style="padding:4px;">${cards}</div>
+            </td>`;
+          }).join("");
+          return `<div style="page-break-inside:avoid;${!isLast ? "page-break-after:always;" : ""}padding:16px;font-family:Arial,sans-serif;">
+            <h1 style="margin:0 0 4px 0;font-size:18px;color:#111;">Wochenplan Tennis – ${anlage}</h1>
+            <p style="margin:0 0 14px 0;color:#666;font-size:13px;">Wiederkehrende Trainings &middot; Stand ${formatDateShort()}</p>
+            <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;">
+              <tbody><tr>${dayCols}</tr></tbody>
+            </table>
+          </div>`;
         };
 
         return (
@@ -13414,86 +13479,27 @@ Deine Tennisschule`;
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h2 style={{ margin: 0 }}>Wochenplan als PDF exportieren</h2>
-                <button
-                  onClick={() => setShowWeekPdfModal(false)}
-                  style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}
-                >
-                  ×
-                </button>
+                <button onClick={() => setShowWeekPdfModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}>×</button>
               </div>
 
               <div style={{ marginBottom: 12 }}>
                 <span className="pill">{recurringTrainings.length} wiederkehrende Trainings</span>
+                {anlagen.length > 1 && <span className="pill" style={{ marginLeft: 8 }}>2 Seiten ({anlagen.join(" + ")})</span>}
               </div>
 
-              <div style={{ border: "1px solid #ddd", borderRadius: 8, overflow: "auto", marginBottom: 16 }}>
-                <div style={{ display: "flex", minWidth: 560 }}>
-                  {trainingsByDay.map((dayTrainings, dayIdx) => (
-                    <div key={dayIdx} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
-                      <div style={{ background: "#1e3a5f", color: "white", padding: "6px 8px", fontWeight: "bold", fontSize: 12, textAlign: "center" }}>
-                        {dayNames[dayIdx]}
-                      </div>
-                      <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 4, minHeight: 60 }}>
-                        {dayTrainings.length === 0 ? (
-                          <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "4px 2px" }}>–</div>
-                        ) : (
-                          dayTrainings.map(t => {
-                            const trainer = trainerById.get(t.trainerId || "");
-                            const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
-                            return (
-                              <div key={t.id} style={{ background: "rgba(59,130,246,0.10)", borderLeft: "3px solid #3b82f6", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}>
-                                <div style={{ fontWeight: 600 }}>{t.uhrzeitVon}–{t.uhrzeitBis}</div>
-                                <div style={{ color: "#374151" }}>{trainer?.name || "–"}</div>
-                                <div style={{ color: "#6b7280" }}>{spielerNames || "–"}</div>
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              {anlagen.map(anlage => (
+                <div key={anlage} style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}>{anlage}</div>
+                  {renderPreviewGrid(anlage)}
                 </div>
-              </div>
+              ))}
 
               <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
                 <button className="btn btnGhost" onClick={() => setShowWeekPdfModal(false)}>Abbrechen</button>
                 <button
                   className="btn"
                   onClick={async () => {
-                    const dayCols = trainingsByDay.map((dayTrainings, dayIdx) => {
-                      const cards = dayTrainings.length === 0
-                        ? `<div style="color:#bbb;font-size:11px;font-style:italic;padding:4px 2px;">–</div>`
-                        : dayTrainings.map(t => {
-                            const trainer = trainerById.get(t.trainerId || "");
-                            const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
-                            return `
-                              <div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;">
-                                <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
-                                <div style="color:#374151;">${escapeHtml(trainer?.name || "–")}</div>
-                                <div style="color:#6b7280;">${escapeHtml(spielerNames || "–")}</div>
-                              </div>
-                            `;
-                          }).join("");
-                      return `
-                        <td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;">
-                          <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">
-                            ${dayNames[dayIdx]}
-                          </div>
-                          <div style="padding:4px;">${cards}</div>
-                        </td>
-                      `;
-                    }).join("");
-
-                    const tableHTML = `
-                      <div style="font-family: Arial, sans-serif; padding: 16px; page-break-inside: avoid;">
-                        <h1 style="margin: 0 0 4px 0; font-size: 18px; color: #111;">Wochenplan Tennis</h1>
-                        <p style="margin: 0 0 14px 0; color: #666; font-size: 13px;">Wiederkehrende Trainings &middot; Stand ${formatDateShort()}</p>
-                        <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;">
-                          <tbody><tr>${dayCols}</tr></tbody>
-                        </table>
-                        <p style="margin-top: 14px; font-size: 10px; color: #999; text-align: right;">Erstellt am ${formatDateShort()}</p>
-                      </div>
-                    `;
+                    const tableHTML = `<div>${anlagen.map((a, i) => buildPdfPage(a, i === anlagen.length - 1)).join("")}</div>`;
 
                     const html2pdf = (await import('html2pdf.js')).default;
                     const container = document.createElement('div');
