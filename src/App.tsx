@@ -13557,8 +13557,7 @@ Deine Tennisschule`;
                         filename: `Wochenplan_${pdfWeekStart}.pdf`,
                         html2canvas: { scale: 2, useCORS: true },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                        pagebreak: { mode: 'avoid-all' }
-                      })
+                      } as any)
                       .from(container)
                       .save();
 
