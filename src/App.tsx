@@ -3450,11 +3450,25 @@ export default function App() {
       }
     });
 
+    clearAdjustmentsForDeletedTrainings(affectedTrainings);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
 
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
       resetTrainingForm();
     }
+  }
+
+  function clearAdjustmentsForDeletedTrainings(deletedTrainings: Training[]) {
+    setMonthlyAdjustments((prev) => {
+      const next = { ...prev };
+      deletedTrainings.forEach((t) => {
+        const month = t.datum.substring(0, 7);
+        t.spielerIds.forEach((pid) => {
+          delete next[`${month}__${pid}`];
+        });
+      });
+      return next;
+    });
   }
 
   function executeDeleteTrainings(trainingsList: Training[]) {
@@ -3470,6 +3484,7 @@ export default function App() {
       }
     });
 
+    clearAdjustmentsForDeletedTrainings(trainingsList);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
       resetTrainingForm();
