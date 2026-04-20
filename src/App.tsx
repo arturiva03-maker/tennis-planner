@@ -4827,6 +4827,7 @@ Deine Tennisschule`;
 
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
     const adjustedSum = getAdjustedSum(r.id, r.sum);
+    if (adjustedSum <= 0) return false;
     const status = getSpielerStatus(r.id, adjustedSum);
     const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
 
