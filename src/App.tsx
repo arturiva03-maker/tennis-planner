@@ -235,6 +235,13 @@ type Vertretung = {
 
 type WeiteresTabs = "notizen" | "vertretung" | "spontan";
 
+type TrainerZuschlag = {
+  id: string;
+  betrag: number; // positiv = Zuschlag, negativ = Abzug
+  notiz: string;
+};
+type TrainerZuschlagMap = Record<string, TrainerZuschlag[]>; // key: `${month}__${trainerId}`
+
 type AppState = {
   trainers: Trainer[];
   spieler: Spieler[];
@@ -248,6 +255,8 @@ type AppState = {
   monthlyAdjustments?: MonthlyAdjustments;
   vertretungen?: Vertretung[];
   wirdAbgebucht?: WirdAbgebuchtMap;
+  trainerHonorarAnpassungen?: Record<string, number>; // trainingId -> manuell gesetztes Honorar
+  trainerZuschlaege?: TrainerZuschlagMap;
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "formulare" | "abrechnung" | "weiteres";
@@ -799,6 +808,8 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     monthlyAdjustments: parsed?.monthlyAdjustments ?? {},
     vertretungen: parsed?.vertretungen ?? [],
     wirdAbgebucht: parsed?.wirdAbgebucht ?? {},
+    trainerHonorarAnpassungen: parsed?.trainerHonorarAnpassungen ?? {},
+    trainerZuschlaege: parsed?.trainerZuschlaege ?? {},
   };
 }
 
@@ -1046,6 +1057,14 @@ export default function App() {
     useState<TrainerMonthSettledMap>(initial.state.trainerMonthSettled ?? {});
   const [trainerBarSettled, setTrainerBarSettled] =
     useState<TrainerMonthSettledMap>(initial.state.trainerBarSettled ?? {});
+  const [trainerHonorarAnpassungen, setTrainerHonorarAnpassungen] =
+    useState<Record<string, number>>(initial.state.trainerHonorarAnpassungen ?? {});
+  const [trainerZuschlaege, setTrainerZuschlaege] =
+    useState<TrainerZuschlagMap>(initial.state.trainerZuschlaege ?? {});
+  const [honorarAnpassungEdit, setHonorarAnpassungEdit] =
+    useState<{ trainingId: string; value: string } | null>(null);
+  const [zuschlagForm, setZuschlagForm] =
+    useState<{ betrag: string; notiz: string }>({ betrag: "", notiz: "" });
   const [adminTrainerPaymentView, setAdminTrainerPaymentView] =
     useState<"none" | "bar" | "nichtBar">("none");
   const [notizen, setNotizen] = useState<Notiz[]>(
@@ -1451,8 +1470,10 @@ export default function App() {
       monthlyAdjustments,
       vertretungen,
       wirdAbgebucht,
+      trainerHonorarAnpassungen,
+      trainerZuschlaege,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -3319,6 +3340,9 @@ export default function App() {
 
   const trainerHonorarFuerTraining = useCallback((t: Training) => {
     if (t.isPrivat) return 0;
+    if (typeof trainerHonorarAnpassungen[t.id] === "number") {
+      return trainerHonorarAnpassungen[t.id];
+    }
     // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
     const vertretung = vertretungen.find(v => v.trainingId === t.id);
     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
@@ -3326,7 +3350,7 @@ export default function App() {
     const rate = trainer?.stundensatz ?? 0;
     const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     return round2(rate * (mins / 60));
-  }, [vertretungen, trainerById, defaultTrainerId]);
+  }, [vertretungen, trainerById, defaultTrainerId, trainerHonorarAnpassungen]);
 
   function fillTrainingFromSelected(t: Training) {
     if (isTrainer) return;
@@ -4478,6 +4502,21 @@ Deine Tennisschule`;
       perTrainer.set(tid, entry);
     });
 
+    // Zuschläge/Abzüge einrechnen
+    trainers.forEach((trainer) => {
+      const key = `${abrechnungMonat}__${trainer.id}`;
+      const zuschlaege = trainerZuschlaege[key] ?? [];
+      if (zuschlaege.length === 0) return;
+      const zuschlagSum = round2(zuschlaege.reduce((acc, z) => acc + z.betrag, 0));
+      let entry = perTrainer.get(trainer.id);
+      if (!entry) {
+        entry = { name: trainer.name, sum: 0, trainings: 0, honorar: 0, honorarBezahlt: 0, honorarOffen: 0 };
+      }
+      entry.honorar = round2(entry.honorar + zuschlagSum);
+      entry.honorarOffen = round2(entry.honorarOffen + zuschlagSum);
+      perTrainer.set(trainer.id, entry);
+    });
+
     const rows = Array.from(perTrainer.entries())
       .map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => b.sum - a.sum);
@@ -4501,12 +4540,15 @@ Deine Tennisschule`;
   }, [
     defaultTrainerId,
     trainerById,
+    trainers,
     trainingsForAbrechnung,
     tarifById,
     trainerHonorarFuerTraining,
     trainingPreisGesamt,
     vertretungen,
     trainerPayments,
+    trainerZuschlaege,
+    abrechnungMonat,
   ]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
@@ -10579,6 +10621,96 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                       </div>
                     )}
 
+                    {/* Zuschlag / Abzug für Admin */}
+                    {!isTrainer && abrechnungTrainerFilter !== "alle" && (
+                      <div style={{ marginTop: 14 }}>
+                        <div className="card cardInset">
+                          <h2>Zuschlag / Abzug</h2>
+                          <p className="muted" style={{ marginBottom: 8 }}>
+                            Manuelle Anpassung des Honorars ohne Verknüpfung zu einer Stunde (z.B. Bonus, Reisekosten, Abzug).
+                          </p>
+                          {(trainerZuschlaege[`${abrechnungMonat}__${abrechnungTrainerFilter}`] ?? []).length > 0 && (
+                            <table className="table" style={{ marginBottom: 10 }}>
+                              <thead>
+                                <tr>
+                                  <th>Betrag</th>
+                                  <th>Notiz</th>
+                                  <th></th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(trainerZuschlaege[`${abrechnungMonat}__${abrechnungTrainerFilter}`] ?? []).map((z) => (
+                                  <tr key={z.id}>
+                                    <td style={{ color: z.betrag >= 0 ? "#166534" : "#991b1b", fontWeight: 600 }}>
+                                      {z.betrag >= 0 ? "+" : ""}{euro(z.betrag)}
+                                    </td>
+                                    <td>{z.notiz || <span className="muted">—</span>}</td>
+                                    <td>
+                                      <button
+                                        className="btn micro btnGhost"
+                                        style={{ fontSize: 11, color: "#ef4444" }}
+                                        onClick={() => {
+                                          const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
+                                          setTrainerZuschlaege((prev) => ({
+                                            ...prev,
+                                            [key]: (prev[key] ?? []).filter((x) => x.id !== z.id),
+                                          }));
+                                        }}
+                                      >
+                                        Entfernen
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                            <div>
+                              <div style={{ fontSize: 12, marginBottom: 2 }}>Betrag (€, negativ = Abzug)</div>
+                              <input
+                                type="number"
+                                step="0.01"
+                                style={{ width: 100, fontSize: 13, padding: "4px 8px" }}
+                                placeholder="z.B. 20 oder -10"
+                                value={zuschlagForm.betrag}
+                                onChange={(e) => setZuschlagForm((f) => ({ ...f, betrag: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, marginBottom: 2 }}>Notiz (optional)</div>
+                              <input
+                                type="text"
+                                style={{ width: 180, fontSize: 13, padding: "4px 8px" }}
+                                placeholder="z.B. Regenabbruch, Bonus"
+                                value={zuschlagForm.notiz}
+                                onChange={(e) => setZuschlagForm((f) => ({ ...f, notiz: e.target.value }))}
+                              />
+                            </div>
+                            <button
+                              className="btn"
+                              style={{ fontSize: 13, padding: "4px 14px" }}
+                              onClick={() => {
+                                const val = parseFloat(zuschlagForm.betrag.replace(",", "."));
+                                if (isNaN(val)) return;
+                                const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
+                                setTrainerZuschlaege((prev) => ({
+                                  ...prev,
+                                  [key]: [
+                                    ...(prev[key] ?? []),
+                                    { id: uid(), betrag: round2(val), notiz: zuschlagForm.notiz.trim() },
+                                  ],
+                                }));
+                                setZuschlagForm({ betrag: "", notiz: "" });
+                              }}
+                            >
+                              Hinzufügen
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {isTrainer &&
                       !(
                         (trainerById.get(ownTrainerId)?.name ?? "")
@@ -10884,11 +11016,73 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <div className="muted">
                                       Trainer: {trainerName}, Honorar:{" "}
                                       {honorarBadge}
+                                      {typeof trainerHonorarAnpassungen[t.id] === "number" && (
+                                        <span style={{ marginLeft: 6, color: "#f59e0b", fontSize: 12 }}>(manuell angepasst)</span>
+                                      )}
                                     </div>
                                     <div className="muted">
                                       Differenz (Schülerzahlung − Honorar):{" "}
                                       {euro(differenz)}
                                     </div>
+                                    {!isTrainer && abrechnungTab === "trainer" && honorarAnpassungEdit?.trainingId === t.id ? (
+                                      <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                                        <span style={{ fontSize: 12 }}>Honorar (€):</span>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          style={{ width: 80, fontSize: 12, padding: "2px 6px" }}
+                                          value={honorarAnpassungEdit.value}
+                                          onChange={(e) => setHonorarAnpassungEdit({ trainingId: t.id, value: e.target.value })}
+                                        />
+                                        <button
+                                          className="btn micro"
+                                          style={{ fontSize: 11 }}
+                                          onClick={() => {
+                                            const val = parseFloat(honorarAnpassungEdit.value.replace(",", "."));
+                                            if (!isNaN(val) && val >= 0) {
+                                              setTrainerHonorarAnpassungen((prev) => ({ ...prev, [t.id]: round2(val) }));
+                                            }
+                                            setHonorarAnpassungEdit(null);
+                                          }}
+                                        >
+                                          Speichern
+                                        </button>
+                                        <button
+                                          className="btn micro btnGhost"
+                                          style={{ fontSize: 11 }}
+                                          onClick={() => setHonorarAnpassungEdit(null)}
+                                        >
+                                          Abbrechen
+                                        </button>
+                                        {typeof trainerHonorarAnpassungen[t.id] === "number" && (
+                                          <button
+                                            className="btn micro btnGhost"
+                                            style={{ fontSize: 11, color: "#ef4444" }}
+                                            onClick={() => {
+                                              setTrainerHonorarAnpassungen((prev) => {
+                                                const next = { ...prev };
+                                                delete next[t.id];
+                                                return next;
+                                              });
+                                              setHonorarAnpassungEdit(null);
+                                            }}
+                                          >
+                                            Zurücksetzen
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      !isTrainer && abrechnungTab === "trainer" && (
+                                        <button
+                                          className="btn micro btnGhost"
+                                          style={{ fontSize: 11, marginTop: 4 }}
+                                          onClick={() => setHonorarAnpassungEdit({ trainingId: t.id, value: String(honorarNum) })}
+                                        >
+                                          Honorar anpassen
+                                        </button>
+                                      )
+                                    )}
                                   </>
                                 )}
                                 {!showTrainerInfo && (
