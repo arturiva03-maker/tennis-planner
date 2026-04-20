@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
 import "./App.css";
 import { supabase } from "./supabaseClient";
+
+const supportsHover = typeof window !== "undefined"
+  ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  : false;
 
 // Animated counter component for stats
 function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: string }) {
@@ -33,13 +37,21 @@ function AnimatedCounter({ value, suffix = "" }: { value: string; suffix?: strin
 function ScrollReveal({ children, delay = 0, direction = "up" }: { children: React.ReactNode; delay?: number; direction?: "up" | "left" | "right" }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
-  const initial = direction === "up" ? { y: 60 } : direction === "left" ? { x: -60 } : { x: 60 };
+
+  const hiddenTransform = direction === "up"
+    ? "translateY(60px)"
+    : direction === "left"
+    ? "translateX(-60px)"
+    : "translateX(60px)";
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, ...initial }}
-      animate={isInView ? { opacity: 1, y: 0, x: 0 } : { opacity: 0, ...initial }}
+      initial={{ opacity: 0, transform: hiddenTransform }}
+      animate={isInView
+        ? { opacity: 1, transform: "translate(0px, 0px)" }
+        : { opacity: 0, transform: hiddenTransform }
+      }
       transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
@@ -110,7 +122,7 @@ export default function WeddingPage() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const heroParallaxY = useTransform(heroScrollProgress, [0, 1], ["0%", "30%"]);
+  const heroParallaxTransform = useTransform(heroScrollProgress, [0, 1], ["translateY(0%)", "translateY(30%)"]);
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -795,7 +807,11 @@ export default function WeddingPage() {
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
                     boxShadow: "0 4px 12px rgba(23, 23, 23, 0.3)",
+                  transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                   }}
+                  onPointerDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
+                  onPointerUp={(e) => { e.currentTarget.style.transform = ""; }}
+                  onPointerLeave={(e) => { e.currentTarget.style.transform = ""; }}
                 >
                   Training buchen
                 </a>
@@ -826,8 +842,14 @@ export default function WeddingPage() {
           </div>
 
           {/* Mobile Menu */}
+          <AnimatePresence>
           {mobileMenuOpen && (
-            <div style={{
+            <motion.div
+              initial={{ opacity: 0, transform: "translateY(-8px)" }}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              exit={{ opacity: 0, transform: "translateY(-8px)" }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              style={{
               background: colors.white,
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
@@ -871,8 +893,9 @@ export default function WeddingPage() {
               >
                 Training buchen
               </a>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </nav>
 
@@ -898,7 +921,7 @@ export default function WeddingPage() {
             height: "120%",
             objectFit: "cover",
             objectPosition: "center 60%",
-            y: heroParallaxY,
+            transform: heroParallaxTransform,
           }}
         />
         {/* Dark overlay for text readability */}
@@ -1005,15 +1028,24 @@ export default function WeddingPage() {
                   fontSize: 16,
                   textDecoration: "none",
                   boxShadow: "0 4px 24px rgba(23, 23, 23, 0.3)",
-                  transition: "transform 0.2s, box-shadow 0.2s",
+                  transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                 }}
                 onMouseEnter={(e) => {
+                  if (!supportsHover) return;
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow = "0 8px 32px rgba(23, 23, 23, 0.4)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "0 4px 24px rgba(23, 23, 23, 0.3)";
+                }}
+                onPointerDown={(e) => {
+                  e.currentTarget.style.transition = "transform 100ms ease-out";
+                  e.currentTarget.style.transform = "scale(0.97)";
+                }}
+                onPointerUp={(e) => {
+                  e.currentTarget.style.transition = "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 Jetzt anmelden
@@ -1032,16 +1064,20 @@ export default function WeddingPage() {
                   fontSize: 16,
                   textDecoration: "none",
                   border: "1.5px solid rgba(255,255,255,0.25)",
-                  transition: "all 0.2s",
+                  transition: "border-color 160ms ease, background 160ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                 }}
                 onMouseEnter={(e) => {
+                  if (!supportsHover) return;
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
                   e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                   e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.transform = "";
                 }}
+                onPointerDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
+                onPointerUp={(e) => { e.currentTarget.style.transform = ""; }}
               >
                 Unser Team
               </a>
@@ -1193,7 +1229,7 @@ export default function WeddingPage() {
                   position: "relative",
                   width: "100%",
                   height: "100%",
-                  transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transition: "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
                   transformStyle: "preserve-3d",
                 }}>
                   {/* Front */}
@@ -1429,10 +1465,10 @@ export default function WeddingPage() {
                   height: "100%",
                   objectFit: "cover",
                   objectPosition: "40% 40%",
-                  transition: "transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transition: "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                onMouseEnter={(e) => { if (supportsHover) e.currentTarget.style.transform = "scale(1.05)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
               />
               {/* Gradient overlay on photo */}
               <div style={{
@@ -1835,6 +1871,7 @@ export default function WeddingPage() {
                   transform: i % 3 === 1 ? "translateY(24px)" : "translateY(0)",
                 }}
                 onMouseEnter={(e) => {
+                  if (!supportsHover) return;
                   e.currentTarget.style.transform = i % 3 === 1 ? "translateY(18px)" : "translateY(-6px)";
                   e.currentTarget.style.boxShadow = "0 20px 40px rgba(0,0,0,0.10)";
                 }}
@@ -2019,11 +2056,14 @@ export default function WeddingPage() {
                   </span>
                 </button>
                 <div className="faq-answer" style={{
-                  maxHeight: openFaqIndex === i ? 300 : 0,
-                  overflow: "hidden",
-                  transition: "max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease",
+                  display: "grid",
+                  gridTemplateRows: openFaqIndex === i ? "1fr" : "0fr",
+                  transition: openFaqIndex === i
+                    ? "grid-template-rows 350ms cubic-bezier(0.22, 1, 0.36, 1), opacity 250ms ease-out"
+                    : "grid-template-rows 180ms cubic-bezier(0.4, 0, 1, 1), opacity 150ms ease-in",
                   opacity: openFaqIndex === i ? 1 : 0,
                 }}>
+                  <div style={{ minHeight: 0, overflow: "hidden" }}>
                   <div style={{ padding: "0 24px 24px" }}>
                     <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>
                       {faq.a}
@@ -2046,6 +2086,7 @@ export default function WeddingPage() {
                         Probetraining anfragen
                       </a>
                     )}
+                  </div>
                   </div>
                 </div>
               </div>
