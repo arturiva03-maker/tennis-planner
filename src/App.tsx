@@ -1491,6 +1491,31 @@ export default function App() {
     });
   }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege, billingNulliert]);
 
+  // Wenn ein nullierter Spieler ein neues Training durchführt, Nullierung aufheben
+  useEffect(() => {
+    const toUnlock = Object.entries(billingNulliert).filter(([key, nulliertCount]) => {
+      const parts = key.split("__");
+      const month = parts[0];
+      const spielerId = parts[1];
+      const currentCount = trainings.filter(
+        (t) => t.datum.startsWith(month) && t.status === "durchgefuehrt" && t.spielerIds.includes(spielerId)
+      ).length;
+      return currentCount > nulliertCount;
+    });
+    if (toUnlock.length > 0) {
+      setBillingNulliert((prev) => {
+        const next = { ...prev };
+        toUnlock.forEach(([key]) => delete next[key]);
+        return next;
+      });
+      setMonthlyAdjustments((prev) => {
+        const next = { ...prev };
+        toUnlock.forEach(([key]) => delete next[key]);
+        return next;
+      });
+    }
+  }, [trainings, billingNulliert]);
+
   /* ::::: Auth State von Supabase lesen ::::: */
 
   // Verhindere das "Synchronisiere" bei Tab-Wechsel
