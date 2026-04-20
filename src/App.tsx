@@ -3523,7 +3523,7 @@ export default function App() {
       uniqueSpielerIds.forEach((spielerId) => {
         const key = `${monat}__${spielerId}`;
         const currentValue = newAdjustments[key] ?? 0;
-        newAdjustments[key] = round2(currentValue - amountPerPlayer);
+        newAdjustments[key] = round2(currentValue + amountPerPlayer);
       });
     });
 
@@ -3871,7 +3871,7 @@ Deine Tennisschule`;
         const monat = existing.datum.substring(0, 7);
         const hasAdjustments = existing.spielerIds.some((spielerId) => {
           const key = `${monat}__${spielerId}`;
-          return (monthlyAdjustments[key] ?? 0) < 0;
+          return (monthlyAdjustments[key] ?? 0) !== 0;
         });
 
         if (hasAdjustments) {
@@ -12480,9 +12480,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>
-                <label>Abzug pro Spieler (in EUR)</label>
+                <label>Ausfallgebühr pro Spieler (in EUR)</label>
                 {cancelTrainingDialog.fullPricePerTraining != null && cancelTrainingDialog.fullPricePerTraining > 0 && (
-                  <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" style={{ fontSize: 12 }}>
                       Vollpreis pro Training: <strong>{euro(cancelTrainingDialog.fullPricePerTraining)}</strong>
                     </span>
@@ -12500,19 +12500,26 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                     >
                       100 % = {euro(cancelTrainingDialog.fullPricePerTraining)}
                     </button>
+                    <button
+                      className="btn micro btnGhost"
+                      style={{ fontSize: 11 }}
+                      onClick={() => setCancelAdjustmentAmount("0")}
+                    >
+                      Keine Gebühr
+                    </button>
                   </div>
                 )}
                 <input
                   type="number"
                   value={cancelAdjustmentAmount}
                   onChange={(e) => setCancelAdjustmentAmount(e.target.value)}
-                  placeholder="z.B. 15"
+                  placeholder="z.B. 7.50"
                   min="0"
                   step="0.01"
                   style={{ maxWidth: 150 }}
                 />
                 <div className="muted" style={{ marginTop: 4 }}>
-                  Dieser Betrag wird von der monatlichen Abrechnung jedes betroffenen Spielers abgezogen.
+                  Das Training wird automatisch aus der Abrechnung entfernt. Diese Gebühr wird zusätzlich erhoben (z.B. bei kurzfristiger Absage).
                 </div>
               </div>
             </div>
@@ -12523,7 +12530,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                 onClick={() => handleCancelDialogConfirm(true)}
                 style={{ width: "100%" }}
               >
-                Mit Anpassung ({euro(parseFloat(cancelAdjustmentAmount) || 0)} Abzug pro Spieler)
+                Mit Ausfallgebühr ({euro(parseFloat(cancelAdjustmentAmount) || 0)} pro Spieler)
               </button>
               <button
                 className="btn btnGhost"
