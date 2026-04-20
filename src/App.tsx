@@ -1768,6 +1768,7 @@ export default function App() {
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
         setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+        setBillingNulliert(cloud.billingNulliert ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1838,6 +1839,7 @@ export default function App() {
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
               setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+              setBillingNulliert(cloud.billingNulliert ?? {});
             }
           }
         }
@@ -1881,6 +1883,9 @@ export default function App() {
         monthlyAdjustments,
         vertretungen,
         wirdAbgebucht,
+        trainerHonorarAnpassungen,
+        trainerZuschlaege,
+        billingNulliert,
       };
 
       const updatedAt = new Date().toISOString();
@@ -1923,6 +1928,9 @@ export default function App() {
     monthlyAdjustments,
     vertretungen,
     wirdAbgebucht,
+    trainerHonorarAnpassungen,
+    trainerZuschlaege,
+    billingNulliert,
   ]);
 
 
@@ -10253,7 +10261,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             color: "#9ca3af",
                                           }}
                                           onClick={() => {
-                                            const currentCount = trainingsForAbrechnung.filter(t => t.spielerIds.includes(r.id)).length;
+                                            const currentCount = trainings.filter(
+                                              t => t.datum.startsWith(abrechnungMonat) && t.status === "durchgefuehrt" && !t.isPrivat && t.spielerIds.includes(r.id)
+                                            ).length;
                                             setBillingNulliert((prev) => ({ ...prev, [adjustmentKey]: currentCount }));
                                             setMonthlyAdjustments((prev) => ({ ...prev, [adjustmentKey]: round2(0 - sumTotalSpieler) }));
                                           }}
