@@ -257,7 +257,6 @@ type AppState = {
   wirdAbgebucht?: WirdAbgebuchtMap;
   trainerHonorarAnpassungen?: Record<string, number>; // trainingId -> manuell gesetztes Honorar
   trainerZuschlaege?: TrainerZuschlagMap;
-  billingNulliert?: Record<string, number>; // key: `${month}__${spielerId}`, value: durchgeführt-Count zum Zeitpunkt der Nullierung
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "formulare" | "abrechnung" | "weiteres";
@@ -821,7 +820,6 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     wirdAbgebucht: parsed?.wirdAbgebucht ?? {},
     trainerHonorarAnpassungen: parsed?.trainerHonorarAnpassungen ?? {},
     trainerZuschlaege: parsed?.trainerZuschlaege ?? {},
-    billingNulliert: parsed?.billingNulliert ?? {},
   };
 }
 
@@ -1073,8 +1071,6 @@ export default function App() {
     useState<Record<string, number>>(initial.state.trainerHonorarAnpassungen ?? {});
   const [trainerZuschlaege, setTrainerZuschlaege] =
     useState<TrainerZuschlagMap>(initial.state.trainerZuschlaege ?? {});
-  const [billingNulliert, setBillingNulliert] =
-    useState<Record<string, number>>(initial.state.billingNulliert ?? {});
   const [honorarAnpassungEdit, setHonorarAnpassungEdit] =
     useState<{ trainingId: string; value: string } | null>(null);
   const [zuschlagForm, setZuschlagForm] =
@@ -1487,34 +1483,9 @@ export default function App() {
       wirdAbgebucht,
       trainerHonorarAnpassungen,
       trainerZuschlaege,
-      billingNulliert,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege, billingNulliert]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege]);
 
-  // Wenn ein nullierter Spieler ein neues Training durchführt, Nullierung aufheben
-  useEffect(() => {
-    const toUnlock = Object.entries(billingNulliert).filter(([key, nulliertCount]) => {
-      const parts = key.split("__");
-      const month = parts[0];
-      const spielerId = parts[1];
-      const currentCount = trainings.filter(
-        (t) => t.datum.startsWith(month) && t.status === "durchgefuehrt" && !t.isPrivat && t.spielerIds.includes(spielerId)
-      ).length;
-      return currentCount > nulliertCount;
-    });
-    if (toUnlock.length > 0) {
-      setBillingNulliert((prev) => {
-        const next = { ...prev };
-        toUnlock.forEach(([key]) => delete next[key]);
-        return next;
-      });
-      setMonthlyAdjustments((prev) => {
-        const next = { ...prev };
-        toUnlock.forEach(([key]) => delete next[key]);
-        return next;
-      });
-    }
-  }, [trainings, billingNulliert]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -1768,7 +1739,6 @@ export default function App() {
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
         setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
-        setBillingNulliert(cloud.billingNulliert ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1839,7 +1809,6 @@ export default function App() {
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
               setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
-              setBillingNulliert(cloud.billingNulliert ?? {});
             }
           }
         }
@@ -1885,7 +1854,6 @@ export default function App() {
         wirdAbgebucht,
         trainerHonorarAnpassungen,
         trainerZuschlaege,
-        billingNulliert,
       };
 
       const updatedAt = new Date().toISOString();
@@ -1930,7 +1898,6 @@ export default function App() {
     wirdAbgebucht,
     trainerHonorarAnpassungen,
     trainerZuschlaege,
-    billingNulliert,
   ]);
 
 
@@ -4865,13 +4832,8 @@ Deine Tennisschule`;
 
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
     const adjustedSum = getAdjustedSum(r.id, r.sum);
-    const nulliertKey = `${abrechnungMonat}__${r.id}`;
-    const nulliertCount = billingNulliert[nulliertKey];
-    if (nulliertCount !== undefined) {
-      const currentCount = trainingsForAbrechnung.filter(t => t.spielerIds.includes(r.id)).length;
-      if (currentCount <= nulliertCount) return false;
-      // currentCount > nulliertCount: neues Training abgeschlossen → wieder anzeigen
-    } else if (adjustedSum <= 0) {
+    const hasManualAdjustment = (monthlyAdjustments[`${abrechnungMonat}__${r.id}`] ?? 0) !== 0;
+    if (adjustedSum <= 0 && !hasManualAdjustment) {
       return false;
     }
     const status = getSpielerStatus(r.id, adjustedSum);
@@ -10222,11 +10184,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                               delete next[adjustmentKey];
                                               return next;
                                             });
-                                            setBillingNulliert((prev) => {
-                                              const next = { ...prev };
-                                              delete next[adjustmentKey];
-                                              return next;
-                                            });
                                           }}
                                           title="Zurücksetzen auf berechnet"
                                         >
@@ -10250,28 +10207,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         ✎
                                       </button>
-                                      {billingNulliert[adjustmentKey] === undefined && (
-                                        <button
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            cursor: "pointer",
-                                            padding: 2,
-                                            fontSize: 11,
-                                            color: "#9ca3af",
-                                          }}
-                                          onClick={() => {
-                                            const currentCount = trainings.filter(
-                                              t => t.datum.startsWith(abrechnungMonat) && t.status === "durchgefuehrt" && !t.isPrivat && t.spielerIds.includes(r.id)
-                                            ).length;
-                                            setBillingNulliert((prev) => ({ ...prev, [adjustmentKey]: currentCount }));
-                                            setMonthlyAdjustments((prev) => ({ ...prev, [adjustmentKey]: round2(0 - sumTotalSpieler) }));
-                                          }}
-                                          title="Aus Abrechnung entfernen"
-                                        >
-                                          →0
-                                        </button>
-                                      )}
                                     </div>
                                   )}
                                   {status === "teilweise_bar" && (
