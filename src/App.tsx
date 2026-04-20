@@ -1240,6 +1240,7 @@ export default function App() {
     trainings: Training[];
     action: 'cancel' | 'delete';
     fromSaveTraining?: boolean;
+    fullPricePerTraining?: number;
   } | null>(null);
   const [cancelAdjustmentAmount, setCancelAdjustmentAmount] = useState<string>("15");
   const [invoiceDialog, setInvoiceDialog] = useState<{
@@ -3429,8 +3430,7 @@ export default function App() {
     // Bei Gruppentraining (mehr als 1 Spieler) mit monatlichem Tarif: Dialog öffnen
     const cfg = getPreisConfig(existing, tarifById);
     if (existing.spielerIds.length > 1 && cfg?.abrechnung === "monatlich") {
-      setCancelTrainingDialog({ trainings: affectedTrainings, action: 'delete' });
-      setCancelAdjustmentAmount("15");
+      openCancelDialog(affectedTrainings, 'delete');
       return;
     }
 
@@ -3478,6 +3478,25 @@ export default function App() {
         idsToCancel.has(t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
       )
     );
+  }
+
+  function calcPerTrainingPrice(t: Training): number {
+    const cfg = getPreisConfig(t, tarifById);
+    if (!cfg) return 0;
+    if (cfg.abrechnung === "monatlich") {
+      const weekday = new Date(t.datum + "T12:00:00").getDay();
+      const total = weekdayOccurrencesInMonth(t.datum.substring(0, 7), weekday);
+      return round2(cfg.preisProStunde / (total || 1));
+    }
+    return round2(priceFuerSpieler(t));
+  }
+
+  function openCancelDialog(affectedTrainings: Training[], action: 'cancel' | 'delete', fromSaveTraining?: boolean) {
+    const first = affectedTrainings[0];
+    const fullPrice = first ? calcPerTrainingPrice(first) : 0;
+    const half = round2(fullPrice / 2);
+    setCancelTrainingDialog({ trainings: affectedTrainings, action, fromSaveTraining, fullPricePerTraining: fullPrice });
+    setCancelAdjustmentAmount(half > 0 ? String(half) : "0");
   }
 
   function applyAdjustmentsForTrainings(trainingsList: Training[], amountPerPlayer: number) {
@@ -3652,8 +3671,7 @@ Deine Tennisschule`;
       return cfg?.abrechnung === "monatlich";
     });
     if (gruppenTrainingsMonatlich.length > 0) {
-      setCancelTrainingDialog({ trainings: gruppenTrainingsMonatlich, action: 'delete' });
-      setCancelAdjustmentAmount("15");
+      openCancelDialog(gruppenTrainingsMonatlich, 'delete');
       // Nicht betroffene Trainings direkt löschen
       const nichtBetroffen = selectedTrainingIds.filter(
         (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
@@ -3930,8 +3948,7 @@ Deine Tennisschule`;
                 tSpielerIds.length > 1 &&
                 cfgForCheck?.abrechnung === "monatlich"
               ) {
-                setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
-                setCancelAdjustmentAmount("15");
+                openCancelDialog([trainingForDialog], 'cancel', true);
               } else {
                 // Direkt absagen
                 saveTraining(true);
@@ -3947,8 +3964,7 @@ Deine Tennisschule`;
           tSpielerIds.length > 1 &&
           cfgForCheck?.abrechnung === "monatlich"
         ) {
-          setCancelTrainingDialog({ trainings: [trainingForDialog], action: 'cancel', fromSaveTraining: true });
-          setCancelAdjustmentAmount("15");
+          openCancelDialog([trainingForDialog], 'cancel', true);
           return;
         }
       }
@@ -12463,6 +12479,27 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
 
               <div className="field" style={{ marginTop: 16 }}>
                 <label>Abzug pro Spieler (in EUR)</label>
+                {cancelTrainingDialog.fullPricePerTraining != null && cancelTrainingDialog.fullPricePerTraining > 0 && (
+                  <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span className="pill" style={{ fontSize: 12 }}>
+                      Vollpreis pro Training: <strong>{euro(cancelTrainingDialog.fullPricePerTraining)}</strong>
+                    </span>
+                    <button
+                      className="btn micro btnGhost"
+                      style={{ fontSize: 11 }}
+                      onClick={() => setCancelAdjustmentAmount(String(round2(cancelTrainingDialog.fullPricePerTraining! / 2)))}
+                    >
+                      50 % = {euro(round2(cancelTrainingDialog.fullPricePerTraining / 2))}
+                    </button>
+                    <button
+                      className="btn micro btnGhost"
+                      style={{ fontSize: 11 }}
+                      onClick={() => setCancelAdjustmentAmount(String(cancelTrainingDialog.fullPricePerTraining!))}
+                    >
+                      100 % = {euro(cancelTrainingDialog.fullPricePerTraining)}
+                    </button>
+                  </div>
+                )}
                 <input
                   type="number"
                   value={cancelAdjustmentAmount}
