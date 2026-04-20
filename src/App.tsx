@@ -3587,7 +3587,7 @@ export default function App() {
       // Wenn vom Training-Tab aufgerufen, saveTraining mit skipCancelCheck aufrufen
       setCancelTrainingDialog(null);
       setCancelAdjustmentAmount("15");
-      saveTraining(true);
+      saveTraining(true, cancelFee);
       return;
     } else {
       executeCancelTrainings(affectedTrainings, cancelFee);
@@ -3874,7 +3874,7 @@ Deine Tennisschule`;
     markTrainingDone(t.id);
   }
 
-  function saveTraining(skipCancelCheck?: boolean) {
+  function saveTraining(skipCancelCheck?: boolean, pendingCancelFee?: number) {
     if (isTrainer) return;
     const hasTarif = !!tTarifId;
     const customPreis =
@@ -4040,6 +4040,7 @@ Deine Tennisschule`;
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
         actualMinutes: tStatus === "durchgefuehrt" && tActualMinutes !== "" ? (parseInt(tActualMinutes) || undefined) : undefined,
+        cancelFee: tStatus === "abgesagt" ? (pendingCancelFee ?? existing.cancelFee) : undefined,
       };
 
       if (existing.serieId && applySerieScope === "abHeute") {
