@@ -257,6 +257,7 @@ type AppState = {
   wirdAbgebucht?: WirdAbgebuchtMap;
   trainerHonorarAnpassungen?: Record<string, number>; // trainingId -> manuell gesetztes Honorar
   trainerZuschlaege?: TrainerZuschlagMap;
+  billingNulliert?: Record<string, number>; // key: `${month}__${spielerId}`, value: durchgeführt-Count zum Zeitpunkt der Nullierung
 };
 
 type Tab = "kalender" | "training" | "verwaltung" | "formulare" | "abrechnung" | "weiteres";
@@ -820,6 +821,7 @@ function normalizeState(parsed: Partial<AppState> | null | undefined): AppState 
     wirdAbgebucht: parsed?.wirdAbgebucht ?? {},
     trainerHonorarAnpassungen: parsed?.trainerHonorarAnpassungen ?? {},
     trainerZuschlaege: parsed?.trainerZuschlaege ?? {},
+    billingNulliert: parsed?.billingNulliert ?? {},
   };
 }
 
@@ -1071,6 +1073,8 @@ export default function App() {
     useState<Record<string, number>>(initial.state.trainerHonorarAnpassungen ?? {});
   const [trainerZuschlaege, setTrainerZuschlaege] =
     useState<TrainerZuschlagMap>(initial.state.trainerZuschlaege ?? {});
+  const [billingNulliert, setBillingNulliert] =
+    useState<Record<string, number>>(initial.state.billingNulliert ?? {});
   const [honorarAnpassungEdit, setHonorarAnpassungEdit] =
     useState<{ trainingId: string; value: string } | null>(null);
   const [zuschlagForm, setZuschlagForm] =
@@ -1483,8 +1487,9 @@ export default function App() {
       wirdAbgebucht,
       trainerHonorarAnpassungen,
       trainerZuschlaege,
+      billingNulliert,
     });
-  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege]);
+  }, [trainers, spieler, tarife, trainings, payments, trainerPayments, trainerMonthSettled, trainerBarSettled, notizen, monthlyAdjustments, vertretungen, wirdAbgebucht, trainerHonorarAnpassungen, trainerZuschlaege, billingNulliert]);
 
   /* ::::: Auth State von Supabase lesen ::::: */
 
@@ -4827,7 +4832,15 @@ Deine Tennisschule`;
 
   const filteredSpielerRowsForMonth = abrechnung.spielerRows.filter((r) => {
     const adjustedSum = getAdjustedSum(r.id, r.sum);
-    if (adjustedSum <= 0) return false;
+    const nulliertKey = `${abrechnungMonat}__${r.id}`;
+    const nulliertCount = billingNulliert[nulliertKey];
+    if (nulliertCount !== undefined) {
+      const currentCount = trainingsForAbrechnung.filter(t => t.spielerIds.includes(r.id)).length;
+      if (currentCount <= nulliertCount) return false;
+      // currentCount > nulliertCount: neues Training abgeschlossen → wieder anzeigen
+    } else if (adjustedSum <= 0) {
+      return false;
+    }
     const status = getSpielerStatus(r.id, adjustedSum);
     const isBezahlt = status === "komplett_bar" || status === "komplett_abgerechnet";
 
@@ -10176,6 +10189,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                               delete next[adjustmentKey];
                                               return next;
                                             });
+                                            setBillingNulliert((prev) => {
+                                              const next = { ...prev };
+                                              delete next[adjustmentKey];
+                                              return next;
+                                            });
                                           }}
                                           title="Zurücksetzen auf berechnet"
                                         >
@@ -10199,7 +10217,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         ✎
                                       </button>
-                                      {adjustedSum !== 0 && (
+                                      {billingNulliert[adjustmentKey] === undefined && (
                                         <button
                                           style={{
                                             background: "none",
@@ -10210,13 +10228,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             color: "#9ca3af",
                                           }}
                                           onClick={() => {
-                                            const newAdjustment = round2(0 - sumTotalSpieler);
-                                            setMonthlyAdjustments((prev) => ({
-                                              ...prev,
-                                              [adjustmentKey]: newAdjustment,
-                                            }));
+                                            const currentCount = trainingsForAbrechnung.filter(t => t.spielerIds.includes(r.id)).length;
+                                            setBillingNulliert((prev) => ({ ...prev, [adjustmentKey]: currentCount }));
+                                            setMonthlyAdjustments((prev) => ({ ...prev, [adjustmentKey]: round2(0 - sumTotalSpieler) }));
                                           }}
-                                          title="Auf 0 setzen"
+                                          title="Aus Abrechnung entfernen"
                                         >
                                           →0
                                         </button>
