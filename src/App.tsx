@@ -3536,9 +3536,13 @@ export default function App() {
     const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
 
     if (withAdjustment) {
-      const amount = parseFloat(cancelAdjustmentAmount) || 0;
-      if (amount > 0) {
-        applyAdjustmentsForTrainings(affectedTrainings, amount);
+      const abzug = parseFloat(cancelAdjustmentAmount) || 0;
+      const fullPrice = cancelTrainingDialog.fullPricePerTraining ?? 0;
+      // Netto-Anpassung: auto-Kürzung durch Absage + gewählter Abzug vom Vollpreis
+      // applyAdjustmentsForTrainings ADDIERT den Wert, daher: fullPrice - abzug
+      const nettoAnpassung = round2(fullPrice - abzug);
+      if (nettoAnpassung !== 0) {
+        applyAdjustmentsForTrainings(affectedTrainings, nettoAnpassung);
       }
     }
 
@@ -12480,32 +12484,32 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>
-                <label>Ausfallgebühr pro Spieler (in EUR)</label>
+                <label>Abzug vom Monatsbetrag pro Spieler (in EUR)</label>
                 {cancelTrainingDialog.fullPricePerTraining != null && cancelTrainingDialog.fullPricePerTraining > 0 && (
                   <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" style={{ fontSize: 12 }}>
-                      Vollpreis pro Training: <strong>{euro(cancelTrainingDialog.fullPricePerTraining)}</strong>
+                      Wert pro Training: <strong>{euro(cancelTrainingDialog.fullPricePerTraining)}</strong>
                     </span>
                     <button
                       className="btn micro btnGhost"
                       style={{ fontSize: 11 }}
                       onClick={() => setCancelAdjustmentAmount(String(round2(cancelTrainingDialog.fullPricePerTraining! / 2)))}
                     >
-                      50 % = {euro(round2(cancelTrainingDialog.fullPricePerTraining / 2))}
+                      50 % → −{euro(round2(cancelTrainingDialog.fullPricePerTraining / 2))}
                     </button>
                     <button
                       className="btn micro btnGhost"
                       style={{ fontSize: 11 }}
                       onClick={() => setCancelAdjustmentAmount(String(cancelTrainingDialog.fullPricePerTraining!))}
                     >
-                      100 % = {euro(cancelTrainingDialog.fullPricePerTraining)}
+                      100 % → −{euro(cancelTrainingDialog.fullPricePerTraining)}
                     </button>
                     <button
                       className="btn micro btnGhost"
                       style={{ fontSize: 11 }}
                       onClick={() => setCancelAdjustmentAmount("0")}
                     >
-                      Keine Gebühr
+                      Kein Abzug
                     </button>
                   </div>
                 )}
@@ -12519,7 +12523,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                   style={{ maxWidth: 150 }}
                 />
                 <div className="muted" style={{ marginTop: 4 }}>
-                  Das Training wird automatisch aus der Abrechnung entfernt. Diese Gebühr wird zusätzlich erhoben (z.B. bei kurzfristiger Absage).
+                  Wieviel soll vom Monatsbetrag abgezogen werden? 100 % = volle Stunde abziehen, 50 % = halbe Stunde abziehen, 0 = kein Abzug (Spieler zahlt vollen Betrag).
                 </div>
               </div>
             </div>
@@ -12530,7 +12534,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                 onClick={() => handleCancelDialogConfirm(true)}
                 style={{ width: "100%" }}
               >
-                Mit Ausfallgebühr ({euro(parseFloat(cancelAdjustmentAmount) || 0)} pro Spieler)
+                Mit Abzug (−{euro(parseFloat(cancelAdjustmentAmount) || 0)} pro Spieler)
               </button>
               <button
                 className="btn btnGhost"
