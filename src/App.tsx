@@ -191,6 +191,7 @@ type Training = {
   isSpontanBuchung?: boolean;
   isPrivat?: boolean;
   cancelFee?: number; // pro-Spieler-Betrag bei Absage mit Teilgebühr (nur proTraining/proSpieler)
+  actualMinutes?: number; // tatsächliche Dauer in Minuten (wenn Training nur teilweise durchgeführt)
 };
 
 type SpontaneStundeBuchung = {
@@ -1362,6 +1363,7 @@ export default function App() {
   const [tBis, setTBis] = useState("17:00");
   const [tTarifId, setTTarifId] = useState("");
   const [tStatus, setTStatus] = useState<TrainingStatus>("geplant");
+  const [tActualMinutes, setTActualMinutes] = useState<string>("");
   const [tNotiz, setTNotiz] = useState("");
   const [tCustomPreisProStunde, setTCustomPreisProStunde] = useState<
     number | ""
@@ -3348,8 +3350,10 @@ export default function App() {
 
     if (cfg.abrechnung === "monatlich") return 0;
 
-    const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    const basis = cfg.preisProStunde * (mins / 60);
+    const plannedMins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+    const actualMins = (t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < plannedMins)
+      ? t.actualMinutes : plannedMins;
+    const basis = cfg.preisProStunde * (actualMins / 60);
 
     if (cfg.abrechnung === "proSpieler") return basis;
     const n = Math.max(1, t.spielerIds.length);
@@ -3381,6 +3385,7 @@ export default function App() {
     setTBis(t.uhrzeitBis);
     setTTarifId(t.tarifId ?? "");
     setTStatus(t.status);
+    setTActualMinutes(t.actualMinutes ? String(t.actualMinutes) : "");
     setTNotiz(t.notiz ?? "");
     setTSpielerIds(t.spielerIds);
     setSelectedTrainingId(t.id);
@@ -3402,6 +3407,7 @@ export default function App() {
     setTVon("16:00");
     setTBis("17:00");
     setTStatus("geplant");
+    setTActualMinutes("");
     setTNotiz("");
     setSpielerSuche("");
     setTSpielerIds([]);
@@ -3563,7 +3569,6 @@ export default function App() {
     const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
 
     const abzug = parseFloat(cancelAdjustmentAmount) || 0;
-    const fullPrice = cancelTrainingDialog.fullPricePerTraining ?? 0;
     const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
     const isMonatlich = cfg?.abrechnung === "monatlich";
 
@@ -4034,6 +4039,7 @@ Deine Tennisschule`;
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
+        actualMinutes: tStatus === "durchgefuehrt" && tActualMinutes !== "" ? (parseInt(tActualMinutes) || undefined) : undefined,
       };
 
       if (existing.serieId && applySerieScope === "abHeute") {
@@ -4353,7 +4359,9 @@ Deine Tennisschule`;
           const key = `${pid}__${tarifKey}`;
           const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
           const slotCounts = monthlySlotCounts.get(key) ?? new Map<string, number>();
-          slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
+          const plannedMins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+          const ratio = (t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < plannedMins) ? t.actualMinutes / plannedMins : 1;
+          slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + ratio);
           monthlySlotCounts.set(key, slotCounts);
         });
       });
@@ -5910,6 +5918,19 @@ Deine Tennisschule`;
                           <option value="abgesagt">Abgesagt</option>
                         </select>
                       </div>
+                      {tStatus === "durchgefuehrt" && (
+                        <div className="field">
+                          <label>Tatsächliche Dauer (Min)</label>
+                          <input
+                            type="number"
+                            placeholder={String(durationMin(tVon, tBis))}
+                            value={tActualMinutes}
+                            onChange={(e) => setTActualMinutes(e.target.value)}
+                            min={1}
+                            max={durationMin(tVon, tBis)}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="row">
