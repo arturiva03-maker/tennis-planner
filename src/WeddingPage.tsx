@@ -881,7 +881,7 @@ export default function WeddingPage() {
         ref={heroRef}
         style={{
           position: "relative",
-          minHeight: "90vh",
+          minHeight: "100dvh",
           display: "flex",
           alignItems: "center",
           overflow: "hidden",
@@ -948,7 +948,7 @@ export default function WeddingPage() {
                 width: 8, height: 8, borderRadius: "50%",
                 background: colors.accent,
                 display: "inline-block",
-                boxShadow: "0 0 8px rgba(58, 129, 246, 0.6)",
+                boxShadow: "0 0 8px rgba(201, 100, 66, 0.6)",
               }} />
               <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.3px" }}>
                 BSC Rehberge · Berlin-Wedding
@@ -1317,7 +1317,9 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: colors.bgLight, display: "flex", alignItems: "center", justifyContent: "center" }}>👤</div>
+              <div style={{ marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: colors.bgLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg>
+              </div>
               <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Einzeltraining</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 1.6 }}>Individuelles 1:1 Training mit vollem Fokus auf Ihre Ziele</p>
               <div style={{ marginBottom: 8 }}>
@@ -1345,7 +1347,9 @@ export default function WeddingPage() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <div style={{ fontSize: 24, marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>👥</div>
+              <div style={{ marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3.5"/><path d="M2.5 21a7 7 0 0 1 13 0"/><circle cx="17" cy="8" r="2.5" opacity="0.7"/><path d="M22 21a4.5 4.5 0 0 0-8 0" opacity="0.7"/></svg>
+              </div>
               <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.white, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 5 Personen</p>
               <div style={{ marginBottom: 8 }}>
@@ -2103,9 +2107,8 @@ export default function WeddingPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
-                fontSize: 20,
               }}>
-                📍
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4.5-7 13-7 13S5 13.5 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
@@ -2148,9 +2151,8 @@ export default function WeddingPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
-                fontSize: 20,
               }}>
-                📞
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 11.9 19.79 19.79 0 0 1 1 3.32 2 2 0 0 1 2.96 1.1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.18-1.18a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></svg>
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Telefon</h3>
               <a
@@ -2188,9 +2190,8 @@ export default function WeddingPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
-                fontSize: 20,
               }}>
-                ✉️
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>E-Mail</h3>
               <a
@@ -2317,6 +2318,7 @@ export default function WeddingPage() {
               maxHeight: "85vh",
               overflow: "auto",
               padding: 32,
+              borderRadius: 16,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2375,6 +2377,7 @@ export default function WeddingPage() {
               width: "100%",
               maxHeight: "85vh",
               overflow: "auto",
+              borderRadius: 16,
               padding: 32,
             }}
             onClick={(e) => e.stopPropagation()}
@@ -2454,6 +2457,7 @@ export default function WeddingPage() {
               maxHeight: "85vh",
               overflow: "auto",
               padding: 32,
+              borderRadius: 16,
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2468,7 +2472,7 @@ export default function WeddingPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
-                  boxShadow: "0 8px 24px rgba(58, 129, 246, 0.25)",
+                  boxShadow: "0 8px 24px rgba(201, 100, 66, 0.25)",
                 }}>
                   <span style={{ color: colors.white, fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>
