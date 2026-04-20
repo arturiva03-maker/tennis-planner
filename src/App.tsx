@@ -3370,8 +3370,9 @@ export default function App() {
     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
     const trainer = trainerById.get(tid);
     const rate = trainer?.stundensatz ?? 0;
-    const mins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-    return round2(rate * (mins / 60));
+    const plannedMins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+    const actualMins = (t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < plannedMins) ? t.actualMinutes : plannedMins;
+    return round2(rate * (actualMins / 60));
   }, [vertretungen, trainerById, defaultTrainerId, trainerHonorarAnpassungen]);
 
   function fillTrainingFromSelected(t: Training) {
