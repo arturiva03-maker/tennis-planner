@@ -1498,7 +1498,7 @@ export default function App() {
       const month = parts[0];
       const spielerId = parts[1];
       const currentCount = trainings.filter(
-        (t) => t.datum.startsWith(month) && t.status === "durchgefuehrt" && t.spielerIds.includes(spielerId)
+        (t) => t.datum.startsWith(month) && t.status === "durchgefuehrt" && !t.isPrivat && t.spielerIds.includes(spielerId)
       ).length;
       return currentCount > nulliertCount;
     });
