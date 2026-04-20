@@ -3857,8 +3857,10 @@ Deine Tennisschule`;
       : undefined;
 
     if (selectedTrainingId && existing) {
-      saveUndoSnapshot("Training geändert");
-      
+      if (tStatus !== "abgesagt") {
+        saveUndoSnapshot("Training geändert");
+      }
+
       // Prüfen ob Status von "abgesagt" auf "geplant" geändert wird - Rücknahme des Abzugs anbieten
       if (
         !skipCancelCheck &&
