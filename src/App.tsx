@@ -190,6 +190,7 @@ type Training = {
   anlage?: string;
   isSpontanBuchung?: boolean;
   isPrivat?: boolean;
+  cancelFee?: number; // pro-Spieler-Betrag bei Absage mit Teilgebühr (nur proTraining/proSpieler)
 };
 
 type SpontaneStundeBuchung = {
@@ -3341,6 +3342,7 @@ export default function App() {
 
   const priceFuerSpieler = useCallback((t: Training) => {
     if (t.isPrivat) return 0;
+    if (t.status === "abgesagt" && t.cancelFee !== undefined) return t.cancelFee;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -3491,12 +3493,17 @@ export default function App() {
     }
   }
 
-  function executeCancelTrainings(trainingsList: Training[]) {
+  function executeCancelTrainings(trainingsList: Training[], cancelFeePerPlayer?: number) {
     const idsToCancel = new Set(trainingsList.map((t) => t.id));
     setTrainings((prev) =>
-      prev.map((t) =>
-        idsToCancel.has(t.id) ? { ...t, status: "abgesagt" as TrainingStatus } : t
-      )
+      prev.map((t) => {
+        if (!idsToCancel.has(t.id)) return t;
+        return {
+          ...t,
+          status: "abgesagt" as TrainingStatus,
+          ...(cancelFeePerPlayer !== undefined && cancelFeePerPlayer > 0 ? { cancelFee: cancelFeePerPlayer } : {}),
+        };
+      })
     );
   }
 
@@ -3555,16 +3562,20 @@ export default function App() {
 
     const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
 
-    if (withAdjustment) {
-      const abzug = parseFloat(cancelAdjustmentAmount) || 0;
-      const fullPrice = cancelTrainingDialog.fullPricePerTraining ?? 0;
-      // Netto-Anpassung: auto-Kürzung durch Absage + gewählter Abzug vom Vollpreis
-      // applyAdjustmentsForTrainings ADDIERT den Wert, daher: fullPrice - abzug
+    const abzug = parseFloat(cancelAdjustmentAmount) || 0;
+    const fullPrice = cancelTrainingDialog.fullPricePerTraining ?? 0;
+    const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
+    const isMonatlich = cfg?.abrechnung === "monatlich";
+
+    if (withAdjustment && isMonatlich) {
+      // Monatlicher Tarif: alter Offset-Ansatz (auto -X + Anpassung +Y)
       const nettoAnpassung = round2(fullPrice - abzug);
       if (nettoAnpassung !== 0) {
         applyAdjustmentsForTrainings(affectedTrainings, nettoAnpassung);
       }
     }
+
+    const cancelFee = (!isMonatlich && withAdjustment && abzug > 0) ? abzug : undefined;
 
     if (action === 'delete') {
       executeDeleteTrainings(affectedTrainings);
@@ -3575,7 +3586,7 @@ export default function App() {
       saveTraining(true);
       return;
     } else {
-      executeCancelTrainings(affectedTrainings);
+      executeCancelTrainings(affectedTrainings, cancelFee);
     }
 
     setCancelTrainingDialog(null);
@@ -4204,7 +4215,7 @@ Deine Tennisschule`;
     () =>
       trainings
         .filter((t) => t.datum.startsWith(abrechnungMonat))
-        .filter((t) => t.status === "durchgefuehrt")
+        .filter((t) => t.status === "durchgefuehrt" || (t.status === "abgesagt" && (t.cancelFee ?? 0) > 0))
         .filter((t) => !t.isPrivat)
         .filter((t) => {
           if (abrechnungTrainerFilter === "alle") return true;
