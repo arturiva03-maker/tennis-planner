@@ -10198,6 +10198,28 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       >
                                         ✎
                                       </button>
+                                      {adjustedSum !== 0 && (
+                                        <button
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            padding: 2,
+                                            fontSize: 11,
+                                            color: "#9ca3af",
+                                          }}
+                                          onClick={() => {
+                                            const newAdjustment = round2(0 - sumTotalSpieler);
+                                            setMonthlyAdjustments((prev) => ({
+                                              ...prev,
+                                              [adjustmentKey]: newAdjustment,
+                                            }));
+                                          }}
+                                          title="Auf 0 setzen"
+                                        >
+                                          →0
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                   {status === "teilweise_bar" && (
