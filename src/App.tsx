@@ -3567,15 +3567,14 @@ export default function App() {
     const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
     const isMonatlich = cfg?.abrechnung === "monatlich";
 
-    if (withAdjustment && isMonatlich) {
-      // Monatlicher Tarif: alter Offset-Ansatz (auto -X + Anpassung +Y)
-      const nettoAnpassung = round2(fullPrice - abzug);
-      if (nettoAnpassung !== 0) {
-        applyAdjustmentsForTrainings(affectedTrainings, nettoAnpassung);
+    if (withAdjustment && abzug > 0) {
+      if (isMonatlich) {
+        // Monatlicher Tarif: direkt -abzug anwenden (Slot-Count bleibt durch cancelFee erhalten)
+        applyAdjustmentsForTrainings(affectedTrainings, -abzug);
       }
     }
 
-    const cancelFee = (!isMonatlich && withAdjustment && abzug > 0) ? abzug : undefined;
+    const cancelFee = (withAdjustment && abzug > 0) ? abzug : undefined;
 
     if (action === 'delete') {
       executeDeleteTrainings(affectedTrainings);
@@ -4338,11 +4337,12 @@ Deine Tennisschule`;
     };
 
     // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
+    // Abgesagte Trainings mit cancelFee werden ebenfalls gezählt (Slot-Count bleibt gleich)
     const monthlySlotCounts = new Map<string, Map<string, number>>();
     const monthlyHasBar = new Map<string, boolean>();
 
     trainings
-      .filter((t) => t.datum.startsWith(abrechnungMonat) && t.status !== "abgesagt" && !t.isPrivat)
+      .filter((t) => t.datum.startsWith(abrechnungMonat) && (t.status !== "abgesagt" || (t.cancelFee ?? 0) > 0) && !t.isPrivat)
       .forEach((t) => {
         const cfg = getPreisConfig(t, tarifById);
         if (!cfg || cfg.abrechnung !== "monatlich") return;
