@@ -4440,7 +4440,6 @@ Deine Tennisschule`;
     abrechnungSpielerSuche,
     getSpielerFullName,
     abrechnungMonat,
-    getPreisConfig,
   ]);
 
   const abrechnungTrainer = useMemo(() => {
@@ -4580,7 +4579,6 @@ Deine Tennisschule`;
     tarifById,
     trainerHonorarFuerTraining,
     trainingPreisGesamt,
-    getPreisConfig,
     vertretungen,
     trainerPayments,
     trainerZuschlaege,
