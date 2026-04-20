@@ -4249,30 +4249,6 @@ Deine Tennisschule`;
       countsBar: Map<number, number>;      // Beträge für bar bezahlte Trainings
       countsNichtBar: Map<number, number>; // Beträge für nicht bar bezahlte Trainings
     }>();
-    // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
-    const monthlySlotCounts = new Map<string, Map<string, number>>(); // key: `${pid}__${tarifKey}`, inner key: "weekday_timeFrom_timeTo", value: count
-    // Für monatliche Tarife: Tracke ob es Bar-Trainings gibt
-    const monthlyHasBar = new Map<string, boolean>(); // key: `${pid}__${tarifKey}`
-
-    // Alle Trainings im Monat (geplant + durchgeführt, NICHT abgesagt) für Slot-Zählung
-    const allTrainingsThisMonth = trainings.filter(
-      (t) => t.datum.startsWith(abrechnungMonat) && t.status !== "abgesagt" && !t.isPrivat
-    );
-    allTrainingsThisMonth.forEach((t) => {
-      const cfg = getPreisConfig(t, tarifById);
-      if (!cfg || cfg.abrechnung !== "monatlich") return;
-      const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-      const weekday = new Date(t.datum + "T12:00:00").getDay();
-      t.spielerIds.forEach((pid) => {
-        if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
-        const key = `${pid}__${tarifKey}`;
-        const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
-        const slotCounts = monthlySlotCounts.get(key) ?? new Map<string, number>();
-        slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
-        monthlySlotCounts.set(key, slotCounts);
-      });
-    });
-
     // Ermittle die gesuchten Spieler-IDs bei aktiver Suche
     const searchQuery = abrechnungSpielerSuche.trim().toLowerCase();
     const searchedSpielerIds = searchQuery
@@ -4307,6 +4283,27 @@ Deine Tennisschule`;
         entry.countsNichtBar.set(share, (entry.countsNichtBar.get(share) ?? 0) + 1);
       }
     };
+
+    // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
+    const monthlySlotCounts = new Map<string, Map<string, number>>();
+    const monthlyHasBar = new Map<string, boolean>();
+
+    trainings
+      .filter((t) => t.datum.startsWith(abrechnungMonat) && t.status !== "abgesagt" && !t.isPrivat)
+      .forEach((t) => {
+        const cfg = getPreisConfig(t, tarifById);
+        if (!cfg || cfg.abrechnung !== "monatlich") return;
+        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+        const weekday = new Date(t.datum + "T12:00:00").getDay();
+        t.spielerIds.forEach((pid) => {
+          if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+          const key = `${pid}__${tarifKey}`;
+          const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+          const slotCounts = monthlySlotCounts.get(key) ?? new Map<string, number>();
+          slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
+          monthlySlotCounts.set(key, slotCounts);
+        });
+      });
 
     // Bar-Status aus durchgeführten Trainings tracken
     trainingsForAbrechnung.forEach((t) => {
