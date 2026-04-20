@@ -4249,10 +4249,29 @@ Deine Tennisschule`;
       countsBar: Map<number, number>;      // Beträge für bar bezahlte Trainings
       countsNichtBar: Map<number, number>; // Beträge für nicht bar bezahlte Trainings
     }>();
-    // Für monatliche Tarife: Zähle tatsächliche Trainings pro Slot (weekday+time) pro Spieler+Tarif
+    // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
     const monthlySlotCounts = new Map<string, Map<string, number>>(); // key: `${pid}__${tarifKey}`, inner key: "weekday_timeFrom_timeTo", value: count
     // Für monatliche Tarife: Tracke ob es Bar-Trainings gibt
     const monthlyHasBar = new Map<string, boolean>(); // key: `${pid}__${tarifKey}`
+
+    // Alle Trainings im Monat (geplant + durchgeführt, NICHT abgesagt) für Slot-Zählung
+    const allTrainingsThisMonth = trainings.filter(
+      (t) => t.datum.startsWith(abrechnungMonat) && t.status !== "abgesagt" && !t.isPrivat
+    );
+    allTrainingsThisMonth.forEach((t) => {
+      const cfg = getPreisConfig(t, tarifById);
+      if (!cfg || cfg.abrechnung !== "monatlich") return;
+      const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+      const weekday = new Date(t.datum + "T12:00:00").getDay();
+      t.spielerIds.forEach((pid) => {
+        if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+        const key = `${pid}__${tarifKey}`;
+        const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+        const slotCounts = monthlySlotCounts.get(key) ?? new Map<string, number>();
+        slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
+        monthlySlotCounts.set(key, slotCounts);
+      });
+    });
 
     // Ermittle die gesuchten Spieler-IDs bei aktiver Suche
     const searchQuery = abrechnungSpielerSuche.trim().toLowerCase();
@@ -4289,32 +4308,15 @@ Deine Tennisschule`;
       }
     };
 
-    // Erst alle monatlichen Trainings sammeln um Wochentage zu zählen
+    // Bar-Status aus durchgeführten Trainings tracken
     trainingsForAbrechnung.forEach((t) => {
       const cfg = getPreisConfig(t, tarifById);
-      if (!cfg) return;
-
-      if (cfg.abrechnung === "monatlich") {
-        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-        const trainingDate = new Date(t.datum + "T12:00:00");
-        const weekday = trainingDate.getDay(); // 0 = Sonntag, 1 = Montag, etc.
-
-        t.spielerIds.forEach((pid) => {
-          // Bei aktiver Suche nur gesuchte Spieler berücksichtigen
-          if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
-
-          const key = `${pid}__${tarifKey}`;
-          const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
-          const slotCounts = monthlySlotCounts.get(key) ?? new Map<string, number>();
-          slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
-          monthlySlotCounts.set(key, slotCounts);
-
-          // Tracke ob mindestens ein monatliches Training bar ist
-          if (t.barBezahlt) {
-            monthlyHasBar.set(key, true);
-          }
-        });
-      }
+      if (!cfg || cfg.abrechnung !== "monatlich") return;
+      const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+      t.spielerIds.forEach((pid) => {
+        if (searchedSpielerIds && !searchedSpielerIds.includes(pid)) return;
+        if (t.barBezahlt) monthlyHasBar.set(`${pid}__${tarifKey}`, true);
+      });
     });
 
     // Jetzt die Abrechnung durchführen
@@ -4430,6 +4432,7 @@ Deine Tennisschule`;
 
     return { total, spielerRows, barTotal, totalMitBar };
   }, [
+    trainings,
     trainingsForAbrechnung,
     spieler,
     priceFuerSpieler,
@@ -4437,6 +4440,7 @@ Deine Tennisschule`;
     abrechnungSpielerSuche,
     getSpielerFullName,
     abrechnungMonat,
+    getPreisConfig,
   ]);
 
   const abrechnungTrainer = useMemo(() => {
@@ -4450,28 +4454,27 @@ Deine Tennisschule`;
     };
 
     const perTrainer = new Map<string, TrainerAbrechnungSummary>();
-    // Für monatliche Tarife: Zähle tatsächliche Trainings pro Slot pro Trainer+Spieler+Tarif
+    // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot
     const monthlyTrainerSlotCounts = new Map<string, Map<string, number>>(); // key: `${tid}__${pid}__${tarifKey}`, inner key: "weekday_timeFrom_timeTo"
 
-    // Erst alle monatlichen Trainings sammeln um Slots zu zählen
-    trainingsForAbrechnung.forEach((t) => {
-      const cfg = getPreisConfig(t, tarifById);
-      if (!cfg || cfg.abrechnung !== "monatlich") return;
-
-      // Vertretungstrainer berücksichtigen
-      const vertretung = vertretungen.find(v => v.trainingId === t.id);
-      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-      const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-      const weekday = new Date(t.datum + "T12:00:00").getDay();
-
-      t.spielerIds.forEach((pid) => {
-        const key = `${tid}__${pid}__${tarifKey}`;
-        const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
-        const slotCounts = monthlyTrainerSlotCounts.get(key) ?? new Map<string, number>();
-        slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
-        monthlyTrainerSlotCounts.set(key, slotCounts);
+    // Alle Trainings im Monat (geplant + durchgeführt, NICHT abgesagt) für Slot-Zählung
+    trainings
+      .filter((t) => t.datum.startsWith(abrechnungMonat) && t.status !== "abgesagt" && !t.isPrivat)
+      .forEach((t) => {
+        const cfg = getPreisConfig(t, tarifById);
+        if (!cfg || cfg.abrechnung !== "monatlich") return;
+        const vertretung = vertretungen.find(v => v.trainingId === t.id);
+        const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+        const weekday = new Date(t.datum + "T12:00:00").getDay();
+        t.spielerIds.forEach((pid) => {
+          const key = `${tid}__${pid}__${tarifKey}`;
+          const slotKey = `${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+          const slotCounts = monthlyTrainerSlotCounts.get(key) ?? new Map<string, number>();
+          slotCounts.set(slotKey, (slotCounts.get(slotKey) ?? 0) + 1);
+          monthlyTrainerSlotCounts.set(key, slotCounts);
+        });
       });
-    });
 
     const monthlyTrainerProcessed = new Set<string>();
 
@@ -4572,10 +4575,12 @@ Deine Tennisschule`;
     defaultTrainerId,
     trainerById,
     trainers,
+    trainings,
     trainingsForAbrechnung,
     tarifById,
     trainerHonorarFuerTraining,
     trainingPreisGesamt,
+    getPreisConfig,
     vertretungen,
     trainerPayments,
     trainerZuschlaege,
