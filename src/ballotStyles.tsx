@@ -87,8 +87,8 @@ export const BALLOT_CSS = `
   border-top: 1px solid var(--hairline-strong);
   border-bottom: 1px solid var(--hairline-strong);
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 20px;
+  grid-template-columns: 180px 1fr;
+  gap: 28px;
 }
 .ballotForm .notice .label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -98,6 +98,8 @@ export const BALLOT_CSS = `
   color: var(--accent);
   padding-top: 3px;
   font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: break-word;
 }
 .ballotForm .notice .body { font-size: 1.0625rem; line-height: 1.7; color: var(--ink); }
 .ballotForm .notice .body p { margin: 0 0 10px; max-width: 62ch; }
