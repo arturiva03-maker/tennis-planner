@@ -185,19 +185,37 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
   const themeStyle = getBallotThemeStyle(anlage);
 
   if (success) {
+    const kam_ueber_anmeldung = Boolean(registrationPayload);
     return (
       <div className="ballotForm" style={themeStyle}>
         <BallotStyles />
         <div className="sheet">
           <div className="meta">
-            <span>Mandat erteilt</span>
+            <span>{kam_ueber_anmeldung ? "Anmeldung & Mandat eingegangen" : "Mandat erteilt"}</span>
           </div>
-          <div className="success-stamp">✓ Mandat erteilt</div>
+          <div className="success-stamp">
+            {kam_ueber_anmeldung ? "✓ Eingegangen" : "✓ Mandat erteilt"}
+          </div>
           <h1 className="display">Vielen <em>Dank</em>.</h1>
-          <p className="intro">
-            Ihr SEPA-Lastschriftmandat wurde erfolgreich übermittelt. Wir melden uns
-            in Kürze bei Ihnen.
-          </p>
+          {kam_ueber_anmeldung ? (
+            <>
+              <p className="intro">
+                Ihre Trainingsanmeldung und Ihr SEPA-Lastschriftmandat wurden
+                erfolgreich übermittelt. Eine Bestätigung ist an Ihre E-Mail-Adresse
+                unterwegs.
+              </p>
+              <p className="intro">
+                Wir prüfen Ihre Angaben und melden uns in Kürze mit einem
+                Trainingsvorschlag. Das Mandat wird erst wirksam, sobald eine
+                verbindliche Trainingszeit vereinbart ist.
+              </p>
+            </>
+          ) : (
+            <p className="intro">
+              Ihr SEPA-Lastschriftmandat wurde erfolgreich übermittelt. Wir melden uns
+              in Kürze bei Ihnen.
+            </p>
+          )}
         </div>
       </div>
     );
