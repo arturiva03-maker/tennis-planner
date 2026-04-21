@@ -4260,6 +4260,7 @@ Deine Tennisschule`;
     let filtered = trainingsInMonth;
 
     if (abrechnungTab === "trainer") {
+      filtered = filtered.filter((t) => t.status !== "abgesagt");
       if (abrechnungFilter === "bezahlt") {
         filtered = filtered.filter(
           (t) => t.barBezahlt || !!trainerPayments[t.id]
