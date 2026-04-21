@@ -853,15 +853,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           )}
 
           <div className="submit-area">
-            <p className="agb">
-              <a
-                href={anlage === "Britz" ? "/agb-britz" : "/agb"}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Trainingspreise und Bedingungen ansehen
-              </a>
-            </p>
             <button type="submit" className="primary" disabled={loading}>
               {loading ? "Wird gesendet …" : onNext ? "Weiter zum SEPA-Mandat" : "Anmeldung absenden"}
             </button>
