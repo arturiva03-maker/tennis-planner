@@ -550,7 +550,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
         </div>
 
         <h1 className="display">
-          Trainings&shy;anmeldung <em>{anlage}</em>
+          Trainings&shy;anmeldung <em>Tennisschule A bis Z</em>
         </h1>
         <p className="intro">
           Bitte füllen Sie das Formular sorgfältig aus. Pflichtfelder sind mit einem farbigen
