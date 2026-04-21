@@ -9,12 +9,6 @@ export default function AGBPageBritz() {
     <div className="ballotForm" style={themeStyle}>
       <BallotStyles />
       <div className="sheet-wide">
-        <div className="meta">
-          <span>Anlage · TC Britz</span>
-          <span>Trainingsbedingungen</span>
-          <span>Stand · 2026</span>
-        </div>
-
         <h1 className="display">Trainings­­<em>bedingungen</em>.</h1>
         <p className="intro">
           Preise, Saison­regeln und Konditionen für den Trainings­betrieb beim TC Britz.

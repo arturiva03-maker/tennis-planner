@@ -220,11 +220,13 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
         <p className="intro">
           Erteilen Sie uns das Mandat zur Abbuchung der Trainingsgebühren. Die
           Daten werden verschlüsselt gespeichert und nicht an Dritte weitergegeben.
+          Das erteilte SEPA-Lastschriftmandat wird erst wirksam, sobald zwischen
+          Trainer und Spieler eine verbindliche Trainingszeit vereinbart worden ist.
         </p>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="section-head">
-            <span className="num">§ 1</span>
+            <span className="num">1</span>
             <span className="title">Kontoinhaber</span>
           </div>
 
@@ -291,7 +293,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
           )}
 
           <div className="section-head">
-            <span className="num">§ 2</span>
+            <span className="num">2</span>
             <span className="title">Anschrift</span>
           </div>
 
@@ -342,7 +344,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
           </div>
 
           <div className="section-head">
-            <span className="num">§ 3</span>
+            <span className="num">3</span>
             <span className="title">Bankverbindung</span>
           </div>
 

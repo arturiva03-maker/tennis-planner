@@ -575,13 +575,24 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 {anlage === "Wedding" ? "bscrehberge-tennis.de" : "tc-britz.de"}
               </a>
             </p>
+            <p>
+              Es gelten unsere{" "}
+              <a
+                href={anlage === "Britz" ? "/agb-britz" : "/agb"}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Trainingsbedingungen und Preise
+              </a>
+              .
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* § 1 Kontakt */}
+          {/* Kontakt */}
           <div className="section-head">
-            <span className="num">§ 1</span>
+            <span className="num">1</span>
             <span className="title">Kontaktdaten</span>
           </div>
 
@@ -594,7 +605,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Vor- und Nachname"
                 autoComplete="name"
               />
             </div>
@@ -609,7 +619,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="ihre@email.de"
                 autoComplete="email"
               />
             </div>
@@ -624,7 +633,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 name="telefon"
                 value={formData.telefon}
                 onChange={handleChange}
-                placeholder="+49 …"
                 autoComplete="tel"
               />
             </div>
@@ -639,16 +647,15 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 name="alter_jahre"
                 value={formData.alter_jahre}
                 onChange={handleChange}
-                placeholder="Jahre"
                 min="1"
                 max="120"
               />
             </div>
           </div>
 
-          {/* § 2 Training */}
+          {/* Training */}
           <div className="section-head">
-            <span className="num">§ 2</span>
+            <span className="num">2</span>
             <span className="title">Trainingswünsche</span>
           </div>
 
@@ -743,9 +750,9 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
             </div>
           </div>
 
-          {/* § 3 Verfügbarkeit */}
+          {/* Verfügbarkeit */}
           <div className="section-head">
-            <span className="num">§ 3</span>
+            <span className="num">3</span>
             <span className="title">Verfügbarkeit</span>
           </div>
           <p className="section-note">
@@ -800,9 +807,9 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
             ))}
           </div>
 
-          {/* § 4 Anmerkungen */}
+          {/* Anmerkungen */}
           <div className="section-head">
-            <span className="num">§ 4</span>
+            <span className="num">4</span>
             <span className="title">Anmerkungen</span>
           </div>
 
@@ -814,7 +821,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                 name="nachricht"
                 value={formData.nachricht}
                 onChange={handleChange}
-                placeholder="Besondere Wünsche oder Fragen …"
                 rows={4}
               />
             </div>
@@ -833,7 +839,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
                   name="gruppenwuensche"
                   value={formData.gruppenwuensche}
                   onChange={handleChange}
-                  placeholder="z.B. Wunschpartner · Spielstärke"
                   rows={3}
                 />
               </div>
