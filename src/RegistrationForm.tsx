@@ -43,10 +43,264 @@ const UHRZEITEN = [
   "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"
 ];
 
+export type RegistrationPayload = {
+  accountId: string;
+  anlage: "Wedding" | "Britz";
+  name: string;
+  email: string;
+  telefon: string;
+  verfuegbarkeit: Record<Wochentag, string>;
+  trainingsart: string;
+  trainings_pro_woche: string;
+  erfahrungslevel: string;
+  alter_jahre: string;
+  nachricht: string;
+  gruppenwuensche: string;
+  ist_vereinsmitglied: string;
+};
+
+export async function persistRegistration(payload: RegistrationPayload): Promise<{ error?: string }> {
+  const WOCHENTAGE = payload.anlage === "Wedding" ? WOCHENTAGE_WEDDING : WOCHENTAGE_ALL;
+
+  const { error: insertError } = await supabase
+    .from("registration_requests")
+    .insert({
+      account_id: payload.accountId,
+      name: payload.name,
+      email: payload.email,
+      telefon: payload.telefon || null,
+      verfuegbarkeit: payload.verfuegbarkeit,
+      trainingsart: payload.trainingsart || null,
+      trainings_pro_woche: payload.trainings_pro_woche
+        ? parseInt(payload.trainings_pro_woche, 10)
+        : null,
+      erfahrungslevel: payload.erfahrungslevel || null,
+      alter_jahre: payload.alter_jahre
+        ? parseInt(payload.alter_jahre, 10)
+        : null,
+      nachricht: payload.gruppenwuensche
+        ? `${payload.nachricht}\n\nGruppenwünsche: ${payload.gruppenwuensche}`.trim()
+        : payload.nachricht || null,
+      anlage: payload.anlage,
+      ist_vereinsmitglied:
+        payload.ist_vereinsmitglied === "ja"
+          ? true
+          : payload.ist_vereinsmitglied === "nein"
+          ? false
+          : null,
+    });
+
+  if (insertError) {
+    console.error("Insert error:", insertError);
+    return { error: "Beim Absenden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut." };
+  }
+
+  const trainingsartText =
+    payload.trainingsart === "einzel"
+      ? "Einzeltraining"
+      : payload.trainingsart === "gruppe"
+      ? "Gruppentraining"
+      : "Beides möglich";
+  const erfahrungText =
+    payload.erfahrungslevel === "anfaenger"
+      ? "Anfänger"
+      : payload.erfahrungslevel === "fortgeschritten"
+      ? "Fortgeschritten"
+      : payload.erfahrungslevel === "profi"
+      ? "Profi / Wettkampfspieler"
+      : "Nicht angegeben";
+
+  const verfuegbarkeitRows = WOCHENTAGE.map(({ key, label }) =>
+    `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${label}</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${payload.verfuegbarkeit[key]}</td></tr>`
+  ).join("");
+
+  const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
+    .data-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+    .label { color: #6b7280; min-width: 140px; }
+    .value { font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 24px;">Trainingsanmeldung ${payload.anlage}</h1>
+    </div>
+    <div class="content">
+      <div class="section">
+        <div class="section-title">Kontaktdaten</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${payload.name}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${payload.email}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${payload.telefon}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Trainingswünsche</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Pro Woche</td><td style="padding: 8px 0; font-weight: 500;">${payload.trainings_pro_woche}x Training</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Erfahrung</td><td style="padding: 8px 0; font-weight: 500;">${erfahrungText}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Verfügbarkeit</div>
+        <table>${verfuegbarkeitRows}</table>
+      </div>
+
+      ${payload.nachricht ? `
+      <div class="section">
+        <div class="section-title">Nachricht</div>
+        <p style="margin: 0; white-space: pre-wrap;">${payload.nachricht}</p>
+      </div>
+      ` : ""}
+
+      ${payload.gruppenwuensche ? `
+      <div class="section">
+        <div class="section-title">Gruppenwünsche</div>
+        <p style="margin: 0; white-space: pre-wrap;">${payload.gruppenwuensche}</p>
+      </div>
+      ` : ""}
+    </div>
+    <div class="footer">
+      Mit sportlichen Grüßen<br>
+      <strong>Ihre Tennisschule A bis Z</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const textVersion = `Trainingsanmeldung ${payload.anlage}\n\nName: ${payload.name}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nAlter: ${payload.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${payload.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${payload.verfuegbarkeit[key]}`).join("\n")}${payload.nachricht ? `\n\nNachricht:\n${payload.nachricht}` : ""}${payload.gruppenwuensche ? `\n\nGruppenwünsche:\n${payload.gruppenwuensche}` : ""}`;
+
+  const bestatigungHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+    .greeting { font-size: 18px; margin-bottom: 16px; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-size: 24px;">Anmeldung bestätigt</h1>
+    </div>
+    <div class="content">
+      <p class="greeting">Hallo <strong>${payload.name}</strong>,</p>
+      <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!</p>
+      <p>Wir haben folgende Daten erhalten:</p>
+
+      <div class="section">
+        <div class="section-title">Kontaktdaten</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${payload.name}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${payload.email}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${payload.telefon}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Trainingswünsche</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Pro Woche</td><td style="padding: 8px 0; font-weight: 500;">${payload.trainings_pro_woche}x Training</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Erfahrung</td><td style="padding: 8px 0; font-weight: 500;">${erfahrungText}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Verfügbarkeit</div>
+        <table>${verfuegbarkeitRows}</table>
+      </div>
+
+      ${payload.nachricht ? `
+      <div class="section">
+        <div class="section-title">Nachricht</div>
+        <p style="margin: 0; white-space: pre-wrap;">${payload.nachricht}</p>
+      </div>
+      ` : ""}
+
+      ${payload.gruppenwuensche ? `
+      <div class="section">
+        <div class="section-title">Gruppenwünsche</div>
+        <p style="margin: 0; white-space: pre-wrap;">${payload.gruppenwuensche}</p>
+      </div>
+      ` : ""}
+
+      <p style="margin-top: 20px; color: #6b7280;">Wir werden uns in Kürze bei Ihnen melden.</p>
+    </div>
+    <div class="footer">
+      Mit sportlichen Grüßen<br>
+      <strong>Ihre Tennisschule A bis Z</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    await fetch("/api/send-newsletter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: [payload.email],
+        subject: `Bestätigung Ihrer Trainingsanmeldung - ${payload.anlage}`,
+        body: `Hallo ${payload.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
+        html: bestatigungHtml,
+        fromName: "Tennisschule A bis Z",
+      }),
+    });
+  } catch (emailErr) {
+    console.error("Bestätigungsmail-Fehler:", emailErr);
+  }
+
+  try {
+    await fetch("/api/send-newsletter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: ["tennisabisz@gmail.com"],
+        subject: `Neue Anmeldung ${payload.anlage}: ${payload.name}`,
+        body: `Neue Trainingsanmeldung!\n\n${textVersion}`,
+        html: emailHtml,
+        fromName: "Tennisschule A bis Z",
+      }),
+    });
+  } catch (emailErr) {
+    console.error("Trainer-Benachrichtigung-Fehler:", emailErr);
+  }
+
+  return {};
+}
+
 type RegistrationFormProps = {
   anlage: "Wedding" | "Britz";
   redirectUrl?: string;
-  onNext?: (data: { name: string; email: string }) => void;
+  onNext?: (data: RegistrationPayload) => void;
 };
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
@@ -249,233 +503,34 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       }
     }
 
+    const payload: RegistrationPayload = {
+      accountId,
+      anlage,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      telefon: formData.telefon.trim(),
+      verfuegbarkeit: verfuegbarkeitFinal,
+      trainingsart: formData.trainingsart,
+      trainings_pro_woche: formData.trainings_pro_woche,
+      erfahrungslevel: formData.erfahrungslevel,
+      alter_jahre: formData.alter_jahre,
+      nachricht: formData.nachricht.trim(),
+      gruppenwuensche: formData.gruppenwuensche.trim(),
+      ist_vereinsmitglied: formData.ist_vereinsmitglied,
+    };
+
+    if (onNext) {
+      setLoading(false);
+      onNext(payload);
+      return;
+    }
+
     try {
-      const { error: insertError } = await supabase
-        .from("registration_requests")
-        .insert({
-          account_id: accountId,
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          telefon: formData.telefon.trim() || null,
-          verfuegbarkeit: verfuegbarkeitFinal,
-          trainingsart: formData.trainingsart || null,
-          trainings_pro_woche: formData.trainings_pro_woche
-            ? parseInt(formData.trainings_pro_woche, 10)
-            : null,
-          erfahrungslevel: formData.erfahrungslevel || null,
-          alter_jahre: formData.alter_jahre
-            ? parseInt(formData.alter_jahre, 10)
-            : null,
-          nachricht: formData.gruppenwuensche.trim()
-            ? `${formData.nachricht.trim()}\n\nGruppenwünsche: ${formData.gruppenwuensche.trim()}`.trim()
-            : formData.nachricht.trim() || null,
-          anlage: anlage,
-          ist_vereinsmitglied: formData.ist_vereinsmitglied === "ja" ? true : formData.ist_vereinsmitglied === "nein" ? false : null,
-        });
-
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        setError(
-          "Beim Absenden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
-        );
+      const { error: persistError } = await persistRegistration(payload);
+      if (persistError) {
+        setError(persistError);
         return;
       }
-
-      const trainingsartText = formData.trainingsart === "einzel" ? "Einzeltraining" :
-        formData.trainingsart === "gruppe" ? "Gruppentraining" : "Beides möglich";
-      const erfahrungText = formData.erfahrungslevel === "anfaenger" ? "Anfänger" :
-        formData.erfahrungslevel === "fortgeschritten" ? "Fortgeschritten" :
-        formData.erfahrungslevel === "profi" ? "Profi / Wettkampfspieler" : "Nicht angegeben";
-
-      const verfuegbarkeitRows = WOCHENTAGE.map(({ key, label }) =>
-        `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${label}</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${verfuegbarkeitFinal[key]}</td></tr>`
-      ).join("");
-
-      const emailHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
-    .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
-    .data-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
-    .label { color: #6b7280; min-width: 140px; }
-    .value { font-weight: 500; }
-    table { width: 100%; border-collapse: collapse; }
-    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 24px;">Trainingsanmeldung ${anlage}</h1>
-    </div>
-    <div class="content">
-      <div class="section">
-        <div class="section-title">Kontaktdaten</div>
-        <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${formData.name}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${formData.email}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${formData.telefon}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${formData.alter_jahre} Jahre</td></tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Trainingswünsche</div>
-        <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Pro Woche</td><td style="padding: 8px 0; font-weight: 500;">${formData.trainings_pro_woche}x Training</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Erfahrung</td><td style="padding: 8px 0; font-weight: 500;">${erfahrungText}</td></tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Verfügbarkeit</div>
-        <table>${verfuegbarkeitRows}</table>
-      </div>
-
-      ${formData.nachricht ? `
-      <div class="section">
-        <div class="section-title">Nachricht</div>
-        <p style="margin: 0; white-space: pre-wrap;">${formData.nachricht}</p>
-      </div>
-      ` : ""}
-
-      ${formData.gruppenwuensche ? `
-      <div class="section">
-        <div class="section-title">Gruppenwünsche</div>
-        <p style="margin: 0; white-space: pre-wrap;">${formData.gruppenwuensche}</p>
-      </div>
-      ` : ""}
-    </div>
-    <div class="footer">
-      Mit sportlichen Grüßen<br>
-      <strong>Ihre Tennisschule A bis Z</strong>
-    </div>
-  </div>
-</body>
-</html>`;
-
-      const textVersion = `Trainingsanmeldung ${anlage}\n\nName: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.telefon}\nAlter: ${formData.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${formData.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${verfuegbarkeitFinal[key]}`).join("\n")}${formData.nachricht ? `\n\nNachricht:\n${formData.nachricht}` : ""}${formData.gruppenwuensche ? `\n\nGruppenwünsche:\n${formData.gruppenwuensche}` : ""}`;
-
-      const bestatigungHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-    .greeting { font-size: 18px; margin-bottom: 16px; }
-    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
-    .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
-    table { width: 100%; border-collapse: collapse; }
-    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0; font-size: 24px;">Anmeldung bestätigt</h1>
-    </div>
-    <div class="content">
-      <p class="greeting">Hallo <strong>${formData.name}</strong>,</p>
-      <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!</p>
-      <p>Wir haben folgende Daten erhalten:</p>
-
-      <div class="section">
-        <div class="section-title">Kontaktdaten</div>
-        <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${formData.name}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${formData.email}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${formData.telefon}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${formData.alter_jahre} Jahre</td></tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Trainingswünsche</div>
-        <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Trainingsart</td><td style="padding: 8px 0; font-weight: 500;">${trainingsartText}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Pro Woche</td><td style="padding: 8px 0; font-weight: 500;">${formData.trainings_pro_woche}x Training</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Erfahrung</td><td style="padding: 8px 0; font-weight: 500;">${erfahrungText}</td></tr>
-        </table>
-      </div>
-
-      <div class="section">
-        <div class="section-title">Verfügbarkeit</div>
-        <table>${verfuegbarkeitRows}</table>
-      </div>
-
-      ${formData.nachricht ? `
-      <div class="section">
-        <div class="section-title">Nachricht</div>
-        <p style="margin: 0; white-space: pre-wrap;">${formData.nachricht}</p>
-      </div>
-      ` : ""}
-
-      ${formData.gruppenwuensche ? `
-      <div class="section">
-        <div class="section-title">Gruppenwünsche</div>
-        <p style="margin: 0; white-space: pre-wrap;">${formData.gruppenwuensche}</p>
-      </div>
-      ` : ""}
-
-      <p style="margin-top: 20px; color: #6b7280;">Wir werden uns in Kürze bei Ihnen melden.</p>
-    </div>
-    <div class="footer">
-      Mit sportlichen Grüßen<br>
-      <strong>Ihre Tennisschule A bis Z</strong>
-    </div>
-  </div>
-</body>
-</html>`;
-
-      try {
-        await fetch("/api/send-newsletter", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: [formData.email.trim()],
-            subject: `Bestätigung Ihrer Trainingsanmeldung - ${anlage}`,
-            body: `Hallo ${formData.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
-            html: bestatigungHtml,
-            fromName: "Tennisschule A bis Z",
-          }),
-        });
-      } catch (emailErr) {
-        console.error("Bestätigungsmail-Fehler:", emailErr);
-      }
-
-      try {
-        await fetch("/api/send-newsletter", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            to: ["tennisabisz@gmail.com"],
-            subject: `Neue Anmeldung ${anlage}: ${formData.name}`,
-            body: `Neue Trainingsanmeldung!\n\n${textVersion}`,
-            html: emailHtml,
-            fromName: "Tennisschule A bis Z",
-          }),
-        });
-      } catch (emailErr) {
-        console.error("Trainer-Benachrichtigung-Fehler:", emailErr);
-      }
-
-      if (onNext) {
-        onNext({ name: formData.name.trim(), email: formData.email.trim() });
-        return;
-      }
-
       setSuccess(true);
     } catch (err) {
       console.error("Submit error:", err);

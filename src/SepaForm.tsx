@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
+import { persistRegistration, type RegistrationPayload } from "./RegistrationForm";
 
 type SepaFormData = {
   vorname: string;
@@ -42,10 +43,11 @@ const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 type SepaFormProps = {
   anlage?: "Wedding" | "Britz";
   initialData?: { name?: string; email?: string };
+  registrationPayload?: RegistrationPayload;
   headerNote?: React.ReactNode;
 };
 
-export default function SepaForm({ anlage = "Wedding", initialData, headerNote }: SepaFormProps) {
+export default function SepaForm({ anlage = "Wedding", initialData, registrationPayload, headerNote }: SepaFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
@@ -159,6 +161,14 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
           "Beim Absenden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
         );
         return;
+      }
+
+      if (registrationPayload) {
+        const { error: regError } = await persistRegistration(registrationPayload);
+        if (regError) {
+          setError(regError);
+          return;
+        }
       }
 
       setSuccess(true);
