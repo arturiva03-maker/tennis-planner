@@ -41,22 +41,35 @@ const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
 type SepaFormProps = {
   anlage?: "Wedding" | "Britz";
+  initialData?: { name?: string; email?: string };
+  headerNote?: React.ReactNode;
 };
 
-export default function SepaForm({ anlage = "Wedding" }: SepaFormProps) {
+function splitName(name?: string): { vorname: string; nachname: string } {
+  if (!name) return { vorname: "", nachname: "" };
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return { vorname: parts[0], nachname: "" };
+  return {
+    vorname: parts[0],
+    nachname: parts.slice(1).join(" "),
+  };
+}
+
+export default function SepaForm({ anlage = "Wedding", initialData, headerNote }: SepaFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
+  const prefill = splitName(initialData?.name);
   const [formData, setFormData] = useState<SepaFormData>({
-    vorname: "",
-    nachname: "",
+    vorname: prefill.vorname,
+    nachname: prefill.nachname,
     istKind: false,
     elternteilName: "",
     strasse: "",
     plz: "",
     ort: "",
     iban: "",
-    email: "",
+    email: initialData?.email ?? "",
     einwilligung: false,
   });
 
@@ -197,6 +210,7 @@ export default function SepaForm({ anlage = "Wedding" }: SepaFormProps) {
   return (
     <div className="registrationPage">
       <div className="card registrationCard">
+        {headerNote}
         <h1>SEPA-Lastschriftmandat</h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Erteilen Sie uns ein SEPA-Lastschriftmandat für die Abbuchung der Trainingsgebühren.

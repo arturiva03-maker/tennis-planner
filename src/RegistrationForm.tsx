@@ -46,6 +46,7 @@ const UHRZEITEN = [
 type RegistrationFormProps = {
   anlage: "Wedding" | "Britz";
   redirectUrl?: string;
+  onNext?: (data: { name: string; email: string }) => void;
 };
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
@@ -65,7 +66,7 @@ function isValidRedirectUrl(url: string): boolean {
   }
 }
 
-export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFormProps) {
+export default function RegistrationForm({ anlage, redirectUrl, onNext }: RegistrationFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
@@ -487,6 +488,11 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
         console.error("Trainer-Benachrichtigung-Fehler:", emailErr);
       }
 
+      if (onNext) {
+        onNext({ name: formData.name.trim(), email: formData.email.trim() });
+        return;
+      }
+
       setSuccess(true);
     } catch (err) {
       console.error("Submit error:", err);
@@ -845,7 +851,11 @@ export default function RegistrationForm({ anlage, redirectUrl }: RegistrationFo
 
           <div style={{ marginTop: 16 }}>
             <button type="submit" className="btn" disabled={loading}>
-              {loading ? "Wird gesendet..." : "Anmeldung absenden"}
+              {loading
+                ? "Wird gesendet..."
+                : onNext
+                  ? "Weiter zum SEPA-Mandat"
+                  : "Anmeldung absenden"}
             </button>
           </div>
         </form>
