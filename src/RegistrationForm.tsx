@@ -489,8 +489,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
 
   const themeStyle = getBallotThemeStyle(anlage);
 
-  const saison = String(new Date().getFullYear());
-
   if (success) {
     if (redirectUrl && isValidRedirectUrl(redirectUrl)) {
       setTimeout(() => { window.location.href = redirectUrl; }, 3000);
@@ -500,8 +498,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
         <BallotStyles />
         <div className="sheet">
           <div className="meta">
-            <span>Saison {saison}</span>
-            <span>Anlage {anlage}</span>
             <span>Eingang bestätigt</span>
           </div>
           <div className="success-stamp">✓ Eingegangen</div>
@@ -550,8 +546,6 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
 
       <div className="sheet">
         <div className="meta">
-          <span>Saison {saison}</span>
-          <span>Anlage {anlage}</span>
           <span>{stepLabel}</span>
         </div>
 

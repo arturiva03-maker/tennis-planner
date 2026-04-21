@@ -184,7 +184,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
   }
 
   const themeStyle = getBallotThemeStyle(anlage);
-  const saison = String(new Date().getFullYear());
 
   if (success) {
     return (
@@ -192,8 +191,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
         <BallotStyles />
         <div className="sheet">
           <div className="meta">
-            <span>Saison {saison}</span>
-            <span>Anlage {anlage}</span>
             <span>Mandat erteilt</span>
           </div>
           <div className="success-stamp">✓ Mandat erteilt</div>
@@ -214,8 +211,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
       <div className="sheet">
         {headerNote}
         <div className="meta">
-          <span>Saison {saison}</span>
-          <span>Anlage {anlage}</span>
           <span>SEPA-Mandat</span>
         </div>
 
