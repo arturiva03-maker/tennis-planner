@@ -11110,9 +11110,15 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   {t.uhrzeitBis}
                                 </strong>
                                 <div style={{ marginTop: 4 }}>
-                                  <span className="badge badgeOk">
-                                    durchgeführt
-                                  </span>
+                                  {t.status === "abgesagt" ? (
+                                    <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>
+                                      abgesagt{(t.cancelFee ?? 0) > 0 ? ` · ${euro(t.cancelFee ?? 0)} Absagegebühr` : ""}
+                                    </span>
+                                  ) : (
+                                    <span className="badge badgeOk">
+                                      durchgeführt
+                                    </span>
+                                  )}
                                 </div>
                                 <div
                                   className="muted"
