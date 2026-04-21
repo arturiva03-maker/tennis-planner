@@ -45,24 +45,13 @@ type SepaFormProps = {
   headerNote?: React.ReactNode;
 };
 
-function splitName(name?: string): { vorname: string; nachname: string } {
-  if (!name) return { vorname: "", nachname: "" };
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return { vorname: parts[0], nachname: "" };
-  return {
-    vorname: parts[0],
-    nachname: parts.slice(1).join(" "),
-  };
-}
-
 export default function SepaForm({ anlage = "Wedding", initialData, headerNote }: SepaFormProps) {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
-  const prefill = splitName(initialData?.name);
   const [formData, setFormData] = useState<SepaFormData>({
-    vorname: prefill.vorname,
-    nachname: prefill.nachname,
+    vorname: "",
+    nachname: "",
     istKind: false,
     elternteilName: "",
     strasse: "",
@@ -239,7 +228,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="vorname"
                 value={formData.vorname}
                 onChange={handleChange}
-                placeholder="Vorname"
                 autoComplete="given-name"
               />
             </div>
@@ -254,7 +242,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="nachname"
                 value={formData.nachname}
                 onChange={handleChange}
-                placeholder="Nachname"
                 autoComplete="family-name"
               />
             </div>
@@ -286,7 +273,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                   name="elternteilName"
                   value={formData.elternteilName}
                   onChange={handleChange}
-                  placeholder="Vor- und Nachname"
                 />
               </div>
             </div>
@@ -306,7 +292,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="strasse"
                 value={formData.strasse}
                 onChange={handleChange}
-                placeholder="z. B. Musterstraße 12"
                 autoComplete="street-address"
               />
             </div>
@@ -321,7 +306,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="plz"
                 value={formData.plz}
                 onChange={handleChange}
-                placeholder="z. B. 12345"
                 maxLength={5}
                 autoComplete="postal-code"
               />
@@ -337,7 +321,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="ort"
                 value={formData.ort}
                 onChange={handleChange}
-                placeholder="z. B. Berlin"
                 autoComplete="address-level2"
               />
             </div>
@@ -358,7 +341,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 className="iban"
                 value={formData.iban}
                 onChange={handleChange}
-                placeholder="DE89 3704 0044 0532 0130 00"
                 autoComplete="off"
               />
             </div>
@@ -373,7 +355,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, headerNote }
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="ihre@email.de"
                 autoComplete="email"
               />
             </div>
