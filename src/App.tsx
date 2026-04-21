@@ -3362,6 +3362,7 @@ export default function App() {
 
   const trainerHonorarFuerTraining = useCallback((t: Training) => {
     if (t.isPrivat) return 0;
+    if (t.status === "abgesagt") return 0;
     if (typeof trainerHonorarAnpassungen[t.id] === "number") {
       return trainerHonorarAnpassungen[t.id];
     }
