@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm";
-import ProbetrainingForm from "./ProbetrainingForm";
 import SepaForm from "./SepaForm";
 import StepHeader from "./components/StepHeader";
 import "./App.css";
@@ -10,14 +8,9 @@ type WeddingRegistrationWrapperProps = {
   directToProbetraining?: boolean;
 };
 
-export default function WeddingRegistrationWrapper({ directToProbetraining }: WeddingRegistrationWrapperProps) {
-  const navigate = useNavigate();
+export default function WeddingRegistrationWrapper(_: WeddingRegistrationWrapperProps) {
   const [step, setStep] = useState<"registration" | "sepa">("registration");
   const [registrationData, setRegistrationData] = useState<{ name: string; email: string } | null>(null);
-
-  if (directToProbetraining) {
-    return <ProbetrainingForm onBack={() => navigate("/wedding")} />;
-  }
 
   if (step === "sepa" && registrationData) {
     return (

@@ -795,7 +795,7 @@ export default function WeddingPage() {
               ))}
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
                 <a
-                  href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
+                  href="https://tennistrainer-app.de/anmeldung-wedding"
                   style={{
                     background: colors.primary,
                     color: colors.white,
@@ -876,7 +876,7 @@ export default function WeddingPage() {
                 </button>
               ))}
               <a
-                href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
+                href="https://tennistrainer-app.de/anmeldung-wedding"
                 style={{
                   display: "block",
                   background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
@@ -1015,7 +1015,7 @@ export default function WeddingPage() {
             {/* CTAs */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
               <a
-                href="https://tennistrainer-app.de/anmeldung-wedding-probetraining"
+                href="https://tennistrainer-app.de/anmeldung-wedding"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -2070,7 +2070,7 @@ export default function WeddingPage() {
                     </p>
                     {faq.q.includes("Probestunde") && (
                       <a
-                        href="/anmeldung-wedding-probetraining"
+                        href="/anmeldung-wedding"
                         style={{
                           display: "inline-block",
                           marginTop: 12,
@@ -2083,7 +2083,7 @@ export default function WeddingPage() {
                           textDecoration: "none",
                         }}
                       >
-                        Probetraining anfragen
+                        Jetzt anmelden
                       </a>
                     )}
                   </div>
