@@ -72,20 +72,22 @@ const BALLOT_CSS = `
 .ballotForm {
   --paper: oklch(0.987 0.004 var(--h));
   --paper-sunk: oklch(0.965 0.006 var(--h));
-  --ink: oklch(0.22 0.015 var(--h));
-  --muted: oklch(0.5 0.012 var(--h));
-  --muted-soft: oklch(0.66 0.01 var(--h));
-  --hairline: oklch(0.9 0.008 var(--h));
-  --hairline-strong: oklch(0.8 0.012 var(--h));
+  --ink: oklch(0.19 0.015 var(--h));
+  --muted: oklch(0.4 0.014 var(--h));
+  --muted-soft: oklch(0.55 0.012 var(--h));
+  --hairline: oklch(0.87 0.008 var(--h));
+  --hairline-strong: oklch(0.74 0.014 var(--h));
   --accent: var(--a);
-  --accent-soft: color-mix(in oklab, var(--a) 10%, var(--paper));
-  --danger: oklch(0.52 0.17 25);
+  --accent-soft: color-mix(in oklab, var(--a) 12%, var(--paper));
+  --danger: oklch(0.5 0.18 25);
   background: var(--paper);
   color: var(--ink);
   font-family: 'Spectral', 'Source Serif 4', Georgia, serif;
   min-height: 100vh;
   padding: clamp(32px, 6vw, 88px) clamp(20px, 5vw, 56px);
-  font-feature-settings: "onum" 1, "liga" 1;
+  font-feature-settings: "lnum" 1, "liga" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 .ballotForm *, .ballotForm *::before, .ballotForm *::after { box-sizing: border-box; }
 .ballotForm .sheet { max-width: 680px; margin: 0 auto; }
@@ -98,8 +100,8 @@ const BALLOT_CSS = `
   flex-wrap: wrap;
   gap: 12px 20px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 40px;
@@ -116,18 +118,20 @@ const BALLOT_CSS = `
 .ballotForm h1.display {
   font-family: 'Spectral', Georgia, serif;
   font-weight: 300;
-  font-size: clamp(2.25rem, 5.5vw, 3.75rem);
-  line-height: 1.02;
+  font-size: clamp(2.5rem, 5.8vw, 4rem);
+  line-height: 1.04;
   letter-spacing: -0.02em;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
   color: var(--ink);
+  font-feature-settings: "onum" 1, "liga" 1;
 }
 .ballotForm .display em { font-style: italic; font-weight: 400; }
 .ballotForm .intro {
-  font-size: 1.0625rem;
-  line-height: 1.65;
-  color: var(--muted);
-  max-width: 54ch;
+  font-size: 1.1875rem;
+  line-height: 1.7;
+  color: var(--ink);
+  opacity: 0.78;
+  max-width: 58ch;
   margin: 0 0 32px;
 }
 .ballotForm .notice {
@@ -141,14 +145,15 @@ const BALLOT_CSS = `
 }
 .ballotForm .notice .label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
-  padding-top: 2px;
+  padding-top: 3px;
+  font-weight: 500;
 }
-.ballotForm .notice .body { font-size: 0.9375rem; line-height: 1.65; color: var(--ink); }
-.ballotForm .notice .body p { margin: 0 0 8px; max-width: 58ch; }
+.ballotForm .notice .body { font-size: 1.0625rem; line-height: 1.7; color: var(--ink); }
+.ballotForm .notice .body p { margin: 0 0 10px; max-width: 62ch; }
 .ballotForm .notice .body p:last-child { margin-bottom: 0; }
 .ballotForm .notice a {
   color: var(--ink);
@@ -173,24 +178,25 @@ const BALLOT_CSS = `
 }
 .ballotForm .section-head .num {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
+  font-weight: 500;
 }
 .ballotForm .section-head .title {
   font-family: 'Spectral', serif;
   font-weight: 500;
-  font-size: 1.1875rem;
-  letter-spacing: -0.005em;
+  font-size: 1.4375rem;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 .ballotForm .section-note {
-  font-size: 0.875rem;
-  line-height: 1.55;
+  font-size: 1rem;
+  line-height: 1.65;
   color: var(--muted);
-  margin: 0 0 8px;
-  max-width: 56ch;
+  margin: 0 0 12px;
+  max-width: 60ch;
 }
 .ballotForm .field-row {
   display: grid;
@@ -203,21 +209,22 @@ const BALLOT_CSS = `
 .ballotForm .field-row:last-of-type { border-bottom: 1px solid var(--hairline-strong); }
 .ballotForm .field-num {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--muted-soft);
-  letter-spacing: 0.08em;
-  padding-top: 24px;
+  letter-spacing: 0.06em;
+  padding-top: 26px;
   font-variant-numeric: tabular-nums;
 }
 .ballotForm .field-body { min-width: 0; }
 .ballotForm .field-body > label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink);
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-weight: 500;
 }
 .ballotForm .field-body .req { color: var(--accent); margin-left: 4px; }
 .ballotForm .field-body input[type="text"],
@@ -226,17 +233,18 @@ const BALLOT_CSS = `
 .ballotForm .field-body input[type="number"],
 .ballotForm .field-body textarea {
   font-family: 'Spectral', Georgia, serif;
-  font-size: 1.125rem;
+  font-size: 1.1875rem;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--ink);
   width: 100%;
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--hairline-strong);
-  padding: 4px 0 10px;
+  padding: 6px 0 12px;
   outline: none;
   transition: border-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  font-feature-settings: "lnum" 1, "liga" 1;
 }
 .ballotForm .field-body input:focus,
 .ballotForm .field-body textarea:focus {
@@ -257,11 +265,11 @@ const BALLOT_CSS = `
 }
 .ballotForm .segmented button {
   position: relative;
-  padding: 12px 14px;
+  padding: 14px 16px;
   font-family: 'Spectral', serif;
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   font-weight: 400;
-  color: var(--muted);
+  color: var(--ink);
   background: transparent;
   border: 0;
   border-right: 1px solid var(--hairline);
@@ -270,11 +278,11 @@ const BALLOT_CSS = `
   transition: color 180ms ease, background 180ms ease;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
+  gap: 12px;
+  min-height: 48px;
 }
 .ballotForm .segmented button:last-child { border-right: 0; }
-.ballotForm .segmented button:hover:not(.active) { color: var(--ink); }
+.ballotForm .segmented button:hover:not(.active) { background: color-mix(in oklab, var(--accent) 5%, var(--paper)); }
 .ballotForm .segmented button.active {
   color: var(--ink);
   background: var(--accent-soft);
@@ -302,16 +310,16 @@ const BALLOT_CSS = `
 .ballotForm .verf-row:last-of-type { border-bottom: 1px solid var(--hairline-strong); }
 .ballotForm .verf-num {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   color: var(--muted-soft);
   font-variant-numeric: tabular-nums;
 }
 .ballotForm .verf-day {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.78rem;
-  letter-spacing: 0.14em;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
 }
 .ballotForm .verf-controls {
   display: flex;
@@ -321,22 +329,22 @@ const BALLOT_CSS = `
 }
 .ballotForm select.verf-select {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--hairline-strong);
-  padding: 4px 18px 6px 4px;
-  min-width: 68px;
+  padding: 6px 22px 8px 4px;
+  min-width: 76px;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
   transition: border-color 220ms ease, color 220ms ease;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 8px) 12px, calc(100% - 4px) 12px;
-  background-size: 4px 4px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 10px) 15px, calc(100% - 6px) 15px;
+  background-size: 5px 5px;
   background-repeat: no-repeat;
 }
 .ballotForm select.verf-select:focus { border-bottom-color: var(--accent); }
@@ -344,25 +352,26 @@ const BALLOT_CSS = `
 .ballotForm .dash {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 .ballotForm .checkbox {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
   cursor: pointer;
   user-select: none;
+  font-weight: 500;
 }
 .ballotForm .checkbox input {
   appearance: none;
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border: 1px solid var(--hairline-strong);
   background: var(--paper);
   cursor: pointer;
@@ -377,7 +386,7 @@ const BALLOT_CSS = `
 }
 .ballotForm .checkbox input:checked::after {
   content: "";
-  width: 6px; height: 6px;
+  width: 8px; height: 8px;
   background: var(--paper);
 }
 .ballotForm .submit-area {
@@ -390,9 +399,11 @@ const BALLOT_CSS = `
   padding-top: 32px;
 }
 .ballotForm .agb {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   color: var(--muted);
   margin: 0;
+  max-width: 58ch;
 }
 .ballotForm .agb a {
   color: var(--ink);
@@ -403,14 +414,14 @@ const BALLOT_CSS = `
 }
 .ballotForm button.primary {
   font-family: 'Spectral', serif;
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 500;
   color: var(--paper);
   background: var(--ink);
   border: 1px solid var(--ink);
-  padding: 16px 32px;
+  padding: 18px 36px;
   cursor: pointer;
-  letter-spacing: 0.005em;
+  letter-spacing: 0.01em;
   display: inline-flex;
   align-items: center;
   gap: 16px;
@@ -441,29 +452,33 @@ const BALLOT_CSS = `
   display: grid;
   grid-template-columns: 96px 1fr;
   gap: 20px;
-  padding: 12px 0;
+  padding: 14px 0;
   margin: 24px 0 0;
   border-top: 1px solid var(--danger);
   border-bottom: 1px solid var(--danger);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
   color: var(--ink);
 }
 .ballotForm .error-line .label {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--danger);
+  font-weight: 500;
+  padding-top: 2px;
 }
 .ballotForm .success-stamp {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.2em;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
   color: var(--accent);
-  padding: 6px 10px;
+  padding: 8px 12px;
   border: 1px solid var(--accent);
   display: inline-block;
   margin-bottom: 24px;
+  font-weight: 500;
 }
 
 /* Overlay (modals in ballot style) */
@@ -493,14 +508,15 @@ const BALLOT_CSS = `
 }
 .ballotForm .overlay-sheet .stamp {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 12px;
+  font-weight: 500;
 }
 .ballotForm .overlay-sheet .stamp::before {
   content: "";
@@ -510,27 +526,29 @@ const BALLOT_CSS = `
 }
 .ballotForm .overlay-sheet h2 {
   font-family: 'Spectral', serif;
-  font-weight: 400;
-  font-size: 1.5rem;
+  font-weight: 500;
+  font-size: 1.75rem;
   line-height: 1.25;
   margin: 0 0 16px;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
 .ballotForm .overlay-sheet p {
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--muted);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--ink);
+  opacity: 0.82;
   margin: 0 0 12px;
 }
 .ballotForm .overlay-sheet .countdown {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted-soft);
+  color: var(--muted);
   margin: 24px 0 16px;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 .ballotForm .overlay-sheet .actions {
   display: flex;
