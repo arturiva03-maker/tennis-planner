@@ -42,6 +42,10 @@ export default function AGBPage() {
               <td>Einzeltraining</td>
               <td className="price">40 EUR / Stunde</td>
             </tr>
+            <tr>
+              <td>Probetraining</td>
+              <td className="price">25 EUR / Stunde</td>
+            </tr>
           </tbody>
         </table>
 
