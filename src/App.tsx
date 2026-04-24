@@ -4918,8 +4918,15 @@ Deine Tennisschule`;
     }, 0)
   );
 
-  const trainerHonorarBezahltTotal = abrechnungTrainer.totalHonorarBezahlt;
-  const trainerHonorarOffenTotal = abrechnungTrainer.totalHonorarOffen;
+  const gefilterteTrainerRow = abrechnungTrainerFilter !== "alle"
+    ? abrechnungTrainer.rows.find((r) => r.id === abrechnungTrainerFilter)
+    : undefined;
+  const trainerHonorarBezahltTotal = gefilterteTrainerRow
+    ? gefilterteTrainerRow.honorarBezahlt
+    : abrechnungTrainer.totalHonorarBezahlt;
+  const trainerHonorarOffenTotal = gefilterteTrainerRow
+    ? gefilterteTrainerRow.honorarOffen
+    : abrechnungTrainer.totalHonorarOffen;
 
   const eigeneTrainerRow = abrechnungTrainer.rows.find(
     (r) => r.id === ownTrainerId
