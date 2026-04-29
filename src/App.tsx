@@ -10374,35 +10374,47 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         }
                       });
 
-                      // Aggregation: monatliche Tarife pro Tarif
-                      const monthlyTarifSummary = new Map<string, {
+                      // Aggregation: monatliche Tarife pro Slot (Tarif + Wochentag + Uhrzeit)
+                      type MonthlySlotRow = {
                         tarifName: string;
                         preisProStunde: number;
-                        weekdays: Set<string>;
+                        weekday: number;
+                        uhrzeitVon: string;
+                        uhrzeitBis: string;
+                        actualCount: number;
+                        possible: number;
                         sum: number;
-                      }>();
+                      };
+                      const monthlySlotRows = new Map<string, MonthlySlotRow>();
 
                       sortedTrainings.forEach((t) => {
                         const cfg = getPreisConfig(t, tarifById);
                         if (cfg?.abrechnung !== "monatlich") return;
                         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
                         const weekday = new Date(t.datum + "T12:00:00").getDay();
-                        if (!monthlyTarifSummary.has(tarifKey)) {
+                        const slotKey = `${tarifKey}__${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+                        if (!monthlySlotRows.has(slotKey)) {
                           const tarifData = t.tarifId ? tarifById.get(t.tarifId) : null;
-                          monthlyTarifSummary.set(tarifKey, {
+                          monthlySlotRows.set(slotKey, {
                             tarifName: tarifData?.name || "Monatlich",
                             preisProStunde: cfg.preisProStunde,
-                            weekdays: new Set<string>(),
+                            weekday,
+                            uhrzeitVon: t.uhrzeitVon,
+                            uhrzeitBis: t.uhrzeitBis,
+                            actualCount: 0,
+                            possible: weekdayOccurrencesInMonth(abrechnungMonat, weekday) || 1,
                             sum: 0,
                           });
                         }
-                        const entry = monthlyTarifSummary.get(tarifKey)!;
-                        entry.weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
-                        entry.sum = round2(entry.sum + (perTrainingPrice.get(t.id) ?? 0));
+                        const slot = monthlySlotRows.get(slotKey)!;
+                        slot.actualCount += 1;
+                        slot.sum = round2(slot.sum + (perTrainingPrice.get(t.id) ?? 0));
                       });
 
                       let monthlyTotal = 0;
-                      monthlyTarifSummary.forEach((e) => { monthlyTotal = round2(monthlyTotal + e.sum); });
+                      monthlySlotRows.forEach((e) => { monthlyTotal = round2(monthlyTotal + e.sum); });
+
+                      const wdLabels = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 
                       // Nicht-monatliche Trainings: Einzeltrainings vs. Absagegebühren
                       let regularTotal = 0;
@@ -10498,7 +10510,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                           <td>
                                             {euro(preisAnzeige ?? 0)}
                                             {isMonthly && (
-                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 4 }} title="anteilig aus monatlichem Tarif">mtl.</span>
+                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }} title="anteilig aus monatlichem Tarif">
+                                                · anteilig
+                                              </span>
                                             )}
                                           </td>
                                           <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
@@ -10520,12 +10534,17 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   background: "var(--bg-inset)",
                                   borderRadius: "var(--radius-md)"
                                 }}>
-                                  {monthlyTarifSummary.size > 0 && (
+                                  {monthlySlotRows.size > 0 && (
                                     <div style={{ marginBottom: 4 }}>
-                                      {Array.from(monthlyTarifSummary.entries()).map(([key, entry]) => (
+                                      {Array.from(monthlySlotRows.entries()).map(([key, slot]) => (
                                         <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                          <span>{entry.tarifName} ({entry.weekdays.size}x Wochentag, {euro(entry.preisProStunde)} pauschal)</span>
-                                          <strong>{euro(entry.sum)}</strong>
+                                          <span>
+                                            {slot.tarifName} · {wdLabels[slot.weekday]} {slot.uhrzeitVon}–{slot.uhrzeitBis}
+                                            <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: 6 }}>
+                                              ({slot.actualCount} von {slot.possible} × {euro(slot.preisProStunde)} ÷ {slot.possible})
+                                            </span>
+                                          </span>
+                                          <strong>{euro(slot.sum)}</strong>
                                         </div>
                                       ))}
                                     </div>
