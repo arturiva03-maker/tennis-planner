@@ -10388,7 +10388,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         sum: number;
                       };
                       const monthlySlotRows = new Map<string, MonthlySlotRow>();
-                      const cancellationRefunds: { datum: string; uhrzeitVon: string; uhrzeitBis: string; refund: number }[] = [];
+                      const cancellationRefunds: { datum: string; uhrzeitVon: string; uhrzeitBis: string; refund: number; slotShare: number }[] = [];
                       let cancelRefundsTotal = 0;
 
                       sortedTrainings.forEach((t) => {
@@ -10414,7 +10414,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         }
                         const slot = monthlySlotRows.get(slotKey)!;
                         slot.actualCount += 1;
-                        slot.sum = round2(slot.sum + (perTrainingPrice.get(t.id) ?? 0));
+                        const slotShare = perTrainingPrice.get(t.id) ?? 0;
+                        slot.sum = round2(slot.sum + slotShare);
                         if (t.status === "abgesagt") {
                           slot.abgesagtCount += 1;
                           if (typeof t.cancelFee === "number" && t.cancelFee > 0) {
@@ -10423,6 +10424,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               uhrzeitVon: t.uhrzeitVon,
                               uhrzeitBis: t.uhrzeitBis,
                               refund: t.cancelFee,
+                              slotShare: round2(slotShare),
                             });
                             cancelRefundsTotal = round2(cancelRefundsTotal + t.cancelFee);
                           }
@@ -10611,14 +10613,27 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <div style={{ marginTop: 4 }}>
                                       {cancellationRefunds.map((c, idx) => {
                                         const [yy, mm, dd] = c.datum.split("-");
+                                        const retention = round2(c.slotShare - c.refund);
+                                        const partial = retention > 0;
+                                        const labelStyle: React.CSSProperties = partial
+                                          ? { fontWeight: 600 }
+                                          : {};
                                         return (
                                           <div key={idx} style={{
                                             display: "flex",
                                             justifyContent: "space-between",
                                             marginTop: 2,
                                             color: "#166534",
+                                            ...labelStyle,
                                           }}>
-                                            <span>Erstattung Absage {dd}.{mm}.{yy}, {c.uhrzeitVon}–{c.uhrzeitBis}</span>
+                                            <span>
+                                              Erstattung Absage {dd}.{mm}.{yy}, {c.uhrzeitVon}–{c.uhrzeitBis}
+                                              {partial && (
+                                                <span style={{ color: "#b45309", fontSize: 12, marginLeft: 6, fontWeight: 600 }}>
+                                                  · Schule behält {euro(retention)}
+                                                </span>
+                                              )}
+                                            </span>
                                             <strong>−{euro(c.refund)}</strong>
                                           </div>
                                         );
