@@ -10386,6 +10386,18 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         monthlyTotal += entry.preisProStunde * entry.weekdays.size;
                       });
 
+                      // Pro Slot (Tarif + Wochentag + Uhrzeit) zaehlen, wie viele Trainings stattfinden
+                      // -> anteiliger Preis pro Training = preisProStunde / count
+                      const monthlySlotCounts = new Map<string, number>();
+                      sortedTrainings.forEach((t) => {
+                        const cfg = getPreisConfig(t, tarifById);
+                        if (cfg?.abrechnung !== "monatlich") return;
+                        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+                        const trainingDate = new Date(t.datum + "T12:00:00");
+                        const slotKey = `${tarifKey}__${trainingDate.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+                        monthlySlotCounts.set(slotKey, (monthlySlotCounts.get(slotKey) ?? 0) + 1);
+                      });
+
                       // Nicht-monatliche Trainings: Einzeltrainings (durchgefuehrt) und Absagegebuehren getrennt
                       let regularTotal = 0;
                       let cancelFeesTotal = 0;
@@ -10464,9 +10476,18 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       const trainerName = trainerById.get(trainerId)?.name ?? "Unbekannt";
                                       const cfg = getPreisConfig(t, tarifById);
                                       const isMonthly = cfg?.abrechnung === "monatlich";
-                                      const preis = isMonthly ? null : priceFuerSpieler(t);
                                       const datum = new Date(t.datum);
                                       const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
+
+                                      let preisAnzeige: number | null = null;
+                                      if (isMonthly && cfg) {
+                                        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
+                                        const slotKey = `${tarifKey}__${datum.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
+                                        const count = monthlySlotCounts.get(slotKey) ?? 1;
+                                        preisAnzeige = round2(cfg.preisProStunde / count);
+                                      } else {
+                                        preisAnzeige = priceFuerSpieler(t);
+                                      }
 
                                       return (
                                         <tr key={t.id}>
@@ -10479,10 +10500,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             )}
                                           </td>
                                           <td>
-                                            {isMonthly ? (
-                                              <span style={{ color: "var(--text-muted)", fontSize: 12 }}>mtl.</span>
-                                            ) : (
-                                              euro(preis ?? 0)
+                                            {euro(preisAnzeige ?? 0)}
+                                            {isMonthly && (
+                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 4 }} title="anteilig aus monatlichem Tarif">mtl.</span>
                                             )}
                                           </td>
                                           <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
