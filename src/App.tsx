@@ -10388,6 +10388,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         sum: number;
                       };
                       const monthlySlotRows = new Map<string, MonthlySlotRow>();
+                      const cancellationRefunds: { datum: string; uhrzeitVon: string; uhrzeitBis: string; refund: number }[] = [];
                       let cancelRefundsTotal = 0;
 
                       sortedTrainings.forEach((t) => {
@@ -10417,6 +10418,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         if (t.status === "abgesagt") {
                           slot.abgesagtCount += 1;
                           if (typeof t.cancelFee === "number" && t.cancelFee > 0) {
+                            cancellationRefunds.push({
+                              datum: t.datum,
+                              uhrzeitVon: t.uhrzeitVon,
+                              uhrzeitBis: t.uhrzeitBis,
+                              refund: t.cancelFee,
+                            });
                             cancelRefundsTotal = round2(cancelRefundsTotal + t.cancelFee);
                           }
                         } else {
@@ -10447,10 +10454,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                       const baseSum = round2(monthlyTotal + regularTotal + cancelFeesTotal);
                       const adjustment = getAdjustmentForSpieler(selectedSpielerForDetail);
                       const adjustedSum = round2(baseSum + adjustment);
-                      // Anpassung in "Erstattung für Absagen" und "sonstige Anpassung" aufteilen,
-                      // sofern cancelRefundsTotal in der Anpassung steckt
-                      const cancellationRefund = cancelRefundsTotal > 0 ? -cancelRefundsTotal : 0;
-                      const otherAdjustment = round2(adjustment - cancellationRefund);
+                      // Erstattungssumme aus den einzelnen abgesagten Trainings.
+                      // Die manuelle monatliche Anpassung kann sowohl diese Erstattungen als auch
+                      // weitere Korrekturen enthalten -> Rest ausweisen.
+                      const totalCancellationRefund = cancelRefundsTotal > 0 ? -cancelRefundsTotal : 0;
+                      const otherAdjustment = round2(adjustment - totalCancellationRefund);
                       const sumBarSpieler = getSumBarForSpieler(selectedSpielerForDetail);
                       const restOffenDetail = round2(adjustedSum - sumBarSpieler);
                       const paymentsFlag = payments[paymentKey(abrechnungMonat, selectedSpielerForDetail)] ?? false;
@@ -10599,15 +10607,22 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <span>Zwischensumme</span>
                                     <strong>{euro(baseSum)}</strong>
                                   </div>
-                                  {cancellationRefund !== 0 && (
-                                    <div style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      marginTop: 4,
-                                      color: "#166534",
-                                    }}>
-                                      <span>Erstattung für abgesagte Trainings</span>
-                                      <strong>{euro(cancellationRefund)}</strong>
+                                  {cancellationRefunds.length > 0 && (
+                                    <div style={{ marginTop: 4 }}>
+                                      {cancellationRefunds.map((c, idx) => {
+                                        const [yy, mm, dd] = c.datum.split("-");
+                                        return (
+                                          <div key={idx} style={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            marginTop: 2,
+                                            color: "#166534",
+                                          }}>
+                                            <span>Erstattung Absage {dd}.{mm}.{yy}, {c.uhrzeitVon}–{c.uhrzeitBis}</span>
+                                            <strong>−{euro(c.refund)}</strong>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                   {otherAdjustment !== 0 && (
@@ -10617,7 +10632,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       marginTop: 4,
                                       color: otherAdjustment < 0 ? "#166534" : "#b91c1c",
                                     }}>
-                                      <span>{cancellationRefund !== 0
+                                      <span>{cancellationRefunds.length > 0
                                         ? (otherAdjustment < 0 ? "Weitere Erstattung / Anpassung" : "Weiterer Aufschlag / Anpassung")
                                         : (otherAdjustment < 0 ? "Erstattung / Anpassung" : "Aufschlag / Anpassung")}</span>
                                       <strong>{otherAdjustment < 0 ? "" : "+"}{euro(otherAdjustment)}</strong>
