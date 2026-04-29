@@ -10741,95 +10741,105 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                       </div>
                     )}
 
-                    {/* Zuschlag / Abzug für Admin */}
-                    {!isTrainer && abrechnungTrainerFilter !== "alle" && (
-                      <div style={{ marginTop: 14 }}>
-                        <div className="card cardInset">
-                          <h2>Zuschlag / Abzug</h2>
-                          <p className="muted" style={{ marginBottom: 8 }}>
-                            Manuelle Anpassung des Honorars ohne Verknüpfung zu einer Stunde (z.B. Bonus, Reisekosten, Abzug).
-                          </p>
-                          {(trainerZuschlaege[`${abrechnungMonat}__${abrechnungTrainerFilter}`] ?? []).length > 0 && (
-                            <table className="table" style={{ marginBottom: 10 }}>
-                              <thead>
-                                <tr>
-                                  <th>Betrag</th>
-                                  <th>Notiz</th>
-                                  <th></th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(trainerZuschlaege[`${abrechnungMonat}__${abrechnungTrainerFilter}`] ?? []).map((z) => (
-                                  <tr key={z.id}>
-                                    <td style={{ color: z.betrag >= 0 ? "#166534" : "#991b1b", fontWeight: 600 }}>
-                                      {z.betrag >= 0 ? "+" : ""}{euro(z.betrag)}
-                                    </td>
-                                    <td>{z.notiz || <span className="muted">—</span>}</td>
-                                    <td>
-                                      <button
-                                        className="btn micro btnGhost"
-                                        style={{ fontSize: 11, color: "#ef4444" }}
-                                        onClick={() => {
-                                          const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
-                                          setTrainerZuschlaege((prev) => ({
-                                            ...prev,
-                                            [key]: (prev[key] ?? []).filter((x) => x.id !== z.id),
-                                          }));
-                                        }}
-                                      >
-                                        Entfernen
-                                      </button>
-                                    </td>
+                    {/* Zuschlag / Abzug — Admin: editierbar, Trainer: nur lesen (sofern Einträge vorhanden) */}
+                    {abrechnungTrainerFilter !== "alle" && (() => {
+                      const zuschlaegeListe = trainerZuschlaege[`${abrechnungMonat}__${abrechnungTrainerFilter}`] ?? [];
+                      if (isTrainer && zuschlaegeListe.length === 0) return null;
+                      return (
+                        <div style={{ marginTop: 14 }}>
+                          <div className="card cardInset">
+                            <h2>Zuschlag / Abzug</h2>
+                            <p className="muted" style={{ marginBottom: 8 }}>
+                              {isTrainer
+                                ? "Korrekturen vom Admin auf dein Honorar (z.B. Bonus, Reisekosten, Abzug). Bereits in deinem offenen Honorar oben enthalten."
+                                : "Manuelle Anpassung des Honorars ohne Verknüpfung zu einer Stunde (z.B. Bonus, Reisekosten, Abzug)."}
+                            </p>
+                            {zuschlaegeListe.length > 0 && (
+                              <table className="table" style={{ marginBottom: 10 }}>
+                                <thead>
+                                  <tr>
+                                    <th>Betrag</th>
+                                    <th>Notiz</th>
+                                    {!isTrainer && <th></th>}
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
-                          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
-                            <div>
-                              <div style={{ fontSize: 12, marginBottom: 2 }}>Betrag (€, negativ = Abzug)</div>
-                              <input
-                                type="number"
-                                step="0.01"
-                                style={{ width: 100, fontSize: 13, padding: "4px 8px" }}
-                                placeholder="z.B. 20 oder -10"
-                                value={zuschlagForm.betrag}
-                                onChange={(e) => setZuschlagForm((f) => ({ ...f, betrag: e.target.value }))}
-                              />
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 12, marginBottom: 2 }}>Notiz (optional)</div>
-                              <input
-                                type="text"
-                                style={{ width: 180, fontSize: 13, padding: "4px 8px" }}
-                                placeholder="z.B. Regenabbruch, Bonus"
-                                value={zuschlagForm.notiz}
-                                onChange={(e) => setZuschlagForm((f) => ({ ...f, notiz: e.target.value }))}
-                              />
-                            </div>
-                            <button
-                              className="btn"
-                              style={{ fontSize: 13, padding: "4px 14px" }}
-                              onClick={() => {
-                                const val = parseFloat(zuschlagForm.betrag.replace(",", "."));
-                                if (isNaN(val)) return;
-                                const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
-                                setTrainerZuschlaege((prev) => ({
-                                  ...prev,
-                                  [key]: [
-                                    ...(prev[key] ?? []),
-                                    { id: uid(), betrag: round2(val), notiz: zuschlagForm.notiz.trim() },
-                                  ],
-                                }));
-                                setZuschlagForm({ betrag: "", notiz: "" });
-                              }}
-                            >
-                              Hinzufügen
-                            </button>
+                                </thead>
+                                <tbody>
+                                  {zuschlaegeListe.map((z) => (
+                                    <tr key={z.id}>
+                                      <td style={{ color: z.betrag >= 0 ? "#166534" : "#991b1b", fontWeight: 600 }}>
+                                        {z.betrag >= 0 ? "+" : ""}{euro(z.betrag)}
+                                      </td>
+                                      <td>{z.notiz || <span className="muted">—</span>}</td>
+                                      {!isTrainer && (
+                                        <td>
+                                          <button
+                                            className="btn micro btnGhost"
+                                            style={{ fontSize: 11, color: "#ef4444" }}
+                                            onClick={() => {
+                                              const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
+                                              setTrainerZuschlaege((prev) => ({
+                                                ...prev,
+                                                [key]: (prev[key] ?? []).filter((x) => x.id !== z.id),
+                                              }));
+                                            }}
+                                          >
+                                            Entfernen
+                                          </button>
+                                        </td>
+                                      )}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                            {!isTrainer && (
+                              <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                                <div>
+                                  <div style={{ fontSize: 12, marginBottom: 2 }}>Betrag (€, negativ = Abzug)</div>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    style={{ width: 100, fontSize: 13, padding: "4px 8px" }}
+                                    placeholder="z.B. 20 oder -10"
+                                    value={zuschlagForm.betrag}
+                                    onChange={(e) => setZuschlagForm((f) => ({ ...f, betrag: e.target.value }))}
+                                  />
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: 12, marginBottom: 2 }}>Notiz (optional)</div>
+                                  <input
+                                    type="text"
+                                    style={{ width: 180, fontSize: 13, padding: "4px 8px" }}
+                                    placeholder="z.B. Regenabbruch, Bonus"
+                                    value={zuschlagForm.notiz}
+                                    onChange={(e) => setZuschlagForm((f) => ({ ...f, notiz: e.target.value }))}
+                                  />
+                                </div>
+                                <button
+                                  className="btn"
+                                  style={{ fontSize: 13, padding: "4px 14px" }}
+                                  onClick={() => {
+                                    const val = parseFloat(zuschlagForm.betrag.replace(",", "."));
+                                    if (isNaN(val)) return;
+                                    const key = `${abrechnungMonat}__${abrechnungTrainerFilter}`;
+                                    setTrainerZuschlaege((prev) => ({
+                                      ...prev,
+                                      [key]: [
+                                        ...(prev[key] ?? []),
+                                        { id: uid(), betrag: round2(val), notiz: zuschlagForm.notiz.trim() },
+                                      ],
+                                    }));
+                                    setZuschlagForm({ betrag: "", notiz: "" });
+                                  }}
+                                >
+                                  Hinzufügen
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {isTrainer &&
                       !(
