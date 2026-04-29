@@ -10382,10 +10382,13 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         uhrzeitVon: string;
                         uhrzeitBis: string;
                         actualCount: number;
+                        durchgefuehrtCount: number;
+                        abgesagtCount: number;
                         possible: number;
                         sum: number;
                       };
                       const monthlySlotRows = new Map<string, MonthlySlotRow>();
+                      let cancelRefundsTotal = 0;
 
                       sortedTrainings.forEach((t) => {
                         const cfg = getPreisConfig(t, tarifById);
@@ -10402,6 +10405,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                             uhrzeitVon: t.uhrzeitVon,
                             uhrzeitBis: t.uhrzeitBis,
                             actualCount: 0,
+                            durchgefuehrtCount: 0,
+                            abgesagtCount: 0,
                             possible: weekdayOccurrencesInMonth(abrechnungMonat, weekday) || 1,
                             sum: 0,
                           });
@@ -10409,6 +10414,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         const slot = monthlySlotRows.get(slotKey)!;
                         slot.actualCount += 1;
                         slot.sum = round2(slot.sum + (perTrainingPrice.get(t.id) ?? 0));
+                        if (t.status === "abgesagt") {
+                          slot.abgesagtCount += 1;
+                          if (typeof t.cancelFee === "number" && t.cancelFee > 0) {
+                            cancelRefundsTotal = round2(cancelRefundsTotal + t.cancelFee);
+                          }
+                        } else {
+                          slot.durchgefuehrtCount += 1;
+                        }
                       });
 
                       let monthlyTotal = 0;
@@ -10434,6 +10447,10 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                       const baseSum = round2(monthlyTotal + regularTotal + cancelFeesTotal);
                       const adjustment = getAdjustmentForSpieler(selectedSpielerForDetail);
                       const adjustedSum = round2(baseSum + adjustment);
+                      // Anpassung in "Erstattung für Absagen" und "sonstige Anpassung" aufteilen,
+                      // sofern cancelRefundsTotal in der Anpassung steckt
+                      const cancellationRefund = cancelRefundsTotal > 0 ? -cancelRefundsTotal : 0;
+                      const otherAdjustment = round2(adjustment - cancellationRefund);
                       const sumBarSpieler = getSumBarForSpieler(selectedSpielerForDetail);
                       const restOffenDetail = round2(adjustedSum - sumBarSpieler);
                       const paymentsFlag = payments[paymentKey(abrechnungMonat, selectedSpielerForDetail)] ?? false;
@@ -10492,13 +10509,15 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       const trainerName = trainerById.get(trainerId)?.name ?? "Unbekannt";
                                       const cfg = getPreisConfig(t, tarifById);
                                       const isMonthly = cfg?.abrechnung === "monatlich";
+                                      const isAbgesagt = t.status === "abgesagt";
                                       const datum = new Date(t.datum);
                                       const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
 
                                       const preisAnzeige = perTrainingPrice.get(t.id) ?? 0;
+                                      const cancelFeeAnzeige = (typeof t.cancelFee === "number" && t.cancelFee > 0) ? t.cancelFee : null;
 
                                       return (
-                                        <tr key={t.id}>
+                                        <tr key={t.id} style={isAbgesagt ? { color: "var(--text-muted)" } : undefined}>
                                           <td>{wochentag}, {t.datum.split("-").reverse().join(".")}</td>
                                           <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
                                           <td>
@@ -10508,17 +10527,25 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             )}
                                           </td>
                                           <td>
-                                            {euro(preisAnzeige ?? 0)}
-                                            {isMonthly && (
+                                            <span style={isAbgesagt && isMonthly ? { textDecoration: "line-through" } : undefined}>
+                                              {euro(preisAnzeige ?? 0)}
+                                            </span>
+                                            {isMonthly && !isAbgesagt && (
                                               <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }} title="anteilig aus monatlichem Tarif">
                                                 · anteilig
+                                              </span>
+                                            )}
+                                            {isMonthly && isAbgesagt && (
+                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }} title="Slot-Anteil bleibt im Tarif, Erstattung ggf. unten">
+                                                · Slot bleibt
+                                                {cancelFeeAnzeige !== null && ` · Erstattung ${euro(cancelFeeAnzeige)}`}
                                               </span>
                                             )}
                                           </td>
                                           <td>{t.barBezahlt ? "Ja" : "Nein"}</td>
                                           <td>
-                                            <span className={`badge ${t.status === "durchgefuehrt" ? "badgeOk" : t.status === "abgesagt" ? "badgeError" : ""}`}>
-                                              {t.status === "durchgefuehrt" ? "durchgeführt" : t.status === "abgesagt" ? "abgesagt" : t.status}
+                                            <span className={`badge ${t.status === "durchgefuehrt" ? "badgeOk" : isAbgesagt ? "badgeError" : ""}`}>
+                                              {t.status === "durchgefuehrt" ? "durchgeführt" : isAbgesagt ? "abgesagt" : t.status}
                                             </span>
                                           </td>
                                         </tr>
@@ -10541,7 +10568,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                           <span>
                                             {slot.tarifName} · {wdLabels[slot.weekday]} {slot.uhrzeitVon}–{slot.uhrzeitBis}
                                             <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: 6 }}>
-                                              ({slot.actualCount} von {slot.possible} × {euro(slot.preisProStunde)} ÷ {slot.possible})
+                                              ({slot.actualCount} von {slot.possible} × {euro(slot.preisProStunde)} ÷ {slot.possible}
+                                              {slot.abgesagtCount > 0 && `, davon ${slot.abgesagtCount} abgesagt`})
                                             </span>
                                           </span>
                                           <strong>{euro(slot.sum)}</strong>
@@ -10571,15 +10599,28 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <span>Zwischensumme</span>
                                     <strong>{euro(baseSum)}</strong>
                                   </div>
-                                  {adjustment !== 0 && (
+                                  {cancellationRefund !== 0 && (
                                     <div style={{
                                       display: "flex",
                                       justifyContent: "space-between",
                                       marginTop: 4,
-                                      color: adjustment < 0 ? "#166534" : "#b91c1c",
+                                      color: "#166534",
                                     }}>
-                                      <span>{adjustment < 0 ? "Erstattung / Anpassung" : "Aufschlag / Anpassung"}</span>
-                                      <strong>{adjustment < 0 ? "" : "+"}{euro(adjustment)}</strong>
+                                      <span>Erstattung für abgesagte Trainings</span>
+                                      <strong>{euro(cancellationRefund)}</strong>
+                                    </div>
+                                  )}
+                                  {otherAdjustment !== 0 && (
+                                    <div style={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      marginTop: 4,
+                                      color: otherAdjustment < 0 ? "#166534" : "#b91c1c",
+                                    }}>
+                                      <span>{cancellationRefund !== 0
+                                        ? (otherAdjustment < 0 ? "Weitere Erstattung / Anpassung" : "Weiterer Aufschlag / Anpassung")
+                                        : (otherAdjustment < 0 ? "Erstattung / Anpassung" : "Aufschlag / Anpassung")}</span>
+                                      <strong>{otherAdjustment < 0 ? "" : "+"}{euro(otherAdjustment)}</strong>
                                     </div>
                                   )}
                                   <div style={{
