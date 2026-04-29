@@ -10353,67 +10353,71 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                         (a, b) => a.datum.localeCompare(b.datum)
                       );
 
-                      // Monatliche Tarife: Berechne Wochentage pro Tarif
+                      // Pro-Training Anteilspreis berechnen (deckungsgleich mit der Abrechnungs-Logik)
+                      const perTrainingPrice = new Map<string, number>();
+                      sortedTrainings.forEach((t) => {
+                        const cfg = getPreisConfig(t, tarifById);
+                        if (!cfg) {
+                          perTrainingPrice.set(t.id, 0);
+                          return;
+                        }
+                        if (cfg.abrechnung === "monatlich") {
+                          const trainingDate = new Date(t.datum + "T12:00:00");
+                          const wd = trainingDate.getDay();
+                          const possible = weekdayOccurrencesInMonth(abrechnungMonat, wd) || 1;
+                          const plannedMins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+                          const ratio = (t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < plannedMins)
+                            ? t.actualMinutes / plannedMins : 1;
+                          perTrainingPrice.set(t.id, round2(cfg.preisProStunde * ratio / possible));
+                        } else {
+                          perTrainingPrice.set(t.id, round2(priceFuerSpieler(t)));
+                        }
+                      });
+
+                      // Aggregation: monatliche Tarife pro Tarif
                       const monthlyTarifSummary = new Map<string, {
                         tarifName: string;
                         preisProStunde: number;
                         weekdays: Set<string>;
+                        sum: number;
                       }>();
 
                       sortedTrainings.forEach((t) => {
                         const cfg = getPreisConfig(t, tarifById);
-                        if (cfg?.abrechnung === "monatlich") {
-                          const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-                          const trainingDate = new Date(t.datum + "T12:00:00");
-                          const weekday = trainingDate.getDay();
-
-                          if (!monthlyTarifSummary.has(tarifKey)) {
-                            const tarifData = t.tarifId ? tarifById.get(t.tarifId) : null;
-                            monthlyTarifSummary.set(tarifKey, {
-                              tarifName: tarifData?.name || "Monatlich",
-                              preisProStunde: cfg.preisProStunde,
-                              weekdays: new Set<string>(),
-                            });
-                          }
-                          // Zähle Trainings nach Wochentag UND Uhrzeit
-                          monthlyTarifSummary.get(tarifKey)!.weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
-                        }
-                      });
-
-                      // Gesamt monatliche Summe berechnen
-                      let monthlyTotal = 0;
-                      monthlyTarifSummary.forEach((entry) => {
-                        monthlyTotal += entry.preisProStunde * entry.weekdays.size;
-                      });
-
-                      // Pro Slot (Tarif + Wochentag + Uhrzeit) zaehlen, wie viele Trainings stattfinden
-                      // -> anteiliger Preis pro Training = preisProStunde / count
-                      const monthlySlotCounts = new Map<string, number>();
-                      sortedTrainings.forEach((t) => {
-                        const cfg = getPreisConfig(t, tarifById);
                         if (cfg?.abrechnung !== "monatlich") return;
                         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-                        const trainingDate = new Date(t.datum + "T12:00:00");
-                        const slotKey = `${tarifKey}__${trainingDate.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
-                        monthlySlotCounts.set(slotKey, (monthlySlotCounts.get(slotKey) ?? 0) + 1);
+                        const weekday = new Date(t.datum + "T12:00:00").getDay();
+                        if (!monthlyTarifSummary.has(tarifKey)) {
+                          const tarifData = t.tarifId ? tarifById.get(t.tarifId) : null;
+                          monthlyTarifSummary.set(tarifKey, {
+                            tarifName: tarifData?.name || "Monatlich",
+                            preisProStunde: cfg.preisProStunde,
+                            weekdays: new Set<string>(),
+                            sum: 0,
+                          });
+                        }
+                        const entry = monthlyTarifSummary.get(tarifKey)!;
+                        entry.weekdays.add(`${weekday}_${t.uhrzeitVon}_${t.uhrzeitBis}`);
+                        entry.sum = round2(entry.sum + (perTrainingPrice.get(t.id) ?? 0));
                       });
 
-                      // Nicht-monatliche Trainings: Einzeltrainings (durchgefuehrt) und Absagegebuehren getrennt
+                      let monthlyTotal = 0;
+                      monthlyTarifSummary.forEach((e) => { monthlyTotal = round2(monthlyTotal + e.sum); });
+
+                      // Nicht-monatliche Trainings: Einzeltrainings vs. Absagegebühren
                       let regularTotal = 0;
                       let cancelFeesTotal = 0;
                       sortedTrainings.forEach((t) => {
                         const cfg = getPreisConfig(t, tarifById);
                         if (cfg && cfg.abrechnung !== "monatlich") {
-                          const share = priceFuerSpieler(t);
+                          const share = perTrainingPrice.get(t.id) ?? 0;
                           if (t.status === "abgesagt") {
-                            cancelFeesTotal += share;
+                            cancelFeesTotal = round2(cancelFeesTotal + share);
                           } else {
-                            regularTotal += share;
+                            regularTotal = round2(regularTotal + share);
                           }
                         }
                       });
-                      regularTotal = round2(regularTotal);
-                      cancelFeesTotal = round2(cancelFeesTotal);
 
                       const baseSum = round2(monthlyTotal + regularTotal + cancelFeesTotal);
                       const adjustment = getAdjustmentForSpieler(selectedSpielerForDetail);
@@ -10479,15 +10483,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       const datum = new Date(t.datum);
                                       const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
 
-                                      let preisAnzeige: number | null = null;
-                                      if (isMonthly && cfg) {
-                                        const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
-                                        const slotKey = `${tarifKey}__${datum.getDay()}_${t.uhrzeitVon}_${t.uhrzeitBis}`;
-                                        const count = monthlySlotCounts.get(slotKey) ?? 1;
-                                        preisAnzeige = round2(cfg.preisProStunde / count);
-                                      } else {
-                                        preisAnzeige = priceFuerSpieler(t);
-                                      }
+                                      const preisAnzeige = perTrainingPrice.get(t.id) ?? 0;
 
                                       return (
                                         <tr key={t.id}>
@@ -10528,8 +10524,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <div style={{ marginBottom: 4 }}>
                                       {Array.from(monthlyTarifSummary.entries()).map(([key, entry]) => (
                                         <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                          <span>{entry.tarifName} ({entry.weekdays.size}x Wochentag á {euro(entry.preisProStunde)})</span>
-                                          <strong>{euro(entry.preisProStunde * entry.weekdays.size)}</strong>
+                                          <span>{entry.tarifName} ({entry.weekdays.size}x Wochentag, {euro(entry.preisProStunde)} pauschal)</span>
+                                          <strong>{euro(entry.sum)}</strong>
                                         </div>
                                       ))}
                                     </div>
