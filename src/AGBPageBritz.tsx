@@ -67,7 +67,7 @@ export default function AGBPageBritz() {
             <div className="prose">
               <p>Betroffene Trainingszeiten:</p>
               <ul>
-                <li>Mo – Fr · 17 – 21 Uhr</li>
+                <li>Mo – Fr · 16 – 21 Uhr</li>
               </ul>
             </div>
             <table className="ballot-table" style={{ marginBottom: 0 }}>
