@@ -35,6 +35,9 @@ type Trainer = {
   kleinunternehmer?: boolean;
 };
 
+type SepaSequenz = "FRST" | "RCUR" | "OOFF" | "FNAL";
+type SepaLastschriftart = "CORE" | "B2B";
+
 type Spieler = {
   id: string;
   vorname: string;
@@ -45,14 +48,22 @@ type Spieler = {
   rechnungsAdresse?: string;
   notizen?: string;
   iban?: string;
+  bankname?: string;
   mandatsreferenz?: string;
   unterschriftsdatum?: string;
+  sepaSequenz?: SepaSequenz;
+  sepaLastschriftart?: SepaLastschriftart;
   // Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
   abweichenderEmpfaenger?: boolean;
   empfaengerName?: string;
   // Labels für Newsletter-Filterung
   labels?: string[];
 };
+
+const GLAEUBIGER_ID = "DE58ZZZ00002765947";
+const GLAEUBIGER_NAME = "Tennisschule Zlatan Palazov und Artur Ivanenko GbR";
+const GLAEUBIGER_IBAN = "DE74160400000136875200";
+const GLAEUBIGER_BIC = "COBADEFFXXX";
 
 type Tarif = {
   id: string;
@@ -297,6 +308,52 @@ function pad2(n: number) {
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function nowISOSeconds() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
+function normalizeIban(raw: string): string {
+  return (raw || "").replace(/\s+/g, "").toUpperCase();
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function sanitizeSepaName(s: string): string {
+  // SEPA erlaubt nur bestimmte Zeichen, Umlaute werden ersetzt
+  return s
+    .replace(/ä/g, "ae").replace(/Ä/g, "Ae")
+    .replace(/ö/g, "oe").replace(/Ö/g, "Oe")
+    .replace(/ü/g, "ue").replace(/Ü/g, "Ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^A-Za-z0-9 .,'/\-+()&]/g, "")
+    .trim()
+    .substring(0, 70);
+}
+
+function parseCsvSemicolon(text: string): string[][] {
+  // Einfacher CSV-Parser für Semikolon-getrennte Zeilen ohne Anführungszeichen
+  const cleaned = text.replace(/^\uFEFF/, ""); // BOM entfernen
+  return cleaned
+    .split(/\r?\n/)
+    .filter((l) => l.trim().length > 0)
+    .map((line) => line.split(";").map((c) => c.trim()));
+}
+
+function MONATE_DE(yyyymm: string): string {
+  const months = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  const [y, m] = yyyymm.split("-").map(Number);
+  if (!m || m < 1 || m > 12) return yyyymm;
+  return `${months[m - 1]} ${y}`;
 }
 
 function toMinutes(hhmm: string) {
@@ -1297,8 +1354,11 @@ export default function App() {
   const [spielerRechnung, setSpielerRechnung] = useState("");
   const [spielerNotizen, setSpielerNotizen] = useState("");
   const [spielerIban, setSpielerIban] = useState("");
+  const [spielerBankname, setSpielerBankname] = useState("");
   const [spielerMandatsreferenz, setSpielerMandatsreferenz] = useState("");
   const [spielerUnterschriftsdatum, setSpielerUnterschriftsdatum] = useState("");
+  const [spielerSepaSequenz, setSpielerSepaSequenz] = useState<SepaSequenz>("RCUR");
+  const [spielerSepaLastschriftart, setSpielerSepaLastschriftart] = useState<SepaLastschriftart>("CORE");
   const [spielerAbweichenderEmpfaenger, setSpielerAbweichenderEmpfaenger] = useState(false);
   const [spielerEmpfaengerName, setSpielerEmpfaengerName] = useState("");
   const [spielerLabels, setSpielerLabels] = useState<string[]>([]);
@@ -1416,6 +1476,25 @@ export default function App() {
   const [showPdfExportModal, setShowPdfExportModal] = useState(false);
   const [pdfExportLabelFilter, setPdfExportLabelFilter] = useState<string>("alle");
   const [pdfExportExcluded, setPdfExportExcluded] = useState<Set<string>>(new Set());
+
+  // States für Kontaktbuch-CSV-Import
+  type KontaktbuchRow = {
+    name: string;
+    vorname: string;
+    nachname: string;
+    iban: string;
+    bankname: string;
+    mandatsreferenz: string;
+    unterschriftsdatum: string;
+    issues: string[];
+  };
+  const [showKontaktbuchModal, setShowKontaktbuchModal] = useState(false);
+  const [kontaktbuchRows, setKontaktbuchRows] = useState<KontaktbuchRow[]>([]);
+  const [kontaktbuchSelected, setKontaktbuchSelected] = useState<Set<number>>(new Set());
+
+  // States für SEPA-XML-Export
+  const [sepaExportSelection, setSepaExportSelection] = useState<Set<string>>(new Set());
+  const [showSepaExportModal, setShowSepaExportModal] = useState(false);
 
   // States für Wochenplan PDF-Export
   const [showWeekPdfModal, setShowWeekPdfModal] = useState(false);
@@ -2356,8 +2435,11 @@ export default function App() {
       rechnungsAdresse: spielerRechnung.trim() || undefined,
       notizen: spielerNotizen.trim() || undefined,
       iban: spielerIban.trim() || undefined,
+      bankname: spielerBankname.trim() || undefined,
       mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
       unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
+      sepaSequenz: spielerSepaSequenz,
+      sepaLastschriftart: spielerSepaLastschriftart,
       abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
       empfaengerName: spielerEmpfaengerName.trim() || undefined,
       labels: spielerLabels.length > 0 ? spielerLabels : undefined,
@@ -2374,8 +2456,11 @@ export default function App() {
     setSpielerRechnung("");
     setSpielerNotizen("");
     setSpielerIban("");
+    setSpielerBankname("");
     setSpielerMandatsreferenz("");
     setSpielerUnterschriftsdatum("");
+    setSpielerSepaSequenz("RCUR");
+    setSpielerSepaLastschriftart("CORE");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
     setSpielerLabels([]);
@@ -2394,8 +2479,11 @@ export default function App() {
     setSpielerRechnung(s.rechnungsAdresse ?? "");
     setSpielerNotizen(s.notizen ?? "");
     setSpielerIban(s.iban ?? "");
+    setSpielerBankname(s.bankname ?? "");
     setSpielerMandatsreferenz(s.mandatsreferenz ?? "");
     setSpielerUnterschriftsdatum(s.unterschriftsdatum ?? "");
+    setSpielerSepaSequenz(s.sepaSequenz ?? "RCUR");
+    setSpielerSepaLastschriftart(s.sepaLastschriftart ?? "CORE");
     setSpielerAbweichenderEmpfaenger(s.abweichenderEmpfaenger ?? false);
     setSpielerEmpfaengerName(s.empfaengerName ?? "");
     setSpielerLabels(s.labels ?? []);
@@ -2443,8 +2531,11 @@ export default function App() {
               rechnungsAdresse: spielerRechnung.trim() || undefined,
               notizen: spielerNotizen.trim() || undefined,
               iban: spielerIban.trim() || undefined,
+              bankname: spielerBankname.trim() || undefined,
               mandatsreferenz: spielerMandatsreferenz.trim() || undefined,
               unterschriftsdatum: spielerUnterschriftsdatum.trim() || undefined,
+              sepaSequenz: spielerSepaSequenz,
+              sepaLastschriftart: spielerSepaLastschriftart,
               abweichenderEmpfaenger: spielerAbweichenderEmpfaenger || undefined,
               empfaengerName: spielerEmpfaengerName.trim() || undefined,
               labels: spielerLabels.length > 0 ? spielerLabels : undefined,
@@ -2463,13 +2554,275 @@ export default function App() {
     setSpielerRechnung("");
     setSpielerNotizen("");
     setSpielerIban("");
+    setSpielerBankname("");
     setSpielerMandatsreferenz("");
     setSpielerUnterschriftsdatum("");
+    setSpielerSepaSequenz("RCUR");
+    setSpielerSepaLastschriftart("CORE");
     setSpielerAbweichenderEmpfaenger(false);
     setSpielerEmpfaengerName("");
     setSpielerLabels([]);
     setNewLabelInput("");
     setShowSpielerForm(false);
+  }
+
+  function handleKontaktbuchFileSelect(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      const rows = parseCsvSemicolon(text);
+      if (rows.length === 0) {
+        alert("CSV-Datei ist leer.");
+        return;
+      }
+      const header = rows[0].map((h) => h.toLowerCase());
+      const idx = {
+        name: header.findIndex((h) => h.includes("name")),
+        iban: header.findIndex((h) => h === "iban"),
+        bankname: header.findIndex((h) => h.includes("bank")),
+        mandatsreferenz: header.findIndex((h) => h.includes("mandat")),
+        unterschriftsdatum: header.findIndex((h) => h.includes("unter")),
+      };
+      if (idx.name < 0 || idx.iban < 0) {
+        alert("CSV-Header muss mindestens 'Name' und 'IBAN' enthalten.");
+        return;
+      }
+      const parsed: KontaktbuchRow[] = rows.slice(1).map((cols) => {
+        const rawName = (cols[idx.name] || "").trim();
+        const rawIban = (cols[idx.iban] || "").trim();
+        const rawBankname = idx.bankname >= 0 ? (cols[idx.bankname] || "").trim() : "";
+        const rawMandat = idx.mandatsreferenz >= 0 ? (cols[idx.mandatsreferenz] || "").trim() : "";
+        const rawDatum = idx.unterschriftsdatum >= 0 ? (cols[idx.unterschriftsdatum] || "").trim() : "";
+
+        const issues: string[] = [];
+
+        // Bereinigung
+        const name = rawName.replace(/\s+/g, " ").trim();
+        if (rawName !== name) issues.push("Whitespace im Namen bereinigt");
+
+        const iban = normalizeIban(rawIban);
+        if (iban && !/^[A-Z]{2}[0-9A-Z]{13,32}$/.test(iban)) {
+          issues.push("IBAN-Format ungültig");
+        }
+
+        let mandat = rawMandat.replace(/[,\s]+$/g, "").trim();
+        if (rawMandat !== mandat) issues.push("Mandatsreferenz bereinigt (Komma/Space am Ende)");
+        if (/^DE\d{2}ZZZ/.test(mandat)) {
+          issues.push("Mandatsreferenz sieht aus wie Gläubiger-ID — bitte prüfen");
+        }
+
+        const datum = rawDatum;
+
+        // Name → Vorname/Nachname split (letztes Token = Nachname, alles davor = Vorname)
+        const tokens = name.split(/\s+/);
+        let vorname = name;
+        let nachname = "";
+        if (tokens.length >= 2) {
+          vorname = tokens.slice(0, -1).join(" ");
+          nachname = tokens[tokens.length - 1];
+        }
+
+        return {
+          name,
+          vorname,
+          nachname,
+          iban,
+          bankname: rawBankname,
+          mandatsreferenz: mandat,
+          unterschriftsdatum: datum,
+          issues,
+        };
+      });
+
+      // Default-Auswahl: alle ohne kritische Issues + mit IBAN
+      const defaultSelected = new Set<number>();
+      parsed.forEach((r, i) => {
+        if (r.iban && !r.issues.some((x) => x.includes("Gläubiger-ID") || x.includes("ungültig"))) {
+          defaultSelected.add(i);
+        }
+      });
+      setKontaktbuchRows(parsed);
+      setKontaktbuchSelected(defaultSelected);
+      setShowKontaktbuchModal(true);
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function applyKontaktbuchImport() {
+    const updates = Array.from(kontaktbuchSelected).map((i) => kontaktbuchRows[i]);
+    let matched = 0;
+    let createdNew = 0;
+    const newSpieler: Spieler[] = [];
+
+    setSpieler((prev) => {
+      const next = [...prev];
+      updates.forEach((row) => {
+        const fullLower = `${row.vorname} ${row.nachname}`.toLowerCase().trim();
+        const idxFound = next.findIndex(
+          (s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower
+        );
+        if (idxFound >= 0) {
+          next[idxFound] = {
+            ...next[idxFound],
+            iban: row.iban || next[idxFound].iban,
+            bankname: row.bankname || next[idxFound].bankname,
+            mandatsreferenz: row.mandatsreferenz || next[idxFound].mandatsreferenz,
+            unterschriftsdatum: row.unterschriftsdatum || next[idxFound].unterschriftsdatum,
+            sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
+            sepaLastschriftart: next[idxFound].sepaLastschriftart ?? "CORE",
+          };
+          matched++;
+        } else {
+          const neu: Spieler = {
+            id: uid(),
+            vorname: row.vorname,
+            nachname: row.nachname || undefined,
+            iban: row.iban || undefined,
+            bankname: row.bankname || undefined,
+            mandatsreferenz: row.mandatsreferenz || undefined,
+            unterschriftsdatum: row.unterschriftsdatum || undefined,
+            sepaSequenz: "RCUR",
+            sepaLastschriftart: "CORE",
+          };
+          newSpieler.push(neu);
+          createdNew++;
+        }
+      });
+      return [...next, ...newSpieler];
+    });
+
+    setShowKontaktbuchModal(false);
+    setKontaktbuchRows([]);
+    setKontaktbuchSelected(new Set());
+    alert(`Import fertig: ${matched} aktualisiert, ${createdNew} neu angelegt.`);
+  }
+
+  function generateSepaXml(items: Array<{
+    spielerId: string;
+    name: string;
+    iban: string;
+    mandatsreferenz: string;
+    unterschriftsdatum: string;
+    sequenz: SepaSequenz;
+    lastschriftart: SepaLastschriftart;
+    betrag: number;
+    verwendungszweck: string;
+  }>): string {
+    const msgId = `SEPA-${Date.now()}`;
+    const pmtInfId = `PMT-${Date.now()}`;
+    const creationDateTime = nowISOSeconds();
+    // Fälligkeitsdatum: heute + 2 Werktage (SEPA CORE: min. 1 Tag bei wiederkehrend)
+    const fallig = new Date();
+    fallig.setDate(fallig.getDate() + 2);
+    const reqdColltnDt = `${fallig.getFullYear()}-${pad2(fallig.getMonth() + 1)}-${pad2(fallig.getDate())}`;
+
+    // Bei mehreren Sequenzarten muss pro Sequenztyp ein eigener PaymentInformation-Block erstellt werden
+    const bySequenz = new Map<string, typeof items>();
+    items.forEach((it) => {
+      const key = `${it.sequenz}__${it.lastschriftart}`;
+      if (!bySequenz.has(key)) bySequenz.set(key, []);
+      bySequenz.get(key)!.push(it);
+    });
+
+    const totalSum = items.reduce((acc, it) => acc + it.betrag, 0);
+    const totalCount = items.length;
+
+    let pmtInfXml = "";
+    let pmtIdx = 0;
+    bySequenz.forEach((group, key) => {
+      pmtIdx++;
+      const [seq, lastschriftart] = key.split("__") as [SepaSequenz, SepaLastschriftart];
+      const groupSum = group.reduce((a, b) => a + b.betrag, 0);
+      const localInstrm = lastschriftart === "B2B" ? "B2B" : "CORE";
+
+      const txInfo = group.map((it) => {
+        const endToEndId = `${it.spielerId.substring(0, 8)}-${pmtInfId.substring(4, 12)}`;
+        return `      <DrctDbtTxInf>
+        <PmtId>
+          <EndToEndId>${escapeXml(endToEndId)}</EndToEndId>
+        </PmtId>
+        <InstdAmt Ccy="EUR">${it.betrag.toFixed(2)}</InstdAmt>
+        <DrctDbtTx>
+          <MndtRltdInf>
+            <MndtId>${escapeXml(it.mandatsreferenz)}</MndtId>
+            <DtOfSgntr>${escapeXml(it.unterschriftsdatum)}</DtOfSgntr>
+          </MndtRltdInf>
+        </DrctDbtTx>
+        <DbtrAgt>
+          <FinInstnId>
+            <Othr><Id>NOTPROVIDED</Id></Othr>
+          </FinInstnId>
+        </DbtrAgt>
+        <Dbtr>
+          <Nm>${escapeXml(sanitizeSepaName(it.name))}</Nm>
+        </Dbtr>
+        <DbtrAcct>
+          <Id>
+            <IBAN>${escapeXml(normalizeIban(it.iban))}</IBAN>
+          </Id>
+        </DbtrAcct>
+        <RmtInf>
+          <Ustrd>${escapeXml(it.verwendungszweck.substring(0, 140))}</Ustrd>
+        </RmtInf>
+      </DrctDbtTxInf>`;
+      }).join("\n");
+
+      pmtInfXml += `
+    <PmtInf>
+      <PmtInfId>${escapeXml(pmtInfId)}-${pmtIdx}</PmtInfId>
+      <PmtMtd>DD</PmtMtd>
+      <BtchBookg>true</BtchBookg>
+      <NbOfTxs>${group.length}</NbOfTxs>
+      <CtrlSum>${groupSum.toFixed(2)}</CtrlSum>
+      <PmtTpInf>
+        <SvcLvl><Cd>SEPA</Cd></SvcLvl>
+        <LclInstrm><Cd>${localInstrm}</Cd></LclInstrm>
+        <SeqTp>${seq}</SeqTp>
+      </PmtTpInf>
+      <ReqdColltnDt>${reqdColltnDt}</ReqdColltnDt>
+      <Cdtr>
+        <Nm>${escapeXml(sanitizeSepaName(GLAEUBIGER_NAME))}</Nm>
+      </Cdtr>
+      <CdtrAcct>
+        <Id>
+          <IBAN>${GLAEUBIGER_IBAN}</IBAN>
+        </Id>
+      </CdtrAcct>
+      <CdtrAgt>
+        <FinInstnId>
+          <BIC>${GLAEUBIGER_BIC}</BIC>
+        </FinInstnId>
+      </CdtrAgt>
+      <ChrgBr>SLEV</ChrgBr>
+      <CdtrSchmeId>
+        <Id>
+          <PrvtId>
+            <Othr>
+              <Id>${GLAEUBIGER_ID}</Id>
+              <SchmeNm><Prtry>SEPA</Prtry></SchmeNm>
+            </Othr>
+          </PrvtId>
+        </Id>
+      </CdtrSchmeId>
+${txInfo}
+    </PmtInf>`;
+    });
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.02" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CstmrDrctDbtInitn>
+    <GrpHdr>
+      <MsgId>${escapeXml(msgId)}</MsgId>
+      <CreDtTm>${creationDateTime}</CreDtTm>
+      <NbOfTxs>${totalCount}</NbOfTxs>
+      <CtrlSum>${totalSum.toFixed(2)}</CtrlSum>
+      <InitgPty>
+        <Nm>${escapeXml(sanitizeSepaName(GLAEUBIGER_NAME))}</Nm>
+      </InitgPty>
+    </GrpHdr>${pmtInfXml}
+  </CstmrDrctDbtInitn>
+</Document>
+`;
   }
 
   function addTarif() {
@@ -6743,6 +7096,22 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           >
                             PDF exportieren
                           </button>
+                          <label
+                            className="btn btnGhost"
+                            style={{ cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                          >
+                            Kontaktbuch importieren
+                            <input
+                              type="file"
+                              accept=".csv,text/csv"
+                              style={{ display: "none" }}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleKontaktbuchFileSelect(file);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
                         </>
                       )}
                     </div>
@@ -7068,6 +7437,14 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               placeholder="DE89 3704 0044 0532 0130 00"
                             />
                           </div>
+                          <div className="field" style={{ minWidth: 200 }}>
+                            <label>Bankname</label>
+                            <input
+                              value={spielerBankname}
+                              onChange={(e) => setSpielerBankname(e.target.value)}
+                              placeholder="z.B. Commerzbank Berlin"
+                            />
+                          </div>
                           <div className="field" style={{ minWidth: 180 }}>
                             <label>Mandatsreferenz</label>
                             <input
@@ -7084,6 +7461,31 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               onChange={(e) => setSpielerUnterschriftsdatum(e.target.value)}
                             />
                           </div>
+                          <div className="field" style={{ minWidth: 140 }}>
+                            <label>Sequenz</label>
+                            <select
+                              value={spielerSepaSequenz}
+                              onChange={(e) => setSpielerSepaSequenz(e.target.value as SepaSequenz)}
+                            >
+                              <option value="RCUR">RCUR (wiederkehrend)</option>
+                              <option value="FRST">FRST (erstmalig)</option>
+                              <option value="OOFF">OOFF (einmalig)</option>
+                              <option value="FNAL">FNAL (letztmalig)</option>
+                            </select>
+                          </div>
+                          <div className="field" style={{ minWidth: 140 }}>
+                            <label>Lastschriftart</label>
+                            <select
+                              value={spielerSepaLastschriftart}
+                              onChange={(e) => setSpielerSepaLastschriftart(e.target.value as SepaLastschriftart)}
+                            >
+                              <option value="CORE">CORE (Basis)</option>
+                              <option value="B2B">B2B (Firmen)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                          Gläubiger-ID: {GLAEUBIGER_ID} (global)
                         </div>
 
                         <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Rechnungsempfänger</h4>
@@ -7136,8 +7538,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               setSpielerRechnung("");
                               setSpielerNotizen("");
                               setSpielerIban("");
+                              setSpielerBankname("");
                               setSpielerMandatsreferenz("");
                               setSpielerUnterschriftsdatum("");
+                              setSpielerSepaSequenz("RCUR");
+                              setSpielerSepaLastschriftart("CORE");
                               setSpielerAbweichenderEmpfaenger(false);
                               setSpielerEmpfaengerName("");
                               setSpielerError(null);
@@ -9993,10 +10398,50 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
 
                     <div style={{ height: 14 }} />
                     <div className="card cardInset">
-                      <h2>Summe pro Spieler</h2>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                        <h2 style={{ margin: 0 }}>Summe pro Spieler</h2>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span className="pill">
+                            SEPA-Auswahl: <strong>{sepaExportSelection.size}</strong>
+                          </span>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              const sel = new Set<string>();
+                              filteredSpielerRowsForMonth.forEach((r) => {
+                                const sp = spielerById.get(r.id);
+                                const adjustedSum = getAdjustedSum(r.id, r.sum);
+                                const sumBar = getSumBarForSpieler(r.id);
+                                const restOffen = round2(adjustedSum - sumBar);
+                                if (sp?.iban && sp.mandatsreferenz && sp.unterschriftsdatum && restOffen > 0) {
+                                  sel.add(r.id);
+                                }
+                              });
+                              setSepaExportSelection(sel);
+                            }}
+                          >
+                            Alle abbuchbaren auswählen
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => setSepaExportSelection(new Set())}
+                          >
+                            Auswahl aufheben
+                          </button>
+                          <button
+                            className="btn"
+                            disabled={sepaExportSelection.size === 0}
+                            onClick={() => setShowSepaExportModal(true)}
+                          >
+                            SEPA-XML exportieren
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ height: 8 }} />
                       <table className="table">
                         <thead>
                           <tr>
+                            <th style={{ width: 36 }}>SEPA</th>
                             <th>Spieler</th>
                             <th>Aufstellung</th>
                             <th>Summe</th>
@@ -10150,8 +10595,26 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
 
                             const isEditingThis = editingAdjustment?.spielerId === r.id;
 
+                            const sepaSpieler = spielerById.get(r.id);
+                            const sepaReady = !!(sepaSpieler?.iban && sepaSpieler?.mandatsreferenz && sepaSpieler?.unterschriftsdatum);
+
                             return (
                               <tr key={r.id}>
+                                <td>
+                                  <input
+                                    type="checkbox"
+                                    checked={sepaExportSelection.has(r.id)}
+                                    disabled={!sepaReady || restOffen <= 0}
+                                    title={!sepaReady ? "SEPA-Daten unvollständig (IBAN/Mandat/Datum)" : restOffen <= 0 ? "Nichts offen" : "Für SEPA-Export auswählen"}
+                                    onChange={(e) => {
+                                      setSepaExportSelection((prev) => {
+                                        const next = new Set(prev);
+                                        if (e.target.checked) next.add(r.id); else next.delete(r.id);
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                </td>
                                 <td>
                                   <span
                                     style={{
@@ -10163,6 +10626,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   >
                                     {r.name}
                                   </span>
+                                  {!sepaReady && (
+                                    <span title="SEPA-Daten unvollständig" style={{ marginLeft: 6, color: "#dc2626", fontSize: 11 }}>⚠ SEPA</span>
+                                  )}
                                 </td>
                                 <td>{breakdownText}</td>
                                 <td>
@@ -14359,6 +14825,270 @@ Deine Tennisschule`;
                   }}
                 >
                   PDF erstellen
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Kontaktbuch CSV Import Modal */}
+      {showKontaktbuchModal && (
+        <div className="modalOverlay" onClick={() => setShowKontaktbuchModal(false)}>
+          <div
+            className="modalCard"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 1000, maxHeight: "90vh", overflow: "auto" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h2 style={{ margin: 0 }}>Kontaktbuch importieren</h2>
+              <button
+                onClick={() => setShowKontaktbuchModal(false)}
+                style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}
+              >
+                ×
+              </button>
+            </div>
+            {(() => {
+              const matchedCount = kontaktbuchRows.filter((r) => {
+                const fullLower = `${r.vorname} ${r.nachname}`.toLowerCase().trim();
+                return spieler.some((s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower);
+              }).length;
+              const issuesCount = kontaktbuchRows.filter((r) => r.issues.length > 0).length;
+              return (
+                <div className="row" style={{ marginBottom: 12, gap: 8 }}>
+                  <span className="pill">Zeilen: <strong>{kontaktbuchRows.length}</strong></span>
+                  <span className="pill">Im System: <strong>{matchedCount}</strong></span>
+                  <span className="pill">Neu (nicht gefunden): <strong>{kontaktbuchRows.length - matchedCount}</strong></span>
+                  <span className="pill" style={{ background: issuesCount > 0 ? "#fef3c7" : undefined }}>Probleme: <strong>{issuesCount}</strong></span>
+                  <span className="pill">Ausgewählt: <strong>{kontaktbuchSelected.size}</strong></span>
+                </div>
+              );
+            })()}
+            <div className="row" style={{ marginBottom: 8, gap: 8 }}>
+              <button
+                className="btn btnGhost"
+                onClick={() => setKontaktbuchSelected(new Set(kontaktbuchRows.map((_, i) => i)))}
+              >
+                Alle auswählen
+              </button>
+              <button
+                className="btn btnGhost"
+                onClick={() => setKontaktbuchSelected(new Set())}
+              >
+                Auswahl aufheben
+              </button>
+              <button
+                className="btn btnGhost"
+                onClick={() => {
+                  const sel = new Set<number>();
+                  kontaktbuchRows.forEach((r, i) => {
+                    if (r.iban && !r.issues.some((x) => x.includes("Gläubiger-ID") || x.includes("ungültig"))) {
+                      sel.add(i);
+                    }
+                  });
+                  setKontaktbuchSelected(sel);
+                }}
+              >
+                Nur saubere
+              </button>
+            </div>
+            <div style={{ border: "1px solid #ddd", borderRadius: 8, maxHeight: 500, overflow: "auto", marginBottom: 16 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "#f5f5f5", position: "sticky", top: 0 }}>
+                    <th style={{ padding: 8, textAlign: "left", width: 40 }}></th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Name</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Match</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>IBAN</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Mandat</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Datum</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Probleme</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kontaktbuchRows.map((r, i) => {
+                    const fullLower = `${r.vorname} ${r.nachname}`.toLowerCase().trim();
+                    const found = spieler.find((s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower);
+                    const isCritical = r.issues.some((x) => x.includes("Gläubiger-ID") || x.includes("ungültig"));
+                    return (
+                      <tr key={i} style={{ borderTop: "1px solid #eee", background: isCritical ? "#fef3c7" : undefined }}>
+                        <td style={{ padding: 8 }}>
+                          <input
+                            type="checkbox"
+                            checked={kontaktbuchSelected.has(i)}
+                            onChange={(e) => {
+                              setKontaktbuchSelected((prev) => {
+                                const next = new Set(prev);
+                                if (e.target.checked) next.add(i); else next.delete(i);
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
+                        <td style={{ padding: 8 }}>{r.name}</td>
+                        <td style={{ padding: 8 }}>
+                          {found ? (
+                            <span style={{ color: "#16a34a" }}>✓ aktualisieren</span>
+                          ) : (
+                            <span style={{ color: "#dc2626" }}>+ neu anlegen</span>
+                          )}
+                        </td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.iban || "-"}</td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.mandatsreferenz || "-"}</td>
+                        <td style={{ padding: 8 }}>{r.unterschriftsdatum || "-"}</td>
+                        <td style={{ padding: 8, color: "#92400e", fontSize: 11 }}>
+                          {r.issues.join("; ") || ""}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="modalActions">
+              <button className="btn btnGhost" onClick={() => setShowKontaktbuchModal(false)}>
+                Abbrechen
+              </button>
+              <button
+                className="btn"
+                disabled={kontaktbuchSelected.size === 0}
+                onClick={applyKontaktbuchImport}
+              >
+                {kontaktbuchSelected.size} Spieler importieren
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SEPA-XML Export Modal */}
+      {showSepaExportModal && (() => {
+        const monatLabel = MONATE_DE(abrechnungMonat);
+        const verwendungszweckTemplate = `Abbuchung Tennistraining ${monatLabel}, Rechnung nur auf Anfrage`;
+        const items = Array.from(sepaExportSelection)
+          .map((spielerId) => {
+            const sp = spielerById.get(spielerId);
+            const row = filteredSpielerRowsForMonth.find((r) => r.id === spielerId);
+            if (!sp || !row) return null;
+            const adjustedSum = getAdjustedSum(spielerId, row.sum);
+            const sumBar = getSumBarForSpieler(spielerId);
+            const betrag = round2(adjustedSum - sumBar);
+            return {
+              spielerId,
+              name: getFullName(sp),
+              iban: sp.iban || "",
+              mandatsreferenz: sp.mandatsreferenz || "",
+              unterschriftsdatum: sp.unterschriftsdatum || "",
+              sequenz: (sp.sepaSequenz ?? "RCUR") as SepaSequenz,
+              lastschriftart: (sp.sepaLastschriftart ?? "CORE") as SepaLastschriftart,
+              betrag,
+              verwendungszweck: verwendungszweckTemplate,
+              ready: !!(sp.iban && sp.mandatsreferenz && sp.unterschriftsdatum) && betrag > 0,
+            };
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null);
+        const validItems = items.filter((it) => it.ready);
+        const totalAmount = validItems.reduce((acc, it) => acc + it.betrag, 0);
+
+        return (
+          <div className="modalOverlay" onClick={() => setShowSepaExportModal(false)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 1100, maxHeight: "90vh", overflow: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <h2 style={{ margin: 0 }}>SEPA-Sammellastschrift exportieren</h2>
+                <button
+                  onClick={() => setShowSepaExportModal(false)}
+                  style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+                <span className="pill">Monat: <strong>{monatLabel}</strong></span>
+                <span className="pill">Posten: <strong>{validItems.length}</strong> / {items.length}</span>
+                <span className="pill">Summe: <strong>{euro(totalAmount)}</strong></span>
+                <span className="pill">Gläubiger-ID: <strong>{GLAEUBIGER_ID}</strong></span>
+              </div>
+
+              <div className="muted" style={{ marginBottom: 12, fontSize: 13 }}>
+                Verwendungszweck: <em>„{verwendungszweckTemplate}"</em>
+              </div>
+
+              <div style={{ border: "1px solid #ddd", borderRadius: 8, maxHeight: 480, overflow: "auto", marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0 }}>
+                      <th style={{ padding: 8, textAlign: "left" }}>Name</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>IBAN</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Mandat</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Datum</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Seq</th>
+                      <th style={{ padding: 8, textAlign: "right" }}>Betrag</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it) => (
+                      <tr key={it.spielerId} style={{ borderTop: "1px solid #eee", background: it.ready ? undefined : "#fef3c7" }}>
+                        <td style={{ padding: 8 }}>{it.name}</td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{it.iban || "—"}</td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{it.mandatsreferenz || "—"}</td>
+                        <td style={{ padding: 8 }}>{it.unterschriftsdatum || "—"}</td>
+                        <td style={{ padding: 8 }}>{it.sequenz}</td>
+                        <td style={{ padding: 8, textAlign: "right" }}>{euro(it.betrag)}</td>
+                        <td style={{ padding: 8 }}>
+                          {it.ready ? (
+                            <span style={{ color: "#16a34a" }}>✓ ok</span>
+                          ) : (
+                            <span style={{ color: "#dc2626" }}>
+                              {!it.iban ? "IBAN fehlt" : !it.mandatsreferenz ? "Mandat fehlt" : !it.unterschriftsdatum ? "Datum fehlt" : it.betrag <= 0 ? "Betrag 0" : "?"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="modalActions">
+                <button className="btn btnGhost" onClick={() => setShowSepaExportModal(false)}>
+                  Abbrechen
+                </button>
+                <button
+                  className="btn"
+                  disabled={validItems.length === 0}
+                  onClick={() => {
+                    const xml = generateSepaXml(validItems);
+                    const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `SEPA_Sammellastschrift_${abrechnungMonat}.xml`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // Markiere automatisch als "abgebucht"
+                    setWirdAbgebucht((prev) => {
+                      const next = { ...prev };
+                      validItems.forEach((it) => {
+                        next[`${abrechnungMonat}__${it.spielerId}`] = true;
+                      });
+                      return next;
+                    });
+
+                    setShowSepaExportModal(false);
+                    setSepaExportSelection(new Set());
+                  }}
+                >
+                  XML herunterladen ({validItems.length} Posten / {euro(totalAmount)})
                 </button>
               </div>
             </div>
