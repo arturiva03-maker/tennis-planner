@@ -2650,47 +2650,45 @@ export default function App() {
 
   function applyKontaktbuchImport() {
     const updates = Array.from(kontaktbuchSelected).map((i) => kontaktbuchRows[i]);
+    const next = [...spieler];
+    const newSpieler: Spieler[] = [];
     let matched = 0;
     let createdNew = 0;
-    const newSpieler: Spieler[] = [];
 
-    setSpieler((prev) => {
-      const next = [...prev];
-      updates.forEach((row) => {
-        const fullLower = `${row.vorname} ${row.nachname}`.toLowerCase().trim();
-        const idxFound = next.findIndex(
-          (s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower
-        );
-        if (idxFound >= 0) {
-          next[idxFound] = {
-            ...next[idxFound],
-            iban: row.iban || next[idxFound].iban,
-            bankname: row.bankname || next[idxFound].bankname,
-            mandatsreferenz: row.mandatsreferenz || next[idxFound].mandatsreferenz,
-            unterschriftsdatum: row.unterschriftsdatum || next[idxFound].unterschriftsdatum,
-            sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
-            sepaLastschriftart: next[idxFound].sepaLastschriftart ?? "CORE",
-          };
-          matched++;
-        } else {
-          const neu: Spieler = {
-            id: uid(),
-            vorname: row.vorname,
-            nachname: row.nachname || undefined,
-            iban: row.iban || undefined,
-            bankname: row.bankname || undefined,
-            mandatsreferenz: row.mandatsreferenz || undefined,
-            unterschriftsdatum: row.unterschriftsdatum || undefined,
-            sepaSequenz: "RCUR",
-            sepaLastschriftart: "CORE",
-          };
-          newSpieler.push(neu);
-          createdNew++;
-        }
-      });
-      return [...next, ...newSpieler];
+    updates.forEach((row) => {
+      const fullLower = `${row.vorname} ${row.nachname}`.toLowerCase().trim();
+      const idxFound = next.findIndex(
+        (s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower
+      );
+      if (idxFound >= 0) {
+        next[idxFound] = {
+          ...next[idxFound],
+          iban: row.iban || next[idxFound].iban,
+          bankname: row.bankname || next[idxFound].bankname,
+          mandatsreferenz: row.mandatsreferenz || next[idxFound].mandatsreferenz,
+          unterschriftsdatum: row.unterschriftsdatum || next[idxFound].unterschriftsdatum,
+          sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
+          sepaLastschriftart: next[idxFound].sepaLastschriftart ?? "CORE",
+        };
+        matched++;
+      } else {
+        const neu: Spieler = {
+          id: uid(),
+          vorname: row.vorname,
+          nachname: row.nachname || undefined,
+          iban: row.iban || undefined,
+          bankname: row.bankname || undefined,
+          mandatsreferenz: row.mandatsreferenz || undefined,
+          unterschriftsdatum: row.unterschriftsdatum || undefined,
+          sepaSequenz: "RCUR",
+          sepaLastschriftart: "CORE",
+        };
+        newSpieler.push(neu);
+        createdNew++;
+      }
     });
 
+    setSpieler([...next, ...newSpieler]);
     setShowKontaktbuchModal(false);
     setKontaktbuchRows([]);
     setKontaktbuchSelected(new Set());
@@ -2771,7 +2769,7 @@ export default function App() {
     <PmtInf>
       <PmtInfId>${escapeXml(pmtInfId)}-${pmtIdx}</PmtInfId>
       <PmtMtd>DD</PmtMtd>
-      <BtchBookg>true</BtchBookg>
+      <BtchBookg>false</BtchBookg>
       <NbOfTxs>${group.length}</NbOfTxs>
       <CtrlSum>${groupSum.toFixed(2)}</CtrlSum>
       <PmtTpInf>
