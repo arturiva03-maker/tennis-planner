@@ -5900,13 +5900,24 @@ Deine Tennisschule`;
                                 t.id
                               );
 
+                              const trainingMonat = t.datum.substring(0, 7);
+                              const allePlayersAbgebucht =
+                                t.spielerIds.length > 0 &&
+                                t.spielerIds.every(
+                                  (sid) => wirdAbgebucht[`${trainingMonat}__${sid}`]
+                                );
+                              const isPaid =
+                                !isCancel && (t.barBezahlt === true || allePlayersAbgebucht);
+
                               // Farbschema: dezente Hintergründe mit farbigem linken Rand
                               const accentColor = t.isPrivat
-                                ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
+                                ? isPaid ? "#6366f1" : isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
                                 : hasVertretung
                                 ? isVertretungOffen ? "#dc2626" : "#22c55e"
                                 : isSelected
                                 ? "#8b5cf6"
+                                : isPaid
+                                ? "#6366f1"
                                 : isDone
                                 ? "#22c55e"
                                 : isCancel
@@ -5914,6 +5925,8 @@ Deine Tennisschule`;
                                 : "#3b82f6";
                               const bg = isSelected
                                 ? "rgba(139, 92, 246, 0.18)"
+                                : isPaid
+                                ? "rgba(99, 102, 241, 0.16)"
                                 : isDone
                                 ? "rgba(34, 197, 94, 0.14)"
                                 : isCancel
@@ -5951,7 +5964,9 @@ Deine Tennisschule`;
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
                                     background: t.isPrivat
-                                      ? isDone
+                                      ? isPaid
+                                        ? `repeating-linear-gradient(135deg, rgba(99,102,241,0.20) 0px, rgba(99,102,241,0.20) 6px, rgba(99,102,241,0.05) 6px, rgba(99,102,241,0.05) 12px)`
+                                        : isDone
                                         ? `repeating-linear-gradient(135deg, rgba(34,197,94,0.18) 0px, rgba(34,197,94,0.18) 6px, rgba(34,197,94,0.05) 6px, rgba(34,197,94,0.05) 12px)`
                                         : isCancel
                                         ? `repeating-linear-gradient(135deg, rgba(239,68,68,0.14) 0px, rgba(239,68,68,0.14) 6px, rgba(239,68,68,0.04) 6px, rgba(239,68,68,0.04) 12px)`
