@@ -160,6 +160,16 @@ function extractNameFromBuchungstext(text: string): string {
   return "";
 }
 
+function extractMandatsrefFromText(text: string): string {
+  if (!text) return "";
+  const m = text.match(/Mandatsref(?:erenz)?[.:]?\s*([A-Za-z0-9\-_]+)/i);
+  return m && m[1] ? m[1].trim() : "";
+}
+
+function normalizeMref(s: string): string {
+  return (s || "").trim().toUpperCase();
+}
+
 function normalizeForName(s: string): string {
   return (s || "")
     .toLowerCase()
@@ -391,6 +401,16 @@ export default function BankImportModal({
     return m;
   }, [spielerList]);
 
+  const mrefToSpieler = useMemo(() => {
+    const m = new Map<string, SpielerLike>();
+    for (const sp of spielerList) {
+      const mref = normalizeMref(sp.mandatsreferenz || "");
+      if (!mref) continue;
+      m.set(mref, sp);
+    }
+    return m;
+  }, [spielerList]);
+
   const expectedBySpieler = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of spielerRows) {
@@ -424,6 +444,48 @@ export default function BankImportModal({
 
     const tol = 0.01;
     const targetIban = bankRow.ibanGegenkonto;
+
+    const mrefRaw = extractMandatsrefFromText(bankRow.verwendungszweck);
+    const mrefSpieler = mrefRaw ? mrefToSpieler.get(normalizeMref(mrefRaw)) : undefined;
+    if (mrefSpieler) {
+      const expected = expectedBySpieler.get(mrefSpieler.id) ?? 0;
+      const key = `${abrechnungMonat}__${mrefSpieler.id}`;
+      const alreadyPaid = !!payments[key];
+      const cand: Candidate = {
+        spielerId: mrefSpieler.id,
+        spielerName: spielerNameById.get(mrefSpieler.id) ?? mrefSpieler.vorname,
+        expected,
+        alreadyPaid,
+        ibanMatch: !!targetIban && (ibanToSpieler.get(targetIban) ?? []).some(
+          (s) => s.id === mrefSpieler.id
+        ),
+      };
+      if (alreadyPaid) {
+        return {
+          rowIdx: idx,
+          bankRow,
+          status: "schon_abgerechnet",
+          candidates: [cand],
+          selectedSpielerId: null,
+          include: false,
+          hint: `Mandatsref ${mrefRaw} → ${cand.spielerName} bereits abgerechnet`,
+        };
+      }
+      const amountOk = Math.abs(expected - bankRow.betrag) <= tol;
+      return {
+        rowIdx: idx,
+        bankRow,
+        status: amountOk ? "match" : "betrag_abweicht",
+        candidates: [cand],
+        selectedSpielerId: cand.spielerId,
+        include: amountOk,
+        hint: amountOk
+          ? `Mandatsref ${mrefRaw} → ${cand.spielerName}`
+          : `Mandatsref ${mrefRaw} → ${cand.spielerName}: erwartet ${fmtEUR(
+              expected
+            )}, gezahlt ${fmtEUR(bankRow.betrag)}`,
+      };
+    }
 
     const ibanCands = targetIban ? ibanToSpieler.get(targetIban) ?? [] : [];
     const ibanIds = new Set(ibanCands.map((s) => s.id));
