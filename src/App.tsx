@@ -14978,9 +14978,15 @@ Deine Tennisschule`;
             const adjustedSum = getAdjustedSum(spielerId, row.sum);
             const sumBar = getSumBarForSpieler(spielerId);
             const betrag = round2(adjustedSum - sumBar);
+            // Bei abweichendem Rechnungsempfänger (z.B. Eltern bei Kindern) muss der
+            // Kontoinhaber als Dbtr im SEPA-XML stehen, sonst weist die Bank die LS zurück.
+            const kontoinhaber = sp.abweichenderEmpfaenger && sp.empfaengerName?.trim()
+              ? sp.empfaengerName.trim()
+              : getFullName(sp);
             return {
               spielerId,
-              name: getFullName(sp),
+              name: kontoinhaber,
+              spielerName: getFullName(sp),
               iban: sp.iban || "",
               mandatsreferenz: sp.mandatsreferenz || "",
               unterschriftsdatum: sp.unterschriftsdatum || "",
@@ -15039,7 +15045,12 @@ Deine Tennisschule`;
                   <tbody>
                     {items.map((it) => (
                       <tr key={it.spielerId} style={{ borderTop: "1px solid #eee", background: it.ready ? undefined : "#fef3c7" }}>
-                        <td style={{ padding: 8 }}>{it.name}</td>
+                        <td style={{ padding: 8 }}>
+                          {it.name}
+                          {it.name !== it.spielerName && (
+                            <div className="muted" style={{ fontSize: 11 }}>für {it.spielerName}</div>
+                          )}
+                        </td>
                         <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{it.iban || "—"}</td>
                         <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{it.mandatsreferenz || "—"}</td>
                         <td style={{ padding: 8 }}>{it.unterschriftsdatum || "—"}</td>
