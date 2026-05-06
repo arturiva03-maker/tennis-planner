@@ -311,6 +311,23 @@ function todayISO() {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
+function toIsoDate(raw: string): string {
+  if (!raw) return "";
+  const s = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  if (m) {
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    let year = parseInt(m[3], 10);
+    if (year < 100) year += 2000;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${pad2(month)}-${pad2(day)}`;
+    }
+  }
+  return s;
+}
+
 function nowISOSeconds() {
   const d = new Date();
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
@@ -2613,7 +2630,8 @@ export default function App() {
           issues.push("Mandatsreferenz sieht aus wie Gläubiger-ID — bitte prüfen");
         }
 
-        const datum = rawDatum;
+        const datum = toIsoDate(rawDatum);
+        if (rawDatum && rawDatum !== datum) issues.push("Datum auf ISO-Format normalisiert");
 
         // Name → Vorname/Nachname split (letztes Token = Nachname, alles davor = Vorname)
         const tokens = name.split(/\s+/);
@@ -2745,7 +2763,7 @@ export default function App() {
         <DrctDbtTx>
           <MndtRltdInf>
             <MndtId>${escapeXml(it.mandatsreferenz)}</MndtId>
-            <DtOfSgntr>${escapeXml(it.unterschriftsdatum)}</DtOfSgntr>
+            <DtOfSgntr>${escapeXml(toIsoDate(it.unterschriftsdatum))}</DtOfSgntr>
           </MndtRltdInf>
         </DrctDbtTx>
         <DbtrAgt>
