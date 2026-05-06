@@ -315,7 +315,7 @@ function toIsoDate(raw: string): string {
   if (!raw) return "";
   const s = raw.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
   if (m) {
     const day = parseInt(m[1], 10);
     const month = parseInt(m[2], 10);
