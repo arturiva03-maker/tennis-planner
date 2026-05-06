@@ -401,12 +401,14 @@ export default function BankImportModal({
     return m;
   }, [spielerList]);
 
-  const mrefToSpieler = useMemo(() => {
-    const m = new Map<string, SpielerLike>();
+  const mrefToSiblings = useMemo(() => {
+    const m = new Map<string, SpielerLike[]>();
     for (const sp of spielerList) {
       const mref = normalizeMref(sp.mandatsreferenz || "");
       if (!mref) continue;
-      m.set(mref, sp);
+      const arr = m.get(mref) ?? [];
+      arr.push(sp);
+      m.set(mref, arr);
     }
     return m;
   }, [spielerList]);
@@ -430,7 +432,11 @@ export default function BankImportModal({
     return m;
   }, [spielerList]);
 
-  function buildMatch(bankRow: BankRow, idx: number): MatchResult {
+  function buildMatch(
+    bankRow: BankRow,
+    idx: number,
+    claimed: Set<string>
+  ): MatchResult {
     if (bankRow.betrag <= 0) {
       return {
         rowIdx: idx,
@@ -446,21 +452,43 @@ export default function BankImportModal({
     const targetIban = bankRow.ibanGegenkonto;
 
     const mrefRaw = extractMandatsrefFromText(bankRow.verwendungszweck);
-    const mrefSpieler = mrefRaw ? mrefToSpieler.get(normalizeMref(mrefRaw)) : undefined;
-    if (mrefSpieler) {
-      const expected = expectedBySpieler.get(mrefSpieler.id) ?? 0;
-      const key = `${abrechnungMonat}__${mrefSpieler.id}`;
-      const alreadyPaid = !!payments[key];
-      const cand: Candidate = {
-        spielerId: mrefSpieler.id,
-        spielerName: spielerNameById.get(mrefSpieler.id) ?? mrefSpieler.vorname,
-        expected,
-        alreadyPaid,
-        ibanMatch: !!targetIban && (ibanToSpieler.get(targetIban) ?? []).some(
-          (s) => s.id === mrefSpieler.id
-        ),
+    const mrefSiblings = mrefRaw
+      ? mrefToSiblings.get(normalizeMref(mrefRaw)) ?? []
+      : [];
+    if (mrefSiblings.length > 0) {
+      type SibInfo = {
+        sp: SpielerLike;
+        expected: number;
+        alreadyPaid: boolean;
       };
-      if (alreadyPaid) {
+      const infos: SibInfo[] = mrefSiblings.map((sp) => {
+        const expected = expectedBySpieler.get(sp.id) ?? 0;
+        const key = `${abrechnungMonat}__${sp.id}`;
+        return { sp, expected, alreadyPaid: !!payments[key] };
+      });
+      const unclaimed = infos.filter((i) => !claimed.has(i.sp.id));
+      const pool = unclaimed.length > 0 ? unclaimed : infos;
+      let pick =
+        pool.find(
+          (i) =>
+            !i.alreadyPaid && Math.abs(i.expected - bankRow.betrag) <= tol
+        ) ??
+        pool.find((i) => !i.alreadyPaid) ??
+        pool[0];
+      claimed.add(pick.sp.id);
+
+      const cand: Candidate = {
+        spielerId: pick.sp.id,
+        spielerName: spielerNameById.get(pick.sp.id) ?? pick.sp.vorname,
+        expected: pick.expected,
+        alreadyPaid: pick.alreadyPaid,
+        ibanMatch:
+          !!targetIban &&
+          (ibanToSpieler.get(targetIban) ?? []).some((s) => s.id === pick.sp.id),
+      };
+      const siblingNote =
+        mrefSiblings.length > 1 ? ` (${mrefSiblings.length} Geschwister)` : "";
+      if (pick.alreadyPaid) {
         return {
           rowIdx: idx,
           bankRow,
@@ -468,10 +496,10 @@ export default function BankImportModal({
           candidates: [cand],
           selectedSpielerId: null,
           include: false,
-          hint: `Mandatsref ${mrefRaw} → ${cand.spielerName} bereits abgerechnet`,
+          hint: `Mandatsref ${mrefRaw} → ${cand.spielerName} bereits abgerechnet${siblingNote}`,
         };
       }
-      const amountOk = Math.abs(expected - bankRow.betrag) <= tol;
+      const amountOk = Math.abs(pick.expected - bankRow.betrag) <= tol;
       return {
         rowIdx: idx,
         bankRow,
@@ -480,10 +508,10 @@ export default function BankImportModal({
         selectedSpielerId: cand.spielerId,
         include: amountOk,
         hint: amountOk
-          ? `Mandatsref ${mrefRaw} → ${cand.spielerName}`
+          ? `Mandatsref ${mrefRaw} → ${cand.spielerName}${siblingNote}`
           : `Mandatsref ${mrefRaw} → ${cand.spielerName}: erwartet ${fmtEUR(
-              expected
-            )}, gezahlt ${fmtEUR(bankRow.betrag)}`,
+              pick.expected
+            )}, gezahlt ${fmtEUR(bankRow.betrag)}${siblingNote}`,
       };
     }
 
@@ -656,7 +684,8 @@ export default function BankImportModal({
         setWarning(warn);
       }
       setBankRows(rows);
-      const m = rows.map((r, i) => buildMatch(r, i));
+      const claimed = new Set<string>();
+      const m = rows.map((r, i) => buildMatch(r, i, claimed));
       setMatches(m);
     } catch (e: any) {
       setError(`Datei konnte nicht gelesen werden: ${e?.message ?? e}`);
