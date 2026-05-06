@@ -52,15 +52,17 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
   const [formData, setFormData] = useState<SepaFormData>({
-    vorname: "",
-    nachname: "",
-    istKind: false,
-    elternteilName: "",
-    strasse: "",
-    plz: "",
-    ort: "",
+    vorname: registrationPayload?.trainee_vorname ?? "",
+    nachname: registrationPayload?.trainee_nachname ?? "",
+    istKind: registrationPayload?.abweichende_kontaktperson ?? false,
+    elternteilName: registrationPayload?.abweichende_kontaktperson
+      ? `${registrationPayload.kontakt_vorname} ${registrationPayload.kontakt_nachname}`.trim()
+      : "",
+    strasse: registrationPayload?.kontakt_strasse ?? "",
+    plz: registrationPayload?.kontakt_plz ?? "",
+    ort: registrationPayload?.kontakt_ort ?? "",
     iban: "",
-    email: initialData?.email ?? "",
+    email: registrationPayload?.email ?? initialData?.email ?? "",
     einwilligung: false,
   });
 

@@ -6,9 +6,16 @@ import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
 type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag";
 
 type RegistrationData = {
-  name: string;
+  trainee_vorname: string;
+  trainee_nachname: string;
+  abweichende_kontaktperson: boolean;
+  kontakt_vorname: string;
+  kontakt_nachname: string;
   email: string;
   telefon: string;
+  kontakt_strasse: string;
+  kontakt_plz: string;
+  kontakt_ort: string;
   verfuegbarkeit: Record<Wochentag, string>;
   trainingsart: string;
   trainings_pro_woche: string;
@@ -46,9 +53,17 @@ const UHRZEITEN = [
 export type RegistrationPayload = {
   accountId: string;
   anlage: "Wedding" | "Britz";
+  trainee_vorname: string;
+  trainee_nachname: string;
+  abweichende_kontaktperson: boolean;
+  kontakt_vorname: string;
+  kontakt_nachname: string;
   name: string;
   email: string;
   telefon: string;
+  kontakt_strasse: string;
+  kontakt_plz: string;
+  kontakt_ort: string;
   verfuegbarkeit: Record<Wochentag, string>;
   trainingsart: string;
   trainings_pro_woche: string;
@@ -61,6 +76,24 @@ export type RegistrationPayload = {
 
 export async function persistRegistration(payload: RegistrationPayload): Promise<{ error?: string }> {
   const WOCHENTAGE = payload.anlage === "Wedding" ? WOCHENTAGE_WEDDING : WOCHENTAGE_ALL;
+
+  const traineeName = `${payload.trainee_vorname} ${payload.trainee_nachname}`.trim();
+  const kontaktName = `${payload.kontakt_vorname} ${payload.kontakt_nachname}`.trim();
+  const adresseStr = `${payload.kontakt_strasse}, ${payload.kontakt_plz} ${payload.kontakt_ort}`.trim();
+
+  const strukturInfo = [
+    `Trainierende Person: ${traineeName}`,
+    payload.abweichende_kontaktperson
+      ? `Kontaktperson / Rechnungsempfänger: ${kontaktName}`
+      : `Kontaktperson: identisch mit Spieler/in`,
+    `Adresse Kontaktperson: ${adresseStr}`,
+  ].join("\n");
+
+  const nachrichtKombi = [
+    strukturInfo,
+    payload.nachricht ? `\nNachricht:\n${payload.nachricht}` : "",
+    payload.gruppenwuensche ? `\nGruppenwünsche:\n${payload.gruppenwuensche}` : "",
+  ].filter(Boolean).join("\n").trim();
 
   const { error: insertError } = await supabase
     .from("registration_requests")
@@ -78,9 +111,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       alter_jahre: payload.alter_jahre
         ? parseInt(payload.alter_jahre, 10)
         : null,
-      nachricht: payload.gruppenwuensche
-        ? `${payload.nachricht}\n\nGruppenwünsche: ${payload.gruppenwuensche}`.trim()
-        : payload.nachricht || null,
+      nachricht: nachrichtKombi || null,
       anlage: payload.anlage,
       ist_vereinsmitglied:
         payload.ist_vereinsmitglied === "ja"
@@ -140,12 +171,20 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
     </div>
     <div class="content">
       <div class="section">
-        <div class="section-title">Kontaktdaten</div>
+        <div class="section-title">Trainierende Person</div>
         <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${payload.name}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${traineeName}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Kontaktperson / Organisator${payload.abweichende_kontaktperson ? "" : " (identisch mit Spieler/in)"}</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${kontaktName}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${payload.email}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${payload.telefon}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Adresse</td><td style="padding: 8px 0; font-weight: 500;">${adresseStr}</td></tr>
         </table>
       </div>
 
@@ -185,7 +224,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
 </body>
 </html>`;
 
-  const textVersion = `Trainingsanmeldung ${payload.anlage}\n\nName: ${payload.name}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nAlter: ${payload.alter_jahre} Jahre\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${payload.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${payload.verfuegbarkeit[key]}`).join("\n")}${payload.nachricht ? `\n\nNachricht:\n${payload.nachricht}` : ""}${payload.gruppenwuensche ? `\n\nGruppenwünsche:\n${payload.gruppenwuensche}` : ""}`;
+  const textVersion = `Trainingsanmeldung ${payload.anlage}\n\nTrainierende Person: ${traineeName} (${payload.alter_jahre} Jahre)\n\nKontaktperson${payload.abweichende_kontaktperson ? "" : " (identisch mit Spieler/in)"}:\nName: ${kontaktName}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nAdresse: ${adresseStr}\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${payload.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${payload.verfuegbarkeit[key]}`).join("\n")}${payload.nachricht ? `\n\nNachricht:\n${payload.nachricht}` : ""}${payload.gruppenwuensche ? `\n\nGruppenwünsche:\n${payload.gruppenwuensche}` : ""}`;
 
   const bestatigungHtml = `
 <!DOCTYPE html>
@@ -210,17 +249,25 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       <h1 style="margin: 0; font-size: 24px;">Anmeldung bestätigt</h1>
     </div>
     <div class="content">
-      <p class="greeting">Hallo <strong>${payload.name}</strong>,</p>
+      <p class="greeting">Hallo <strong>${kontaktName}</strong>,</p>
       <p>vielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!</p>
       <p>Wir haben folgende Daten erhalten:</p>
 
       <div class="section">
-        <div class="section-title">Kontaktdaten</div>
+        <div class="section-title">Trainierende Person</div>
         <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${payload.name}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${traineeName}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Kontaktperson${payload.abweichende_kontaktperson ? "" : " (identisch mit Spieler/in)"}</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${kontaktName}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${payload.email}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${payload.telefon}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Adresse</td><td style="padding: 8px 0; font-weight: 500;">${adresseStr}</td></tr>
         </table>
       </div>
 
@@ -269,7 +316,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       body: JSON.stringify({
         to: [payload.email],
         subject: `Bestätigung Ihrer Trainingsanmeldung - ${payload.anlage}`,
-        body: `Hallo ${payload.name},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
+        body: `Hallo ${kontaktName},\n\nvielen Dank für Ihre Trainingsanmeldung bei der Tennisschule A bis Z!\n\n${textVersion}\n\nWir werden uns in Kürze bei Ihnen melden.\n\nMit sportlichen Grüßen,\nIhre Tennisschule A bis Z`,
         html: bestatigungHtml,
         fromName: "Tennisschule A bis Z",
       }),
@@ -284,7 +331,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to: ["tennisabisz@gmail.com"],
-        subject: `Neue Anmeldung ${payload.anlage}: ${payload.name}`,
+        subject: `Neue Anmeldung ${payload.anlage}: ${traineeName}${payload.abweichende_kontaktperson ? ` (Kontakt: ${kontaktName})` : ""}`,
         body: `Neue Trainingsanmeldung!\n\n${textVersion}`,
         html: emailHtml,
         fromName: "Tennisschule A bis Z",
@@ -322,9 +369,16 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
 
   const [formData, setFormData] = useState<RegistrationData>({
-    name: "",
+    trainee_vorname: "",
+    trainee_nachname: "",
+    abweichende_kontaktperson: false,
+    kontakt_vorname: "",
+    kontakt_nachname: "",
     email: "",
     telefon: "",
+    kontakt_strasse: "",
+    kontakt_plz: "",
+    kontakt_ort: "",
     verfuegbarkeit: {
       montag: "",
       dienstag: "",
@@ -387,8 +441,13 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const target = e.target as HTMLInputElement;
+    const { name, value, type } = target;
+    if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [name]: target.checked }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   function setField<K extends keyof RegistrationData>(key: K, value: RegistrationData[K]) {
@@ -440,12 +499,30 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
     e.preventDefault();
     setError(null);
 
-    if (!formData.name.trim()) {
-      setError("Bitte geben Sie Ihren Namen ein.");
+    if (!formData.trainee_vorname.trim()) {
+      setError("Bitte geben Sie den Vornamen der trainierenden Person ein.");
       return;
     }
+    if (!formData.trainee_nachname.trim()) {
+      setError("Bitte geben Sie den Nachnamen der trainierenden Person ein.");
+      return;
+    }
+    if (!formData.alter_jahre) {
+      setError("Bitte geben Sie das Alter der trainierenden Person ein.");
+      return;
+    }
+    if (formData.abweichende_kontaktperson) {
+      if (!formData.kontakt_vorname.trim()) {
+        setError("Bitte geben Sie den Vornamen der Kontaktperson ein.");
+        return;
+      }
+      if (!formData.kontakt_nachname.trim()) {
+        setError("Bitte geben Sie den Nachnamen der Kontaktperson ein.");
+        return;
+      }
+    }
     if (!formData.email.trim()) {
-      setError("Bitte geben Sie Ihre E-Mail-Adresse ein.");
+      setError("Bitte geben Sie eine E-Mail-Adresse der Kontaktperson ein.");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -454,11 +531,19 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       return;
     }
     if (!formData.telefon.trim()) {
-      setError("Bitte geben Sie Ihre Telefonnummer ein.");
+      setError("Bitte geben Sie eine Telefonnummer der Kontaktperson ein.");
       return;
     }
-    if (!formData.alter_jahre) {
-      setError("Bitte geben Sie Ihr Alter ein.");
+    if (!formData.kontakt_strasse.trim()) {
+      setError("Bitte geben Sie Straße und Hausnummer der Kontaktperson ein.");
+      return;
+    }
+    if (!formData.kontakt_plz.trim()) {
+      setError("Bitte geben Sie die Postleitzahl der Kontaktperson ein.");
+      return;
+    }
+    if (!formData.kontakt_ort.trim()) {
+      setError("Bitte geben Sie den Ort der Kontaktperson ein.");
       return;
     }
     if (!formData.trainingsart) {
@@ -503,12 +588,30 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       }
     }
 
+    const traineeVorname = formData.trainee_vorname.trim();
+    const traineeNachname = formData.trainee_nachname.trim();
+    const kontaktVorname = formData.abweichende_kontaktperson
+      ? formData.kontakt_vorname.trim()
+      : traineeVorname;
+    const kontaktNachname = formData.abweichende_kontaktperson
+      ? formData.kontakt_nachname.trim()
+      : traineeNachname;
+    const kontaktName = `${kontaktVorname} ${kontaktNachname}`.trim();
+
     const payload: RegistrationPayload = {
       accountId,
       anlage,
-      name: formData.name.trim(),
+      trainee_vorname: traineeVorname,
+      trainee_nachname: traineeNachname,
+      abweichende_kontaktperson: formData.abweichende_kontaktperson,
+      kontakt_vorname: kontaktVorname,
+      kontakt_nachname: kontaktNachname,
+      name: kontaktName,
       email: formData.email.trim(),
       telefon: formData.telefon.trim(),
+      kontakt_strasse: formData.kontakt_strasse.trim(),
+      kontakt_plz: formData.kontakt_plz.trim(),
+      kontakt_ort: formData.kontakt_ort.trim(),
       verfuegbarkeit: verfuegbarkeitFinal,
       trainingsart: formData.trainingsart,
       trainings_pro_woche: formData.trainings_pro_woche,
@@ -645,22 +748,26 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* Kontakt */}
+          {/* Trainierende Person */}
           <div className="section-head">
             <span className="num">1</span>
-            <span className="title">Kontaktdaten</span>
+            <span className="title">Trainierende Person (Spieler/in)</span>
           </div>
+          <p className="section-note">
+            Wer nimmt am Training teil? Bei Kindern hier den Namen des Kindes eintragen —
+            die Kontaktdaten der Eltern erfassen wir gleich darunter.
+          </p>
 
           <div className="field-row">
             <div className="field-num">01</div>
             <div className="field-body">
-              <label>Name<span className="req">●</span></label>
+              <label>Vorname Spieler/in<span className="req">●</span></label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="trainee_vorname"
+                value={formData.trainee_vorname}
                 onChange={handleChange}
-                autoComplete="name"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -668,13 +775,13 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           <div className="field-row">
             <div className="field-num">02</div>
             <div className="field-body">
-              <label>E-Mail<span className="req">●</span></label>
+              <label>Nachname Spieler/in<span className="req">●</span></label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="trainee_nachname"
+                value={formData.trainee_nachname}
                 onChange={handleChange}
-                autoComplete="email"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -682,21 +789,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           <div className="field-row">
             <div className="field-num">03</div>
             <div className="field-body">
-              <label>Telefon<span className="req">●</span></label>
-              <input
-                type="tel"
-                name="telefon"
-                value={formData.telefon}
-                onChange={handleChange}
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-
-          <div className="field-row">
-            <div className="field-num">04</div>
-            <div className="field-body">
-              <label>Alter<span className="req">●</span></label>
+              <label>Alter Spieler/in<span className="req">●</span></label>
               <input
                 type="number"
                 name="alter_jahre"
@@ -708,14 +801,150 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
             </div>
           </div>
 
-          {/* Training */}
+          {/* Kontaktperson */}
           <div className="section-head">
             <span className="num">2</span>
+            <span className="title">Kontaktperson / Organisator</span>
+          </div>
+          <p className="section-note">
+            Wer organisiert die Anmeldung und ist unser Ansprechpartner? Bei Erwachsenen
+            meist die trainierende Person selbst. Bei Kindern bitte die Daten des
+            Elternteils / Erziehungsberechtigten eintragen — diese Person erhält
+            Bestätigungen und Rechnungen.
+          </p>
+
+          <div className="field-row">
+            <div className="field-num">04</div>
+            <div className="field-body">
+              <label className="checkbox block" style={{ marginTop: 6 }}>
+                <input
+                  type="checkbox"
+                  name="abweichende_kontaktperson"
+                  checked={formData.abweichende_kontaktperson}
+                  onChange={handleChange}
+                />
+                Kontaktperson weicht von der trainierenden Person ab
+                (z.B. Eltern bei Kindern unter 18)
+              </label>
+            </div>
+          </div>
+
+          {formData.abweichende_kontaktperson && (
+            <>
+              <div className="field-row">
+                <div className="field-num">05</div>
+                <div className="field-body">
+                  <label>Vorname Kontaktperson<span className="req">●</span></label>
+                  <input
+                    type="text"
+                    name="kontakt_vorname"
+                    value={formData.kontakt_vorname}
+                    onChange={handleChange}
+                    autoComplete="given-name"
+                    placeholder="z.B. Maria"
+                  />
+                </div>
+              </div>
+
+              <div className="field-row">
+                <div className="field-num">06</div>
+                <div className="field-body">
+                  <label>Nachname Kontaktperson<span className="req">●</span></label>
+                  <input
+                    type="text"
+                    name="kontakt_nachname"
+                    value={formData.kontakt_nachname}
+                    onChange={handleChange}
+                    autoComplete="family-name"
+                    placeholder="z.B. Müller"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="field-row">
+            <div className="field-num">{formData.abweichende_kontaktperson ? "07" : "05"}</div>
+            <div className="field-body">
+              <label>E-Mail Kontaktperson<span className="req">●</span></label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="email"
+              />
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field-num">{formData.abweichende_kontaktperson ? "08" : "06"}</div>
+            <div className="field-body">
+              <label>Telefon Kontaktperson<span className="req">●</span></label>
+              <input
+                type="tel"
+                name="telefon"
+                value={formData.telefon}
+                onChange={handleChange}
+                autoComplete="tel"
+              />
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field-num">{formData.abweichende_kontaktperson ? "09" : "07"}</div>
+            <div className="field-body">
+              <label>Straße und Hausnummer<span className="req">●</span></label>
+              <input
+                type="text"
+                name="kontakt_strasse"
+                value={formData.kontakt_strasse}
+                onChange={handleChange}
+                autoComplete="street-address"
+                placeholder="z.B. Musterstraße 12"
+              />
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field-num">{formData.abweichende_kontaktperson ? "10" : "08"}</div>
+            <div className="field-body">
+              <label>Postleitzahl<span className="req">●</span></label>
+              <input
+                type="text"
+                name="kontakt_plz"
+                value={formData.kontakt_plz}
+                onChange={handleChange}
+                autoComplete="postal-code"
+                inputMode="numeric"
+                placeholder="z.B. 13351"
+              />
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field-num">{formData.abweichende_kontaktperson ? "11" : "09"}</div>
+            <div className="field-body">
+              <label>Ort<span className="req">●</span></label>
+              <input
+                type="text"
+                name="kontakt_ort"
+                value={formData.kontakt_ort}
+                onChange={handleChange}
+                autoComplete="address-level2"
+                placeholder="z.B. Berlin"
+              />
+            </div>
+          </div>
+
+          {/* Training */}
+          <div className="section-head">
+            <span className="num">3</span>
             <span className="title">Trainingswünsche</span>
           </div>
 
           <div className="field-row">
-            <div className="field-num">05</div>
+            <div className="field-num">{formData.abweichende_kontaktperson ? "12" : "10"}</div>
             <div className="field-body">
               <label>Trainingsart<span className="req">●</span></label>
               <div className="segmented" style={{ ["--cols" as any]: 3 }}>
@@ -739,7 +968,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           </div>
 
           <div className="field-row">
-            <div className="field-num">06</div>
+            <div className="field-num">{formData.abweichende_kontaktperson ? "13" : "11"}</div>
             <div className="field-body">
               <label>Pro Woche<span className="req">●</span></label>
               <div className="segmented" style={{ ["--cols" as any]: 3 }}>
@@ -759,7 +988,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           </div>
 
           <div className="field-row">
-            <div className="field-num">07</div>
+            <div className="field-num">{formData.abweichende_kontaktperson ? "14" : "12"}</div>
             <div className="field-body">
               <label>Erfahrung</label>
               <div className="segmented" style={{ ["--cols" as any]: 3 }}>
@@ -783,7 +1012,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           </div>
 
           <div className="field-row">
-            <div className="field-num">08</div>
+            <div className="field-num">{formData.abweichende_kontaktperson ? "15" : "13"}</div>
             <div className="field-body">
               <label>Vereinsmitglied<span className="req">●</span></label>
               <div className="segmented" style={{ ["--cols" as any]: 2 }}>
@@ -807,7 +1036,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
 
           {/* Verfügbarkeit */}
           <div className="section-head">
-            <span className="num">3</span>
+            <span className="num">4</span>
             <span className="title">Verfügbarkeit</span>
           </div>
           <p className="section-note">
@@ -864,12 +1093,12 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
 
           {/* Anmerkungen */}
           <div className="section-head">
-            <span className="num">4</span>
+            <span className="num">5</span>
             <span className="title">Anmerkungen</span>
           </div>
 
           <div className="field-row">
-            <div className="field-num">09</div>
+            <div className="field-num">{formData.abweichende_kontaktperson ? "16" : "14"}</div>
             <div className="field-body">
               <label>Nachricht (optional)</label>
               <textarea
@@ -883,7 +1112,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
 
           {(formData.trainingsart === "gruppe" || formData.trainingsart === "beides") && (
             <div className="field-row">
-              <div className="field-num">10</div>
+              <div className="field-num">{formData.abweichende_kontaktperson ? "17" : "15"}</div>
               <div className="field-body">
                 <label>Gruppenwünsche</label>
                 <p className="section-note" style={{ marginTop: -4, marginBottom: 10 }}>
