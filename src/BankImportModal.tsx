@@ -102,11 +102,40 @@ function parseCsvLine(line: string, delim: string): string[] {
   return out;
 }
 
-function findColumn(headers: string[], patterns: RegExp[]): number {
-  for (let i = 0; i < headers.length; i++) {
-    if (patterns.some((p) => p.test(headers[i]))) return i;
+function findColumn(
+  headers: string[],
+  patterns: RegExp[],
+  excludePatterns: RegExp[] = []
+): number {
+  for (const pattern of patterns) {
+    for (let i = 0; i < headers.length; i++) {
+      const h = headers[i];
+      if (pattern.test(h) && !excludePatterns.some((p) => p.test(h))) return i;
+    }
   }
   return -1;
+}
+
+function extractIbanFromText(text: string): string {
+  if (!text) return "";
+  const cleaned = text.replace(/\s/g, "").toUpperCase();
+  const m = cleaned.match(/DE\d{20}/);
+  return m ? m[0] : "";
+}
+
+function extractNameFromBuchungstext(text: string): string {
+  if (!text) return "";
+  const patterns = [
+    /(?:auftraggeber|zahlungspflichtige?r?|begünstigte?r?|empf[äa]nger|name)[:\s]+([A-ZÄÖÜ][^\n;|]{1,60})/i,
+    /SVWZ\+([^\n;|+]{2,60})/i,
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m && m[1]) {
+      return m[1].trim().replace(/\s+/g, " ");
+    }
+  }
+  return "";
 }
 
 type ParseDiagnostics = {
@@ -175,19 +204,34 @@ function parseCommerzbankCsv(text: string): {
     /^umsatz$/,
     /^wert$/,
   ]);
-  const colIban = findColumn(headers, [
-    /iban.*(beg|auftr|partner|gegen|zahl|kontrahent)/,
-    /(beg|auftr|partner|gegen|zahl|kontrahent).*iban/,
-    /^iban$/,
-    /iban/,
+  const colIban = findColumn(
+    headers,
+    [
+      /iban.*(beg|partner|gegen|zahl|kontrahent|empf)/,
+      /(beg|partner|gegen|zahl|kontrahent|empf).*iban/,
+      /^iban$/,
+      /iban/,
+    ],
+    [/auftrag/, /eigen/]
+  );
+  const colBuchungstext = findColumn(headers, [
+    /buchungstext/,
+    /verwendungs/,
+    /vwz/,
+    /^text$/,
   ]);
-  const colVZ = findColumn(headers, [/verwendungs/, /buchungstext/, /umsatzart/, /text/]);
-  const colNm = findColumn(headers, [
-    /(beg|auftr|partner|empf).*(name)/,
-    /(beg|auftr|partner|empf|zahl|kontrahent)/,
-    /name.*(beg|auftr|partner|empf)/,
-    /^name$/,
-  ]);
+  const colVZ = colBuchungstext;
+  const colNm = findColumn(
+    headers,
+    [
+      /(beg|partner|empf|zahl|kontrahent).*name/,
+      /name.*(beg|partner|empf|zahl|kontrahent)/,
+      /(beg|partner|empf|zahl|kontrahent)/,
+      /auftraggeber.*name/,
+      /^name$/,
+    ],
+    [/^auftraggeberkonto$/, /iban/, /bank/, /bic/, /blz/, /^konto$/]
+  );
 
   const diag: ParseDiagnostics = {
     ...emptyDiag,
@@ -215,12 +259,17 @@ function parseCommerzbankCsv(text: string): {
     if (betrag === 0) continue;
     if (betrag > 0) pos++;
     else neg++;
+    const buchungstextRaw = colBuchungstext >= 0 ? (cells[colBuchungstext] ?? "") : "";
+    let iban = colIban >= 0 ? normIban(cells[colIban] ?? "") : "";
+    if (!iban) iban = extractIbanFromText(buchungstextRaw);
+    let name = colNm >= 0 ? (cells[colNm] ?? "").trim() : "";
+    if (!name) name = extractNameFromBuchungstext(buchungstextRaw);
     rows.push({
       buchungstag: colDate >= 0 ? (cells[colDate] ?? "").trim() : "",
       betrag,
-      ibanGegenkonto: colIban >= 0 ? normIban(cells[colIban] ?? "") : "",
-      verwendungszweck: colVZ >= 0 ? (cells[colVZ] ?? "").trim() : "",
-      beguenstigter: colNm >= 0 ? (cells[colNm] ?? "").trim() : "",
+      ibanGegenkonto: iban,
+      verwendungszweck: buchungstextRaw.trim(),
+      beguenstigter: name,
       raw: lines[i],
       zeile: i + 1,
     });
@@ -676,7 +725,7 @@ export default function BankImportModal({
               borderRadius: 6,
               fontSize: 12,
             }}
-            open={bankRows.length === 0}
+            open={bankRows.length === 0 || counts.match === 0}
           >
             <summary style={{ cursor: "pointer", fontWeight: 600 }}>
               Diagnose · {diag.parsedRows} Zeilen erkannt ({diag.positive} eingehend, {diag.negative} ausgehend)
