@@ -25,7 +25,6 @@ root.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/anmeldung" element={<WeddingRegistrationWrapper />} />
         <Route path="/anmeldung-wedding" element={<WeddingRegistrationWrapper />} />
         <Route path="/anmeldung-britz" element={<BritzRegistrationWrapper />} />
         <Route path="/sepa" element={<SepaForm />} />
@@ -36,7 +35,6 @@ root.render(
         <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
-        <Route path="/anmeldung-wedding-probetraining" element={<WeddingRegistrationWrapper directToProbetraining />} />
         <Route path="/probetraining-britz" element={<ProbetrainingForm anlage="Britz" onBack={() => window.location.href = "/britz"} />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />
         <Route path="/absage/:id" element={<AbsagePage />} />

@@ -4,11 +4,7 @@ import SepaForm from "./SepaForm";
 import StepHeader from "./components/StepHeader";
 import "./App.css";
 
-type WeddingRegistrationWrapperProps = {
-  directToProbetraining?: boolean;
-};
-
-export default function WeddingRegistrationWrapper(_: WeddingRegistrationWrapperProps) {
+export default function WeddingRegistrationWrapper() {
   const [step, setStep] = useState<"registration" | "sepa">("registration");
   const [registrationPayload, setRegistrationPayload] = useState<RegistrationPayload | null>(null);
 
