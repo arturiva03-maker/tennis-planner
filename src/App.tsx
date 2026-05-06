@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
+import BankImportModal from "./BankImportModal";
 
 // Security: Escape HTML to prevent XSS attacks
 function escapeHtml(str: string | number | null | undefined): string {
@@ -1495,6 +1496,7 @@ export default function App() {
   // States für SEPA-XML-Export
   const [sepaExportSelection, setSepaExportSelection] = useState<Set<string>>(new Set());
   const [showSepaExportModal, setShowSepaExportModal] = useState(false);
+  const [showBankImportModal, setShowBankImportModal] = useState(false);
 
   // States für Wochenplan PDF-Export
   const [showWeekPdfModal, setShowWeekPdfModal] = useState(false);
@@ -10393,6 +10395,13 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           >
                             SEPA-XML exportieren
                           </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => setShowBankImportModal(true)}
+                            title="Commerzbank-CSV importieren und Spieler automatisch als abgerechnet markieren"
+                          >
+                            Bank-Umsätze importieren
+                          </button>
                         </div>
                       </div>
                       <div style={{ height: 8 }} />
@@ -14925,6 +14934,27 @@ Deine Tennisschule`;
           </div>
         </div>
       )}
+
+      {/* Bank-Umsätze Import Modal */}
+      <BankImportModal
+        open={showBankImportModal}
+        onClose={() => setShowBankImportModal(false)}
+        abrechnungMonat={abrechnungMonat}
+        spielerRows={abrechnung.spielerRows.map((r) => ({ id: r.id, name: r.name, sum: r.sum }))}
+        spielerList={spieler}
+        getAdjustedSum={getAdjustedSum}
+        getSumBarForSpieler={getSumBarForSpieler}
+        payments={payments}
+        onApply={(spielerIds) => {
+          setPayments((prev) => {
+            const next = { ...prev };
+            for (const sid of spielerIds) {
+              next[paymentKey(abrechnungMonat, sid)] = true;
+            }
+            return next;
+          });
+        }}
+      />
 
       {/* SEPA-XML Export Modal */}
       {showSepaExportModal && (() => {
