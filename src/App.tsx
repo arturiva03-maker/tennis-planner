@@ -9044,52 +9044,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                     {/* Probetraining Tab */}
                     {formulareTab === "probetraining" && (
                       <>
-                        <div style={{ marginBottom: 16 }}>
-                          <p className="muted" style={{ marginBottom: 12 }}>
-                            <strong>Probetraining Wedding:</strong>{" "}
-                            <code style={{
-                              background: "var(--bg-inset)",
-                              padding: "4px 8px",
-                              borderRadius: 4,
-                              fontSize: 13,
-                            }}>
-                              {window.location.origin}/anmeldung-wedding
-                            </code>
-                            <button
-                              className="btn micro btnGhost"
-                              style={{ marginLeft: 8 }}
-                              onClick={() => {
-                                navigator.clipboard.writeText(
-                                  `${window.location.origin}/anmeldung-wedding`
-                                );
-                              }}
-                            >
-                              Kopieren
-                            </button>
-                          </p>
-                          <p className="muted" style={{ marginBottom: 12 }}>
-                            <strong>Probetraining Britz:</strong>{" "}
-                            <code style={{
-                              background: "var(--bg-inset)",
-                              padding: "4px 8px",
-                              borderRadius: 4,
-                              fontSize: 13,
-                            }}>
-                              {window.location.origin}/probetraining-britz
-                            </code>
-                            <button
-                              className="btn micro btnGhost"
-                              style={{ marginLeft: 8 }}
-                              onClick={() => {
-                                navigator.clipboard.writeText(
-                                  `${window.location.origin}/probetraining-britz`
-                                );
-                              }}
-                            >
-                              Kopieren
-                            </button>
-                          </p>
-                        </div>
+                        <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
+                          Bestehende Probetraining-Anfragen. Neue Anmeldungen laufen über <code>/anmeldung-wedding</code> und <code>/anmeldung-britz</code>.
+                        </p>
 
                         {loadingProbetrainingAnfragen ? (
                           <p className="muted">Laden...</p>

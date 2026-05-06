@@ -13,7 +13,6 @@ import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import AbsagePage from './AbsagePage';
-import ProbetrainingForm from './ProbetrainingForm';
 import KennlerntennisForm from './KennlerntennisForm';
 import reportWebVitals from './reportWebVitals';
 
@@ -35,7 +34,6 @@ root.render(
         <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
-        <Route path="/probetraining-britz" element={<ProbetrainingForm anlage="Britz" onBack={() => window.location.href = "/britz"} />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />
         <Route path="/absage/:id" element={<AbsagePage />} />
       </Routes>
