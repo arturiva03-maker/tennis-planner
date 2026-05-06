@@ -26,7 +26,8 @@ type MatchStatus =
   | "betrag_abweicht"
   | "iban_unbekannt"
   | "schon_abgerechnet"
-  | "kein_kunde";
+  | "kein_kunde"
+  | "ausgehend";
 
 type Candidate = {
   spielerId: string;
@@ -108,46 +109,112 @@ function findColumn(headers: string[], patterns: RegExp[]): number {
   return -1;
 }
 
-function parseCommerzbankCsv(text: string): { rows: BankRow[]; warning?: string } {
+type ParseDiagnostics = {
+  totalLines: number;
+  headerLine: number;
+  delimiter: string;
+  headers: string[];
+  detected: { date: number; betrag: number; iban: number; vz: number; name: number };
+  parsedRows: number;
+  positive: number;
+  negative: number;
+  firstLines: string[];
+};
+
+function parseCommerzbankCsv(text: string): {
+  rows: BankRow[];
+  warning?: string;
+  diag: ParseDiagnostics;
+} {
   const stripped = text.replace(/^\uFEFF/, "");
   const allLines = stripped.split(/\r?\n/);
   const lines = allLines.filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return { rows: [], warning: "Datei ist leer." };
+  const firstLines = lines.slice(0, 5);
+
+  const emptyDiag: ParseDiagnostics = {
+    totalLines: lines.length,
+    headerLine: -1,
+    delimiter: "",
+    headers: [],
+    detected: { date: -1, betrag: -1, iban: -1, vz: -1, name: -1 },
+    parsedRows: 0,
+    positive: 0,
+    negative: 0,
+    firstLines,
+  };
+
+  if (lines.length === 0) {
+    return { rows: [], warning: "Datei ist leer.", diag: emptyDiag };
+  }
 
   let headerIdx = lines.findIndex((l) => /buchungstag/i.test(l));
+  if (headerIdx < 0) headerIdx = lines.findIndex((l) => /betrag/i.test(l));
   if (headerIdx < 0) headerIdx = 0;
 
   const sample = lines[headerIdx];
-  const delim = sample.includes(";") ? ";" : sample.includes("\t") ? "\t" : ",";
+  const counts = {
+    ";": (sample.match(/;/g) || []).length,
+    ",": (sample.match(/,/g) || []).length,
+    "\t": (sample.match(/\t/g) || []).length,
+  };
+  const delim =
+    counts[";"] >= counts[","] && counts[";"] >= counts["\t"]
+      ? ";"
+      : counts["\t"] >= counts[","]
+      ? "\t"
+      : ",";
+
   const headers = parseCsvLine(lines[headerIdx], delim).map((h) =>
     h.trim().toLowerCase().replace(/^"|"$/g, "")
   );
 
   const colDate = findColumn(headers, [/^buchungstag$/, /buchungs.?tag/, /^datum$/]);
-  const colBetrag = findColumn(headers, [/^betrag$/, /betrag.*eur|betrag.*€|umsatz|^wert$/]);
-  const colIban = findColumn(headers, [
-    /iban.*(beg|auftr|partner|gegen)/,
-    /(beg|auftr|partner|gegen).*iban/,
-    /^iban$/,
+  const colBetrag = findColumn(headers, [
+    /^betrag$/,
+    /betrag/,
+    /^umsatz$/,
+    /^wert$/,
   ]);
-  const colVZ = findColumn(headers, [/verwendungs/, /buchungstext/, /umsatzart/]);
+  const colIban = findColumn(headers, [
+    /iban.*(beg|auftr|partner|gegen|zahl|kontrahent)/,
+    /(beg|auftr|partner|gegen|zahl|kontrahent).*iban/,
+    /^iban$/,
+    /iban/,
+  ]);
+  const colVZ = findColumn(headers, [/verwendungs/, /buchungstext/, /umsatzart/, /text/]);
   const colNm = findColumn(headers, [
-    /(beg|auftr|partner).*name/,
-    /(beg|auftr|partner)/,
-    /empf/,
-    /name/,
+    /(beg|auftr|partner|empf).*(name)/,
+    /(beg|auftr|partner|empf|zahl|kontrahent)/,
+    /name.*(beg|auftr|partner|empf)/,
+    /^name$/,
   ]);
 
+  const diag: ParseDiagnostics = {
+    ...emptyDiag,
+    headerLine: headerIdx + 1,
+    delimiter: delim === "\t" ? "TAB" : delim,
+    headers,
+    detected: { date: colDate, betrag: colBetrag, iban: colIban, vz: colVZ, name: colNm },
+  };
+
   if (colBetrag < 0) {
-    return { rows: [], warning: "Spalte 'Betrag' nicht gefunden." };
+    return {
+      rows: [],
+      warning: `Spalte 'Betrag' nicht gefunden. Gefundene Spalten: ${headers.join(", ") || "(keine)"}`,
+      diag,
+    };
   }
 
   const rows: BankRow[] = [];
+  let pos = 0;
+  let neg = 0;
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i], delim).map((c) => c.replace(/^"|"$/g, ""));
-    if (cells.length < headers.length / 2) continue;
+    if (cells.length < 2) continue;
     const betrag = parseGermanNumber(cells[colBetrag] ?? "0");
     if (betrag === 0) continue;
+    if (betrag > 0) pos++;
+    else neg++;
     rows.push({
       buchungstag: colDate >= 0 ? (cells[colDate] ?? "").trim() : "",
       betrag,
@@ -158,7 +225,10 @@ function parseCommerzbankCsv(text: string): { rows: BankRow[]; warning?: string 
       zeile: i + 1,
     });
   }
-  return { rows };
+  diag.parsedRows = rows.length;
+  diag.positive = pos;
+  diag.negative = neg;
+  return { rows, diag };
 }
 
 async function readFileAsText(file: File): Promise<string> {
@@ -188,6 +258,8 @@ function statusLabel(s: MatchStatus): { text: string; color: string } {
       return { text: "Bereits als abgerechnet markiert", color: "#6b7280" };
     case "kein_kunde":
       return { text: "Kein passender Spieler", color: "#ef4444" };
+    case "ausgehend":
+      return { text: "Ausgehende Buchung — ignoriert", color: "#6b7280" };
   }
 }
 
@@ -207,6 +279,8 @@ export default function BankImportModal({
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("");
+  const [diag, setDiag] = useState<ParseDiagnostics | null>(null);
+  const [hasUploaded, setHasUploaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ibanToSpieler = useMemo(() => {
@@ -241,8 +315,19 @@ export default function BankImportModal({
   }, [spielerList]);
 
   function buildMatch(bankRow: BankRow, idx: number): MatchResult {
+    if (bankRow.betrag <= 0) {
+      return {
+        rowIdx: idx,
+        bankRow,
+        status: "ausgehend",
+        candidates: [],
+        selectedSpielerId: null,
+        include: false,
+      };
+    }
+
     const targetIban = bankRow.ibanGegenkonto;
-    const cands = ibanToSpieler.get(targetIban) ?? [];
+    const cands = targetIban ? ibanToSpieler.get(targetIban) ?? [] : [];
 
     const candInfos: Candidate[] = cands.map((sp) => {
       const expected = expectedBySpieler.get(sp.id) ?? 0;
@@ -267,7 +352,44 @@ export default function BankImportModal({
     let hint: string | undefined;
 
     if (cands.length === 0) {
-      status = "iban_unbekannt";
+      const fallback: Candidate[] = [];
+      expectedBySpieler.forEach((expected, id) => {
+        const key = `${abrechnungMonat}__${id}`;
+        if (payments[key]) return;
+        if (Math.abs(expected - bankRow.betrag) <= tol) {
+          fallback.push({
+            spielerId: id,
+            spielerName: spielerNameById.get(id) ?? id,
+            expected,
+            alreadyPaid: false,
+            ibanMatch: false,
+          });
+        }
+      });
+      if (fallback.length === 1) {
+        status = "iban_unbekannt";
+        hint =
+          targetIban
+            ? `IBAN ${targetIban.slice(-6)} keinem Spieler zugeordnet — aber Betrag passt zu „${fallback[0].spielerName}". Manuell prüfen.`
+            : `Keine IBAN in der Bank-Zeile — aber Betrag passt zu „${fallback[0].spielerName}". Manuell prüfen.`;
+      } else if (fallback.length > 1) {
+        status = "iban_unbekannt";
+        hint = `IBAN unbekannt — Betrag passt zu ${fallback.length} offenen Spielern. Bitte manuell wählen.`;
+      } else {
+        status = "iban_unbekannt";
+        hint = targetIban
+          ? `IBAN ${targetIban.slice(-6)} ist keinem Spieler zugeordnet.`
+          : "Keine IBAN in der Bank-Zeile gefunden.";
+      }
+      return {
+        rowIdx: idx,
+        bankRow,
+        status,
+        candidates: fallback,
+        selectedSpielerId: null,
+        include: false,
+        hint,
+      };
     } else if (betragMatches.length === 1) {
       status = "match";
       selected = betragMatches[0].spielerId;
@@ -307,20 +429,26 @@ export default function BankImportModal({
     setError(null);
     setWarning(null);
     setFileName(file.name);
+    setHasUploaded(true);
     try {
       const text = await readFileAsText(file);
-      const { rows, warning: warn } = parseCommerzbankCsv(text);
-      const incoming = rows.filter((r) => r.betrag > 0);
-      if (incoming.length === 0) {
+      const { rows, warning: warn, diag: parseDiag } = parseCommerzbankCsv(text);
+      setDiag(parseDiag);
+      if (rows.length === 0) {
         setWarning(
           warn ||
-            "Keine eingehenden Buchungen (positive Beträge) in der Datei gefunden."
+            "Datei enthält keine erkennbaren Buchungszeilen. Siehe Diagnose unten — passt die Spaltenerkennung?"
+        );
+      } else if (parseDiag.positive === 0) {
+        setWarning(
+          (warn ? warn + " " : "") +
+            "Keine eingehenden Buchungen (positive Beträge) — bitte den richtigen CSV-Export wählen (Umsatzliste mit Gutschriften)."
         );
       } else if (warn) {
         setWarning(warn);
       }
-      setBankRows(incoming);
-      const m = incoming.map((r, i) => buildMatch(r, i));
+      setBankRows(rows);
+      const m = rows.map((r, i) => buildMatch(r, i));
       setMatches(m);
     } catch (e: any) {
       setError(`Datei konnte nicht gelesen werden: ${e?.message ?? e}`);
@@ -385,6 +513,8 @@ export default function BankImportModal({
     setWarning(null);
     setError(null);
     setFileName("");
+    setDiag(null);
+    setHasUploaded(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -431,7 +561,7 @@ export default function BankImportModal({
           </button>
         </div>
 
-        {bankRows.length === 0 && (
+        {!hasUploaded && (
           <div className="card cardInset" style={{ marginBottom: 16 }}>
             <p style={{ marginTop: 0 }}>
               <strong>Wie geht's?</strong>
@@ -455,78 +585,141 @@ export default function BankImportModal({
                 }}
               />
             </div>
-            {error && (
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: 10,
-                  background: "#fef2f2",
-                  color: "#991b1b",
-                  borderRadius: 6,
-                  fontSize: 13,
-                }}
-              >
-                {error}
-              </div>
-            )}
           </div>
+        )}
+
+        {hasUploaded && (
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 12,
+              alignItems: "center",
+            }}
+          >
+            <span className="pill">
+              Datei: <strong>{fileName}</strong>
+            </span>
+            {bankRows.length > 0 && (
+              <>
+                <span className="pill" style={{ background: "#d1fae5", color: "#065f46" }}>
+                  ✓ {counts.match} eindeutig
+                </span>
+                {counts.ambiguous > 0 && (
+                  <span className="pill" style={{ background: "#fef3c7", color: "#92400e" }}>
+                    ⚠ {counts.ambiguous} mehrdeutig
+                  </span>
+                )}
+                {counts.no_match > 0 && (
+                  <span className="pill" style={{ background: "#fee2e2", color: "#991b1b" }}>
+                    ✗ {counts.no_match} keine Zuordnung
+                  </span>
+                )}
+                {counts.schon > 0 && (
+                  <span className="pill" style={{ background: "#e5e7eb", color: "#374151" }}>
+                    ↻ {counts.schon} schon abgerechnet
+                  </span>
+                )}
+                <span className="pill" style={{ marginLeft: "auto" }}>
+                  Übernehmen: <strong>{counts.included}</strong> Spieler
+                </span>
+              </>
+            )}
+            <button
+              className="btn btnGhost"
+              style={bankRows.length === 0 ? { marginLeft: "auto" } : undefined}
+              onClick={reset}
+            >
+              Andere Datei
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: 10,
+              background: "#fef2f2",
+              color: "#991b1b",
+              borderRadius: 6,
+              fontSize: 13,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {warning && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: 10,
+              background: "#fffbeb",
+              color: "#92400e",
+              borderRadius: 6,
+              fontSize: 13,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {warning}
+          </div>
+        )}
+
+        {hasUploaded && diag && (
+          <details
+            style={{
+              marginBottom: 12,
+              padding: 10,
+              background: "#f3f4f6",
+              borderRadius: 6,
+              fontSize: 12,
+            }}
+            open={bankRows.length === 0}
+          >
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>
+              Diagnose · {diag.parsedRows} Zeilen erkannt ({diag.positive} eingehend, {diag.negative} ausgehend)
+            </summary>
+            <div style={{ marginTop: 8, fontFamily: "monospace", fontSize: 11 }}>
+              <div>
+                <strong>Trennzeichen:</strong> „{diag.delimiter}"
+              </div>
+              <div>
+                <strong>Header-Zeile:</strong> #{diag.headerLine} ({diag.totalLines} Zeilen gesamt)
+              </div>
+              <div>
+                <strong>Erkannte Spalten:</strong>
+                <ul style={{ margin: "4px 0 0 16px" }}>
+                  <li>Buchungstag: {diag.detected.date >= 0 ? `Spalte ${diag.detected.date} (${diag.headers[diag.detected.date]})` : "❌ nicht erkannt"}</li>
+                  <li>Betrag: {diag.detected.betrag >= 0 ? `Spalte ${diag.detected.betrag} (${diag.headers[diag.detected.betrag]})` : "❌ nicht erkannt"}</li>
+                  <li>IBAN-Gegenkonto: {diag.detected.iban >= 0 ? `Spalte ${diag.detected.iban} (${diag.headers[diag.detected.iban]})` : "❌ nicht erkannt"}</li>
+                  <li>Verwendungszweck: {diag.detected.vz >= 0 ? `Spalte ${diag.detected.vz} (${diag.headers[diag.detected.vz]})` : "❌ nicht erkannt"}</li>
+                  <li>Auftraggeber/Name: {diag.detected.name >= 0 ? `Spalte ${diag.detected.name} (${diag.headers[diag.detected.name]})` : "❌ nicht erkannt"}</li>
+                </ul>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <strong>Alle Header ({diag.headers.length}):</strong>
+                <div style={{ marginLeft: 8, wordBreak: "break-all" }}>
+                  {diag.headers.map((h, i) => (
+                    <span key={i} style={{ marginRight: 8 }}>
+                      [{i}] {h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <strong>Erste Zeilen der Datei:</strong>
+                <pre style={{ background: "#fff", padding: 6, borderRadius: 4, overflow: "auto", marginTop: 4, maxHeight: 200 }}>
+                  {diag.firstLines.join("\n")}
+                </pre>
+              </div>
+            </div>
+          </details>
         )}
 
         {bankRows.length > 0 && (
           <>
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 12,
-                alignItems: "center",
-              }}
-            >
-              <span className="pill">
-                Datei: <strong>{fileName}</strong>
-              </span>
-              <span className="pill" style={{ background: "#d1fae5", color: "#065f46" }}>
-                ✓ {counts.match} eindeutig
-              </span>
-              {counts.ambiguous > 0 && (
-                <span className="pill" style={{ background: "#fef3c7", color: "#92400e" }}>
-                  ⚠ {counts.ambiguous} mehrdeutig
-                </span>
-              )}
-              {counts.no_match > 0 && (
-                <span className="pill" style={{ background: "#fee2e2", color: "#991b1b" }}>
-                  ✗ {counts.no_match} keine Zuordnung
-                </span>
-              )}
-              {counts.schon > 0 && (
-                <span className="pill" style={{ background: "#e5e7eb", color: "#374151" }}>
-                  ↻ {counts.schon} schon abgerechnet
-                </span>
-              )}
-              <span className="pill" style={{ marginLeft: "auto" }}>
-                Übernehmen: <strong>{counts.included}</strong> Spieler
-              </span>
-              <button className="btn btnGhost" onClick={reset}>
-                Andere Datei
-              </button>
-            </div>
-
-            {warning && (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: 10,
-                  background: "#fffbeb",
-                  color: "#92400e",
-                  borderRadius: 6,
-                  fontSize: 13,
-                }}
-              >
-                {warning}
-              </div>
-            )}
-
             {dupTargets.size > 0 && (
               <div
                 style={{
