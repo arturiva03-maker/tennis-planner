@@ -116,15 +116,37 @@ function findColumn(
   return -1;
 }
 
+const IBAN_LENGTHS: Record<string, number> = {
+  AT: 20, BE: 16, CH: 21, DE: 22, DK: 18, ES: 24, FI: 18, FR: 27, GB: 22,
+  IT: 27, LU: 20, NL: 18, NO: 15, PL: 28, PT: 25, SE: 24,
+};
+
 function extractIbanFromText(text: string): string {
   if (!text) return "";
   const cleaned = text.replace(/\s/g, "").toUpperCase();
-  const m = cleaned.match(/DE\d{20}/);
-  return m ? m[0] : "";
+  const re = /[A-Z]{2}\d{2}[A-Z0-9]{10,30}/g;
+  let m: RegExpExecArray | null;
+  const candidates: string[] = [];
+  while ((m = re.exec(cleaned)) !== null) {
+    if (m[0].includes("ZZZ")) continue; // Gläubiger-ID
+    candidates.push(m[0]);
+  }
+  for (const c of candidates) {
+    const cc = c.slice(0, 2);
+    const expected = IBAN_LENGTHS[cc];
+    if (expected && c.length >= expected) return c.slice(0, expected);
+  }
+  return candidates[0] ?? "";
 }
 
 function extractNameFromBuchungstext(text: string): string {
   if (!text) return "";
+  const positional = text.match(
+    /^\s*([A-Za-zÀ-ÿäöüÄÖÜß][A-Za-zÀ-ÿäöüÄÖÜß\s.\-']{1,80}?)\s+[A-Z]{4}[A-Z0-9]{4,7}\s+[A-Z]{2}\d{2}/
+  );
+  if (positional && positional[1]) {
+    return positional[1].trim().replace(/\s+/g, " ");
+  }
   const patterns = [
     /(?:auftraggeber|zahlungspflichtige?r?|begünstigte?r?|empf[äa]nger|name)[:\s]+([A-ZÄÖÜ][^\n;|]{1,60})/i,
     /SVWZ\+([^\n;|+]{2,60})/i,
@@ -136,6 +158,31 @@ function extractNameFromBuchungstext(text: string): string {
     }
   }
   return "";
+}
+
+function normalizeForName(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .replace(/ä/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function spielerNameMatch(sp: SpielerLike, haystack: string): boolean {
+  const v = normalizeForName(sp.vorname || "");
+  const n = normalizeForName(sp.nachname || "");
+  const vTokens = v.split(" ").filter((t) => t.length >= 3);
+  const nTokens = n.split(" ").filter((t) => t.length >= 3);
+  if (vTokens.length === 0 && nTokens.length === 0) return false;
+  const vMatch = vTokens.length === 0 || vTokens.some((t) => haystack.includes(t));
+  const nMatch = nTokens.length === 0 || nTokens.some((t) => haystack.includes(t));
+  return vMatch && nMatch;
 }
 
 type ParseDiagnostics = {
@@ -212,7 +259,7 @@ function parseCommerzbankCsv(text: string): {
       /^iban$/,
       /iban/,
     ],
-    [/auftrag/, /eigen/]
+    [/auftrag/, /eigen/, /kontoinhaber/, /^iban kontoinhaber$/]
   );
   const colBuchungstext = findColumn(headers, [
     /buchungstext/,
@@ -375,102 +422,152 @@ export default function BankImportModal({
       };
     }
 
-    const targetIban = bankRow.ibanGegenkonto;
-    const cands = targetIban ? ibanToSpieler.get(targetIban) ?? [] : [];
-
-    const candInfos: Candidate[] = cands.map((sp) => {
-      const expected = expectedBySpieler.get(sp.id) ?? 0;
-      const key = `${abrechnungMonat}__${sp.id}`;
-      const alreadyPaid = !!payments[key];
-      return {
-        spielerId: sp.id,
-        spielerName: spielerNameById.get(sp.id) ?? sp.vorname,
-        expected,
-        alreadyPaid,
-        ibanMatch: true,
-      };
-    });
-
     const tol = 0.01;
-    const betragMatches = candInfos.filter(
-      (c) => Math.abs(c.expected - bankRow.betrag) <= tol && !c.alreadyPaid
+    const targetIban = bankRow.ibanGegenkonto;
+
+    const ibanCands = targetIban ? ibanToSpieler.get(targetIban) ?? [] : [];
+    const ibanIds = new Set(ibanCands.map((s) => s.id));
+
+    const haystack = normalizeForName(
+      `${bankRow.beguenstigter} ${bankRow.verwendungszweck}`
     );
+    const nameCandIds = new Set<string>();
+    for (const sp of spielerList) {
+      if (spielerNameMatch(sp, haystack)) nameCandIds.add(sp.id);
+    }
 
-    let status: MatchStatus;
-    let selected: string | null = null;
-    let hint: string | undefined;
+    const unionIds = new Set<string>();
+    ibanIds.forEach((id) => unionIds.add(id));
+    nameCandIds.forEach((id) => unionIds.add(id));
 
-    if (cands.length === 0) {
-      const fallback: Candidate[] = [];
-      expectedBySpieler.forEach((expected, id) => {
-        const key = `${abrechnungMonat}__${id}`;
-        if (payments[key]) return;
-        if (Math.abs(expected - bankRow.betrag) <= tol) {
-          fallback.push({
-            spielerId: id,
-            spielerName: spielerNameById.get(id) ?? id,
-            expected,
-            alreadyPaid: false,
-            ibanMatch: false,
-          });
-        }
+    const buildCand = (id: string): Candidate | null => {
+      const sp = spielerList.find((s) => s.id === id);
+      if (!sp) return null;
+      const expected = expectedBySpieler.get(id) ?? 0;
+      const key = `${abrechnungMonat}__${id}`;
+      return {
+        spielerId: id,
+        spielerName: spielerNameById.get(id) ?? sp.vorname,
+        expected,
+        alreadyPaid: !!payments[key],
+        ibanMatch: ibanIds.has(id),
+      };
+    };
+
+    if (unionIds.size > 0) {
+      const candInfos: Candidate[] = [];
+      unionIds.forEach((id) => {
+        const c = buildCand(id);
+        if (c) candInfos.push(c);
       });
-      if (fallback.length === 1) {
-        status = "iban_unbekannt";
-        hint =
-          targetIban
-            ? `IBAN ${targetIban.slice(-6)} keinem Spieler zugeordnet — aber Betrag passt zu „${fallback[0].spielerName}". Manuell prüfen.`
-            : `Keine IBAN in der Bank-Zeile — aber Betrag passt zu „${fallback[0].spielerName}". Manuell prüfen.`;
-      } else if (fallback.length > 1) {
-        status = "iban_unbekannt";
-        hint = `IBAN unbekannt — Betrag passt zu ${fallback.length} offenen Spielern. Bitte manuell wählen.`;
-      } else {
-        status = "iban_unbekannt";
-        hint = targetIban
-          ? `IBAN ${targetIban.slice(-6)} ist keinem Spieler zugeordnet.`
-          : "Keine IBAN in der Bank-Zeile gefunden.";
+
+      const openCands = candInfos.filter((c) => !c.alreadyPaid);
+      const amountMatches = openCands.filter(
+        (c) => Math.abs(c.expected - bankRow.betrag) <= tol
+      );
+
+      if (amountMatches.length === 1) {
+        return {
+          rowIdx: idx,
+          bankRow,
+          status: "match",
+          candidates: candInfos,
+          selectedSpielerId: amountMatches[0].spielerId,
+          include: true,
+        };
       }
+      if (amountMatches.length > 1) {
+        return {
+          rowIdx: idx,
+          bankRow,
+          status: "ambiguous",
+          candidates: candInfos,
+          selectedSpielerId: null,
+          include: false,
+          hint: `${amountMatches.length} Treffer (Name/IBAN+Betrag) — bitte manuell wählen`,
+        };
+      }
+      if (openCands.length === 1) {
+        return {
+          rowIdx: idx,
+          bankRow,
+          status: "betrag_abweicht",
+          candidates: candInfos,
+          selectedSpielerId: null,
+          include: false,
+          hint: `${openCands[0].spielerName}: erwartet ${fmtEUR(
+            openCands[0].expected
+          )}, gezahlt ${fmtEUR(bankRow.betrag)}`,
+        };
+      }
+      if (openCands.length === 0 && candInfos.length > 0) {
+        return {
+          rowIdx: idx,
+          bankRow,
+          status: "schon_abgerechnet",
+          candidates: candInfos,
+          selectedSpielerId: null,
+          include: false,
+          hint: "Erkannter Spieler ist bereits als abgerechnet markiert",
+        };
+      }
+      const erwarteteListe = openCands
+        .map((c) => `${c.spielerName}: ${fmtEUR(c.expected)}`)
+        .join(", ");
       return {
         rowIdx: idx,
         bankRow,
-        status,
+        status: "betrag_abweicht",
+        candidates: candInfos,
+        selectedSpielerId: null,
+        include: false,
+        hint: `Erwartet: ${erwarteteListe}`,
+      };
+    }
+
+    const fallback: Candidate[] = [];
+    expectedBySpieler.forEach((expected, id) => {
+      const key = `${abrechnungMonat}__${id}`;
+      if (payments[key]) return;
+      if (Math.abs(expected - bankRow.betrag) <= tol) {
+        fallback.push({
+          spielerId: id,
+          spielerName: spielerNameById.get(id) ?? id,
+          expected,
+          alreadyPaid: false,
+          ibanMatch: false,
+        });
+      }
+    });
+    if (fallback.length === 1) {
+      return {
+        rowIdx: idx,
+        bankRow,
+        status: "iban_unbekannt",
         candidates: fallback,
         selectedSpielerId: null,
         include: false,
-        hint,
+        hint: `Kein Name/IBAN-Treffer — Betrag passt zu „${fallback[0].spielerName}". Manuell prüfen.`,
       };
-    } else if (betragMatches.length === 1) {
-      status = "match";
-      selected = betragMatches[0].spielerId;
-    } else if (betragMatches.length > 1) {
-      status = "ambiguous";
-      hint = `${betragMatches.length} Spieler mit gleicher IBAN und gleichem Betrag`;
-    } else {
-      const allPaid = candInfos.every((c) => c.alreadyPaid);
-      const anyOpen = candInfos.some((c) => !c.alreadyPaid && c.expected > 0);
-      if (allPaid && candInfos.length > 0) {
-        status = "schon_abgerechnet";
-        hint = "Spieler unter dieser IBAN ist bereits als abgerechnet markiert";
-      } else if (anyOpen) {
-        status = "betrag_abweicht";
-        const erwarteteListe = candInfos
-          .filter((c) => !c.alreadyPaid)
-          .map((c) => `${c.spielerName}: ${fmtEUR(c.expected)}`)
-          .join(", ");
-        hint = `Erwartet hätten wir: ${erwarteteListe}`;
-      } else {
-        status = "kein_kunde";
-      }
     }
-
+    if (fallback.length > 1) {
+      return {
+        rowIdx: idx,
+        bankRow,
+        status: "iban_unbekannt",
+        candidates: fallback,
+        selectedSpielerId: null,
+        include: false,
+        hint: `Kein Name/IBAN-Treffer — Betrag passt zu ${fallback.length} offenen Spielern.`,
+      };
+    }
     return {
       rowIdx: idx,
       bankRow,
-      status,
-      candidates: candInfos,
-      selectedSpielerId: selected,
-      include: status === "match",
-      hint,
+      status: "kein_kunde",
+      candidates: [],
+      selectedSpielerId: null,
+      include: false,
     };
   }
 
