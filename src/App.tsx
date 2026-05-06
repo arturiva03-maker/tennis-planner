@@ -7486,7 +7486,10 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           Gläubiger-ID: {GLAEUBIGER_ID} (global)
                         </div>
 
-                        <h4 style={{ marginTop: 20, marginBottom: 12, color: "var(--text-muted)" }}>Rechnungsempfänger</h4>
+                        <h4 style={{ marginTop: 20, marginBottom: 4, color: "var(--text-muted)" }}>Rechnungsempfänger / Kontoinhaber</h4>
+                        <p className="muted" style={{ fontSize: 12, marginTop: 0, marginBottom: 12 }}>
+                          Standard: der Spieler selbst. Bei Kindern: hier den Eltern-Namen eintragen — der erscheint dann als Kontoinhaber im SEPA-XML.
+                        </p>
                         <div className="row" style={{ alignItems: "center" }}>
                           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                             <input
@@ -7494,17 +7497,17 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               checked={spielerAbweichenderEmpfaenger}
                               onChange={(e) => setSpielerAbweichenderEmpfaenger(e.target.checked)}
                             />
-                            Abweichender Rechnungsempfänger (z.B. Eltern bei Kindern)
+                            Anderer Kontoinhaber als der Spieler (z.B. Eltern bei Kindern)
                           </label>
                         </div>
                         {spielerAbweichenderEmpfaenger && (
                           <div className="row" style={{ marginTop: 12 }}>
                             <div className="field" style={{ minWidth: 280 }}>
-                              <label>Name des Empfängers</label>
+                              <label>Vor- und Nachname des Rechnungsempfängers / Kontoinhabers</label>
                               <input
                                 value={spielerEmpfaengerName}
                                 onChange={(e) => setSpielerEmpfaengerName(e.target.value)}
-                                placeholder="z.B. Familie Müller"
+                                placeholder="z.B. Maria Müller (Mama von …)"
                               />
                             </div>
                           </div>
@@ -8781,9 +8784,9 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     fontSize: 13
                                   }}>
                                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                                      <div><strong>Name:</strong> {mandate.vorname} {mandate.nachname}</div>
+                                      <div><strong>Spieler:</strong> {mandate.vorname} {mandate.nachname}</div>
                                       {mandate.ist_kind && mandate.elternteil_name && (
-                                        <div><strong>Elternteil:</strong> {mandate.elternteil_name}</div>
+                                        <div><strong>Rechnungsempfänger (Eltern):</strong> {mandate.elternteil_name}</div>
                                       )}
                                       <div><strong>E-Mail:</strong> {mandate.email}</div>
                                       <div><strong>IBAN:</strong> <span style={{ fontFamily: "monospace" }}>{mandate.iban.replace(/(.{4})/g, "$1 ").trim()}</span></div>

@@ -244,19 +244,23 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
         <form onSubmit={handleSubmit} noValidate>
           <div className="section-head">
             <span className="num">1</span>
-            <span className="title">Kontoinhaber</span>
+            <span className="title">Trainierende Person (Spieler/in)</span>
           </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 12 }}>
+            Wer nimmt am Training teil? Bei einem Kind tragen Sie hier den Namen des Kindes ein —
+            den Rechnungsempfänger fragen wir gleich darunter ab.
+          </p>
 
           <div className="field-row">
             <div className="field-num">01</div>
             <div className="field-body">
-              <label>Vorname<span className="req">●</span></label>
+              <label>Vorname des Spielers<span className="req">●</span></label>
               <input
                 type="text"
                 name="vorname"
                 value={formData.vorname}
                 onChange={handleChange}
-                autoComplete="given-name"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -264,13 +268,13 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           <div className="field-row">
             <div className="field-num">02</div>
             <div className="field-body">
-              <label>Nachname<span className="req">●</span></label>
+              <label>Nachname des Spielers<span className="req">●</span></label>
               <input
                 type="text"
                 name="nachname"
                 value={formData.nachname}
                 onChange={handleChange}
-                autoComplete="family-name"
+                autoComplete="off"
               />
             </div>
           </div>
@@ -278,7 +282,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           <div className="field-row">
             <div className="field-num">03</div>
             <div className="field-body">
-              <label style={{ marginBottom: 8 }}>Mandatsnehmer</label>
               <label className="checkbox block" style={{ marginTop: 6 }}>
                 <input
                   type="checkbox"
@@ -286,29 +289,43 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
                   checked={formData.istKind}
                   onChange={handleChange}
                 />
-                Es handelt sich um mein Kind (unter 18 Jahre)
+                Der Spieler ist mein Kind (unter 18) — ich übernehme als Elternteil/
+                Erziehungsberechtigter den Rechnungsbetrag
               </label>
             </div>
           </div>
 
           {formData.istKind && (
-            <div className="field-row">
-              <div className="field-num">04</div>
-              <div className="field-body">
-                <label>Elternteil / Erziehungsberechtigter<span className="req">●</span></label>
-                <input
-                  type="text"
-                  name="elternteilName"
-                  value={formData.elternteilName}
-                  onChange={handleChange}
-                />
+            <>
+              <div className="section-head" style={{ marginTop: 16 }}>
+                <span className="num">2</span>
+                <span className="title">Rechnungsempfänger / Kontoinhaber</span>
               </div>
-            </div>
+              <p className="muted" style={{ fontSize: 13, marginTop: -4, marginBottom: 12 }}>
+                Bitte tragen Sie hier <strong>Ihren Namen</strong> als Elternteil bzw.
+                Erziehungsberechtigter ein. Dieser Name muss mit dem Inhaber des unten
+                angegebenen Kontos übereinstimmen.
+              </p>
+              <div className="field-row">
+                <div className="field-num">04</div>
+                <div className="field-body">
+                  <label>Vor- und Nachname des Rechnungsempfängers<span className="req">●</span></label>
+                  <input
+                    type="text"
+                    name="elternteilName"
+                    value={formData.elternteilName}
+                    onChange={handleChange}
+                    placeholder="z.B. Maria Müller"
+                    autoComplete="name"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <div className="section-head">
-            <span className="num">2</span>
-            <span className="title">Anschrift</span>
+            <span className="num">{formData.istKind ? 3 : 2}</span>
+            <span className="title">Anschrift {formData.istKind ? "(des Rechnungsempfängers)" : ""}</span>
           </div>
 
           <div className="field-row">
@@ -355,8 +372,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           </div>
 
           <div className="section-head">
-            <span className="num">3</span>
-            <span className="title">Bankverbindung</span>
+            <span className="num">{formData.istKind ? 4 : 3}</span>
+            <span className="title">Bankverbindung {formData.istKind ? "(des Rechnungsempfängers)" : ""}</span>
           </div>
 
           <div className="field-row">
