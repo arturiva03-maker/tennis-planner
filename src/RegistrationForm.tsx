@@ -81,25 +81,11 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
   const kontaktName = `${payload.kontakt_vorname} ${payload.kontakt_nachname}`.trim();
   const adresseStr = `${payload.kontakt_strasse}, ${payload.kontakt_plz} ${payload.kontakt_ort}`.trim();
 
-  const strukturInfo = [
-    `Trainierende Person: ${traineeName}`,
-    payload.abweichende_kontaktperson
-      ? `Kontaktperson / Rechnungsempfänger: ${kontaktName}`
-      : `Kontaktperson: identisch mit Spieler/in`,
-    `Adresse Kontaktperson: ${adresseStr}`,
-  ].join("\n");
-
-  const nachrichtKombi = [
-    strukturInfo,
-    payload.nachricht ? `\nNachricht:\n${payload.nachricht}` : "",
-    payload.gruppenwuensche ? `\nGruppenwünsche:\n${payload.gruppenwuensche}` : "",
-  ].filter(Boolean).join("\n").trim();
-
   const { error: insertError } = await supabase
     .from("registration_requests")
     .insert({
       account_id: payload.accountId,
-      name: payload.name,
+      name: kontaktName,
       email: payload.email,
       telefon: payload.telefon || null,
       verfuegbarkeit: payload.verfuegbarkeit,
@@ -111,7 +97,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       alter_jahre: payload.alter_jahre
         ? parseInt(payload.alter_jahre, 10)
         : null,
-      nachricht: nachrichtKombi || null,
+      nachricht: payload.nachricht || null,
       anlage: payload.anlage,
       ist_vereinsmitglied:
         payload.ist_vereinsmitglied === "ja"
@@ -119,6 +105,15 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
           : payload.ist_vereinsmitglied === "nein"
           ? false
           : null,
+      trainee_vorname: payload.trainee_vorname || null,
+      trainee_nachname: payload.trainee_nachname || null,
+      kontakt_vorname: payload.kontakt_vorname || null,
+      kontakt_nachname: payload.kontakt_nachname || null,
+      kontakt_strasse: payload.kontakt_strasse || null,
+      kontakt_plz: payload.kontakt_plz || null,
+      kontakt_ort: payload.kontakt_ort || null,
+      abweichende_kontaktperson: payload.abweichende_kontaktperson,
+      gruppenwuensche: payload.gruppenwuensche || null,
     });
 
   if (insertError) {
@@ -419,6 +414,15 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   const [minDaysWarningShown, setMinDaysWarningShown] = useState(false);
   const [popupCountdown, setPopupCountdown] = useState(5);
   const [showVerfuegbarkeitHinweis, setShowVerfuegbarkeitHinweis] = useState(true);
+
+  const alterNum = parseInt(formData.alter_jahre, 10);
+  const istMinderjaehrig = !isNaN(alterNum) && alterNum > 0 && alterNum < 18;
+
+  useEffect(() => {
+    if (istMinderjaehrig && !formData.abweichende_kontaktperson) {
+      setFormData((prev) => ({ ...prev, abweichende_kontaktperson: true }));
+    }
+  }, [istMinderjaehrig, formData.abweichende_kontaktperson]);
 
   useEffect(() => {
     if (showMinDaysPopup) {
@@ -816,16 +820,22 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           <div className="field-row">
             <div className="field-num">04</div>
             <div className="field-body">
-              <label className="checkbox block" style={{ marginTop: 6 }}>
+              <label className="checkbox block" style={{ marginTop: 6, opacity: istMinderjaehrig ? 0.7 : 1 }}>
                 <input
                   type="checkbox"
                   name="abweichende_kontaktperson"
                   checked={formData.abweichende_kontaktperson}
                   onChange={handleChange}
+                  disabled={istMinderjaehrig}
                 />
                 Kontaktperson weicht von der trainierenden Person ab
                 (z.B. Eltern bei Kindern unter 18)
               </label>
+              {istMinderjaehrig && (
+                <p className="section-note" style={{ marginTop: 6, color: "var(--accent)" }}>
+                  Spieler/in ist minderjährig — bitte Daten eines Elternteils / Erziehungsberechtigten als Kontaktperson eintragen.
+                </p>
+              )}
             </div>
           </div>
 

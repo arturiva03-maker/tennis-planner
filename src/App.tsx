@@ -106,7 +106,47 @@ type RegistrationRequest = {
   status: string;
   anlage?: string | null;
   ist_vereinsmitglied?: boolean | null;
+  trainee_vorname?: string | null;
+  trainee_nachname?: string | null;
+  kontakt_vorname?: string | null;
+  kontakt_nachname?: string | null;
+  kontakt_strasse?: string | null;
+  kontakt_plz?: string | null;
+  kontakt_ort?: string | null;
+  abweichende_kontaktperson?: boolean | null;
+  gruppenwuensche?: string | null;
 };
+
+function getRegistrationTraineeName(req: RegistrationRequest): string {
+  const v = (req.trainee_vorname || "").trim();
+  const n = (req.trainee_nachname || "").trim();
+  const full = `${v} ${n}`.trim();
+  if (full) return full;
+  return (req.name || "").trim();
+}
+
+function getRegistrationKontaktName(req: RegistrationRequest): string {
+  const v = (req.kontakt_vorname || "").trim();
+  const n = (req.kontakt_nachname || "").trim();
+  const full = `${v} ${n}`.trim();
+  if (full) return full;
+  return (req.name || "").trim();
+}
+
+function getRegistrationKontaktAdresse(req: RegistrationRequest): string {
+  const strasse = (req.kontakt_strasse || "").trim();
+  const plz = (req.kontakt_plz || "").trim();
+  const ort = (req.kontakt_ort || "").trim();
+  if (!strasse && !plz && !ort) return "";
+  return `${strasse}${strasse ? ", " : ""}${plz} ${ort}`.trim();
+}
+
+function isRegistrationAbweichend(req: RegistrationRequest): boolean {
+  if (req.abweichende_kontaktperson != null) return req.abweichende_kontaktperson;
+  const trainee = getRegistrationTraineeName(req).toLowerCase();
+  const kontakt = getRegistrationKontaktName(req).toLowerCase();
+  return Boolean(trainee && kontakt && trainee !== kontakt);
+}
 
 type SepaMandate = {
   id: string;
@@ -3571,16 +3611,18 @@ ${txInfo}
   }
 
   function adoptPlayerFromRequest(req: RegistrationRequest) {
-    // Name splitten (einfache Heuristik: letztes Wort ist Nachname)
-    const parts = req.name.trim().split(/\s+/);
-    let vorname = "";
-    let nachname = "";
-    
-    if (parts.length === 1) {
-      vorname = parts[0];
-    } else {
-      nachname = parts.pop() || "";
-      vorname = parts.join(" ");
+    let vorname = (req.trainee_vorname || "").trim();
+    let nachname = (req.trainee_nachname || "").trim();
+
+    if (!vorname && !nachname) {
+      // Legacy-Fallback: req.name splitten (letztes Wort = Nachname)
+      const parts = (req.name || "").trim().split(/\s+/);
+      if (parts.length === 1) {
+        vorname = parts[0];
+      } else if (parts.length > 1) {
+        nachname = parts.pop() || "";
+        vorname = parts.join(" ");
+      }
     }
 
     setSpielerVorname(vorname);
@@ -3614,16 +3656,18 @@ ${txInfo}
     let skippedCount = 0;
 
     selectedReqs.forEach((req) => {
-      // Name splitten (einfache Heuristik: letztes Wort ist Nachname)
-      const parts = req.name.trim().split(/\s+/);
-      let vorname = "";
-      let nachname = "";
+      let vorname = (req.trainee_vorname || "").trim();
+      let nachname = (req.trainee_nachname || "").trim();
 
-      if (parts.length === 1) {
-        vorname = parts[0];
-      } else {
-        nachname = parts.pop() || "";
-        vorname = parts.join(" ");
+      if (!vorname && !nachname) {
+        // Legacy-Fallback
+        const parts = (req.name || "").trim().split(/\s+/);
+        if (parts.length === 1) {
+          vorname = parts[0];
+        } else if (parts.length > 1) {
+          nachname = parts.pop() || "";
+          vorname = parts.join(" ");
+        }
       }
 
       // Duplikatscheck
@@ -8105,10 +8149,21 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         req.verfuegbarkeit.sonntag ? `<tr><td style="padding:1px 6px 1px 0;font-weight:500;">So</td><td style="padding:1px 0;">${escapeHtml(req.verfuegbarkeit.sonntag)}</td></tr>` : "",
                                       ].filter(Boolean).join("") : "";
 
+                                      const traineeName = getRegistrationTraineeName(req);
+                                      const kontaktName = getRegistrationKontaktName(req);
+                                      const adresse = getRegistrationKontaktAdresse(req);
+                                      const abweichend = isRegistrationAbweichend(req);
+                                      const kontaktBlock = abweichend
+                                        ? `<div class="info-item"><label>Kontakt</label><span>${escapeHtml(kontaktName)}</span></div>`
+                                        : "";
+                                      const adresseBlock = adresse
+                                        ? `<div class="info-item"><label>Adresse</label><span style="font-size:7pt;">${escapeHtml(adresse)}</span></div>`
+                                        : "";
+
                                       return `
                                         <div class="card">
                                           <div class="header">
-                                            <p class="name">${escapeHtml(req.name)}</p>
+                                            <p class="name">${escapeHtml(traineeName)}</p>
                                             ${req.anlage ? `<span class="anlage" style="background:${req.anlage === "Britz" ? "#f59e0b" : "#2563eb"};">${escapeHtml(req.anlage)}</span>` : ""}
                                           </div>
                                           <div class="info-grid">
@@ -8118,9 +8173,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             <div class="info-item"><label>Art</label><span>${trainingsartText}</span></div>
                                             <div class="info-item"><label>Level</label><span>${erfahrungText}</span></div>
                                             <div class="info-item"><label>Pro Woche</label><span>${req.trainings_pro_woche ? escapeHtml(req.trainings_pro_woche) + "x" : "-"}</span></div>
+                                            ${kontaktBlock}
+                                            ${adresseBlock}
                                           </div>
                                           ${verfuegbarkeitRows ? `<div class="verfuegbarkeit"><h4>Verfügbarkeit</h4><table>${verfuegbarkeitRows}</table></div>` : ""}
                                           ${req.nachricht ? `<div class="nachricht"><label>Nachricht</label><span>${escapeHtml(req.nachricht)}</span></div>` : ""}
+                                          ${req.gruppenwuensche ? `<div class="nachricht"><label>Gruppenwünsche</label><span>${escapeHtml(req.gruppenwuensche)}</span></div>` : ""}
                                           <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
                                         </div>
                                       `;
@@ -8289,26 +8347,35 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       }}
                                       onClick={(e) => e.stopPropagation()}
                                     />
-                                    <span style={{ fontWeight: 500 }}>{req.name}</span>
-                                    {req.alter_jahre && (
-                                      <span className="muted" style={{ fontSize: 13 }}>
-                                        {req.alter_jahre}J
-                                      </span>
-                                    )}
-                                    {req.anlage && (
-                                      <span style={{
-                                        fontSize: 11,
-                                        fontWeight: 600,
-                                        background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
-                                        color: req.anlage === "Britz" ? "#000" : "#fff",
-                                        padding: "2px 6px",
-                                        borderRadius: 4,
-                                        minWidth: 16,
-                                        textAlign: "center"
-                                      }}>
-                                        {req.anlage === "Britz" ? "B" : "W"}
-                                      </span>
-                                    )}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                        <span style={{ fontWeight: 500 }}>{getRegistrationTraineeName(req)}</span>
+                                        {req.alter_jahre && (
+                                          <span className="muted" style={{ fontSize: 13 }}>
+                                            {req.alter_jahre}J
+                                          </span>
+                                        )}
+                                        {req.anlage && (
+                                          <span style={{
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                                            color: req.anlage === "Britz" ? "#000" : "#fff",
+                                            padding: "2px 6px",
+                                            borderRadius: 4,
+                                            minWidth: 16,
+                                            textAlign: "center"
+                                          }}>
+                                            {req.anlage === "Britz" ? "B" : "W"}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {isRegistrationAbweichend(req) && (
+                                        <span className="muted" style={{ fontSize: 12 }}>
+                                          Kontakt: {getRegistrationKontaktName(req)}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                   <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedRequestId === req.id ? "rotate(90deg)" : "rotate(0deg)" }}>
                                     ▶
@@ -8317,6 +8384,25 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
 
                                 {expandedRequestId === req.id && (
                                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                                    {(() => {
+                                      const kontaktName = getRegistrationKontaktName(req);
+                                      const adresse = getRegistrationKontaktAdresse(req);
+                                      const abweichend = isRegistrationAbweichend(req);
+                                      if (!abweichend && !adresse) return null;
+                                      return (
+                                        <div style={{ marginBottom: 12, padding: 10, background: "var(--bg-subtle, #f7f7f8)", borderRadius: 6 }}>
+                                          <div className="muted" style={{ fontSize: 11, marginBottom: 4 }}>
+                                            {abweichend ? "Kontaktperson / Rechnungsempfänger" : "Kontaktperson (= Spieler/in)"}
+                                          </div>
+                                          {abweichend && kontaktName && (
+                                            <div style={{ fontWeight: 500 }}>{kontaktName}</div>
+                                          )}
+                                          {adresse && (
+                                            <div style={{ fontSize: 13 }}>{adresse}</div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                         <span className="muted">{req.email}</span>
@@ -8328,7 +8414,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             setNewsletterExtraEmails(prev =>
                                               prev.some(em => em.email === req.email)
                                                 ? prev
-                                                : [...prev, { email: req.email, name: req.name }]
+                                                : [...prev, { email: req.email, name: getRegistrationKontaktName(req) }]
                                             );
                                             setNewsletterSubject("Anfrage zum Tennistraining");
                                             setNewsletterLabelFilter("keine");
@@ -8461,6 +8547,12 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                         <div style={{ whiteSpace: "pre-wrap" }}>{req.nachricht}</div>
                                       </div>
                                     )}
+                                    {req.gruppenwuensche && (
+                                      <div style={{ marginBottom: 12 }}>
+                                        <div className="muted" style={{ fontSize: 11 }}>Gruppenwünsche</div>
+                                        <div style={{ whiteSpace: "pre-wrap" }}>{req.gruppenwuensche}</div>
+                                      </div>
+                                    )}
                                     <div className="smallActions">
                                       <button
                                         className="btn micro"
@@ -8567,7 +8659,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                             <body>
                                               <div class="card">
                                                 <div class="header">
-                                                  <p class="name">${escapeHtml(req.name)}</p>
+                                                  <p class="name">${escapeHtml(getRegistrationTraineeName(req))}</p>
                                                   ${req.anlage ? `<span class="anlage">${escapeHtml(req.anlage)}</span>` : ""}
                                                 </div>
                                                 <div class="info-grid">
@@ -8595,6 +8687,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                                     <label>Pro Woche</label>
                                                     <span>${req.trainings_pro_woche ? escapeHtml(req.trainings_pro_woche) + "x" : "-"}</span>
                                                   </div>
+                                                  ${isRegistrationAbweichend(req) ? `<div class="info-item"><label>Kontakt</label><span>${escapeHtml(getRegistrationKontaktName(req))}</span></div>` : ""}
+                                                  ${getRegistrationKontaktAdresse(req) ? `<div class="info-item"><label>Adresse</label><span>${escapeHtml(getRegistrationKontaktAdresse(req))}</span></div>` : ""}
                                                 </div>
                                                 ${verfuegbarkeitRows ? `
                                                   <div class="verfuegbarkeit">
@@ -8603,6 +8697,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                                   </div>
                                                 ` : ""}
                                                 ${req.nachricht ? `<div class="nachricht"><strong>Nachricht:</strong> ${escapeHtml(req.nachricht)}</div>` : ""}
+                                                ${req.gruppenwuensche ? `<div class="nachricht"><strong>Gruppenwünsche:</strong> ${escapeHtml(req.gruppenwuensche)}</div>` : ""}
                                                 <div class="footer">Anmeldung vom ${new Date(req.created_at).toLocaleDateString("de-DE")}</div>
                                               </div>
                                             </body>
@@ -8618,7 +8713,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                           await html2pdf()
                                             .set({
                                               margin: 0,
-                                              filename: `Anmeldung_${req.name.replace(/\s+/g, "_")}.pdf`,
+                                              filename: `Anmeldung_${getRegistrationTraineeName(req).replace(/\s+/g, "_") || "Anmeldung"}.pdf`,
                                               html2canvas: { scale: 2, useCORS: true },
                                               jsPDF: { unit: 'mm', format: [95, 140], orientation: 'portrait' }
                                             })
@@ -14560,34 +14655,41 @@ Deine Tennisschule`;
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Name</th>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Spieler/in</th>
+                      <th style={{ textAlign: "left", padding: "8px 4px" }}>Kontakt</th>
                       <th style={{ textAlign: "left", padding: "8px 4px" }}>E-Mail</th>
                       <th style={{ textAlign: "left", padding: "8px 4px" }}>Telefon</th>
                       <th style={{ textAlign: "left", padding: "8px 4px" }}>Anlage</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedReqs.map((req) => (
-                      <tr key={req.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                        <td style={{ padding: "8px 4px" }}>{req.name}</td>
-                        <td style={{ padding: "8px 4px", fontSize: 12 }}>{req.email}</td>
-                        <td style={{ padding: "8px 4px" }}>{req.telefon || "-"}</td>
-                        <td style={{ padding: "8px 4px" }}>
-                          {req.anlage && (
-                            <span style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
-                              color: req.anlage === "Britz" ? "#000" : "#fff",
-                              padding: "2px 6px",
-                              borderRadius: 4
-                            }}>
-                              {req.anlage}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedReqs.map((req) => {
+                      const traineeName = getRegistrationTraineeName(req);
+                      const kontaktName = getRegistrationKontaktName(req);
+                      const abweichend = isRegistrationAbweichend(req);
+                      return (
+                        <tr key={req.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "8px 4px" }}>{traineeName}</td>
+                          <td style={{ padding: "8px 4px", fontSize: 12 }}>{abweichend ? kontaktName : "—"}</td>
+                          <td style={{ padding: "8px 4px", fontSize: 12 }}>{req.email}</td>
+                          <td style={{ padding: "8px 4px" }}>{req.telefon || "-"}</td>
+                          <td style={{ padding: "8px 4px" }}>
+                            {req.anlage && (
+                              <span style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                background: req.anlage === "Britz" ? "var(--warning)" : "var(--primary)",
+                                color: req.anlage === "Britz" ? "#000" : "#fff",
+                                padding: "2px 6px",
+                                borderRadius: 4
+                              }}>
+                                {req.anlage}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
