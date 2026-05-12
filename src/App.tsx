@@ -11049,10 +11049,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                               {abrechnungMonat} • {sortedTrainings.length} Training{sortedTrainings.length !== 1 ? "s" : ""}
                             </div>
 
-                            {sortedTrainings.length === 0 ? (
+                            {sortedTrainings.length === 0 && adjustment === 0 && sumBarSpieler === 0 ? (
                               <p>Keine Trainings in diesem Monat.</p>
                             ) : (
                               <>
+                                {sortedTrainings.length > 0 && (
                                 <table className="table">
                                   <thead>
                                     <tr>
@@ -11098,9 +11099,8 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                               </span>
                                             )}
                                             {isMonthly && isAbgesagt && (
-                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }} title="Slot-Anteil bleibt im Tarif, Erstattung ggf. unten">
-                                                · Slot bleibt
-                                                {cancelFeeAnzeige !== null && ` · Erstattung ${euro(cancelFeeAnzeige)}`}
+                                              <span style={{ color: "var(--text-muted)", fontSize: 11, marginLeft: 6 }} title="Slot zählt weiterhin im Monatstarif – Erstattung siehe Zusammenfassung">
+                                                · im Tarif
                                               </span>
                                             )}
                                           </td>
@@ -11115,6 +11115,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     })}
                                   </tbody>
                                 </table>
+                                )}
 
                                 {/* Zusammenfassung */}
                                 <div style={{
@@ -11125,18 +11126,20 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                 }}>
                                   {monthlySlotRows.size > 0 && (
                                     <div style={{ marginBottom: 4 }}>
-                                      {Array.from(monthlySlotRows.entries()).map(([key, slot]) => (
-                                        <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                          <span>
-                                            {slot.tarifName} · {wdLabels[slot.weekday]} {slot.uhrzeitVon}–{slot.uhrzeitBis}
-                                            <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: 6 }}>
-                                              ({slot.actualCount} von {slot.possible} × {euro(slot.preisProStunde)} ÷ {slot.possible}
-                                              {slot.abgesagtCount > 0 && `, davon ${slot.abgesagtCount} abgesagt`})
+                                      {Array.from(monthlySlotRows.entries()).map(([key, slot]) => {
+                                        const perTermin = round2(slot.preisProStunde / slot.possible);
+                                        return (
+                                          <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                            <span>
+                                              {slot.tarifName} · {wdLabels[slot.weekday]} {slot.uhrzeitVon}–{slot.uhrzeitBis}
+                                              <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: 6 }}>
+                                                ({euro(perTermin)}/Termin × {slot.actualCount} von {slot.possible})
+                                              </span>
                                             </span>
-                                          </span>
-                                          <strong>{euro(slot.sum)}</strong>
-                                        </div>
-                                      ))}
+                                            <strong>{euro(slot.sum)}</strong>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                   {regularTotal > 0 && (
@@ -11151,6 +11154,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       <strong>{euro(cancelFeesTotal)}</strong>
                                     </div>
                                   )}
+                                  {baseSum !== 0 && (
                                   <div style={{
                                     display: "flex",
                                     justifyContent: "space-between",
@@ -11161,6 +11165,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                     <span>Zwischensumme</span>
                                     <strong>{euro(baseSum)}</strong>
                                   </div>
+                                  )}
                                   {cancellationRefunds.length > 0 && (
                                     <div style={{ marginTop: 4 }}>
                                       {cancellationRefunds.map((c, idx) => {
@@ -11208,10 +11213,11 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                   <div style={{
                                     display: "flex",
                                     justifyContent: "space-between",
-                                    borderTop: "1px solid var(--border)",
-                                    paddingTop: 8,
-                                    marginTop: 8,
-                                    fontWeight: 600
+                                    borderTop: "2px solid var(--border)",
+                                    paddingTop: 10,
+                                    marginTop: 10,
+                                    fontWeight: 700,
+                                    fontSize: 16,
                                   }}>
                                     <span>Gesamt</span>
                                     <span style={{ color: "var(--primary)" }}>{euro(adjustedSum)}</span>
@@ -11227,7 +11233,7 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       <strong>−{euro(sumBarSpieler)}</strong>
                                     </div>
                                   )}
-                                  {(sumBarSpieler > 0 || paymentsFlag) && (
+                                  {adjustedSum > 0 && (
                                     <div style={{
                                       display: "flex",
                                       justifyContent: "space-between",
