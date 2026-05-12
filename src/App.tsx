@@ -11077,7 +11077,6 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                                       const wochentag = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][datum.getDay()];
 
                                       const preisAnzeige = perTrainingPrice.get(t.id) ?? 0;
-                                      const cancelFeeAnzeige = (typeof t.cancelFee === "number" && t.cancelFee > 0) ? t.cancelFee : null;
 
                                       return (
                                         <tr key={t.id} style={isAbgesagt ? { color: "var(--text-muted)" } : undefined}>
