@@ -6655,6 +6655,48 @@ Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen ha
                           Spieler informieren
                         </button>
                       )}
+                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#0e7490",
+                            borderColor: "#0e7490",
+                          }}
+                          onClick={() => {
+                            const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
+                            const datum = new Date(tDatum + "T12:00:00");
+                            const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
+                            const trainerTelMap: Record<string, string> = {
+                              sascha: "0157 73584431",
+                              konsti: "0173 7255920",
+                              marc: "01511 6227911",
+                              jesper: "0172 3104772",
+                            };
+                            const trainerTel = trainerTelMap[trainerName.trim().toLowerCase()] ?? "";
+                            const trainerKontaktZeile = trainerTel
+                              ? `Trainer: ${trainerName}\nTelefon: ${trainerTel}`
+                              : `Trainer: ${trainerName}`;
+
+                            setTrainingInfoEmailSubject(`Trainer-Kontakt bei Regen`);
+                            setTrainingInfoEmailBody(
+`Hallo {SPIELERNAME},
+
+bei unsicherem Wetter (z.B. Regen) kannst du deinen Trainer direkt erreichen, um zu erfahren, ob die Plätze bespielbar sind und das Training stattfindet.
+
+${trainerKontaktZeile}
+
+Tag: ${wochentag}
+Uhrzeit: ${tVon} - ${tBis} Uhr
+
+Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entschieden, ob das Training möglich ist. Bei einer kompletten Sperre der Plätze erhalten alle Schüler eine E-Mail zur Trainingsabsage.`
+                            );
+                            setTrainingInfoExcluded([]);
+                            setShowTrainingInfoEmail(true);
+                          }}
+                        >
+                          Trainer-Tel bei Regen
+                        </button>
+                      )}
                       {selectedTrainingId && tStatus === "geplant" && (
                         <button
                           className="btn"
