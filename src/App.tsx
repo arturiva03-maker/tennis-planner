@@ -6734,6 +6734,69 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                           Trainer-Tel bei Regen
                         </button>
                       )}
+                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#047857",
+                            borderColor: "#047857",
+                          }}
+                          onClick={() => {
+                            const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
+                            const datum = new Date(tDatum + "T12:00:00");
+                            const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
+                            const trainerTelMap: Record<string, string> = {
+                              sascha: "0157 73584431",
+                              konsti: "0173 7255920",
+                              marc: "01511 6227911",
+                              jesper: "0172 3104772",
+                            };
+                            const trainerTel = trainerTelMap[trainerName.trim().toLowerCase()] ?? "";
+                            const trainerKontaktZeile = trainerTel
+                              ? `Trainer: ${trainerName}\nTelefon: ${trainerTel}`
+                              : `Trainer: ${trainerName}`;
+                            const tarif = tTarifId ? tarifById.get(tTarifId) : undefined;
+                            const tarifInfo = tarif
+                              ? `\nTarif: ${tarif.name} (${tarif.preisProStunde.toFixed(2).replace(".", ",")} EUR${tarif.abrechnung === "monatlich" ? " monatlich" : tarif.abrechnung === "proSpieler" ? " pro Spieler" : " pro Training"})`
+                              : tCustomPreisProStunde
+                              ? `\nPreis: ${Number(tCustomPreisProStunde).toFixed(2).replace(".", ",")} EUR pro Stunde`
+                              : "";
+
+                            const selectedTraining = selectedTrainingId ? trainings.find(t => t.id === selectedTrainingId) : undefined;
+                            let startdatum = tDatum;
+                            if (selectedTraining?.serieId) {
+                              const serieTermine = trainings.filter(t => t.serieId === selectedTraining.serieId).map(t => t.datum).sort();
+                              if (serieTermine.length > 0) startdatum = serieTermine[0];
+                            }
+                            const startdatumFormatted = new Date(startdatum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+
+                            setTrainingInfoEmailSubject(`Trainingsbestätigung`);
+                            setTrainingInfoEmailBody(
+`Hallo {SPIELERNAME},
+
+hiermit bestätige ich dein Training mit allen wichtigen Infos:
+
+Tag: ${wochentag}
+Uhrzeit: ${tVon} - ${tBis} Uhr
+Anlage: ${tAnlage}
+${trainerKontaktZeile}
+Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
+Startdatum: ${startdatumFormatted}
+
+Bei unsicherem Wetter (z.B. Regen) kannst du deinen Trainer direkt unter der oben genannten Nummer erreichen, um zu erfahren, ob die Plätze bespielbar sind. Bei einer kompletten Sperre der Plätze erhalten alle Schüler eine E-Mail zur Trainingsabsage.
+
+Solltest du Fragen haben, antworte bitte auf diese E-Mail.
+
+Liebe Grüße
+Tennisschule A bis Z`
+                            );
+                            setTrainingInfoExcluded([]);
+                            setShowTrainingInfoEmail(true);
+                          }}
+                        >
+                          Trainingsbestätigung
+                        </button>
+                      )}
                       {selectedTrainingId && tStatus === "geplant" && (
                         <button
                           className="btn"
