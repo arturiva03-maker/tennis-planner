@@ -1575,6 +1575,7 @@ export default function App() {
   const [showTrainingInfoEmail, setShowTrainingInfoEmail] = useState(false);
   const [trainingInfoEmailSubject, setTrainingInfoEmailSubject] = useState("");
   const [trainingInfoEmailBody, setTrainingInfoEmailBody] = useState("");
+  const [trainingInfoIncludeSepa, setTrainingInfoIncludeSepa] = useState(false);
   const [trainingInfoEmailSending, setTrainingInfoEmailSending] = useState(false);
   const [trainingInfoExcluded, setTrainingInfoExcluded] = useState<string[]>([]);
 
@@ -6654,6 +6655,7 @@ Deine Tennisschule`;
                               : `Trainer: ${trainerName}`;
 
                             setTrainingInfoEmailSubject(`Trainer-Kontakt bei Regen`);
+                            setTrainingInfoIncludeSepa(false);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -6713,6 +6715,7 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                             const startdatumFormatted = new Date(startdatum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
                             setTrainingInfoEmailSubject(`Trainingsbestätigung`);
+                            setTrainingInfoIncludeSepa(true);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -14456,6 +14459,36 @@ Deine Tennisschule`;
                 Platzhalter: {"{SPIELERNAME}"} = Vorname, {"{ANDERE_TEILNEHMER}"} = andere Gruppenmitglieder
               </p>
             </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeSepa}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setTrainingInfoIncludeSepa(checked);
+                  const sepaLink = tAnlage === "Britz"
+                    ? `${window.location.origin}/sepa-britz`
+                    : `${window.location.origin}/sepa`;
+                  const sepaBlock = `Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:\n${sepaLink}\n\nSolltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig.\n\n`;
+                  setTrainingInfoEmailBody((prev) => {
+                    const withoutSepa = prev.replace(
+                      /Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:[\s\S]*?Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig\.\n+/,
+                      ""
+                    );
+                    if (!checked) return withoutSepa;
+                    if (withoutSepa.includes("Bei unsicherem Wetter")) {
+                      return withoutSepa.replace("Bei unsicherem Wetter", `${sepaBlock}Bei unsicherem Wetter`);
+                    }
+                    if (withoutSepa.includes("Solltest du Fragen haben")) {
+                      return withoutSepa.replace("Solltest du Fragen haben", `${sepaBlock}Solltest du Fragen haben`);
+                    }
+                    return withoutSepa.trimEnd() + "\n\n" + sepaBlock.trimEnd();
+                  });
+                }}
+              />
+              SEPA-Lastschriftmandat anfordern
+            </label>
 
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Betreff</label>
