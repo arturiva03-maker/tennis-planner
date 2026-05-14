@@ -6635,67 +6635,6 @@ Deine Tennisschule`;
                         <button
                           className="btn"
                           style={{
-                            backgroundColor: "#0891b2",
-                            borderColor: "#0891b2",
-                          }}
-                          onClick={() => {
-                            const trainerName = trainerById.get(tTrainerId)?.name ?? "Trainer";
-                            const datum = new Date(tDatum + "T12:00:00");
-                            const wochentag = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"][datum.getDay()];
-                            const sepaLink = tAnlage === "Britz"
-                              ? `${window.location.origin}/sepa-britz`
-                              : `${window.location.origin}/sepa`;
-                            const tarif = tTarifId ? tarifById.get(tTarifId) : undefined;
-                            const tarifInfo = tarif
-                              ? `\nTarif: ${tarif.name} (${tarif.preisProStunde.toFixed(2).replace(".", ",")} EUR${tarif.abrechnung === "monatlich" ? " monatlich" : tarif.abrechnung === "proSpieler" ? " pro Spieler" : " pro Training"})`
-                              : tCustomPreisProStunde
-                              ? `\nPreis: ${Number(tCustomPreisProStunde).toFixed(2).replace(".", ",")} EUR pro Stunde`
-                              : "";
-
-                            const selectedTraining = selectedTrainingId ? trainings.find(t => t.id === selectedTrainingId) : undefined;
-                            let startdatum = tDatum;
-                            if (selectedTraining?.serieId) {
-                              const serieTermine = trainings.filter(t => t.serieId === selectedTraining.serieId).map(t => t.datum).sort();
-                              if (serieTermine.length > 0) startdatum = serieTermine[0];
-                            }
-                            const startdatumFormatted = new Date(startdatum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
-
-                            setTrainingInfoEmailSubject(`Trainingszeit Sommer 2026`);
-                            setTrainingInfoEmailBody(
-`Hallo {SPIELERNAME},
-
-hiermit informiere ich dich über dein Training für die Sommersaison:
-
-Tag: ${wochentag}
-Uhrzeit: ${tVon} - ${tBis} Uhr
-Trainer: ${trainerName}
-Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
-Startdatum: ${startdatumFormatted}
-
-Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
-${sepaLink}
-
-Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig.
-
-In den Sommerferien findet das Training nur nach vorheriger Absprache statt, dazu wird es ein separates Tool geben. Nach den Sommerferien geht das Tennistraining dann regulär weiter.
-
-Einige Gruppen (z.B. 20-21 Uhr) können aufgrund von Lichtverhältnissen zur späteren Sommerzeit nicht durchgeführt werden. Mit den Spielern dieser späten Gruppen wird rechtzeitig für die betroffene Zeit ein Ersatztermin vereinbart.
-
-Eine Vereinsmitgliedschaft ist für die regelmäßige Teilnahme Voraussetzung.
-
-Eine Rückbestätigung der Trainingszeit ist nicht nötig. Solltest du Fragen haben, so antworte bitte auf diese E-Mail.`
-                            );
-                            setTrainingInfoExcluded([]);
-                            setShowTrainingInfoEmail(true);
-                          }}
-                        >
-                          Spieler informieren
-                        </button>
-                      )}
-                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
-                        <button
-                          className="btn"
-                          style={{
                             backgroundColor: "#0e7490",
                             borderColor: "#0e7490",
                           }}
