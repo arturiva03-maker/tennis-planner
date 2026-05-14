@@ -6735,10 +6735,7 @@ Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses
 
 Bei unsicherem Wetter (z.B. Regen) kannst du deinen Trainer direkt unter der oben genannten Nummer erreichen, um zu erfahren, ob die Plätze bespielbar sind. Bei einer kompletten Sperre der Plätze erhalten alle Schüler eine E-Mail zur Trainingsabsage.
 
-Solltest du Fragen haben, antworte bitte auf diese E-Mail.
-
-Liebe Grüße
-Tennisschule A bis Z`
+Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                             );
                             setTrainingInfoExcluded([]);
                             setShowTrainingInfoEmail(true);
