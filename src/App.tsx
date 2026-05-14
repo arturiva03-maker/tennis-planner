@@ -1544,6 +1544,9 @@ export default function App() {
     bankname: string;
     mandatsreferenz: string;
     unterschriftsdatum: string;
+    email: string;
+    adresse: string;
+    anlage: "" | "Wedding" | "Britz";
     issues: string[];
   };
   const [showKontaktbuchModal, setShowKontaktbuchModal] = useState(false);
@@ -2641,6 +2644,9 @@ export default function App() {
         bankname: header.findIndex((h) => h.includes("bank")),
         mandatsreferenz: header.findIndex((h) => h.includes("mandat")),
         unterschriftsdatum: header.findIndex((h) => h.includes("unter")),
+        email: header.findIndex((h) => h.includes("mail")),
+        adresse: header.findIndex((h) => h.includes("adresse")),
+        anlage: header.findIndex((h) => h.includes("anlage")),
       };
       if (idx.name < 0 || idx.iban < 0) {
         alert("CSV-Header muss mindestens 'Name' und 'IBAN' enthalten.");
@@ -2652,6 +2658,9 @@ export default function App() {
         const rawBankname = idx.bankname >= 0 ? (cols[idx.bankname] || "").trim() : "";
         const rawMandat = idx.mandatsreferenz >= 0 ? (cols[idx.mandatsreferenz] || "").trim() : "";
         const rawDatum = idx.unterschriftsdatum >= 0 ? (cols[idx.unterschriftsdatum] || "").trim() : "";
+        const rawEmail = idx.email >= 0 ? (cols[idx.email] || "").trim() : "";
+        const rawAdresse = idx.adresse >= 0 ? (cols[idx.adresse] || "").trim() : "";
+        const rawAnlage = idx.anlage >= 0 ? (cols[idx.anlage] || "").trim() : "";
 
         const issues: string[] = [];
 
@@ -2682,6 +2691,21 @@ export default function App() {
           nachname = tokens[tokens.length - 1];
         }
 
+        const email = rawEmail;
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          issues.push("E-Mail-Format ungültig");
+        }
+
+        const adresse = rawAdresse.replace(/\s+/g, " ").trim();
+
+        let anlage: "" | "Wedding" | "Britz" = "";
+        if (rawAnlage) {
+          const normAnlage = rawAnlage.toLowerCase();
+          if (normAnlage === "wedding") anlage = "Wedding";
+          else if (normAnlage === "britz") anlage = "Britz";
+          else issues.push("Anlage muss 'Wedding' oder 'Britz' sein");
+        }
+
         return {
           name,
           vorname,
@@ -2690,6 +2714,9 @@ export default function App() {
           bankname: rawBankname,
           mandatsreferenz: mandat,
           unterschriftsdatum: datum,
+          email,
+          adresse,
+          anlage,
           issues,
         };
       });
@@ -2721,12 +2748,19 @@ export default function App() {
         (s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower
       );
       if (idxFound >= 0) {
+        const prevLabels = next[idxFound].labels ?? [];
+        const mergedLabels = row.anlage && !prevLabels.includes(row.anlage)
+          ? [...prevLabels, row.anlage]
+          : prevLabels;
         next[idxFound] = {
           ...next[idxFound],
           iban: row.iban || next[idxFound].iban,
           bankname: row.bankname || next[idxFound].bankname,
           mandatsreferenz: row.mandatsreferenz || next[idxFound].mandatsreferenz,
           unterschriftsdatum: row.unterschriftsdatum || next[idxFound].unterschriftsdatum,
+          kontaktEmail: row.email || next[idxFound].kontaktEmail,
+          rechnungsAdresse: row.adresse || next[idxFound].rechnungsAdresse,
+          labels: mergedLabels.length > 0 ? mergedLabels : next[idxFound].labels,
           sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
           sepaLastschriftart: next[idxFound].sepaLastschriftart ?? "CORE",
         };
@@ -2740,6 +2774,9 @@ export default function App() {
           bankname: row.bankname || undefined,
           mandatsreferenz: row.mandatsreferenz || undefined,
           unterschriftsdatum: row.unterschriftsdatum || undefined,
+          kontaktEmail: row.email || undefined,
+          rechnungsAdresse: row.adresse || undefined,
+          labels: row.anlage ? [row.anlage] : undefined,
           sepaSequenz: "RCUR",
           sepaLastschriftart: "CORE",
         };
@@ -15043,6 +15080,9 @@ Deine Tennisschule`;
                     <th style={{ padding: 8, textAlign: "left" }}>IBAN</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Mandat</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Datum</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>E-Mail</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Adresse</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Anlage</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Probleme</th>
                   </tr>
                 </thead>
@@ -15077,6 +15117,9 @@ Deine Tennisschule`;
                         <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.iban || "-"}</td>
                         <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.mandatsreferenz || "-"}</td>
                         <td style={{ padding: 8 }}>{r.unterschriftsdatum || "-"}</td>
+                        <td style={{ padding: 8, fontSize: 11 }}>{r.email || "-"}</td>
+                        <td style={{ padding: 8, fontSize: 11, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.adresse}>{r.adresse || "-"}</td>
+                        <td style={{ padding: 8 }}>{r.anlage || "-"}</td>
                         <td style={{ padding: 8, color: "#92400e", fontSize: 11 }}>
                           {r.issues.join("; ") || ""}
                         </td>
