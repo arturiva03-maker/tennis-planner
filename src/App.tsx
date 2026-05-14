@@ -14532,10 +14532,14 @@ Deine Tennisschule`;
                   let erfolgreich = 0;
                   let fehler = 0;
 
+                  const alleTeilnehmer = tSpielerIds
+                    .map(id => spielerById.get(id))
+                    .filter(Boolean) as Spieler[];
+
                   try {
                     for (const spieler of spielerMitEmail) {
                       const spielerName = spieler.vorname;
-                      const andereTeilnehmer = spielerMitEmail
+                      const andereTeilnehmer = alleTeilnehmer
                         .filter(s => s.id !== spieler.id)
                         .map(s => s.vorname)
                         .join(", ") || "Einzeltraining";
