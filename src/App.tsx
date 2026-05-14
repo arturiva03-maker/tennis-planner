@@ -6694,6 +6694,9 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                             const trainerKontaktZeile = trainerTel
                               ? `Trainer: ${trainerName}\nTelefon: ${trainerTel}`
                               : `Trainer: ${trainerName}`;
+                            const sepaLink = tAnlage === "Britz"
+                              ? `${window.location.origin}/sepa-britz`
+                              : `${window.location.origin}/sepa`;
                             const tarif = tTarifId ? tarifById.get(tTarifId) : undefined;
                             const tarifInfo = tarif
                               ? `\nTarif: ${tarif.name} (${tarif.preisProStunde.toFixed(2).replace(".", ",")} EUR${tarif.abrechnung === "monatlich" ? " monatlich" : tarif.abrechnung === "proSpieler" ? " pro Spieler" : " pro Training"})`
@@ -6721,6 +6724,11 @@ Anlage: ${tAnlage}
 ${trainerKontaktZeile}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
 Startdatum: ${startdatumFormatted}
+
+Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
+${sepaLink}
+
+Solltest du dies schon in einer vorherigen Saison erledigt haben, so kann dieses wieder benutzt werden und eine neue Erteilung ist nicht nötig.
 
 Bei unsicherem Wetter (z.B. Regen) kannst du deinen Trainer direkt unter der oben genannten Nummer erreichen, um zu erfahren, ob die Plätze bespielbar sind. Bei einer kompletten Sperre der Plätze erhalten alle Schüler eine E-Mail zur Trainingsabsage.
 
