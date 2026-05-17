@@ -13934,8 +13934,8 @@ ${newTrainerTel ? `Bei Fragen erreichst du ${newTrainerName} unter ${newTrainerT
 
 Viel Spaß beim Training!
 
-Sportliche Grüße,
-Deine Tennisschule`;
+Sportliche Grüße
+Tennisschule A bis Z`;
 
         // Vorschau mit erstem Empfänger oder Platzhalter
         const previewName = recipients.length > 0 ? getFullName(recipients[0]) : "[Name]";
