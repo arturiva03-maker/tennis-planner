@@ -13928,7 +13928,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
         // Funktion für personalisierten E-Mail-Text
         const getEmailBody = (playerName: string) => `Hallo ${playerName},
 
-am ${germanDate} wird dein reguläres Training mit ${originalTrainerName} von ${newTrainerName} übernommen.
+am ${germanDate} wird dein reguläres Training mit ${originalTrainerName} von ${newTrainerName} vertreten.
 
 ${newTrainerTel ? `Bei Fragen erreichst du ${newTrainerName} unter ${newTrainerTel}.` : `Bei Fragen erreichst du ${newTrainerName} direkt.`}
 
