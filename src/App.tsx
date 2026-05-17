@@ -13915,17 +13915,24 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
 
         const emailSubject = `Traineränderung für Ihr Training am ${germanDate}`;
 
+        const trainerTelMap: Record<string, string> = {
+          sascha: "0157 73584431",
+          konsti: "0173 7255920",
+          marc: "01511 6227911",
+          jesper: "0172 3104772",
+        };
+        const newTrainerName = newTrainer?.name ?? "der Vertretungstrainer";
+        const newTrainerTel = newTrainer ? trainerTelMap[newTrainer.name.trim().toLowerCase()] ?? "" : "";
+        const originalTrainerName = originalTrainer?.name ?? "deinem Trainer";
+
         // Funktion für personalisierten E-Mail-Text
         const getEmailBody = (playerName: string) => `Hallo ${playerName},
 
-wir möchten dich informieren, dass sich der Trainer für dein Training geändert hat:
+am ${germanDate} wird dein reguläres Training mit ${originalTrainerName} von ${newTrainerName} übernommen.
 
-📅 Datum: ${germanDate}
-🕐 Uhrzeit: ${training.uhrzeitVon} - ${training.uhrzeitBis} Uhr
-${originalTrainer ? `👤 Ursprünglicher Trainer: ${originalTrainer.name}` : ""}
-✨ Neuer Trainer: ${newTrainer?.name ?? "Unbekannt"}
+${newTrainerTel ? `Bei Fragen erreichst du ${newTrainerName} unter ${newTrainerTel}.` : `Bei Fragen erreichst du ${newTrainerName} direkt.`}
 
-Bei Fragen stehen wir dir gerne zur Verfügung.
+Viel Spaß beim Training!
 
 Sportliche Grüße,
 Deine Tennisschule`;
