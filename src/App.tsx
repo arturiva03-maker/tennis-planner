@@ -6638,6 +6638,7 @@ Tennisschule A bis Z`;
                               konsti: "0173 7255920",
                               marc: "01511 6227911",
                               jesper: "0172 3104772",
+                              henri: "0163 9757063",
                             };
                             const trainerTel = trainerTelMap[trainerName.trim().toLowerCase()] ?? "";
                             const trainerKontaktZeile = trainerTel
@@ -6681,6 +6682,7 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                               konsti: "0173 7255920",
                               marc: "01511 6227911",
                               jesper: "0172 3104772",
+                              henri: "0163 9757063",
                             };
                             const trainerTel = trainerTelMap[trainerName.trim().toLowerCase()] ?? "";
                             const trainerKontaktZeile = trainerTel
@@ -13918,6 +13920,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
           konsti: "0173 7255920",
           marc: "01511 6227911",
           jesper: "0172 3104772",
+          henri: "0163 9757063",
         };
         const newTrainerName = newTrainer?.name ?? "der Vertretungstrainer";
         const newTrainerTel = newTrainer ? trainerTelMap[newTrainer.name.trim().toLowerCase()] ?? "" : "";
