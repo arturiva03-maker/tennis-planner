@@ -4087,21 +4087,14 @@ ${txInfo}
           ? `Training am ${trainingDetails[0].datum} abgesagt`
           : `Trainingsabsage`;
 
-        let defaultBody = `Hallo [Name],
+        const defaultBody = `Hallo [Name],
 
-leider müssen wir dir mitteilen, dass ${trainingsToCancel.length === 1 ? "dein Training" : "folgende Trainings"} abgesagt ${trainingsToCancel.length === 1 ? "wurde" : "wurden"}:
+leider kann das Training heute krankheitsbedingt nicht stattfinden. Es tut uns leid für die Kurzfristigkeit. Die Trainingsgebühr wird selbstverständlich nicht berechnet.
 
-`;
-        trainingDetails.forEach((t) => {
-          defaultBody += `📅 ${t.datum} um ${t.uhrzeit} Uhr\n`;
-        });
-        defaultBody += `
-Wir entschuldigen uns für die Unannehmlichkeiten.
+Nächste Woche geht es wieder regulär weiter.
 
-Bei Fragen stehen wir dir gerne zur Verfügung.
-
-Sportliche Grüße,
-Deine Tennisschule`;
+Sportliche Grüße
+Tennisschule A bis Z`;
 
         setCancelNotifySubject(defaultSubject);
         setCancelNotifyBody(defaultBody);
@@ -4421,16 +4414,12 @@ Deine Tennisschule`;
           const defaultSubject = `Training am ${germanDate} abgesagt`;
           const defaultBody = `Hallo [Name],
 
-leider müssen wir dir mitteilen, dass dein Training abgesagt wurde:
+leider kann das Training heute krankheitsbedingt nicht stattfinden. Es tut uns leid für die Kurzfristigkeit. Die Trainingsgebühr wird selbstverständlich nicht berechnet.
 
-📅 ${germanDate} um ${tVon} - ${tBis} Uhr
+Nächste Woche geht es wieder regulär weiter.
 
-Wir entschuldigen uns für die Unannehmlichkeiten.
-
-Bei Fragen stehen wir dir gerne zur Verfügung.
-
-Sportliche Grüße,
-Deine Tennisschule`;
+Sportliche Grüße
+Tennisschule A bis Z`;
 
           setCancelNotifySubject(defaultSubject);
           setCancelNotifyBody(defaultBody);
@@ -14215,6 +14204,42 @@ Tennisschule A bis Z`;
                     <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 12 }}>
                       Verwende [Name] als Platzhalter für den Spielernamen.
                     </p>
+
+                    <div className="field" style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 13 }}>Vorlage</label>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className="btn btnGhost"
+                          style={{ fontSize: 12, padding: "6px 12px" }}
+                          onClick={() => setCancelNotifyBody(`Hallo [Name],
+
+leider kann das Training heute krankheitsbedingt nicht stattfinden. Es tut uns leid für die Kurzfristigkeit. Die Trainingsgebühr wird selbstverständlich nicht berechnet.
+
+Nächste Woche geht es wieder regulär weiter.
+
+Sportliche Grüße
+Tennisschule A bis Z`)}
+                        >
+                          Krankheitsbedingt
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btnGhost"
+                          style={{ fontSize: 12, padding: "6px 12px" }}
+                          onClick={() => setCancelNotifyBody(`Hallo [Name],
+
+leider kann das Training heute wetterbedingt nicht stattfinden.
+
+Nächste Woche geht es wieder regulär weiter.
+
+Sportliche Grüße
+Tennisschule A bis Z`)}
+                        >
+                          Wetterbedingt
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="field" style={{ marginBottom: 12 }}>
                       <label style={{ fontSize: 13 }}>Betreff</label>
