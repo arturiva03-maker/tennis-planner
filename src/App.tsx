@@ -11707,32 +11707,6 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                       </div>
                     )}
 
-                    {/* Rechnung erstellen Button für Trainer */}
-                    {isTrainer && ownTrainerId && (
-                      <div style={{ marginTop: 16 }}>
-                        <button
-                          className="btn"
-                          onClick={() => {
-                            // Lade gespeicherte Invoice-Einstellungen (als Fallback)
-                            const savedSettings = localStorage.getItem(TRAINER_INVOICE_SETTINGS_KEY);
-                            const parsed = savedSettings ? JSON.parse(savedSettings) : {};
-                            const trainerData = trainerById.get(ownTrainerId);
-                            // Trainer-Profil hat Priorität, localStorage ist Fallback
-                            setInvoiceDialog({
-                              stundenAnzahl: nichtBarTrainings.length,
-                              iban: trainerData?.iban ?? parsed.iban ?? "",
-                              adresse: trainerData?.adresse ?? "",
-                              ustIdNr: trainerData?.ustIdNr ?? parsed.ustIdNr ?? "",
-                              kleinunternehmer: trainerData?.kleinunternehmer ?? parsed.kleinunternehmer ?? false,
-                            });
-                            setInvoiceError("");
-                          }}
-                        >
-                          Rechnung für diesen Monat erstellen
-                        </button>
-                      </div>
-                    )}
-
                     {isTrainer && (
                       <>
                         <div style={{ height: 14 }} />
