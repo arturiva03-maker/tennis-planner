@@ -634,6 +634,27 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               </div>
             </div>
 
+            {/* Hinweis nur bei Erwachsenencamp */}
+            {selectedCamp && !isKindercamp && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <div style={{
+                  background: "#fff8e6",
+                  border: "1px solid #fcd34d",
+                  borderRadius: 8,
+                  padding: 16,
+                }}>
+                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "#92400e", fontSize: 14 }}>
+                    Hinweis zur Platzvergabe (Erwachsenencamp)
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, color: "#78350f", lineHeight: 1.5 }}>
+                    Aufgrund begrenzter Plätze nehmen wir primär Mitglieder des BSC Rehberge auf.
+                    Vereinsexterne werden nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste.
+                    Bei den Kindercamps nehmen wir hingegen alle Anmeldungen an.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Teilnehmer */}
             <div className="field">
               <label>
