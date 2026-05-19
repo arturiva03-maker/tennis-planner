@@ -30,6 +30,7 @@ type TenniscampData = {
   iban: string;
   bemerkungen: string;
   niveau: string;
+  mitglied: "" | "ja" | "nein";
   sepaZustimmung: boolean;
   verbindlicheAnmeldung: boolean;
 };
@@ -52,6 +53,7 @@ export default function TenniscampForm() {
     iban: "",
     bemerkungen: "",
     niveau: "",
+    mitglied: "",
     sepaZustimmung: false,
     verbindlicheAnmeldung: false,
   });
@@ -107,6 +109,11 @@ export default function TenniscampForm() {
 
     if (!isKindercamp && !formData.niveau) {
       setError("Bitte wählen Sie Ihr Spielniveau aus.");
+      return;
+    }
+
+    if (!formData.mitglied) {
+      setError("Bitte geben Sie an, ob Sie Vereinsmitglied sind.");
       return;
     }
 
@@ -179,6 +186,7 @@ export default function TenniscampForm() {
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
           niveau: !isKindercamp ? formData.niveau : null,
+          mitglied: formData.mitglied === "ja",
           mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
           status: "neu",
@@ -376,6 +384,12 @@ Tennisschule A bis Z`;
                           <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${formData.alter} Jahre</span>
                         </td>
                       </tr>
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">Mitglied BSC Rehberge:</span>
+                          <span style="color: ${formData.mitglied === "ja" ? "#16a34a" : "#dc2626"}; font-size: 15px; font-weight: 700; margin-left: 8px;">${formData.mitglied === "ja" ? "Ja" : "Nein"}</span>
+                        </td>
+                      </tr>
                     </table>
                   </td>
                 </tr>
@@ -458,6 +472,7 @@ Preis: ${selectedCamp?.price} €
 
 Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
+Mitglied: ${formData.mitglied === "ja" ? "Ja" : "Nein"}
 ${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${!isKindercamp ? `Niveau: ${formData.niveau}\n` : ''}
 E-Mail: ${formData.email}
 Telefon: ${formData.telefon}
@@ -714,6 +729,45 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                 </div>
               </div>
             )}
+
+            {/* Mitglied im Verein */}
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>
+                Mitglied im BSC Rehberge? <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {[
+                  { value: "ja", label: "Ja" },
+                  { value: "nein", label: "Nein" },
+                ].map((opt) => (
+                  <label
+                    key={opt.value}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "10px 16px",
+                      border: `2px solid ${formData.mitglied === opt.value ? "var(--primary)" : "var(--border)"}`,
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      background: formData.mitglied === opt.value ? "var(--bg-inset)" : "transparent",
+                      transition: "all 0.15s",
+                      fontWeight: formData.mitglied === opt.value ? 600 : 400,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="mitglied"
+                      value={opt.value}
+                      checked={formData.mitglied === opt.value}
+                      onChange={handleChange}
+                      style={{ width: "auto" }}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div className="field">
               <label>

@@ -184,6 +184,7 @@ type TenniscampAnmeldung = {
   iban: string;
   bemerkungen: string | null;
   niveau: string | null;
+  mitglied: boolean | null;
   mandatsreferenz: string;
   sepa_zustimmung: boolean;
   status: string;
@@ -9165,6 +9166,14 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                         <div>
                                           <div className="muted" style={{ fontSize: 11 }}>Niveau</div>
                                           <div style={{ fontWeight: 500 }}>{anmeldung.niveau}</div>
+                                        </div>
+                                      )}
+                                      {anmeldung.mitglied != null && (
+                                        <div>
+                                          <div className="muted" style={{ fontSize: 11 }}>Mitglied BSC Rehberge</div>
+                                          <div style={{ fontWeight: 600, color: anmeldung.mitglied ? "var(--success)" : "var(--danger)" }}>
+                                            {anmeldung.mitglied ? "Ja" : "Nein"}
+                                          </div>
                                         </div>
                                       )}
                                       <div style={{ gridColumn: "1 / -1" }}>
