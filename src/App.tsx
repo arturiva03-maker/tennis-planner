@@ -14224,6 +14224,21 @@ Tennisschule A bis Z`)}
                         >
                           Wetterbedingt
                         </button>
+                        <button
+                          type="button"
+                          className="btn btnGhost"
+                          style={{ fontSize: 12, padding: "6px 12px" }}
+                          onClick={() => setCancelNotifyBody(`Hallo [Name],
+
+leider kann das Training heute feiertagsbedingt nicht stattfinden.
+
+Nächste Woche geht es wieder regulär weiter.
+
+Sportliche Grüße
+Tennisschule A bis Z`)}
+                        >
+                          Feiertagsbedingt
+                        </button>
                       </div>
                     </div>
 
