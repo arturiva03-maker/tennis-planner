@@ -14194,51 +14194,61 @@ Tennisschule A bis Z`;
                     <div className="field" style={{ marginBottom: 12 }}>
                       <label style={{ fontSize: 13 }}>Vorlage</label>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="btn btnGhost"
-                          style={{ fontSize: 12, padding: "6px 12px" }}
-                          onClick={() => setCancelNotifyBody(`Hallo [Name],
+                        {(() => {
+                          const dateSubject = trainingDetails.length === 1
+                            ? `Das Training am ${trainingDetails[0].datum}`
+                            : `Die Trainings am ${trainingDetails.map((t) => t.datum).join(", ")}`;
+                          const verb = trainingDetails.length === 1 ? "kann" : "können";
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btnGhost"
+                                style={{ fontSize: 12, padding: "6px 12px" }}
+                                onClick={() => setCancelNotifyBody(`Hallo [Name],
 
-leider kann das Training heute krankheitsbedingt nicht stattfinden. Es tut uns leid für die Kurzfristigkeit. Die Trainingsgebühr wird selbstverständlich nicht berechnet.
-
-Nächste Woche geht es wieder regulär weiter.
-
-Sportliche Grüße
-Tennisschule A bis Z`)}
-                        >
-                          Krankheitsbedingt
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btnGhost"
-                          style={{ fontSize: 12, padding: "6px 12px" }}
-                          onClick={() => setCancelNotifyBody(`Hallo [Name],
-
-leider kann das Training heute wetterbedingt nicht stattfinden.
+${dateSubject} ${verb} krankheitsbedingt nicht stattfinden. Es tut uns leid für die Kurzfristigkeit. Die Trainingsgebühr wird selbstverständlich nicht berechnet.
 
 Nächste Woche geht es wieder regulär weiter.
 
 Sportliche Grüße
 Tennisschule A bis Z`)}
-                        >
-                          Wetterbedingt
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btnGhost"
-                          style={{ fontSize: 12, padding: "6px 12px" }}
-                          onClick={() => setCancelNotifyBody(`Hallo [Name],
+                              >
+                                Krankheitsbedingt
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btnGhost"
+                                style={{ fontSize: 12, padding: "6px 12px" }}
+                                onClick={() => setCancelNotifyBody(`Hallo [Name],
 
-leider kann das Training heute feiertagsbedingt nicht stattfinden.
+${dateSubject} ${verb} wetterbedingt nicht stattfinden.
 
 Nächste Woche geht es wieder regulär weiter.
 
 Sportliche Grüße
 Tennisschule A bis Z`)}
-                        >
-                          Feiertagsbedingt
-                        </button>
+                              >
+                                Wetterbedingt
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btnGhost"
+                                style={{ fontSize: 12, padding: "6px 12px" }}
+                                onClick={() => setCancelNotifyBody(`Hallo [Name],
+
+${dateSubject} ${verb} feiertagsbedingt nicht stattfinden.
+
+Nächste Woche geht es wieder regulär weiter.
+
+Sportliche Grüße
+Tennisschule A bis Z`)}
+                              >
+                                Feiertagsbedingt
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 
