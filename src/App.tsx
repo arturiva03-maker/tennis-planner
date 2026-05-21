@@ -4022,20 +4022,29 @@ ${txInfo}
   function handleCancelDialogConfirm(withAdjustment: boolean) {
     if (!cancelTrainingDialog) return;
 
-    const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
+    const { trainings: affectedTrainings, action, fromSaveTraining, fullPricePerTraining } = cancelTrainingDialog;
 
     const abzug = parseFloat(cancelAdjustmentAmount) || 0;
     const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
     const isMonatlich = cfg?.abrechnung === "monatlich";
 
-    if (withAdjustment && abzug > 0) {
-      if (isMonatlich) {
-        // Monatlicher Tarif: direkt -abzug anwenden (Slot-Count bleibt durch cancelFee erhalten)
-        applyAdjustmentsForTrainings(affectedTrainings, -abzug);
-      }
+    if (withAdjustment && abzug > 0 && isMonatlich) {
+      // Monatlicher Tarif: direkt -abzug anwenden (Slot-Count bleibt durch cancelFee erhalten)
+      applyAdjustmentsForTrainings(affectedTrainings, -abzug);
     }
 
-    const cancelFee = (withAdjustment && abzug > 0) ? abzug : undefined;
+    // cancelFee-Bedeutung je Tarif:
+    //  - monatlich: gespeicherter Erstattungsbetrag (entspricht dem Abzug)
+    //  - proTraining/proSpieler: Restbetrag, den der Spieler für die abgesagte Einheit zahlt
+    let cancelFee: number | undefined;
+    if (withAdjustment && abzug > 0) {
+      if (isMonatlich) {
+        cancelFee = abzug;
+      } else {
+        const restbetrag = round2(Math.max(0, (fullPricePerTraining ?? 0) - abzug));
+        cancelFee = restbetrag > 0 ? restbetrag : undefined;
+      }
+    }
 
     if (action === 'delete') {
       executeDeleteTrainings(affectedTrainings);
@@ -4428,15 +4437,11 @@ Tennisschule A bis Z`;
           setCancelNotifyDialog({
             trainings: [trainingForDialog],
             onConfirm: () => {
-              // Nach Bestätigung: Prüfen ob Gruppentraining mit monatlichem Tarif
-              const cfgForCheck = getPreisConfig(existing, tarifById);
-              if (
-                tSpielerIds.length > 1 &&
-                cfgForCheck?.abrechnung === "monatlich"
-              ) {
+              // Nach Bestätigung: Bei Gruppentraining (>1 Spieler) Abrechnungs-Dialog öffnen
+              if (tSpielerIds.length > 1) {
                 openCancelDialog([trainingForDialog], 'cancel', true);
               } else {
-                // Direkt absagen
+                // Einzeltraining: direkt absagen
                 saveTraining(true);
               }
             }
@@ -4444,12 +4449,8 @@ Tennisschule A bis Z`;
           return;
         }
 
-        // Keine Spieler mit E-Mail - Prüfen ob Gruppentraining mit monatlichem Tarif
-        const cfgForCheck = getPreisConfig(existing, tarifById);
-        if (
-          tSpielerIds.length > 1 &&
-          cfgForCheck?.abrechnung === "monatlich"
-        ) {
+        // Keine Spieler mit E-Mail - Bei Gruppentraining (>1 Spieler) Abrechnungs-Dialog öffnen
+        if (tSpielerIds.length > 1) {
           openCancelDialog([trainingForDialog], 'cancel', true);
           return;
         }
@@ -13331,7 +13332,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                 {cancelTrainingDialog.trainings.length === 1
                   ? `Dieses Training hat ${cancelTrainingDialog.trainings[0].spielerIds.length} Spieler.`
                   : `${cancelTrainingDialog.trainings.length} Gruppentrainings betroffen.`}
-                {" "}Möchtest du die monatliche Abrechnung für alle Spieler anpassen (z.B. wegen Regenausfall)?
+                {" "}Möchtest du die Abrechnung für alle Spieler anpassen (z.B. wegen Regenausfall)?
               </p>
             </div>
 
@@ -13370,7 +13371,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>
-                <label>Abzug vom Monatsbetrag pro Spieler (in EUR)</label>
+                <label>Abzug pro Spieler (in EUR)</label>
                 {cancelTrainingDialog.fullPricePerTraining != null && cancelTrainingDialog.fullPricePerTraining > 0 && (
                   <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" style={{ fontSize: 12 }}>
@@ -13409,7 +13410,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                   style={{ maxWidth: 150 }}
                 />
                 <div className="muted" style={{ marginTop: 4 }}>
-                  Wieviel soll vom Monatsbetrag abgezogen werden? 100 % = volle Stunde abziehen, 50 % = halbe Stunde abziehen, 0 = kein Abzug (Spieler zahlt vollen Betrag).
+                  Wieviel soll dem Spieler erstattet werden? 100 % = volle Stunde erstatten (Spieler zahlt nichts), 50 % = halbe Stunde erstatten, 0 = kein Abzug (Spieler zahlt vollen Betrag).
                 </div>
               </div>
             </div>
