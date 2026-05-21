@@ -5042,8 +5042,9 @@ Tennisschule A bis Z`;
       perTrainer.set(tid, entry);
     });
 
-    // Zuschläge/Abzüge einrechnen
+    // Zuschläge/Abzüge einrechnen — nur für den aktuell gefilterten Trainer (oder alle, wenn "alle")
     trainers.forEach((trainer) => {
+      if (abrechnungTrainerFilter !== "alle" && trainer.id !== abrechnungTrainerFilter) return;
       const key = `${abrechnungMonat}__${trainer.id}`;
       const zuschlaege = trainerZuschlaege[key] ?? [];
       if (zuschlaege.length === 0) return;
@@ -5090,6 +5091,7 @@ Tennisschule A bis Z`;
     trainerPayments,
     trainerZuschlaege,
     abrechnungMonat,
+    abrechnungTrainerFilter,
   ]);
 
   function togglePaidForPlayer(monat: string, spielerId: string) {
