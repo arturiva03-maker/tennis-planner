@@ -1475,11 +1475,12 @@ export default function App() {
   const [editingSpontanId, setEditingSpontanId] = useState<string | null>(null);
 
   // Sascha-Rechner (Weiteres > Rechner)
-  const [rechnerGehalt, setRechnerGehalt] = useState("");
-  const [rechnerStundenFuerGehalt, setRechnerStundenFuerGehalt] = useState("");
+  const [rechnerGehalt, setRechnerGehalt] = useState("220");
+  const [rechnerStundenFuerGehalt, setRechnerStundenFuerGehalt] = useState("11");
   const [rechnerNichtBarStunden, setRechnerNichtBarStunden] = useState("");
   const [rechnerBarStunden, setRechnerBarStunden] = useState("");
   const [rechnerZuschlag, setRechnerZuschlag] = useState("");
+  const [rechnerMonat, setRechnerMonat] = useState("");
   const [rechnerStep, setRechnerStep] = useState<1 | 2 | 3>(1);
   const [rechnerBarAuszahlung, setRechnerBarAuszahlung] = useState<boolean | null>(null);
   const [rechnerResults, setRechnerResults] = useState<{
@@ -13322,6 +13323,57 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                       <div>
                         <div className="row">
                           <div className="field">
+                            <label>Monat (übernimmt Werte automatisch)</label>
+                            <input
+                              type="month"
+                              value={rechnerMonat}
+                              onChange={(e) => {
+                                const m = e.target.value;
+                                setRechnerMonat(m);
+                                if (!m) return;
+                                const saschaTrainerId = trainers.find(
+                                  (tr) => tr.name.trim().toLowerCase() === "sascha"
+                                )?.id;
+                                if (!saschaTrainerId) return;
+
+                                let nichtBarMin = 0;
+                                let barMin = 0;
+                                trainings.forEach((t) => {
+                                  if (!t.datum.startsWith(m)) return;
+                                  if (t.status !== "durchgefuehrt") return;
+                                  if (t.isPrivat) return;
+                                  const vertretung = vertretungen.find(
+                                    (v) => v.trainingId === t.id
+                                  );
+                                  const tid =
+                                    vertretung?.vertretungTrainerId ||
+                                    t.trainerId ||
+                                    defaultTrainerId;
+                                  if (tid !== saschaTrainerId) return;
+                                  const planned = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+                                  const actual =
+                                    t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < planned
+                                      ? t.actualMinutes
+                                      : planned;
+                                  if (t.barBezahlt) barMin += actual;
+                                  else nichtBarMin += actual;
+                                });
+
+                                const zKey = `${m}__${saschaTrainerId}`;
+                                const zList = trainerZuschlaege[zKey] ?? [];
+                                const zSum = round2(
+                                  zList.reduce((acc, z) => acc + z.betrag, 0)
+                                );
+
+                                setRechnerNichtBarStunden(String(round2(nichtBarMin / 60)));
+                                setRechnerBarStunden(String(round2(barMin / 60)));
+                                setRechnerZuschlag(zSum !== 0 ? String(zSum) : "");
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="row">
+                          <div className="field">
                             <label>Gehalt (EUR)</label>
                             <input
                               type="number"
@@ -13495,11 +13547,12 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                         <button
                           className="btn btnGhost"
                           onClick={() => {
-                            setRechnerGehalt("");
-                            setRechnerStundenFuerGehalt("");
+                            setRechnerGehalt("220");
+                            setRechnerStundenFuerGehalt("11");
                             setRechnerNichtBarStunden("");
                             setRechnerBarStunden("");
                             setRechnerZuschlag("");
+                            setRechnerMonat("");
                             setRechnerStep(1);
                             setRechnerBarAuszahlung(null);
                             setRechnerResults(null);
