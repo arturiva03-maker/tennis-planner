@@ -4790,14 +4790,13 @@ Tennisschule A bis Z`;
       }
     };
 
-    // Für monatliche Tarife: Zähle nur durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
+    // Für monatliche Tarife: Zähle geplante+durchgeführte Trainings pro Slot (Zähler für Anteilsberechnung)
     // Abgesagte Trainings mit cancelFee werden ebenfalls gezählt (Slot-Count bleibt gleich)
-    // Geplante Trainings werden NICHT gezählt — sonst weicht die Aufstellung von der Detail-Ansicht ab.
     const monthlySlotCounts = new Map<string, Map<string, number>>();
     const monthlyHasBar = new Map<string, boolean>();
 
     trainings
-      .filter((t) => t.datum.startsWith(abrechnungMonat) && (t.status === "durchgefuehrt" || (t.status === "abgesagt" && (t.cancelFee ?? 0) > 0)) && !t.isPrivat)
+      .filter((t) => t.datum.startsWith(abrechnungMonat) && (t.status !== "abgesagt" || (t.cancelFee ?? 0) > 0) && !t.isPrivat)
       .forEach((t) => {
         const cfg = getPreisConfig(t, tarifById);
         if (!cfg || cfg.abrechnung !== "monatlich") return;
