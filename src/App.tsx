@@ -14522,7 +14522,7 @@ Tennisschule A bis Z`)}
 
 ${dateSubject} ${trainingDetails.length === 1 ? "findet" : "finden"} aufgrund des Feiertages nicht statt.
 
-[hier eine Gratulation einfügen]
+Wir wünschen dir und deiner Familie einen schönen Feiertag und erholsame Stunden!
 
 Sportliche Grüße
 Tennisschule A bis Z`)}
