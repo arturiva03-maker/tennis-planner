@@ -288,7 +288,7 @@ type Vertretung = {
   vertretungTrainerId?: string; // Optional - wenn leer, dann "Vertretung offen"
 };
 
-type WeiteresTabs = "notizen" | "vertretung" | "spontan";
+type WeiteresTabs = "notizen" | "vertretung" | "spontan" | "rechner";
 
 type TrainerZuschlag = {
   id: string;
@@ -1473,6 +1473,26 @@ export default function App() {
   const [spontanAnlage, setSpontanAnlage] = useState<"Wedding" | "Britz">("Wedding");
   const [spontanVeroeffentlicht, setSpontanVeroeffentlicht] = useState(false);
   const [editingSpontanId, setEditingSpontanId] = useState<string | null>(null);
+
+  // Sascha-Rechner (Weiteres > Rechner)
+  const [rechnerGehalt, setRechnerGehalt] = useState("");
+  const [rechnerStundenFuerGehalt, setRechnerStundenFuerGehalt] = useState("");
+  const [rechnerNichtBarStunden, setRechnerNichtBarStunden] = useState("");
+  const [rechnerBarStunden, setRechnerBarStunden] = useState("");
+  const [rechnerZuschlag, setRechnerZuschlag] = useState("");
+  const [rechnerStep, setRechnerStep] = useState<1 | 2 | 3>(1);
+  const [rechnerBarAuszahlung, setRechnerBarAuszahlung] = useState<boolean | null>(null);
+  const [rechnerResults, setRechnerResults] = useState<{
+    zusatzStunden: number;
+    effectiveGehalt: number;
+    zuschlag: number;
+    arturAnteil: number;
+    zlatanBrutto: number;
+    zlatanAbgabe: number;
+    zlatanNetto: number;
+    abhebeBetrag: number;
+    ausgleichZahlung: number;
+  } | null>(null);
 
   const [tTrainerId, setTTrainerId] = useState(
     initial.state.trainers[0]?.id ?? ""
@@ -12123,6 +12143,12 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                   >
                     Spontan
                   </button>
+                  <button
+                    className={`tabBtn ${weiteresTabs === "rechner" ? "tabBtnActive" : ""}`}
+                    onClick={() => setWeiteresTabs("rechner")}
+                  >
+                    Sascha-Rechner
+                  </button>
                 </div>
 
                 {/* Notizen Tab */}
@@ -13282,6 +13308,207 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                         </ul>
                       )}
                     </div>
+                  </>
+                )}
+
+                {/* Sascha-Rechner Tab */}
+                {weiteresTabs === "rechner" && (
+                  <>
+                    <p className="muted" style={{ marginBottom: 16 }}>
+                      Abrechnung Sascha · Artur · Zlatan. Zusatz-Stunden über die Gehaltsstunden werden mit 10 EUR/h verteilt, Bar-Stunden mit 10 EUR/h von Zlatans Anteil abgezogen.
+                    </p>
+
+                    {rechnerStep === 1 && (
+                      <div>
+                        <div className="row">
+                          <div className="field">
+                            <label>Gehalt (EUR)</label>
+                            <input
+                              type="number"
+                              value={rechnerGehalt}
+                              onChange={(e) => setRechnerGehalt(e.target.value)}
+                              placeholder="z.B. 1000"
+                              step="0.01"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Stunden für Gehalt</label>
+                            <input
+                              type="number"
+                              value={rechnerStundenFuerGehalt}
+                              onChange={(e) => setRechnerStundenFuerGehalt(e.target.value)}
+                              placeholder="z.B. 50"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        <div className="row">
+                          <div className="field">
+                            <label>Nicht-Bar Stunden gesamt</label>
+                            <input
+                              type="number"
+                              value={rechnerNichtBarStunden}
+                              onChange={(e) => setRechnerNichtBarStunden(e.target.value)}
+                              placeholder="z.B. 60"
+                              step="0.01"
+                            />
+                          </div>
+                          <div className="field">
+                            <label>Bar Stunden gesamt</label>
+                            <input
+                              type="number"
+                              value={rechnerBarStunden}
+                              onChange={(e) => setRechnerBarStunden(e.target.value)}
+                              placeholder="z.B. 10"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        <div className="row">
+                          <div className="field">
+                            <label>Zuschlag Sascha (EUR, optional)</label>
+                            <input
+                              type="number"
+                              value={rechnerZuschlag}
+                              onChange={(e) => setRechnerZuschlag(e.target.value)}
+                              placeholder="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 16 }}>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              const g = parseFloat(rechnerGehalt) || 0;
+                              const sfg = parseFloat(rechnerStundenFuerGehalt) || 0;
+                              const nbs = parseFloat(rechnerNichtBarStunden) || 0;
+                              const bs = parseFloat(rechnerBarStunden) || 0;
+                              const zuschlag = parseFloat(rechnerZuschlag) || 0;
+                              if (!(g > 0 && sfg > 0 && nbs > 0)) return;
+                              const effectiveGehalt = g + zuschlag;
+                              const zusatzStunden = nbs - sfg;
+                              const arturAnteil = effectiveGehalt / 2 + zusatzStunden * 10;
+                              const zlatanBrutto = effectiveGehalt / 2 + zusatzStunden * 10;
+                              const zlatanAbgabe = bs * 10;
+                              const zlatanNetto = zlatanBrutto - zlatanAbgabe;
+                              setRechnerResults({
+                                zusatzStunden,
+                                effectiveGehalt,
+                                zuschlag,
+                                arturAnteil,
+                                zlatanBrutto,
+                                zlatanAbgabe,
+                                zlatanNetto,
+                                abhebeBetrag: arturAnteil + zlatanNetto,
+                                ausgleichZahlung: arturAnteil - zlatanNetto,
+                              });
+                              setRechnerStep(2);
+                            }}
+                          >
+                            Berechnen
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {rechnerStep === 2 && (
+                      <div>
+                        <p style={{ fontSize: 16, marginBottom: 16 }}>
+                          Soll das Geld vom Konto abgehoben und bar an Sascha gezahlt werden?
+                        </p>
+                        <div style={{ display: "flex", gap: 12 }}>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              setRechnerBarAuszahlung(true);
+                              setRechnerStep(3);
+                            }}
+                          >
+                            Ja
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            onClick={() => {
+                              setRechnerBarAuszahlung(false);
+                              setRechnerStep(3);
+                            }}
+                          >
+                            Nein
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {rechnerStep === 3 && rechnerResults && (
+                      <div>
+                        <div className="card cardInset" style={{ marginBottom: 12 }}>
+                          <h3 style={{ marginTop: 0 }}>Standard-Abrechnung</h3>
+                          {rechnerResults.zuschlag > 0 && (
+                            <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
+                              Inkl. Zuschlag Sascha: {euro(rechnerResults.zuschlag)} (gesamtes Gehalt: {euro(rechnerResults.effectiveGehalt)})
+                            </div>
+                          )}
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                            <span>Zahlung Artur</span>
+                            <strong>{euro(rechnerResults.arturAnteil)}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+                            <span>Guthaben bei Zlatan</span>
+                            <strong>{euro(rechnerResults.zlatanNetto)}</strong>
+                          </div>
+                          <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+                            Zlatans Anteil wurde um {euro(rechnerResults.zlatanAbgabe)} aus den Bar-Stunden gekürzt.
+                          </p>
+                        </div>
+
+                        {rechnerBarAuszahlung ? (
+                          <div className="card cardInset" style={{ marginBottom: 12 }}>
+                            <h3 style={{ marginTop: 0 }}>Bargeld-Logistik (Konto-Auszahlung)</h3>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                              <span>Betrag für Sascha abheben</span>
+                              <strong>{euro(rechnerResults.abhebeBetrag)}</strong>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+                              <span>Zusatzzahlung an Zlatan</span>
+                              <strong>{euro(rechnerResults.ausgleichZahlung)}</strong>
+                            </div>
+                            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+                              Diese Ausgleichszahlung ist nötig, damit Zlatan seine Provision aus den Bar-Stunden erhält, da Sascha bereits den vollen Bar-Betrag von den Kunden eingesteckt hat.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="card cardInset" style={{ marginBottom: 12 }}>
+                            <p style={{ margin: 0 }}>
+                              Zlatan verrechnet den Betrag mit Saschas alten Schulden.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="card cardInset" style={{ marginBottom: 12 }}>
+                          <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Berechnungsdetails</div>
+                          <div style={{ fontSize: 13 }}>Zusatz-Stunden: {rechnerResults.zusatzStunden}</div>
+                          <div style={{ fontSize: 13 }}>Zlatan Brutto: {euro(rechnerResults.zlatanBrutto)}</div>
+                          <div style={{ fontSize: 13 }}>Zlatan Abgabe (Bar): {euro(rechnerResults.zlatanAbgabe)}</div>
+                        </div>
+
+                        <button
+                          className="btn btnGhost"
+                          onClick={() => {
+                            setRechnerGehalt("");
+                            setRechnerStundenFuerGehalt("");
+                            setRechnerNichtBarStunden("");
+                            setRechnerBarStunden("");
+                            setRechnerZuschlag("");
+                            setRechnerStep(1);
+                            setRechnerBarAuszahlung(null);
+                            setRechnerResults(null);
+                          }}
+                        >
+                          Neue Berechnung
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
