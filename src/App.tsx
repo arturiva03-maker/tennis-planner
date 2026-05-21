@@ -14520,9 +14520,9 @@ Tennisschule A bis Z`)}
                                 style={{ fontSize: 12, padding: "6px 12px" }}
                                 onClick={() => setCancelNotifyBody(`Hallo [Name],
 
-${dateSubject} ${verb} feiertagsbedingt nicht stattfinden.
+${dateSubject} ${trainingDetails.length === 1 ? "findet" : "finden"} aufgrund des Feiertages nicht statt.
 
-Nächste Woche geht es wieder regulär weiter.
+[hier eine Gratulation einfügen]
 
 Sportliche Grüße
 Tennisschule A bis Z`)}
