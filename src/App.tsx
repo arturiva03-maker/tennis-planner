@@ -14822,23 +14822,58 @@ Tennisschule A bis Z`)}
               SEPA-Lastschriftmandat anfordern
             </label>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={trainingInfoIncludeProbe}
-                onChange={(e) => setTrainingInfoIncludeProbe(e.target.checked)}
-              />
-              Antrag auf Probemitgliedschaft (PDF anhängen)
-            </label>
+            {(() => {
+              const mitgliedschaftHinweis = "Für die Teilnahme am Tennistraining ist eine Mitgliedschaft Voraussetzung. Kinder sind im ersten Jahr beitragsfrei und füllen lediglich den Antrag auf Probemitgliedschaft aus.";
+              const applyMitgliedschaftHinweis = (probe: boolean, mitglied: boolean) => {
+                setTrainingInfoEmailBody((prev) => {
+                  const withoutHinweis = prev.replace(
+                    /Für die Teilnahme am Tennistraining ist eine Mitgliedschaft Voraussetzung\. Kinder sind im ersten Jahr beitragsfrei und füllen lediglich den Antrag auf Probemitgliedschaft aus\.\n+/,
+                    ""
+                  );
+                  if (!(probe && mitglied)) return withoutHinweis;
+                  const block = `${mitgliedschaftHinweis}\n\n`;
+                  if (withoutHinweis.includes("Für die Abrechnung erteile uns bitte")) {
+                    return withoutHinweis.replace("Für die Abrechnung erteile uns bitte", `${block}Für die Abrechnung erteile uns bitte`);
+                  }
+                  if (withoutHinweis.includes("Bei unsicherem Wetter")) {
+                    return withoutHinweis.replace("Bei unsicherem Wetter", `${block}Bei unsicherem Wetter`);
+                  }
+                  if (withoutHinweis.includes("Solltest du Fragen haben")) {
+                    return withoutHinweis.replace("Solltest du Fragen haben", `${block}Solltest du Fragen haben`);
+                  }
+                  return withoutHinweis.trimEnd() + "\n\n" + block.trimEnd();
+                });
+              };
+              return (
+                <>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={trainingInfoIncludeProbe}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setTrainingInfoIncludeProbe(checked);
+                        applyMitgliedschaftHinweis(checked, trainingInfoIncludeMitglied);
+                      }}
+                    />
+                    Antrag auf Probemitgliedschaft (PDF anhängen)
+                  </label>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={trainingInfoIncludeMitglied}
-                onChange={(e) => setTrainingInfoIncludeMitglied(e.target.checked)}
-              />
-              Mitgliedschaft Jugend (PDF anhängen)
-            </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={trainingInfoIncludeMitglied}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setTrainingInfoIncludeMitglied(checked);
+                        applyMitgliedschaftHinweis(trainingInfoIncludeProbe, checked);
+                      }}
+                    />
+                    Mitgliedschaft Jugend (PDF anhängen)
+                  </label>
+                </>
+              );
+            })()}
 
             <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, cursor: "pointer" }}>
               <input
