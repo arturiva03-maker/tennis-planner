@@ -6754,7 +6754,11 @@ hiermit bestätige ich dein Training mit allen wichtigen Infos:
 
 Tag: ${wochentag}
 Uhrzeit: ${tVon} - ${tBis} Uhr
-Anlage: ${tAnlage}
+${tAnlage === "Wedding"
+  ? `Anlage: BSC Rehberge 1945 e.V. Abt. Tennis
+Sambesistraße 11, 13351 Berlin-Wedding
+Eingangscode: 7788`
+  : `Anlage: ${tAnlage}`}
 ${trainerKontaktZeile}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
 Startdatum: ${startdatumFormatted}
