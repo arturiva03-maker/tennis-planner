@@ -38,8 +38,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { to, subject, body, html, fromName, attachment } = req.body || {};
-    console.log('Request body:', { to, subject, fromName, bodyLength: body?.length, hasHtml: !!html, hasAttachment: !!attachment });
+    const { to, subject, body, html, fromName, attachment, attachments } = req.body || {};
+    const attList = Array.isArray(attachments) && attachments.length > 0
+      ? attachments
+      : (attachment ? [attachment] : []);
+    console.log('Request body:', { to, subject, fromName, bodyLength: body?.length, hasHtml: !!html, attachmentCount: attList.length });
 
     if (!to || to.length === 0) {
       return res.status(400).json({ error: 'Keine Empfänger angegeben' });
@@ -57,12 +60,15 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Security: Limit attachment size (5MB)
-    if (attachment && attachment.content) {
-      const sizeInBytes = Buffer.byteLength(attachment.content, attachment.encoding || 'base64');
-      if (sizeInBytes > 5 * 1024 * 1024) {
-        return res.status(400).json({ error: 'Anhang zu groß (max. 5MB)' });
+    // Security: Limit total attachments size (5MB)
+    let totalAttBytes = 0;
+    for (const att of attList) {
+      if (att && att.content) {
+        totalAttBytes += Buffer.byteLength(att.content, att.encoding || 'base64');
       }
+    }
+    if (totalAttBytes > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Anhänge zu groß (max. 5MB gesamt)' });
     }
 
     // Security: Limit number of recipients
@@ -102,13 +108,13 @@ module.exports = async function handler(req, res) {
           html: html || body,
         };
 
-        if (attachment) {
-          mailOptions.attachments = [{
-            filename: attachment.filename,
-            content: attachment.content,
-            encoding: attachment.encoding || 'base64',
-            contentType: attachment.contentType || 'application/pdf'
-          }];
+        if (attList.length > 0) {
+          mailOptions.attachments = attList.map((att) => ({
+            filename: att.filename,
+            content: att.content,
+            encoding: att.encoding || 'base64',
+            contentType: att.contentType || 'application/pdf'
+          }));
         }
 
         await transporter.sendMail(mailOptions);

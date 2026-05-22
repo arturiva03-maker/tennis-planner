@@ -1598,6 +1598,9 @@ export default function App() {
   const [trainingInfoEmailSubject, setTrainingInfoEmailSubject] = useState("");
   const [trainingInfoEmailBody, setTrainingInfoEmailBody] = useState("");
   const [trainingInfoIncludeSepa, setTrainingInfoIncludeSepa] = useState(false);
+  const [trainingInfoIncludeProbe, setTrainingInfoIncludeProbe] = useState(false);
+  const [trainingInfoIncludeMitglied, setTrainingInfoIncludeMitglied] = useState(false);
+  const [trainingInfoIncludeBeitragsordnung, setTrainingInfoIncludeBeitragsordnung] = useState(false);
   const [trainingInfoEmailSending, setTrainingInfoEmailSending] = useState(false);
   const [trainingInfoExcluded, setTrainingInfoExcluded] = useState<string[]>([]);
 
@@ -6671,6 +6674,9 @@ Tennisschule A bis Z`;
 
                             setTrainingInfoEmailSubject(`Trainer-Kontakt bei Regen`);
                             setTrainingInfoIncludeSepa(false);
+                            setTrainingInfoIncludeProbe(false);
+                            setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeBeitragsordnung(false);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -6732,6 +6738,9 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
 
                             setTrainingInfoEmailSubject(`Trainingsbestätigung`);
                             setTrainingInfoIncludeSepa(true);
+                            setTrainingInfoIncludeProbe(false);
+                            setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeBeitragsordnung(false);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -14813,6 +14822,33 @@ Tennisschule A bis Z`)}
               SEPA-Lastschriftmandat anfordern
             </label>
 
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeProbe}
+                onChange={(e) => setTrainingInfoIncludeProbe(e.target.checked)}
+              />
+              Antrag auf Probemitgliedschaft (PDF anhängen)
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeMitglied}
+                onChange={(e) => setTrainingInfoIncludeMitglied(e.target.checked)}
+              />
+              Mitgliedschaft Jugend (PDF anhängen)
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeBeitragsordnung}
+                onChange={(e) => setTrainingInfoIncludeBeitragsordnung(e.target.checked)}
+              />
+              Beitragsordnung (PDF anhängen)
+            </label>
+
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Betreff</label>
               <input
@@ -14862,6 +14898,34 @@ Tennisschule A bis Z`)}
                     .map(id => spielerById.get(id))
                     .filter(Boolean) as Spieler[];
 
+                  const pdfSources: { url: string; filename: string }[] = [];
+                  if (trainingInfoIncludeProbe) pdfSources.push({ url: "/pdf/Probemitgliedschaft Jugend.pdf", filename: "Probemitgliedschaft Jugend.pdf" });
+                  if (trainingInfoIncludeMitglied) pdfSources.push({ url: "/pdf/Aufnahme Jugend.pdf", filename: "Aufnahme Jugend.pdf" });
+                  if (trainingInfoIncludeBeitragsordnung) pdfSources.push({ url: "/pdf/Beitragsordnung.pdf", filename: "Beitragsordnung.pdf" });
+
+                  const attachments: { filename: string; content: string; encoding: string; contentType: string }[] = [];
+                  try {
+                    for (const src of pdfSources) {
+                      const r = await fetch(encodeURI(src.url));
+                      if (!r.ok) throw new Error(`PDF nicht gefunden: ${src.filename}`);
+                      const blob = await r.blob();
+                      const base64 = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          const result = reader.result as string;
+                          resolve(result.split(",")[1] || "");
+                        };
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsDataURL(blob);
+                      });
+                      attachments.push({ filename: src.filename, content: base64, encoding: "base64", contentType: "application/pdf" });
+                    }
+                  } catch (err) {
+                    alert(`Fehler beim Laden der PDF-Anhänge: ${err instanceof Error ? err.message : "Unbekannter Fehler"}`);
+                    setTrainingInfoEmailSending(false);
+                    return;
+                  }
+
                   try {
                     for (const spieler of spielerMitEmail) {
                       const spielerName = spieler.vorname;
@@ -14885,6 +14949,7 @@ Tennisschule A bis Z`)}
                           body: personalizedBody + `\n\nSportliche Grüße\nTennisschule A bis Z\n${tAnlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}`,
                           html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:32px 0;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.06);"><tr><td style="padding:32px 40px;color:#1a1a1a;font-size:15px;line-height:1.7;">${personalizedBody.replace(/\n/g, "<br>")}</td></tr><tr><td style="background-color:#f8faf8;padding:24px 40px;border-top:1px solid #e5e7eb;"><p style="margin:0 0 4px;color:#333;font-size:14px;font-weight:600;">Sportliche Grüße</p><p style="margin:0;color:#1b471b;font-size:15px;font-weight:700;">Tennisschule A bis Z</p><p style="margin:12px 0 0;color:#999;font-size:12px;">${tAnlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p><img src="${window.location.origin}/logo.png" alt="Tennisschule A bis Z" style="width:140px;height:auto;border-radius:8px;margin-top:16px;" /></td></tr></table></td></tr></table></body></html>`,
                           fromName: "Tennisschule A bis Z",
+                          attachments: attachments.length > 0 ? attachments : undefined,
                         }),
                       });
 
