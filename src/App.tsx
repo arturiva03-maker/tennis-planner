@@ -14824,13 +14824,13 @@ Tennisschule A bis Z`)}
 
             {(() => {
               const mitgliedschaftHinweis = "Für die Teilnahme am Tennistraining ist eine Mitgliedschaft Voraussetzung. Kinder sind im ersten Jahr beitragsfrei und füllen lediglich den Antrag auf Probemitgliedschaft aus.";
-              const applyMitgliedschaftHinweis = (probe: boolean, _mitglied: boolean) => {
+              const applyMitgliedschaftHinweis = (probe: boolean, mitglied: boolean) => {
                 setTrainingInfoEmailBody((prev) => {
                   const withoutHinweis = prev.replace(
                     /Für die Teilnahme am Tennistraining ist eine Mitgliedschaft Voraussetzung\. Kinder sind im ersten Jahr beitragsfrei und füllen lediglich den Antrag auf Probemitgliedschaft aus\.\n+/,
                     ""
                   );
-                  if (!probe) return withoutHinweis;
+                  if (!probe && !mitglied) return withoutHinweis;
                   const block = `${mitgliedschaftHinweis}\n\n`;
                   if (withoutHinweis.includes("Für die Abrechnung erteile uns bitte")) {
                     return withoutHinweis.replace("Für die Abrechnung erteile uns bitte", `${block}Für die Abrechnung erteile uns bitte`);
