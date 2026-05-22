@@ -1600,7 +1600,9 @@ export default function App() {
   const [trainingInfoIncludeSepa, setTrainingInfoIncludeSepa] = useState(false);
   const [trainingInfoIncludeProbe, setTrainingInfoIncludeProbe] = useState(false);
   const [trainingInfoIncludeMitglied, setTrainingInfoIncludeMitglied] = useState(false);
+  const [trainingInfoIncludeErwachsene, setTrainingInfoIncludeErwachsene] = useState(false);
   const [trainingInfoIncludeBeitragsordnung, setTrainingInfoIncludeBeitragsordnung] = useState(false);
+  const [trainingInfoIncludeProbetraining, setTrainingInfoIncludeProbetraining] = useState(false);
   const [trainingInfoEmailSending, setTrainingInfoEmailSending] = useState(false);
   const [trainingInfoExcluded, setTrainingInfoExcluded] = useState<string[]>([]);
 
@@ -6676,7 +6678,9 @@ Tennisschule A bis Z`;
                             setTrainingInfoIncludeSepa(false);
                             setTrainingInfoIncludeProbe(false);
                             setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeErwachsene(false);
                             setTrainingInfoIncludeBeitragsordnung(false);
+                            setTrainingInfoIncludeProbetraining(false);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -6740,7 +6744,9 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                             setTrainingInfoIncludeSepa(true);
                             setTrainingInfoIncludeProbe(false);
                             setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeErwachsene(false);
                             setTrainingInfoIncludeBeitragsordnung(false);
+                            setTrainingInfoIncludeProbetraining(false);
                             setTrainingInfoEmailBody(
 `Hallo {SPIELERNAME},
 
@@ -6752,6 +6758,8 @@ Anlage: ${tAnlage}
 ${trainerKontaktZeile}
 Teilnehmer: {ANDERE_TEILNEHMER}${tarifInfo}
 Startdatum: ${startdatumFormatted}
+
+Bitte beachte: Spezielle Sandplatzschuhe und ein eigener Tennisschläger sind verpflichtend.
 
 Für die Abrechnung erteile uns bitte vor dem ersten Training ein SEPA-Lastschriftmandat:
 ${sepaLink}
@@ -14875,13 +14883,49 @@ Tennisschule A bis Z`)}
               );
             })()}
 
-            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeErwachsene}
+                onChange={(e) => setTrainingInfoIncludeErwachsene(e.target.checked)}
+              />
+              Mitgliedschaft Erwachsene (PDF anhängen)
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={trainingInfoIncludeBeitragsordnung}
                 onChange={(e) => setTrainingInfoIncludeBeitragsordnung(e.target.checked)}
               />
               Beitragsordnung (PDF anhängen)
+            </label>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={trainingInfoIncludeProbetraining}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setTrainingInfoIncludeProbetraining(checked);
+                  const probetrainingBlock = `Für das Probetraining ist noch keine Vereinsmitgliedschaft erforderlich. Das SEPA-Lastschriftmandat wird ausschließlich für die Abrechnung des Probetrainings genutzt (Einzeltraining 40 € / Stunde, Gruppentraining 25 € / Stunde). Falls du dich nicht für ein dauerhaftes Training entscheidest, wird das SEPA-Mandat nach der Abbuchung des Probetrainings wieder gelöscht.\n\nFür das Probetraining eignen sich einmalig auch Schuhe mit minimalem Profil. Ein Tennisschläger kann ausgeliehen werden – ausschließlich für das Probetraining.\n\n`;
+                  setTrainingInfoEmailBody((prev) => {
+                    const withoutBlock = prev.replace(
+                      /Für das Probetraining ist noch keine Vereinsmitgliedschaft erforderlich\.[\s\S]*?ausschließlich für das Probetraining\.\n+/,
+                      ""
+                    );
+                    if (!checked) return withoutBlock;
+                    if (withoutBlock.includes("Bei unsicherem Wetter")) {
+                      return withoutBlock.replace("Bei unsicherem Wetter", `${probetrainingBlock}Bei unsicherem Wetter`);
+                    }
+                    if (withoutBlock.includes("Solltest du Fragen haben")) {
+                      return withoutBlock.replace("Solltest du Fragen haben", `${probetrainingBlock}Solltest du Fragen haben`);
+                    }
+                    return withoutBlock.trimEnd() + "\n\n" + probetrainingBlock.trimEnd();
+                  });
+                }}
+              />
+              Probetraining-Hinweis (Text einfügen)
             </label>
 
             <div className="field" style={{ marginBottom: 12 }}>
@@ -14936,6 +14980,7 @@ Tennisschule A bis Z`)}
                   const pdfSources: { url: string; filename: string }[] = [];
                   if (trainingInfoIncludeProbe) pdfSources.push({ url: "/pdf/Probemitgliedschaft Jugend.pdf", filename: "Probemitgliedschaft Jugend.pdf" });
                   if (trainingInfoIncludeMitglied) pdfSources.push({ url: "/pdf/Aufnahme Jugend.pdf", filename: "Aufnahme Jugend.pdf" });
+                  if (trainingInfoIncludeErwachsene) pdfSources.push({ url: "/pdf/Aufnahme Erwachsene.pdf", filename: "Aufnahme Erwachsene.pdf" });
                   if (trainingInfoIncludeBeitragsordnung) pdfSources.push({ url: "/pdf/Beitragsordnung.pdf", filename: "Beitragsordnung.pdf" });
 
                   const attachments: { filename: string; content: string; encoding: string; contentType: string }[] = [];
