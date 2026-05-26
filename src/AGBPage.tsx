@@ -136,7 +136,10 @@ export default function AGBPage() {
             Beim Gruppen­training wird die Gebühr auch bei Nicht­teilnahme fällig. Beim Einzel­training muss die Absage spätestens 24 Stunden vorher erfolgen, sonst wird das Honorar fällig. Bei Einzel­training-Absage (nur in der Hallensaison) kann die Hallenstunde ohne Rück­erstattung auf einen anderen Spieler übertragen werden.
           </p>
           <p>
-            Die Hallen­gebühr kann in keinem Fall erstattet werden. Versäumte Stunden können nicht nachgeholt oder erstattet werden. Bei trainer­bedingtem Ausfall gibt es einen Ersatz­termin oder Kosten­erstattung. Bei erheblichen Regen­unterbrechungen gibt es einen Ersatz­termin oder 50 % Gutschrift.
+            Die Hallen­gebühr kann in keinem Fall erstattet werden. Versäumte Stunden können nicht nachgeholt oder erstattet werden. Bei erheblichen Regen­unterbrechungen gibt es einen Ersatz­termin oder 50 % Gutschrift.
+          </p>
+          <p>
+            <strong>Bei Ausfall des regulären Trainers wird nach Möglichkeit ein qualifizierter Ersatz­trainer gestellt.</strong> Das Training findet in diesem Fall regulär statt; eine Absage seitens des Schülers allein wegen des Trainer­wechsels ist ausgeschlossen und entbindet nicht von der Zahlungs­pflicht. Kann kein Ersatz­trainer organisiert werden, gibt es einen Ersatz­termin oder eine Kosten­erstattung.
           </p>
         </div>
 
