@@ -5295,6 +5295,19 @@ Tennisschule A bis Z`;
   const adminBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => t.barBezahlt), [adminTrainerTrainings]);
   const adminNichtBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => !t.barBezahlt), [adminTrainerTrainings]);
 
+  const kalenderTrainersWithFutureTrainings = useMemo(() => {
+    const heute = todayISO();
+    const aktiveTrainerIds = new Set<string>();
+    for (const t of trainings) {
+      if (t.datum < heute) continue;
+      if (t.status === "abgesagt") continue;
+      const vertretung = vertretungen.find(v => v.trainingId === t.id);
+      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+      if (tid) aktiveTrainerIds.add(tid);
+    }
+    return trainers.filter(tr => aktiveTrainerIds.has(tr.id));
+  }, [trainings, trainers, vertretungen, defaultTrainerId]);
+
   // Bar-Abrechnung Key für Trainer
   const trainerBarSettledKey = useCallback((month: string, trainerId: string) => `${month}__${trainerId}__bar`, []);
 
@@ -5572,7 +5585,7 @@ Tennisschule A bis Z`;
                       />
                     </div>
 
-                    {!isTrainer && trainers.length > 1 && (
+                    {!isTrainer && kalenderTrainersWithFutureTrainings.length > 1 && (
                       <div className="field" style={{ minWidth: 200, position: "relative" }}>
                         <label>Trainer Filter</label>
                         <button
@@ -5589,7 +5602,7 @@ Tennisschule A bis Z`;
                         </button>
                         {showTrainerDropdown && (
                           <div className="dropdownMenu">
-                            {trainers.map((tr) => (
+                            {kalenderTrainersWithFutureTrainings.map((tr) => (
                               <label key={tr.id} className="dropdownItem">
                                 <input
                                   type="checkbox"
@@ -5818,7 +5831,7 @@ Tennisschule A bis Z`;
 
                 {/* Filter für Mobile */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "0 8px" }}>
-                  {!isTrainer && trainers.length > 1 && (
+                  {!isTrainer && kalenderTrainersWithFutureTrainings.length > 1 && (
                     <div className="mobileTrainerFilter" style={{ position: "relative" }}>
                       <button
                         type="button"
@@ -5834,7 +5847,7 @@ Tennisschule A bis Z`;
                       </button>
                       {showTrainerDropdown && (
                         <div className="dropdownMenu">
-                          {trainers.map((tr) => (
+                          {kalenderTrainersWithFutureTrainings.map((tr) => (
                             <label key={tr.id} className="dropdownItem">
                               <input
                                 type="checkbox"
