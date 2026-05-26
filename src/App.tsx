@@ -12997,9 +12997,11 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                             const d = new Date(datum + "T12:00:00");
                             const dayNames = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
                             const formatted = `${dayNames[d.getDay()]}, ${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}`;
-                            const dayTrainings = trainings.filter(
-                              (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt"
-                            );
+                            const dayTrainings = trainings
+                              .filter(
+                                (t) => t.datum === datum && (t.trainerId || defaultTrainerId) === vertretungTrainerId && t.status !== "abgesagt"
+                              )
+                              .sort((a, b) => a.uhrzeitVon.localeCompare(b.uhrzeitVon));
 
                             if (dayTrainings.length === 0) {
                               return (
