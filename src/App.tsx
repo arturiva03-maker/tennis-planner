@@ -160,6 +160,7 @@ type SepaMandate = {
   ort: string;
   iban: string;
   email: string;
+  telefon?: string | null;
   mandatsreferenz: string;
   unterschriftsdatum: string;
   created_at: string;
@@ -8971,6 +8972,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                               return (
                                 `${m.vorname} ${m.nachname}`.toLowerCase().includes(q) ||
                                 m.email.toLowerCase().includes(q) ||
+                                (m.telefon || "").toLowerCase().includes(q) ||
                                 m.iban.toLowerCase().includes(q) ||
                                 (m.elternteil_name || "").toLowerCase().includes(q) ||
                                 m.mandatsreferenz.toLowerCase().includes(q)
@@ -9043,6 +9045,9 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                         <div><strong>Rechnungsempfänger (Eltern):</strong> {mandate.elternteil_name}</div>
                                       )}
                                       <div><strong>E-Mail:</strong> {mandate.email}</div>
+                                      {mandate.telefon && (
+                                        <div><strong>Telefon:</strong> <a href={`tel:${mandate.telefon}`}>{mandate.telefon}</a></div>
+                                      )}
                                       <div><strong>IBAN:</strong> <span style={{ fontFamily: "monospace" }}>{mandate.iban.replace(/(.{4})/g, "$1 ").trim()}</span></div>
                                       <div style={{ gridColumn: "1 / -1" }}>
                                         <strong>Adresse:</strong> {mandate.strasse}, {mandate.plz} {mandate.ort}
