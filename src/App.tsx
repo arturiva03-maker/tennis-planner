@@ -1568,6 +1568,7 @@ export default function App() {
     mandatsreferenz: string;
     unterschriftsdatum: string;
     email: string;
+    telefon: string;
     adresse: string;
     anlage: "" | "Wedding" | "Britz";
     issues: string[];
@@ -2674,6 +2675,7 @@ export default function App() {
         mandatsreferenz: header.findIndex((h) => h.includes("mandat")),
         unterschriftsdatum: header.findIndex((h) => h.includes("unter")),
         email: header.findIndex((h) => h.includes("mail")),
+        telefon: header.findIndex((h) => h.includes("telefon") || h.includes("handy") || h.includes("mobil") || h.includes("phone") || h === "tel"),
         adresse: header.findIndex((h) => h.includes("adresse")),
         anlage: header.findIndex((h) => h.includes("anlage")),
       };
@@ -2688,6 +2690,7 @@ export default function App() {
         const rawMandat = idx.mandatsreferenz >= 0 ? (cols[idx.mandatsreferenz] || "").trim() : "";
         const rawDatum = idx.unterschriftsdatum >= 0 ? (cols[idx.unterschriftsdatum] || "").trim() : "";
         const rawEmail = idx.email >= 0 ? (cols[idx.email] || "").trim() : "";
+        const rawTelefon = idx.telefon >= 0 ? (cols[idx.telefon] || "").trim() : "";
         const rawAdresse = idx.adresse >= 0 ? (cols[idx.adresse] || "").trim() : "";
         const rawAnlage = idx.anlage >= 0 ? (cols[idx.anlage] || "").trim() : "";
 
@@ -2725,6 +2728,7 @@ export default function App() {
           issues.push("E-Mail-Format ungültig");
         }
 
+        const telefon = rawTelefon.replace(/\s+/g, " ").trim();
         const adresse = rawAdresse.replace(/\s+/g, " ").trim();
 
         let anlage: "" | "Wedding" | "Britz" = "";
@@ -2744,6 +2748,7 @@ export default function App() {
           mandatsreferenz: mandat,
           unterschriftsdatum: datum,
           email,
+          telefon,
           adresse,
           anlage,
           issues,
@@ -2788,6 +2793,7 @@ export default function App() {
           mandatsreferenz: row.mandatsreferenz || next[idxFound].mandatsreferenz,
           unterschriftsdatum: row.unterschriftsdatum || next[idxFound].unterschriftsdatum,
           kontaktEmail: row.email || next[idxFound].kontaktEmail,
+          kontaktTelefon: row.telefon || next[idxFound].kontaktTelefon,
           rechnungsAdresse: row.adresse || next[idxFound].rechnungsAdresse,
           labels: mergedLabels.length > 0 ? mergedLabels : next[idxFound].labels,
           sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
@@ -2804,6 +2810,7 @@ export default function App() {
           mandatsreferenz: row.mandatsreferenz || undefined,
           unterschriftsdatum: row.unterschriftsdatum || undefined,
           kontaktEmail: row.email || undefined,
+          kontaktTelefon: row.telefon || undefined,
           rechnungsAdresse: row.adresse || undefined,
           labels: row.anlage ? [row.anlage] : undefined,
           sepaSequenz: "RCUR",
@@ -15620,6 +15627,7 @@ Tennisschule A bis Z`)}
                     <th style={{ padding: 8, textAlign: "left" }}>Mandat</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Datum</th>
                     <th style={{ padding: 8, textAlign: "left" }}>E-Mail</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Telefon</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Adresse</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Anlage</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Probleme</th>
@@ -15657,6 +15665,7 @@ Tennisschule A bis Z`)}
                         <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.mandatsreferenz || "-"}</td>
                         <td style={{ padding: 8 }}>{r.unterschriftsdatum || "-"}</td>
                         <td style={{ padding: 8, fontSize: 11 }}>{r.email || "-"}</td>
+                        <td style={{ padding: 8, fontSize: 11 }}>{r.telefon || "-"}</td>
                         <td style={{ padding: 8, fontSize: 11, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.adresse}>{r.adresse || "-"}</td>
                         <td style={{ padding: 8 }}>{r.anlage || "-"}</td>
                         <td style={{ padding: 8, color: "#92400e", fontSize: 11 }}>
