@@ -424,7 +424,6 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
                 value={formData.telefon}
                 onChange={handleChange}
                 autoComplete="tel"
-                placeholder="z.B. 0170 1234567"
               />
             </div>
           </div>
