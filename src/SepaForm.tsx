@@ -14,6 +14,7 @@ type SepaFormData = {
   ort: string;
   iban: string;
   email: string;
+  telefon: string;
   einwilligung: boolean;
 };
 
@@ -63,6 +64,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
     ort: registrationPayload?.kontakt_ort ?? "",
     iban: "",
     email: registrationPayload?.email ?? initialData?.email ?? "",
+    telefon: registrationPayload?.telefon ?? "",
     einwilligung: false,
   });
 
@@ -128,6 +130,10 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
       setError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
       return;
     }
+    if (!formData.telefon.trim()) {
+      setError("Bitte geben Sie eine Telefonnummer ein.");
+      return;
+    }
     if (!formData.einwilligung) {
       setError("Bitte bestätigen Sie die Einwilligung zur SEPA-Lastschrift.");
       return;
@@ -152,6 +158,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           ort: formData.ort.trim(),
           iban: formData.iban.replace(/\s/g, ""),
           email: formData.email.trim(),
+          telefon: formData.telefon.trim(),
           mandatsreferenz,
           unterschriftsdatum,
           anlage: anlage,
@@ -403,6 +410,21 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
                 value={formData.email}
                 onChange={handleChange}
                 autoComplete="email"
+              />
+            </div>
+          </div>
+
+          <div className="field-row">
+            <div className="field-num">10</div>
+            <div className="field-body">
+              <label>Telefonnummer<span className="req">●</span></label>
+              <input
+                type="tel"
+                name="telefon"
+                value={formData.telefon}
+                onChange={handleChange}
+                autoComplete="tel"
+                placeholder="z.B. 0170 1234567"
               />
             </div>
           </div>
