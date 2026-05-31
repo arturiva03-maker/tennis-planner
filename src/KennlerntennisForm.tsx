@@ -426,35 +426,6 @@ Interesse weiterführendes Training: ${interesseText}`;
             </button>
           </div>
         </form>
-
-        <div style={{
-          borderTop: "1px solid var(--border, #e5e7eb)",
-          marginTop: 28,
-          paddingTop: 20,
-          textAlign: "center",
-        }}>
-          <p className="muted" style={{ marginBottom: 12 }}>
-            Haben Sie Fragen? Kontaktieren Sie uns gerne direkt.
-          </p>
-          <a
-            href="mailto:tennisabisz@gmail.com?subject=Anfrage%20Kennlerntennis"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 20px",
-              background: "#fff",
-              color: "#1d4ed8",
-              border: "1px solid #1d4ed8",
-              borderRadius: 8,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            <span aria-hidden="true">&#9993;</span>
-            E-Mail an uns schreiben
-          </a>
-        </div>
       </div>
     </div>
   );
