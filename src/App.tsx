@@ -10026,14 +10026,27 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                             <option value="offen">Offen</option>
                                             <option value="erledigt">Erledigt</option>
                                           </select>
-                                          <a
-                                            className="btn micro btnGhost"
-                                            href={`mailto:${anfrage.email}?subject=${encodeURIComponent(`Ihre Kennlerntennis-Anfrage`)}&body=${encodeURIComponent(`Hallo ${anfrage.vorname} ${anfrage.nachname},\n\n`)}`}
-                                            style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
-                                          >
-                                            <span aria-hidden="true">&#9993;</span>
-                                            E-Mail Kontakt
-                                          </a>
+                                          {anfrage.email && (
+                                            <button
+                                              type="button"
+                                              className="btn micro btnGhost"
+                                              onClick={() => {
+                                                setNewsletterExtraEmails(prev =>
+                                                  prev.some(em => em.email === anfrage.email)
+                                                    ? prev
+                                                    : [...prev, { email: anfrage.email, name: `${anfrage.vorname} ${anfrage.nachname}` }]
+                                                );
+                                                setNewsletterSubject("Ihre Kennlerntennis-Anfrage");
+                                                setNewsletterLabelFilter("keine");
+                                                setTab("verwaltung");
+                                                setVerwaltungTab("newsletter");
+                                              }}
+                                              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                                            >
+                                              <span aria-hidden="true">&#9993;</span>
+                                              E-Mail Kontakt
+                                            </button>
+                                          )}
                                           <button
                                             className="btn micro btnGhost"
                                             style={{ color: "var(--danger)", marginLeft: "auto" }}
