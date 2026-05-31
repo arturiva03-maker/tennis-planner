@@ -9844,6 +9844,109 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                               <option value="erledigt">Erledigt</option>
                             </select>
                           </div>
+                          <button
+                            className="btn micro"
+                            style={{ marginLeft: "auto" }}
+                            disabled={kennlerntennisAnfragen.filter(a => {
+                              if (kennlerntennisStatusFilter === "offen" && a.status === "erledigt") return false;
+                              if (kennlerntennisStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                              return true;
+                            }).length === 0}
+                            onClick={async () => {
+                              const exportList = kennlerntennisAnfragen.filter(a => {
+                                if (kennlerntennisStatusFilter === "offen" && a.status === "erledigt") return false;
+                                if (kennlerntennisStatusFilter === "erledigt" && a.status !== "erledigt") return false;
+                                return true;
+                              });
+                              if (exportList.length === 0) return;
+
+                              const statusLabel =
+                                kennlerntennisStatusFilter === "offen" ? "Offen" :
+                                kennlerntennisStatusFilter === "erledigt" ? "Erledigt" :
+                                "Alle";
+
+                              const tableHTML = `
+                                <html>
+                                <head>
+                                  <style>
+                                    body { font-family: Arial, sans-serif; padding: 20px; }
+                                    h1 { font-size: 18px; margin-bottom: 4px; }
+                                    .sub { font-size: 12px; color: #666; margin-bottom: 16px; }
+                                    table { width: 100%; border-collapse: collapse; }
+                                    th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 11px; vertical-align: top; }
+                                    th { background-color: #f5f5f5; font-weight: bold; }
+                                    tr:nth-child(even) { background-color: #fafafa; }
+                                    .footer { margin-top: 20px; font-size: 11px; color: #666; }
+                                  </style>
+                                </head>
+                                <body>
+                                  <h1>Kennlerntennis-Anfragen (${exportList.length})</h1>
+                                  <div class="sub">Status-Filter: ${statusLabel}</div>
+                                  <table>
+                                    <thead>
+                                      <tr>
+                                        <th style="width: 30px;">#</th>
+                                        <th>Name</th>
+                                        <th style="width: 40px;">Alter</th>
+                                        <th>Spielstand</th>
+                                        <th>E-Mail</th>
+                                        <th>Telefon</th>
+                                        <th style="width: 55px;">Mitglied</th>
+                                        <th style="width: 70px;">Interesse weiterf.</th>
+                                        <th style="width: 60px;">Status</th>
+                                        <th style="width: 70px;">Datum</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      ${exportList.map((a, idx) => {
+                                        const spielstandText =
+                                          a.spielstand === "anfaenger" ? "Anfänger" :
+                                          a.spielstand === "fortgeschritten" ? "Fortgeschritten" :
+                                          "Turnierspieler";
+                                        return `
+                                          <tr>
+                                            <td>${idx + 1}</td>
+                                            <td>${escapeHtml(a.vorname)} ${escapeHtml(a.nachname)}</td>
+                                            <td>${escapeHtml(a.alter)}</td>
+                                            <td>${spielstandText}${a.spielstaerke_beschreibung ? `<br><span style="color:#888;font-size:9px;">${escapeHtml(a.spielstaerke_beschreibung)}</span>` : ""}</td>
+                                            <td style="word-break: break-all;">${escapeHtml(a.email)}</td>
+                                            <td>${escapeHtml(a.telefon)}</td>
+                                            <td>${a.ist_vereinsmitglied ? "Ja" : "Nein"}</td>
+                                            <td>${a.interesse_weiterfuehrend ? "Ja" : "Nein"}</td>
+                                            <td>${a.status === "erledigt" ? "Erledigt" : "Offen"}</td>
+                                            <td>${new Date(a.created_at).toLocaleDateString("de-DE")}</td>
+                                          </tr>
+                                        `;
+                                      }).join("")}
+                                    </tbody>
+                                  </table>
+                                  <div class="footer">
+                                    Erstellt am ${new Date().toLocaleDateString("de-DE")}
+                                  </div>
+                                </body>
+                                </html>
+                              `;
+
+                              const html2pdf = (await import('html2pdf.js')).default;
+                              const container = document.createElement('div');
+                              container.innerHTML = tableHTML;
+                              document.body.appendChild(container);
+
+                              await html2pdf()
+                                .set({
+                                  margin: 10,
+                                  filename: `Kennlerntennis_${new Date().toISOString().split('T')[0]}.pdf`,
+                                  html2canvas: { scale: 2 },
+                                  jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
+                                })
+                                .from(container)
+                                .save();
+
+                              document.body.removeChild(container);
+                            }}
+                          >
+                            PDF-Export
+                          </button>
                         </div>
 
                         {loadingKennlerntennisAnfragen ? (

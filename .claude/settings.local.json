@@ -132,7 +132,9 @@
       "Read(//c/Users/artur/Desktop/**)",
       "Bash(awk 'NR==162' \"C:/Users/artur/.claude/projects/C--Users-artur-tennis-planner/32bb7e57-560e-44f9-a00e-120cec6b1f8f.jsonl\")",
       "Bash(awk 'NR==154' \"C:/Users/artur/.claude/projects/C--Users-artur-tennis-planner/32bb7e57-560e-44f9-a00e-120cec6b1f8f.jsonl\")",
-      "Bash(awk 'NR==145' \"C:/Users/artur/.claude/projects/C--Users-artur-tennis-planner/32bb7e57-560e-44f9-a00e-120cec6b1f8f.jsonl\")"
+      "Bash(awk 'NR==145' \"C:/Users/artur/.claude/projects/C--Users-artur-tennis-planner/32bb7e57-560e-44f9-a00e-120cec6b1f8f.jsonl\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx eslint *)"
     ],
     "deny": [],
     "ask": []
