@@ -1913,6 +1913,8 @@ export default function App() {
         setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
         setVertretungen(cloud.vertretungen ?? []);
         setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+        setTrainerHonorarAnpassungen(cloud.trainerHonorarAnpassungen ?? {});
+        setTrainerZuschlaege(cloud.trainerZuschlaege ?? {});
       } else {
         const local = readStateWithMeta();
         setTrainers(local.state.trainers);
@@ -1927,6 +1929,8 @@ export default function App() {
         setMonthlyAdjustments(local.state.monthlyAdjustments ?? {});
         setVertretungen(local.state.vertretungen ?? []);
         setWirdAbgebucht(local.state.wirdAbgebucht ?? {});
+        setTrainerHonorarAnpassungen(local.state.trainerHonorarAnpassungen ?? {});
+        setTrainerZuschlaege(local.state.trainerZuschlaege ?? {});
       }
 
       setInitialSynced(true);
@@ -1983,6 +1987,8 @@ export default function App() {
               setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
               setVertretungen(cloud.vertretungen ?? []);
               setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+              setTrainerHonorarAnpassungen(cloud.trainerHonorarAnpassungen ?? {});
+              setTrainerZuschlaege(cloud.trainerZuschlaege ?? {});
             }
           }
         }
