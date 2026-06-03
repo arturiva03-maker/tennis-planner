@@ -6365,7 +6365,15 @@ Tennisschule A bis Z`;
                         <input
                           type="checkbox"
                           checked={tIsPrivat}
-                          onChange={(e) => setTIsPrivat(e.target.checked)}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setTIsPrivat(checked);
+                            if (checked) {
+                              // Privattraining hat keine Abrechnung -> Tarif/Preis zuruecksetzen
+                              setTTarifId("");
+                              setTCustomPreisProStunde("");
+                            }
+                          }}
                           style={{ marginRight: 8 }}
                         />
                         Privat
@@ -6392,6 +6400,7 @@ Tennisschule A bis Z`;
                         <label>Tarif (optional)</label>
                         <select
                           value={tTarifId}
+                          disabled={tIsPrivat}
                           onChange={(e) => setTTarifId(e.target.value)}
                         >
                           <option value="">
@@ -6414,8 +6423,9 @@ Tennisschule A bis Z`;
                           })}
                         </select>
                         <div className="muted">
-                          Entweder einen Tarif auswählen oder unten einen
-                          individuellen Preis pro Stunde eingeben.
+                          {tIsPrivat
+                            ? "Bei Privattraining nicht relevant – es findet keine Abrechnung statt."
+                            : "Entweder einen Tarif auswählen oder unten einen individuellen Preis pro Stunde eingeben."}
                         </div>
                       </div>
 
@@ -6469,7 +6479,7 @@ Tennisschule A bis Z`;
                             }
                           }}
                           placeholder="z.B. 60"
-                          disabled={!!tTarifId}
+                          disabled={!!tTarifId || tIsPrivat}
                         />
                         {!!tTarifId && <div className="muted" style={{ fontSize: 12 }}>Durch Tarif überschrieben</div>}
                       </div>
@@ -6482,7 +6492,7 @@ Tennisschule A bis Z`;
                               e.target.value as "proTraining" | "proSpieler"
                             )
                           }
-                          disabled={!!tTarifId}
+                          disabled={!!tTarifId || tIsPrivat}
                         >
                           <option value="proTraining">Pro Training</option>
                           <option value="proSpieler">Pro Spieler</option>
