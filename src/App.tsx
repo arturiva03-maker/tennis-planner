@@ -1543,7 +1543,7 @@ export default function App() {
   const [abrechnungTagFilter, setAbrechnungTagFilter] = useState<string>("alle");
   const [abrechnungAbgebuchtFilter, setAbrechnungAbgebuchtFilter] = useState<string>("alle");
   const [selectedSpielerForDetail, setSelectedSpielerForDetail] = useState<string | null>(null);
-  const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar">("none");
+  const [selectedTrainerPaymentView, setSelectedTrainerPaymentView] = useState<"none" | "bar" | "nichtBar" | "privat">("none");
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
 
   // States für Formular-Sichtbarkeit in der Verwaltung
@@ -5466,10 +5466,14 @@ Tennisschule A bis Z`;
     return tid === ownTrainerId;
   });
 
+  // Privatstunden werden als eigene Kategorie geführt und NICHT in Bar/Nicht-bar mitgezählt
+  const privatTrainings = eigeneTrainingsImMonat.filter((t) => t.isPrivat);
   const nichtBarTrainings = eigeneTrainingsImMonat.filter(
-    (t) => !t.barBezahlt
+    (t) => !t.barBezahlt && !t.isPrivat
   );
-  const barTrainings = eigeneTrainingsImMonat.filter((t) => t.barBezahlt);
+  const barTrainings = eigeneTrainingsImMonat.filter(
+    (t) => t.barBezahlt && !t.isPrivat
+  );
 
   return (
     <>
@@ -11941,24 +11945,45 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                 <td>Bar</td>
                                 <td>{barTrainings.length}</td>
                               </tr>
+                              <tr
+                                onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "privat" ? "none" : "privat")}
+                                style={{
+                                  cursor: "pointer",
+                                  backgroundColor: selectedTrainerPaymentView === "privat" ? "var(--surface-hover)" : undefined
+                                }}
+                              >
+                                <td>Privat</td>
+                                <td>{privatTrainings.length}</td>
+                              </tr>
                             </tbody>
                           </table>
                         </div>
 
                         {/* Detailansicht der Trainerstunden */}
-                        {selectedTrainerPaymentView !== "none" && (
+                        {selectedTrainerPaymentView !== "none" && (() => {
+                          const detailTrainings =
+                            selectedTrainerPaymentView === "bar"
+                              ? barTrainings
+                              : selectedTrainerPaymentView === "privat"
+                                ? privatTrainings
+                                : nichtBarTrainings;
+                          const detailTitel =
+                            selectedTrainerPaymentView === "bar"
+                              ? "Bar bezahlte Stunden"
+                              : selectedTrainerPaymentView === "privat"
+                                ? "Privatstunden"
+                                : "Nicht bar bezahlte Stunden";
+                          const detailLeer =
+                            selectedTrainerPaymentView === "bar"
+                              ? "Keine bar bezahlten Stunden im ausgewählten Zeitraum."
+                              : selectedTrainerPaymentView === "privat"
+                                ? "Keine Privatstunden im ausgewählten Zeitraum."
+                                : "Keine nicht bar bezahlten Stunden im ausgewählten Zeitraum.";
+                          return (
                           <div className="card cardInset" style={{ marginTop: 14 }}>
-                            <h2>
-                              {selectedTrainerPaymentView === "bar"
-                                ? "Bar bezahlte Stunden"
-                                : "Nicht bar bezahlte Stunden"}
-                            </h2>
-                            {(selectedTrainerPaymentView === "bar" ? barTrainings : nichtBarTrainings).length === 0 ? (
-                              <p className="muted">
-                                {selectedTrainerPaymentView === "bar"
-                                  ? "Keine bar bezahlten Stunden im ausgewählten Zeitraum."
-                                  : "Keine nicht bar bezahlten Stunden im ausgewählten Zeitraum."}
-                              </p>
+                            <h2>{detailTitel}</h2>
+                            {detailTrainings.length === 0 ? (
+                              <p className="muted">{detailLeer}</p>
                             ) : (
                               <table className="table">
                                 <thead>
@@ -11969,7 +11994,7 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {(selectedTrainerPaymentView === "bar" ? barTrainings : nichtBarTrainings)
+                                  {detailTrainings
                                     .sort((a, b) => a.datum.localeCompare(b.datum) || a.uhrzeitVon.localeCompare(b.uhrzeitVon))
                                     .map((t) => {
                                       const [y, m, d] = t.datum.split("-");
@@ -11989,7 +12014,8 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                               </table>
                             )}
                           </div>
-                        )}
+                          );
+                        })()}
                       </>
                     )}
 
