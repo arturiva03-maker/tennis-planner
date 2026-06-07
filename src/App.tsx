@@ -11703,6 +11703,24 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                     delete next[key];
                                     return next;
                                   });
+                                  // Spiegelung von "Als abgerechnet markieren":
+                                  // dieselben Nicht-Bar-Stunden wieder auf "offen" setzen,
+                                  // damit exakt der Stand von vor der Abrechnung
+                                  // wiederhergestellt wird (sonst bleiben sie "bezahlt").
+                                  const trainerTrainings = trainingsInMonth.filter((t) => {
+                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
+                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+                                    return tid === abrechnungTrainerFilter && !t.barBezahlt;
+                                  });
+                                  if (trainerTrainings.length > 0) {
+                                    setTrainerPayments((prev) => {
+                                      const next = { ...prev };
+                                      trainerTrainings.forEach((t) => {
+                                        delete next[t.id];
+                                      });
+                                      return next;
+                                    });
+                                  }
                                 }}
                               >
                                 Markierung entfernen
