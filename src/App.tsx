@@ -9278,16 +9278,6 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                     <span className="muted" style={{ fontSize: 13 }}>
                                       {anmeldung.alter}J
                                     </span>
-                                    <span style={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      background: anmeldung.camp_type === "kind" ? "#8b5cf6" : "#06b6d4",
-                                      color: "#fff",
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                    }}>
-                                      {anmeldung.camp_type === "kind" ? "Kind" : "Erwachsen"}
-                                    </span>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     <span style={{
