@@ -1449,6 +1449,9 @@ export default function App() {
   const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
   const [expandedTenniscampId, setExpandedTenniscampId] = useState<string | null>(null);
   const [tenniscampStatusFilter, setTenniscampStatusFilter] = useState<"alle" | "offen" | "storniert">("offen");
+  const [tenniscampNameSuche, setTenniscampNameSuche] = useState("");
+  const [tenniscampTypFilter, setTenniscampTypFilter] = useState<"alle" | "kind" | "erwachsene">("alle");
+  const [tenniscampCampFilter, setTenniscampCampFilter] = useState<string>("alle");
 
   const [probetrainingAnfragen, setProbetrainingAnfragen] = useState<ProbetrainingAnfrage[]>([]);
   const [loadingProbetrainingAnfragen, setLoadingProbetrainingAnfragen] = useState(false);
@@ -2166,6 +2169,38 @@ export default function App() {
     () => new Map(tarife.map((t) => [t.id, t])),
     [tarife]
   );
+
+  // Distinkte Camps aus den vorhandenen Tenniscamp-Anmeldungen (für Filter-Dropdown)
+  const tenniscampCampOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    tenniscampAnmeldungen.forEach((a) => {
+      if (a.camp_id) map.set(a.camp_id, a.camp_label || a.camp_id);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [tenniscampAnmeldungen]);
+
+  // Gefilterte Tenniscamp-Anmeldungen (Status + Typ + Camp + Namenssuche)
+  const filteredTenniscampAnmeldungen = useMemo(() => {
+    const suche = tenniscampNameSuche.trim().toLowerCase();
+    return tenniscampAnmeldungen.filter((a) => {
+      if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
+      if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
+      if (tenniscampTypFilter !== "alle" && a.camp_type !== tenniscampTypFilter) return false;
+      if (tenniscampCampFilter !== "alle" && a.camp_id !== tenniscampCampFilter) return false;
+      if (suche) {
+        const name = `${a.teilnehmer_vorname} ${a.teilnehmer_nachname}`.toLowerCase();
+        const zahler = `${a.zahlungspflichtiger_vorname ?? ""} ${a.zahlungspflichtiger_nachname ?? ""}`.toLowerCase();
+        if (!name.includes(suche) && !zahler.includes(suche)) return false;
+      }
+      return true;
+    });
+  }, [
+    tenniscampAnmeldungen,
+    tenniscampStatusFilter,
+    tenniscampTypFilter,
+    tenniscampCampFilter,
+    tenniscampNameSuche,
+  ]);
 
   const isTrainer = authUser?.role === "trainer";
   const ownTrainerId =
@@ -9163,6 +9198,41 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
 
                         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16, alignItems: "flex-end" }}>
                           <div className="field" style={{ margin: 0 }}>
+                            <label>Suche</label>
+                            <input
+                              type="text"
+                              placeholder="Name suchen..."
+                              value={tenniscampNameSuche}
+                              onChange={(e) => setTenniscampNameSuche(e.target.value)}
+                              style={{ padding: "4px 8px", width: 150 }}
+                            />
+                          </div>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Camp</label>
+                            <select
+                              value={tenniscampCampFilter}
+                              onChange={(e) => setTenniscampCampFilter(e.target.value)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle Camps</option>
+                              {tenniscampCampOptions.map(([id, label]) => (
+                                <option key={id} value={id}>{label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="field" style={{ margin: 0 }}>
+                            <label>Typ</label>
+                            <select
+                              value={tenniscampTypFilter}
+                              onChange={(e) => setTenniscampTypFilter(e.target.value as typeof tenniscampTypFilter)}
+                              style={{ padding: "4px 8px" }}
+                            >
+                              <option value="alle">Alle</option>
+                              <option value="kind">Kind</option>
+                              <option value="erwachsene">Erwachsen</option>
+                            </select>
+                          </div>
+                          <div className="field" style={{ margin: 0 }}>
                             <label>Status</label>
                             <select
                               value={tenniscampStatusFilter}
@@ -9174,23 +9244,28 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                               <option value="storniert">Storniert</option>
                             </select>
                           </div>
+                          {(tenniscampNameSuche || tenniscampCampFilter !== "alle" || tenniscampTypFilter !== "alle" || tenniscampStatusFilter !== "offen") && (
+                            <button
+                              className="btn micro btnGhost"
+                              onClick={() => {
+                                setTenniscampNameSuche("");
+                                setTenniscampCampFilter("alle");
+                                setTenniscampTypFilter("alle");
+                                setTenniscampStatusFilter("offen");
+                              }}
+                            >
+                              Filter zurücksetzen
+                            </button>
+                          )}
                         </div>
 
                         {loadingTenniscampAnmeldungen ? (
                           <p className="muted">Laden...</p>
-                        ) : tenniscampAnmeldungen.filter(a => {
-                          if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
-                          if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
-                          return true;
-                        }).length === 0 ? (
+                        ) : filteredTenniscampAnmeldungen.length === 0 ? (
                           <p className="muted">Keine Tenniscamp-Anmeldungen für diesen Filter.</p>
                         ) : (
                           <ul className="list">
-                            {tenniscampAnmeldungen.filter(a => {
-                              if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
-                              if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
-                              return true;
-                            }).map((anmeldung) => (
+                            {filteredTenniscampAnmeldungen.map((anmeldung) => (
                               <li key={anmeldung.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
                                 <div
                                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
