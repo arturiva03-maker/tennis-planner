@@ -38,6 +38,93 @@ type TenniscampData = {
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
+function escapeNotfallHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Sauber formatierter Notfallbogen (A4) als HTML -> via html2pdf zum Download
+function buildNotfallbogenHTML(kindVorname: string, kindNachname: string, selectedCampId: string): string {
+  const kinderCamps = CAMP_OPTIONS.filter((c) => c.type === "kind");
+
+  const box = (checked: boolean) =>
+    checked
+      ? `<span style="display:inline-block;width:12pt;height:12pt;border:1.3pt solid #1b471b;border-radius:2pt;text-align:center;line-height:11pt;font-size:10pt;font-weight:700;color:#1b471b;vertical-align:middle;margin-right:8pt;">&#10003;</span>`
+      : `<span style="display:inline-block;width:12pt;height:12pt;border:1.3pt solid #6b7280;border-radius:2pt;vertical-align:middle;margin-right:8pt;"></span>`;
+
+  const sectionTitle = (t: string) =>
+    `<div style="font-size:9pt;font-weight:700;color:#1b471b;text-transform:uppercase;letter-spacing:0.7pt;margin:0 0 6pt 0;">${t}</div>`;
+
+  const lineField = (label: string, value: string) =>
+    `<div style="font-size:8pt;color:#6b7280;margin-bottom:2pt;">${label}</div>` +
+    `<div style="border-bottom:1pt solid #9ca3af;min-height:18pt;font-size:11pt;color:#111827;padding:2pt 2pt 1pt;">${value ? escapeNotfallHtml(value) : "&nbsp;"}</div>`;
+
+  const twoCol = (ll: string, lv: string, rl: string, rv: string) =>
+    `<table style="width:100%;border-collapse:collapse;margin-bottom:13pt;"><tr>` +
+    `<td style="width:48%;vertical-align:top;padding:0;">${lineField(ll, lv)}</td>` +
+    `<td style="width:4%;"></td>` +
+    `<td style="width:48%;vertical-align:top;padding:0;">${lineField(rl, rv)}</td>` +
+    `</tr></table>`;
+
+  return `
+<div style="width:190mm;font-family:'Segoe UI',Arial,sans-serif;color:#1f2937;box-sizing:border-box;">
+  <div style="border-bottom:2.5pt solid #1b471b;padding-bottom:8pt;margin-bottom:12pt;">
+    <div style="font-size:23pt;font-weight:800;color:#1b471b;letter-spacing:0.5pt;">Notfallbogen</div>
+    <div style="font-size:12pt;font-weight:600;color:#374151;margin-top:2pt;">Sommer-Tenniscamp 2026</div>
+    <div style="font-size:9pt;color:#6b7280;margin-top:4pt;">Tennisschule A bis Z &nbsp;&middot;&nbsp; BSC Rehberge 1945 e.V. &ndash; Abteilung Tennis</div>
+  </div>
+
+  <div style="background:#f0f7f0;border:1pt solid #1b471b;border-radius:4pt;padding:8pt 10pt;font-size:9pt;color:#1b471b;margin-bottom:14pt;">
+    Bitte vollst&auml;ndig ausf&uuml;llen und <b>unterschrieben am ersten Camp-Tag</b> mitbringen.
+  </div>
+
+  ${sectionTitle("Tenniscamp (bitte ankreuzen)")}
+  <div style="font-size:10.5pt;margin-bottom:14pt;">
+    ${kinderCamps
+      .map(
+        (c) =>
+          `<div style="margin-bottom:6pt;">${box(c.id === selectedCampId)}${c.label} <span style="color:#6b7280;">(${c.dates})</span></div>`
+      )
+      .join("")}
+  </div>
+
+  ${sectionTitle("Angaben zum Kind")}
+  ${twoCol("Vorname", kindVorname, "Nachname", kindNachname)}
+
+  ${sectionTitle("Erziehungsberechtigte/r")}
+  ${twoCol("Vorname", "", "Nachname", "")}
+
+  ${sectionTitle("Telefonnummer f&uuml;r den Notfall")}
+  <div style="margin-bottom:14pt;">${lineField("Erreichbar w&auml;hrend der Camp-Zeiten", "")}</div>
+
+  ${sectionTitle("Haftungsausschluss")}
+  <div style="font-size:9pt;line-height:1.55;color:#374151;margin-bottom:14pt;">
+    Die Unterrichtsteilnahme Ihres Kindes an den oben angekreuzten Tenniscamps erfolgt auf eigene Gefahr.
+    Die Tennisschule A bis Z und der BSC Rehberge 1945 e.V. &ndash; Abteilung Tennis &uuml;bernehmen keinerlei
+    Haftung f&uuml;r den Ersatz liegengebliebener oder abhanden gekommener Gegenst&auml;nde.
+  </div>
+
+  ${sectionTitle("Allergien / Krankheiten")}
+  <div style="font-size:9.5pt;color:#374151;margin-bottom:6pt;">Hat Ihr Kind besondere Allergien oder Krankheiten &ndash; wenn ja, welche?</div>
+  <div style="border-bottom:1pt solid #9ca3af;height:18pt;margin-bottom:8pt;"></div>
+  <div style="border-bottom:1pt solid #9ca3af;height:18pt;margin-bottom:18pt;"></div>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:6pt;"><tr>
+    <td style="width:48%;vertical-align:top;padding:0;">
+      <div style="border-bottom:1pt solid #6b7280;height:22pt;"></div>
+      <div style="font-size:8pt;color:#6b7280;margin-top:3pt;">Ort, Datum</div>
+    </td>
+    <td style="width:4%;"></td>
+    <td style="width:48%;vertical-align:top;padding:0;">
+      <div style="border-bottom:1pt solid #6b7280;height:22pt;"></div>
+      <div style="font-size:8pt;color:#6b7280;margin-top:3pt;">Unterschrift Erziehungsberechtigte/r</div>
+    </td>
+  </tr></table>
+</div>`;
+}
+
 export default function TenniscampForm() {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
@@ -63,6 +150,7 @@ export default function TenniscampForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const selectedCamp = CAMP_OPTIONS.find(c => c.id === formData.campId);
   const isKindercamp = selectedCamp?.type === "kind";
@@ -88,6 +176,40 @@ export default function TenniscampForm() {
   function handleIBANChange(e: React.ChangeEvent<HTMLInputElement>) {
     const formatted = formatIBAN(e.target.value);
     setFormData((prev) => ({ ...prev, iban: formatted }));
+  }
+
+  async function handleNotfallbogenDownload() {
+    setPdfLoading(true);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      const container = document.createElement("div");
+      container.style.position = "absolute";
+      container.style.left = "-9999px";
+      container.style.top = "0";
+      container.innerHTML = buildNotfallbogenHTML(
+        formData.teilnehmerVorname.trim(),
+        formData.teilnehmerNachname.trim(),
+        formData.campId
+      );
+      document.body.appendChild(container);
+      try {
+        await html2pdf()
+          .set({
+            margin: 10,
+            filename: "Notfallbogen_Tenniscamp_2026.pdf",
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
+          })
+          .from(container.firstElementChild as HTMLElement)
+          .save();
+      } finally {
+        document.body.removeChild(container);
+      }
+    } catch (err) {
+      console.error("Notfallbogen-PDF-Fehler:", err);
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -562,6 +684,29 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               schriftlich per E-Mail an <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)" }}>tennisabisz@gmail.com</a> möglich.
             </p>
           </div>
+
+          {isKindercamp && (
+            <div style={{
+              background: "#f0f7f0",
+              border: "1px solid var(--primary)",
+              borderRadius: 8,
+              padding: 16,
+              marginTop: 16,
+            }}>
+              <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "var(--primary)", fontWeight: 600, lineHeight: 1.5 }}>
+                Notfallbogen für das Camp – bitte ausgefüllt und unterschrieben am ersten Tag mitbringen.
+              </p>
+              <button
+                type="button"
+                className="btn"
+                onClick={handleNotfallbogenDownload}
+                disabled={pdfLoading}
+                style={{ width: "auto" }}
+              >
+                {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF herunterladen"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -670,6 +815,35 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                     Vereinsexterne werden nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste.
                     Bei den Kindercamps nehmen wir hingegen alle Anmeldungen an.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Notfallbogen-Download nur bei Kindercamp */}
+            {selectedCamp && isKindercamp && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <div style={{
+                  background: "#f0f7f0",
+                  border: "1px solid var(--primary)",
+                  borderRadius: 8,
+                  padding: 16,
+                }}>
+                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--primary)", fontSize: 14 }}>
+                    Notfallbogen – am ersten Camp-Tag mitbringen
+                  </p>
+                  <p style={{ margin: "0 0 12px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                    Bitte laden Sie den Notfallbogen herunter, füllen ihn aus und bringen ihn
+                    <strong> unterschrieben am ersten Tag des Camps</strong> mit.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={handleNotfallbogenDownload}
+                    disabled={pdfLoading}
+                    style={{ width: "auto" }}
+                  >
+                    {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF herunterladen"}
+                  </button>
                 </div>
               </div>
             )}
