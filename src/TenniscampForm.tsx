@@ -792,7 +792,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                       cursor: "pointer",
                       background: formData.mitglied === opt.value ? "var(--bg-inset)" : "transparent",
                       transition: "all 0.15s",
-                      fontWeight: formData.mitglied === opt.value ? 600 : 400,
+                      fontWeight: 500,
                     }}
                   >
                     <input
@@ -812,29 +812,36 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             {/* Spielstand-Beschreibung - für Kinder, die keine Vereinsmitglieder sind */}
             {isKindercamp && formData.mitglied === "nein" && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>
-                  Beschreibung des Spielstands
-                </label>
-                <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung.
-                  Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?
-                </p>
-                <textarea
-                  name="spielstandBeschreibung"
-                  value={formData.spielstandBeschreibung}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: 6,
-                    fontSize: 14,
-                    resize: "vertical",
-                    fontFamily: "inherit",
-                  }}
-                />
+                <div style={{
+                  background: "var(--bg-inset)",
+                  border: "1px solid var(--primary)",
+                  borderRadius: 8,
+                  padding: 16,
+                }}>
+                  <label style={{ fontWeight: 600 }}>
+                    Beschreibung des Spielstands
+                  </label>
+                  <p style={{ margin: "6px 0 10px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                    Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung.
+                    Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?
+                  </p>
+                  <textarea
+                    name="spielstandBeschreibung"
+                    value={formData.spielstandBeschreibung}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      resize: "vertical",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
               </div>
             )}
 
