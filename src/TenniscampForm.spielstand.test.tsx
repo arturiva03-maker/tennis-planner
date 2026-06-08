@@ -1,28 +1,40 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import TenniscampForm from "./TenniscampForm";
 
+function selectCamp(value: string) {
+  const camp = document.querySelector(`input[name="campId"][value="${value}"]`) as HTMLInputElement;
+  expect(camp).not.toBeNull();
+  fireEvent.click(camp);
+}
+
+function clickMitglied(value: "ja" | "nein") {
+  const radio = document.querySelector(`input[name="mitglied"][value="${value}"]`) as HTMLInputElement;
+  expect(radio).not.toBeNull();
+  fireEvent.click(radio);
+}
+
 test("Spielstand-Beschreibung erscheint bei Kindercamp + Nicht-Mitglied", () => {
   render(<TenniscampForm />);
 
-  // Anfangs darf das Feld nicht da sein
   expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
 
-  // Kindercamp auswählen (radio value = camp.id)
-  const kinderCamp = document.querySelector('input[name="campId"][value="woche1-kind"]') as HTMLInputElement;
-  expect(kinderCamp).not.toBeNull();
-  fireEvent.click(kinderCamp);
+  selectCamp("woche1-kind");
+  clickMitglied("nein");
 
-  // Mitglied "Nein" klicken
-  const mitgliedNein = document.querySelector('input[name="mitglied"][value="nein"]') as HTMLInputElement;
-  expect(mitgliedNein).not.toBeNull();
-  fireEvent.click(mitgliedNein);
-
-  // Jetzt muss das Beschreibungsfeld erscheinen
   expect(screen.getByText("Beschreibung des Spielstands")).toBeInTheDocument();
   expect(document.querySelector('textarea[name="spielstandBeschreibung"]')).not.toBeNull();
 
   // Wieder auf "Ja" -> Feld verschwindet
-  const mitgliedJa = document.querySelector('input[name="mitglied"][value="ja"]') as HTMLInputElement;
-  fireEvent.click(mitgliedJa);
+  clickMitglied("ja");
   expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
+});
+
+test("Spielstand-Beschreibung erscheint auch bei Erwachsenencamp + Nicht-Mitglied", () => {
+  render(<TenniscampForm />);
+
+  selectCamp("woche1-erwachsene");
+  expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
+
+  clickMitglied("nein");
+  expect(screen.getByText("Beschreibung des Spielstands")).toBeInTheDocument();
 });

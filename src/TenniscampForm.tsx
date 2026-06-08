@@ -188,7 +188,7 @@ export default function TenniscampForm() {
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
           niveau: formData.niveau || null,
-          spielstand_beschreibung: isKindercamp ? (formData.spielstandBeschreibung.trim() || null) : null,
+          spielstand_beschreibung: formData.mitglied === "nein" ? (formData.spielstandBeschreibung.trim() || null) : null,
           mitglied: formData.mitglied === "ja",
           mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
@@ -401,7 +401,7 @@ Tennisschule A bis Z`;
                         </td>
                       </tr>
                       ` : ''}
-                      ${isKindercamp && formData.spielstandBeschreibung.trim() ? `
+                      ${formData.spielstandBeschreibung.trim() ? `
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">Spielstand-Beschreibung:</span>
@@ -492,7 +492,7 @@ Preis: ${selectedCamp?.price} €
 Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
 Mitglied: ${formData.mitglied === "ja" ? "Ja" : "Nein"}
-${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${formData.niveau ? `Spielniveau: ${formData.niveau}\n` : ''}${isKindercamp && formData.spielstandBeschreibung.trim() ? `Spielstand-Beschreibung: ${formData.spielstandBeschreibung.trim()}\n` : ''}
+${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${formData.niveau ? `Spielniveau: ${formData.niveau}\n` : ''}${formData.spielstandBeschreibung.trim() ? `Spielstand-Beschreibung: ${formData.spielstandBeschreibung.trim()}\n` : ''}
 E-Mail: ${formData.email}
 Telefon: ${formData.telefon}
 
@@ -752,7 +752,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                         cursor: "pointer",
                         background: formData.niveau === niveau ? "var(--bg-inset)" : "transparent",
                         transition: "all 0.15s",
-                        fontWeight: formData.niveau === niveau ? 600 : 400,
+                        fontWeight: 500,
                       }}
                     >
                       <input
@@ -809,8 +809,8 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               </div>
             </div>
 
-            {/* Spielstand-Beschreibung - für Kinder, die keine Vereinsmitglieder sind */}
-            {isKindercamp && formData.mitglied === "nein" && (
+            {/* Spielstand-Beschreibung - für Nicht-Vereinsmitglieder (Kinder & Erwachsene) */}
+            {selectedCamp && formData.mitglied === "nein" && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <div style={{
                   background: "var(--bg-inset)",
@@ -822,15 +822,18 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                     Beschreibung des Spielstands
                   </label>
                   <p style={{ margin: "6px 0 10px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                    Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung.
-                    Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?
+                    {isKindercamp
+                      ? "Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung. Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?"
+                      : "Da Sie kein Vereinsmitglied sind, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung. Haben Sie schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft spielen Sie?"}
                   </p>
                   <textarea
                     name="spielstandBeschreibung"
                     value={formData.spielstandBeschreibung}
                     onChange={handleChange}
                     rows={3}
-                    placeholder="z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
+                    placeholder={isKindercamp
+                      ? "z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
+                      : "z.B. noch nie gespielt / spiele seit 2 Jahren / war letztes Jahr beim Camp dabei..."}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
