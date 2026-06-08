@@ -185,6 +185,7 @@ type TenniscampAnmeldung = {
   iban: string;
   bemerkungen: string | null;
   niveau: string | null;
+  spielstand_beschreibung: string | null;
   mitglied: boolean | null;
   mandatsreferenz: string;
   sepa_zustimmung: boolean;
@@ -9327,6 +9328,12 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                                         <div>
                                           <div className="muted" style={{ fontSize: 11 }}>Niveau</div>
                                           <div style={{ fontWeight: 500 }}>{anmeldung.niveau}</div>
+                                        </div>
+                                      )}
+                                      {anmeldung.spielstand_beschreibung && (
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <div className="muted" style={{ fontSize: 11 }}>Spielstand-Beschreibung</div>
+                                          <div style={{ background: "var(--bg-inset)", padding: 8, borderRadius: 4, fontSize: 13 }}>{anmeldung.spielstand_beschreibung}</div>
                                         </div>
                                       )}
                                       {anmeldung.mitglied != null && (

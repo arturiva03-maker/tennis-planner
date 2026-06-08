@@ -30,6 +30,7 @@ type TenniscampData = {
   iban: string;
   bemerkungen: string;
   niveau: string;
+  spielstandBeschreibung: string;
   mitglied: "" | "ja" | "nein";
   sepaZustimmung: boolean;
   verbindlicheAnmeldung: boolean;
@@ -53,6 +54,7 @@ export default function TenniscampForm() {
     iban: "",
     bemerkungen: "",
     niveau: "",
+    spielstandBeschreibung: "",
     mitglied: "",
     sepaZustimmung: false,
     verbindlicheAnmeldung: false,
@@ -107,8 +109,8 @@ export default function TenniscampForm() {
       return;
     }
 
-    if (!isKindercamp && !formData.niveau) {
-      setError("Bitte wählen Sie Ihr Spielniveau aus.");
+    if (!formData.niveau) {
+      setError("Bitte wählen Sie das Spielniveau aus.");
       return;
     }
 
@@ -185,7 +187,8 @@ export default function TenniscampForm() {
           email: formData.email.trim(),
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
-          niveau: !isKindercamp ? formData.niveau : null,
+          niveau: formData.niveau || null,
+          spielstand_beschreibung: isKindercamp ? (formData.spielstandBeschreibung.trim() || null) : null,
           mitglied: formData.mitglied === "ja",
           mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
@@ -390,6 +393,22 @@ Tennisschule A bis Z`;
                           <span style="color: ${formData.mitglied === "ja" ? "#16a34a" : "#dc2626"}; font-size: 15px; font-weight: 700; margin-left: 8px;">${formData.mitglied === "ja" ? "Ja" : "Nein"}</span>
                         </td>
                       </tr>
+                      ${formData.niveau ? `
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">Spielniveau:</span>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${formData.niveau}</span>
+                        </td>
+                      </tr>
+                      ` : ''}
+                      ${isKindercamp && formData.spielstandBeschreibung.trim() ? `
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: #666666; font-size: 13px;">Spielstand-Beschreibung:</span>
+                          <span style="color: #333333; font-size: 14px; line-height: 1.5; margin-left: 8px;">${formData.spielstandBeschreibung.trim()}</span>
+                        </td>
+                      </tr>
+                      ` : ''}
                     </table>
                   </td>
                 </tr>
@@ -473,7 +492,7 @@ Preis: ${selectedCamp?.price} €
 Teilnehmer: ${teilnehmerName}
 Alter: ${formData.alter} Jahre
 Mitglied: ${formData.mitglied === "ja" ? "Ja" : "Nein"}
-${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${!isKindercamp ? `Niveau: ${formData.niveau}\n` : ''}
+${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${formData.niveau ? `Spielniveau: ${formData.niveau}\n` : ''}${isKindercamp && formData.spielstandBeschreibung.trim() ? `Spielstand-Beschreibung: ${formData.spielstandBeschreibung.trim()}\n` : ''}
 E-Mail: ${formData.email}
 Telefon: ${formData.telefon}
 
@@ -713,11 +732,11 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               </>
             )}
 
-            {/* Niveau für Erwachsene */}
-            {!isKindercamp && (
+            {/* Spielniveau - für Kinder und Erwachsene */}
+            {selectedCamp && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <label>
-                  Spielniveau <span style={{ color: "var(--danger)" }}>*</span>
+                  Spielniveau {isKindercamp ? "des Kindes" : ""} <span style={{ color: "var(--danger)" }}>*</span>
                 </label>
                 <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                   {["Anfänger", "Fortgeschritten", "Turnierspieler"].map((niveau) => (
@@ -789,6 +808,35 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                 ))}
               </div>
             </div>
+
+            {/* Spielstand-Beschreibung - für Kinder, die keine Vereinsmitglieder sind */}
+            {isKindercamp && formData.mitglied === "nein" && (
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>
+                  Beschreibung des Spielstands
+                </label>
+                <p style={{ margin: "0 0 8px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung.
+                  Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?
+                </p>
+                <textarea
+                  name="spielstandBeschreibung"
+                  value={formData.spielstandBeschreibung}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    fontSize: 14,
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+            )}
 
             <div className="field">
               <label>
