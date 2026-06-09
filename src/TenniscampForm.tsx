@@ -51,11 +51,11 @@ function buildNotfallbogenHTML(kindVorname: string, kindNachname: string, select
 
   const box = (checked: boolean) =>
     checked
-      ? `<span style="display:inline-block;width:12pt;height:12pt;border:1.3pt solid #1b471b;border-radius:2pt;text-align:center;line-height:11pt;font-size:10pt;font-weight:700;color:#1b471b;vertical-align:middle;margin-right:8pt;">&#10003;</span>`
+      ? `<span style="display:inline-block;width:12pt;height:12pt;border:1.3pt solid #171717;border-radius:2pt;text-align:center;line-height:11pt;font-size:10pt;font-weight:700;color:#171717;vertical-align:middle;margin-right:8pt;">&#10003;</span>`
       : `<span style="display:inline-block;width:12pt;height:12pt;border:1.3pt solid #6b7280;border-radius:2pt;vertical-align:middle;margin-right:8pt;"></span>`;
 
   const sectionTitle = (t: string) =>
-    `<div style="font-size:9pt;font-weight:700;color:#1b471b;text-transform:uppercase;letter-spacing:0.7pt;margin:0 0 6pt 0;">${t}</div>`;
+    `<div style="font-size:9pt;font-weight:700;color:#171717;text-transform:uppercase;letter-spacing:0.7pt;margin:0 0 6pt 0;">${t}</div>`;
 
   const lineField = (label: string, value: string) =>
     `<div style="font-size:8pt;color:#6b7280;margin-bottom:2pt;">${label}</div>` +
@@ -70,13 +70,13 @@ function buildNotfallbogenHTML(kindVorname: string, kindNachname: string, select
 
   return `
 <div style="width:190mm;font-family:'Segoe UI',Arial,sans-serif;color:#1f2937;box-sizing:border-box;">
-  <div style="border-bottom:2.5pt solid #1b471b;padding-bottom:8pt;margin-bottom:12pt;">
-    <div style="font-size:23pt;font-weight:800;color:#1b471b;letter-spacing:0.5pt;">Notfallbogen</div>
+  <div style="border-bottom:2.5pt solid #171717;padding-bottom:8pt;margin-bottom:12pt;">
+    <div style="font-size:23pt;font-weight:800;color:#171717;letter-spacing:0.5pt;">Notfallbogen</div>
     <div style="font-size:12pt;font-weight:600;color:#374151;margin-top:2pt;">Sommer-Tenniscamp 2026</div>
     <div style="font-size:9pt;color:#6b7280;margin-top:4pt;">Tennisschule A bis Z &nbsp;&middot;&nbsp; BSC Rehberge 1945 e.V. &ndash; Abteilung Tennis</div>
   </div>
 
-  <div style="background:#f0f7f0;border:1pt solid #1b471b;border-radius:4pt;padding:8pt 10pt;font-size:9pt;color:#1b471b;margin-bottom:14pt;">
+  <div style="background:#f5f5f5;border:1pt solid #171717;border-radius:4pt;padding:8pt 10pt;font-size:9pt;color:#171717;margin-bottom:14pt;">
     Bitte vollst&auml;ndig ausf&uuml;llen und <b>unterschrieben am ersten Camp-Tag</b> mitbringen.
   </div>
 
@@ -343,7 +343,7 @@ export default function TenniscampForm() {
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%); padding: 32px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #171717 0%, #404040 100%); padding: 32px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Anmeldung Tenniscamp</h1>
             </td>
           </tr>
@@ -351,7 +351,7 @@ export default function TenniscampForm() {
           <!-- Success Icon -->
           <tr>
             <td align="center" style="padding: 40px 40px 20px;">
-              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+              <div style="width: 64px; height: 64px; background: #171717; border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
                 <span style="color: #ffffff; font-size: 32px;">&#10003;</span>
               </div>
             </td>
@@ -368,10 +368,10 @@ export default function TenniscampForm() {
           <!-- Camp Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb;">
                 <tr>
                   <td style="padding: 24px;">
-                    <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Camp-Details</p>
+                    <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Camp-Details</p>
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
@@ -407,13 +407,13 @@ export default function TenniscampForm() {
           <!-- Payment Info -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <div style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d; padding: 16px;">
-                <p style="margin: 0 0 8px; color: #92400e; font-size: 14px; font-weight: 600;">Zahlungsinformation</p>
-                <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">
+              <div style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5; padding: 16px;">
+                <p style="margin: 0 0 8px; color: #525252; font-size: 14px; font-weight: 600;">Zahlungsinformation</p>
+                <p style="margin: 0; color: #525252; font-size: 13px; line-height: 1.5;">
                   Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
                   Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
                   Eine Absage ist ausschließlich schriftlich per E-Mail an
-                  <a href="mailto:tennisabisz@gmail.com" style="color: #92400e; font-weight: 600;">tennisabisz@gmail.com</a>
+                  <a href="mailto:tennisabisz@gmail.com" style="color: #525252; font-weight: 600;">tennisabisz@gmail.com</a>
                   möglich.
                 </p>
               </div>
@@ -424,15 +424,15 @@ export default function TenniscampForm() {
           <tr>
             <td style="padding: 0 40px 32px; text-align: center;">
               <p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter:</p>
-              <a href="mailto:tennisabisz@gmail.com" style="color: #1b471b; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+              <a href="mailto:tennisabisz@gmail.com" style="color: #171717; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+            <td style="background-color: #fafafa; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
-              <p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+              <p style="margin: 0; color: #171717; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
             </td>
           </tr>
         </table>
@@ -479,7 +479,7 @@ Tennisschule A bis Z`;
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 40px; text-align: center;">
+            <td style="background: #171717; padding: 24px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">&#127934; Neue Tenniscamp-Anmeldung</h1>
             </td>
           </tr>
@@ -487,13 +487,13 @@ Tennisschule A bis Z`;
           <!-- Camp Info -->
           <tr>
             <td style="padding: 32px 40px 24px;">
-              <div style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d; padding: 16px; margin-bottom: 24px;">
-                <p style="margin: 0 0 4px; color: #92400e; font-size: 14px; font-weight: 600;">${selectedCamp?.label}</p>
-                <p style="margin: 0; color: #78350f; font-size: 16px; font-weight: 700;">${selectedCamp?.dates}</p>
+              <div style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5; padding: 16px; margin-bottom: 24px;">
+                <p style="margin: 0 0 4px; color: #525252; font-size: 14px; font-weight: 600;">${selectedCamp?.label}</p>
+                <p style="margin: 0; color: #525252; font-size: 16px; font-weight: 700;">${selectedCamp?.dates}</p>
               </div>
 
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Teilnehmer</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Teilnehmer</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -512,7 +512,7 @@ Tennisschule A bis Z`;
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">Mitglied BSC Rehberge:</span>
-                          <span style="color: ${formData.mitglied === "ja" ? "#16a34a" : "#dc2626"}; font-size: 15px; font-weight: 700; margin-left: 8px;">${formData.mitglied === "ja" ? "Ja" : "Nein"}</span>
+                          <span style="color: ${formData.mitglied === "ja" ? "#171717" : "#dc2626"}; font-size: 15px; font-weight: 700; margin-left: 8px;">${formData.mitglied === "ja" ? "Ja" : "Nein"}</span>
                         </td>
                       </tr>
                       ${formData.niveau ? `
@@ -537,8 +537,8 @@ Tennisschule A bis Z`;
               </table>
 
               ${isKindercamp ? `
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Zahlungspflichtiger</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Zahlungspflichtiger</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
                 <tr>
                   <td style="padding: 16px;">
                     <span style="color: #333333; font-size: 15px; font-weight: 600;">${zahlungspflichtiger}</span>
@@ -547,21 +547,21 @@ Tennisschule A bis Z`;
               </table>
               ` : ''}
 
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kontaktdaten</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kontaktdaten</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">E-Mail:</span>
-                          <a href="mailto:${formData.email}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${formData.email}</a>
+                          <a href="mailto:${formData.email}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${formData.email}</a>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">Telefon:</span>
-                          <a href="tel:${formData.telefon}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${formData.telefon}</a>
+                          <a href="tel:${formData.telefon}" style="color: #171717; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${formData.telefon}</a>
                         </td>
                       </tr>
                     </table>
@@ -569,8 +569,8 @@ Tennisschule A bis Z`;
                 </tr>
               </table>
 
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">SEPA-Lastschrift</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">SEPA-Lastschrift</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb;">
                 <tr>
                   <td style="padding: 16px;">
                     <span style="color: #666666; font-size: 13px;">IBAN:</span>
@@ -580,11 +580,11 @@ Tennisschule A bis Z`;
               </table>
 
               ${formData.bemerkungen.trim() ? `
-              <p style="margin: 24px 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Bemerkungen</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d;">
+              <p style="margin: 24px 0 16px; color: #171717; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Bemerkungen</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5;">
                 <tr>
                   <td style="padding: 16px;">
-                    <span style="color: #78350f; font-size: 14px; line-height: 1.5;">${formData.bemerkungen.trim()}</span>
+                    <span style="color: #525252; font-size: 14px; line-height: 1.5;">${formData.bemerkungen.trim()}</span>
                   </td>
                 </tr>
               </table>
@@ -594,7 +594,7 @@ Tennisschule A bis Z`;
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <td style="background-color: #fafafa; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
               <p style="margin: 0; color: #666666; font-size: 13px;">Anmeldung vom ${new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
             </td>
           </tr>
@@ -687,13 +687,13 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
           {isKindercamp && (
             <div style={{
-              background: "#f0f7f0",
-              border: "1px solid var(--primary)",
+              background: "var(--bg-inset)",
+              border: "1px solid var(--border)",
               borderRadius: 8,
               padding: 16,
               marginTop: 16,
             }}>
-              <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "var(--primary)", fontWeight: 600, lineHeight: 1.5 }}>
+              <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "var(--text-primary)", fontWeight: 600, lineHeight: 1.5 }}>
                 Notfallbogen für das Camp – bitte ausgefüllt und unterschrieben am ersten Tag mitbringen.
               </p>
               <button
@@ -725,7 +725,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
         <div style={{
           background: "var(--bg-inset)",
-          border: "1px solid var(--primary)",
+          border: "1px solid var(--border)",
           borderRadius: 8,
           padding: 16,
           marginBottom: 24,
@@ -802,15 +802,15 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             {selectedCamp && !isKindercamp && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <div style={{
-                  background: "#fff8e6",
-                  border: "1px solid #fcd34d",
+                  background: "var(--bg-inset)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 16,
                 }}>
-                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "#92400e", fontSize: 14 }}>
+                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                     Hinweis zur Platzvergabe (Erwachsenencamp)
                   </p>
-                  <p style={{ margin: 0, fontSize: 13, color: "#78350f", lineHeight: 1.5 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
                     Aufgrund begrenzter Plätze nehmen wir primär Mitglieder des BSC Rehberge auf.
                     Vereinsexterne werden nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste.
                     Bei den Kindercamps nehmen wir hingegen alle Anmeldungen an.
@@ -823,12 +823,12 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             {selectedCamp && isKindercamp && (
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <div style={{
-                  background: "#f0f7f0",
-                  border: "1px solid var(--primary)",
+                  background: "var(--bg-inset)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 16,
                 }}>
-                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--primary)", fontSize: 14 }}>
+                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                     Notfallbogen – am ersten Camp-Tag mitbringen
                   </p>
                   <p style={{ margin: "0 0 12px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -988,7 +988,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <div style={{
                   background: "var(--bg-inset)",
-                  border: "1px solid var(--primary)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 16,
                 }}>
@@ -1135,8 +1135,8 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             {/* Verbindliche Anmeldung */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <div style={{
-                background: "#fef3c7",
-                border: "1px solid #f59e0b",
+                background: "var(--bg-inset)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 padding: 16,
               }}>
@@ -1149,14 +1149,14 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                     style={{ width: "auto", marginTop: 4 }}
                   />
                   <div>
-                    <span style={{ fontWeight: 600, color: "#92400e" }}>
+                    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                       Verbindliche Anmeldung <span style={{ color: "var(--danger)" }}>*</span>
                     </span>
-                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "#78350f", lineHeight: 1.5 }}>
+                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
                       Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
                       Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
                       Eine Absage ist ausschließlich schriftlich per E-Mail an{" "}
-                      <a href="mailto:tennisabisz@gmail.com" style={{ color: "#92400e", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
+                      <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
                       möglich.
                     </p>
                   </div>
