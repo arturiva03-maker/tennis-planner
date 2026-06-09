@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
+import "./tenniscamp.css";
 
 type CampOption = {
   id: string;
@@ -664,343 +665,215 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
   if (success) {
     return (
-      <div className="registrationPage">
-        <div className="card registrationCard">
-          <div className="successIcon">&#10003;</div>
-          <h1>Anmeldung erfolgreich!</h1>
-          <p className="muted">
-            Vielen Dank für Ihre Anmeldung zum Tenniscamp. Sie erhalten in Kürze eine Bestätigungs-E-Mail.
-          </p>
-          <div style={{
-            background: "var(--bg-inset)",
-            border: "1px solid var(--border)",
-            borderRadius: 8,
-            padding: 16,
-            marginTop: 24,
-          }}>
-            <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6 }}>
-              <strong>Hinweis:</strong> Die Campgebühr wird zwei Wochen vor Beginn per SEPA-Lastschrift eingezogen.
-              Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich. Eine Absage ist ausschließlich
-              schriftlich per E-Mail an <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)" }}>tennisabisz@gmail.com</a> möglich.
-            </p>
+      <div className="tc-page">
+        <div className="tc-success">
+          <div className="tc-success-head">
+            <div className="tc-success-check">&#10003;</div>
+            <h1>Anmeldung erfolgreich!</h1>
           </div>
-
-          {isKindercamp && (
-            <div style={{
-              background: "var(--bg-inset)",
-              border: "1px solid var(--border)",
-              borderRadius: 8,
-              padding: 16,
-              marginTop: 16,
-            }}>
-              <p style={{ margin: "0 0 12px 0", fontSize: 14, color: "var(--text-primary)", fontWeight: 600, lineHeight: 1.5 }}>
-                Notfallbogen für das Camp – bitte ausgefüllt und unterschrieben am ersten Tag mitbringen.
-              </p>
-              <button
-                type="button"
-                className="btn"
-                onClick={handleNotfallbogenDownload}
-                disabled={pdfLoading}
-                style={{ width: "auto" }}
-              >
-                {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF herunterladen"}
-              </button>
+          <div className="tc-success-body">
+            <p style={{ margin: "0 0 22px", fontSize: 15, color: "#52525b", lineHeight: 1.65, textAlign: "center" }}>
+              Vielen Dank für deine Anmeldung zum Tenniscamp. Du erhältst in Kürze eine Bestätigungs-E-Mail.
+            </p>
+            <div className="tc-note">
+              <span className="tc-note-title">Hinweis zur Zahlung</span>
+              Die Campgebühr wird zwei Wochen vor Beginn per SEPA-Lastschrift eingezogen. Eine kostenfreie Stornierung
+              ist nur bis zu diesem Zeitpunkt möglich – ausschließlich schriftlich per E-Mail an{" "}
+              <a href="mailto:tennisabisz@gmail.com" style={{ color: "#16a34a", fontWeight: 600 }}>tennisabisz@gmail.com</a>.
             </div>
-          )}
+
+            {isKindercamp && (
+              <div className="tc-note" style={{ marginTop: 14 }}>
+                <span className="tc-note-title">Notfallbogen</span>
+                Bitte ausgefüllt und unterschrieben am ersten Camp-Tag mitbringen.
+                <div style={{ marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className="tc-btn-secondary"
+                    onClick={handleNotfallbogenDownload}
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="registrationPage">
-      <div className="card registrationCard">
-        <h1>Tenniscamp 2026</h1>
-        <p className="muted" style={{ marginBottom: 8 }}>
-          <strong>Tennisschule A bis Z</strong> am BSC Rehberge
-        </p>
-        <p className="muted" style={{ marginBottom: 16 }}>
-          Anmeldung für Kinder- und Erwachsenencamps in den Sommerferien.
-        </p>
+    <div className="tc-page">
+      <div className="tc-shell">
+        <aside className="tc-panel">
+          <div className="tc-panel-inner">
+            <div>
+              <div className="tc-wordmark">Tennisschule A bis Z</div>
+              <h1 className="tc-panel-title">Tenniscamps 2026</h1>
+              <p className="tc-panel-sub">
+                In den Sommerferien am BSC Rehberge – für Kinder und Erwachsene, eingeteilt nach Spielstärke.
+              </p>
+            </div>
 
-        <div style={{
-          background: "var(--bg-inset)",
-          border: "1px solid var(--border)",
-          borderRadius: 8,
-          padding: 16,
-          marginBottom: 24,
-        }}>
-          <a
-            href="/tenniscamp-info"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "var(--primary)",
-              fontWeight: 600,
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 18 }}>&#9432;</span>
-            Informationen zu unseren Tenniscamps
+            <div className="tc-summary">
+              <div className="tc-summary-label">Deine Auswahl</div>
+              {selectedCamp ? (
+                <>
+                  <div className="tc-summary-camp">{selectedCamp.label}</div>
+                  <div className="tc-summary-dates">{selectedCamp.dates}</div>
+                  <div className="tc-summary-price">{selectedCamp.price} €</div>
+                </>
+              ) : (
+                <div className="tc-summary-empty">Wähle rechts dein Camp – der Preis erscheint dann hier.</div>
+              )}
+            </div>
+
+            <ul className="tc-perks">
+              <li>Einteilung nach Spielstärke</li>
+              <li>BSC Rehberge · Berlin-Wedding</li>
+              <li>Kostenlose Stornierung bis 2 Wochen vorher</li>
+            </ul>
+
+            <div className="tc-panel-foot">
+              Fragen? <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>
+            </div>
+          </div>
+        </aside>
+
+        <div className="tc-form">
+          <div className="tc-form-head">
+            <h2>Anmeldung Tenniscamp</h2>
+            <p>Wenige Minuten – du erhältst sofort eine Bestätigung per E-Mail.</p>
+          </div>
+
+          <a className="tc-infolink" href="/tenniscamp-info" target="_blank" rel="noopener noreferrer">
+            ℹ Alle Infos zu den Camps
           </a>
-        </div>
 
-        {error && <div className="errorBox">{error}</div>}
+          {error && <div className="tc-error">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="registrationFields">
-            {/* Camp Auswahl */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                Tenniscamp auswählen <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {CAMP_OPTIONS.map((camp) => (
-                  <label
-                    key={camp.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "12px 16px",
-                      border: `2px solid ${formData.campId === camp.id ? "var(--primary)" : "var(--border)"}`,
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      background: formData.campId === camp.id ? "var(--bg-inset)" : "transparent",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="campId"
-                      value={camp.id}
-                      checked={formData.campId === camp.id}
-                      onChange={handleChange}
-                      style={{ width: "auto" }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{camp.label}</div>
-                      <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{camp.dates}</div>
-                    </div>
-                    <div style={{
-                      fontWeight: 700,
-                      fontSize: 16,
-                      color: formData.campId === camp.id ? "var(--primary)" : "var(--text-muted)",
-                      whiteSpace: "nowrap"
-                    }}>
-                      {camp.price} €
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Hinweis nur bei Erwachsenencamp */}
-            {selectedCamp && !isKindercamp && (
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <div style={{
-                  background: "var(--bg-inset)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 16,
-                }}>
-                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                    Hinweis zur Platzvergabe (Erwachsenencamp)
-                  </p>
-                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                    Aufgrund begrenzter Plätze nehmen wir primär Mitglieder des BSC Rehberge auf.
-                    Vereinsexterne werden nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste.
-                    Bei den Kindercamps nehmen wir hingegen alle Anmeldungen an.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Notfallbogen-Download nur bei Kindercamp */}
-            {selectedCamp && isKindercamp && (
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <div style={{
-                  background: "var(--bg-inset)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 16,
-                }}>
-                  <p style={{ margin: "0 0 6px 0", fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-                    Notfallbogen – am ersten Camp-Tag mitbringen
-                  </p>
-                  <p style={{ margin: "0 0 12px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                    Bitte laden Sie den Notfallbogen herunter, füllen ihn aus und bringen ihn
-                    <strong> unterschrieben am ersten Tag des Camps</strong> mit.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={handleNotfallbogenDownload}
-                    disabled={pdfLoading}
-                    style={{ width: "auto" }}
-                  >
-                    {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF herunterladen"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Teilnehmer */}
-            <div className="field">
-              <label>
-                Vorname Teilnehmer <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="text"
-                name="teilnehmerVorname"
-                value={formData.teilnehmerVorname}
-                onChange={handleChange}
-                placeholder="Vorname"
-              />
-            </div>
-
-            <div className="field">
-              <label>
-                Nachname Teilnehmer <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="text"
-                name="teilnehmerNachname"
-                value={formData.teilnehmerNachname}
-                onChange={handleChange}
-                placeholder="Nachname"
-              />
-            </div>
-
-            {/* Zahlungspflichtiger - nur bei Kindercamp */}
-            {isKindercamp && (
-              <>
-                <div className="field">
-                  <label>
-                    Vorname Zahlungspflichtiger <span style={{ color: "var(--danger)" }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="zahlungspflichtigerVorname"
-                    value={formData.zahlungspflichtigerVorname}
-                    onChange={handleChange}
-                    placeholder="Vorname Erziehungsberechtigter"
-                  />
-                </div>
-
-                <div className="field">
-                  <label>
-                    Nachname Zahlungspflichtiger <span style={{ color: "var(--danger)" }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="zahlungspflichtigerNachname"
-                    value={formData.zahlungspflichtigerNachname}
-                    onChange={handleChange}
-                    placeholder="Nachname Erziehungsberechtigter"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Spielniveau - für Kinder und Erwachsene */}
-            {selectedCamp && (
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>
-                  Spielniveau {isKindercamp ? "des Kindes" : ""} <span style={{ color: "var(--danger)" }}>*</span>
-                </label>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  {["Anfänger", "Fortgeschritten", "Turnierspieler"].map((niveau) => (
-                    <label
-                      key={niveau}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "10px 16px",
-                        border: `2px solid ${formData.niveau === niveau ? "var(--primary)" : "var(--border)"}`,
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        background: formData.niveau === niveau ? "var(--bg-inset)" : "transparent",
-                        transition: "all 0.15s",
-                        fontWeight: 500,
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="niveau"
-                        value={niveau}
-                        checked={formData.niveau === niveau}
-                        onChange={handleChange}
-                        style={{ width: "auto" }}
-                      />
-                      {niveau}
+          <form onSubmit={handleSubmit}>
+            {/* 1 – Camp */}
+            <div className="tc-section">
+              <div className="tc-section-title"><span>1</span> Camp wählen</div>
+              <div className="tc-choices">
+                {CAMP_OPTIONS.map((camp) => {
+                  const sel = formData.campId === camp.id;
+                  return (
+                    <label key={camp.id} className={`tc-choice${sel ? " is-selected" : ""}`}>
+                      <input type="radio" name="campId" value={camp.id} checked={sel} onChange={handleChange} />
+                      <span className="tc-radio" />
+                      <span className="tc-choice-body">
+                        <span className="tc-choice-title">{camp.label}</span>
+                        <span className="tc-choice-meta">{camp.dates}</span>
+                      </span>
+                      <span className="tc-choice-price">{camp.price} €</span>
                     </label>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
 
-            {/* Mitglied im Verein */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                Mitglied im BSC Rehberge? <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                {[
-                  { value: "ja", label: "Ja" },
-                  { value: "nein", label: "Nein" },
-                ].map((opt) => (
-                  <label
-                    key={opt.value}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "10px 16px",
-                      border: `2px solid ${formData.mitglied === opt.value ? "var(--primary)" : "var(--border)"}`,
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      background: formData.mitglied === opt.value ? "var(--bg-inset)" : "transparent",
-                      transition: "all 0.15s",
-                      fontWeight: 500,
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="mitglied"
-                      value={opt.value}
-                      checked={formData.mitglied === opt.value}
-                      onChange={handleChange}
-                      style={{ width: "auto" }}
-                    />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
+              {selectedCamp && !isKindercamp && (
+                <div className="tc-note" style={{ marginTop: 12 }}>
+                  <span className="tc-note-title">Hinweis zur Platzvergabe</span>
+                  Aufgrund begrenzter Plätze nehmen wir primär Mitglieder des BSC Rehberge auf. Vereinsexterne werden
+                  nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste. Bei den Kindercamps nehmen
+                  wir alle Anmeldungen an.
+                </div>
+              )}
+
+              {selectedCamp && isKindercamp && (
+                <div className="tc-note" style={{ marginTop: 12 }}>
+                  <span className="tc-note-title">Notfallbogen</span>
+                  Bitte herunterladen, ausfüllen und unterschrieben am ersten Camp-Tag mitbringen.
+                  <div style={{ marginTop: 12 }}>
+                    <button
+                      type="button"
+                      className="tc-btn-secondary"
+                      onClick={handleNotfallbogenDownload}
+                      disabled={pdfLoading}
+                    >
+                      {pdfLoading ? "Wird erstellt..." : "Notfallbogen als PDF"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Spielstand-Beschreibung - für Nicht-Vereinsmitglieder (Kinder & Erwachsene) */}
-            {selectedCamp && formData.mitglied === "nein" && (
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <div style={{
-                  background: "var(--bg-inset)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: 16,
-                }}>
-                  <label style={{ fontWeight: 600 }}>
-                    Beschreibung des Spielstands
-                  </label>
-                  <p style={{ margin: "6px 0 10px 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+            {/* 2 – Teilnehmer */}
+            <div className="tc-section">
+              <div className="tc-section-title"><span>2</span> Teilnehmer</div>
+
+              <div className="tc-grid-2">
+                <div className="tc-field">
+                  <label className="tc-label">Vorname <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="text" name="teilnehmerVorname" value={formData.teilnehmerVorname} onChange={handleChange} placeholder="Vorname" />
+                </div>
+                <div className="tc-field">
+                  <label className="tc-label">Nachname <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="text" name="teilnehmerNachname" value={formData.teilnehmerNachname} onChange={handleChange} placeholder="Nachname" />
+                </div>
+              </div>
+
+              {isKindercamp && (
+                <div className="tc-grid-2">
+                  <div className="tc-field">
+                    <label className="tc-label">Vorname Zahlungspflichtige/r <span className="tc-req">*</span></label>
+                    <input className="tc-input" type="text" name="zahlungspflichtigerVorname" value={formData.zahlungspflichtigerVorname} onChange={handleChange} placeholder="Erziehungsberechtigte/r" />
+                  </div>
+                  <div className="tc-field">
+                    <label className="tc-label">Nachname Zahlungspflichtige/r <span className="tc-req">*</span></label>
+                    <input className="tc-input" type="text" name="zahlungspflichtigerNachname" value={formData.zahlungspflichtigerNachname} onChange={handleChange} placeholder="Nachname" />
+                  </div>
+                </div>
+              )}
+
+              {selectedCamp && (
+                <div className="tc-field">
+                  <label className="tc-label">Spielniveau{isKindercamp ? " des Kindes" : ""} <span className="tc-req">*</span></label>
+                  <div className="tc-choices tc-inline">
+                    {["Anfänger", "Fortgeschritten", "Turnierspieler"].map((niveau) => {
+                      const sel = formData.niveau === niveau;
+                      return (
+                        <label key={niveau} className={`tc-choice tc-choice-sm${sel ? " is-selected" : ""}`}>
+                          <input type="radio" name="niveau" value={niveau} checked={sel} onChange={handleChange} />
+                          <span className="tc-radio" />
+                          <span className="tc-choice-title">{niveau}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="tc-field">
+                <label className="tc-label">Mitglied im BSC Rehberge? <span className="tc-req">*</span></label>
+                <div className="tc-choices tc-inline">
+                  {[{ value: "ja", label: "Ja" }, { value: "nein", label: "Nein" }].map((opt) => {
+                    const sel = formData.mitglied === opt.value;
+                    return (
+                      <label key={opt.value} className={`tc-choice tc-choice-sm${sel ? " is-selected" : ""}`}>
+                        <input type="radio" name="mitglied" value={opt.value} checked={sel} onChange={handleChange} />
+                        <span className="tc-radio" />
+                        <span className="tc-choice-title">{opt.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedCamp && formData.mitglied === "nein" && (
+                <div className="tc-field">
+                  <label className="tc-label">Beschreibung des Spielstands</label>
+                  <p className="tc-hint">
                     {isKindercamp
                       ? "Da Ihr Kind kein Vereinsmitglied ist, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung. Hat Ihr Kind schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft wird gespielt?"
                       : "Da Sie kein Vereinsmitglied sind, hilft uns eine kurze Beschreibung bei der Gruppeneinteilung. Haben Sie schon einmal Tennis gespielt? An einem Camp teilgenommen? Wie oft spielen Sie?"}
                   </p>
                   <textarea
+                    className="tc-textarea"
                     name="spielstandBeschreibung"
                     value={formData.spielstandBeschreibung}
                     onChange={handleChange}
@@ -1008,169 +881,87 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
                     placeholder={isKindercamp
                       ? "z.B. noch nie gespielt / 1 Jahr Tennis im Verein / war letztes Jahr beim Camp dabei..."
                       : "z.B. noch nie gespielt / spiele seit 2 Jahren / war letztes Jahr beim Camp dabei..."}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "1px solid var(--border)",
-                      borderRadius: 6,
-                      fontSize: 14,
-                      resize: "vertical",
-                      fontFamily: "inherit",
-                    }}
                   />
                 </div>
+              )}
+
+              <div className="tc-grid-2">
+                <div className="tc-field">
+                  <label className="tc-label">Alter <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="number" name="alter" value={formData.alter} onChange={handleChange} placeholder="Jahre" min="1" max="99" />
+                </div>
+                <div className="tc-field">
+                  <label className="tc-label">Telefon <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="tel" name="telefon" value={formData.telefon} onChange={handleChange} placeholder="Telefonnummer" />
+                </div>
               </div>
-            )}
-
-            <div className="field">
-              <label>
-                Alter <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="number"
-                name="alter"
-                value={formData.alter}
-                onChange={handleChange}
-                placeholder="Alter in Jahren"
-                min="1"
-                max="99"
-              />
             </div>
 
-            <div className="field">
-              <label>
-                Telefon <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="tel"
-                name="telefon"
-                value={formData.telefon}
-                onChange={handleChange}
-                placeholder="Ihre Telefonnummer"
-              />
-            </div>
+            {/* 3 – Kontakt & Zahlung */}
+            <div className="tc-section">
+              <div className="tc-section-title"><span>3</span> Kontakt &amp; Zahlung</div>
 
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                E-Mail <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="ihre@email.de"
-              />
-            </div>
+              <div className="tc-field">
+                <label className="tc-label">E-Mail <span className="tc-req">*</span></label>
+                <input className="tc-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="ihre@email.de" />
+              </div>
 
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                IBAN <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <input
-                type="text"
-                name="iban"
-                value={formData.iban}
-                onChange={handleIBANChange}
-                placeholder="DE89 3704 0044 0532 0130 00"
-                style={{ fontFamily: "monospace", letterSpacing: 1 }}
-              />
-            </div>
+              <div className="tc-field">
+                <label className="tc-label">IBAN <span className="tc-req">*</span></label>
+                <input className="tc-input" type="text" name="iban" value={formData.iban} onChange={handleIBANChange} placeholder="DE89 3704 0044 0532 0130 00" style={{ fontFamily: "monospace", letterSpacing: 1 }} />
+              </div>
 
-            {/* Bemerkungen */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                Bemerkungen {isKindercamp && <span style={{ color: "var(--danger)", fontWeight: 600 }}>– Besondere Essenswünsche</span>}
-              </label>
-              <textarea
-                name="bemerkungen"
-                value={formData.bemerkungen}
-                onChange={handleChange}
-                placeholder={isKindercamp
-                  ? "z.B. Allergien, Unverträglichkeiten, vegetarisch, vegan..."
-                  : "z.B. Spielstärke, besondere Hinweise..."}
-                rows={3}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  fontSize: 14,
-                  resize: "vertical",
-                  fontFamily: "inherit"
-                }}
-              />
-            </div>
-
-            {/* SEPA Zustimmung */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <div style={{
-                background: "var(--bg-inset)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                padding: 16,
-              }}>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    name="sepaZustimmung"
-                    checked={formData.sepaZustimmung}
-                    onChange={handleChange}
-                    style={{ width: "auto", marginTop: 4 }}
-                  />
-                  <div>
-                    <span style={{ fontWeight: 600 }}>
-                      SEPA-Lastschriftmandat <span style={{ color: "var(--danger)" }}>*</span>
-                    </span>
-                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                      Ich ermächtige die Tennisschule A bis Z, Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
-                      Zugleich weise ich mein Kreditinstitut an, die von der Tennisschule A bis Z auf mein Konto gezogenen
-                      Lastschriften einzulösen.
-                    </p>
-                  </div>
+              <div className="tc-field">
+                <label className="tc-label">
+                  Bemerkungen {isKindercamp && <span className="tc-req" style={{ fontWeight: 600 }}>– Essenswünsche / Allergien</span>}
                 </label>
+                <textarea
+                  className="tc-textarea"
+                  name="bemerkungen"
+                  value={formData.bemerkungen}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder={isKindercamp
+                    ? "z.B. Allergien, Unverträglichkeiten, vegetarisch, vegan..."
+                    : "z.B. Spielstärke, besondere Hinweise..."}
+                />
               </div>
+
+              <label className="tc-consent" style={{ marginBottom: 12 }}>
+                <input type="checkbox" name="sepaZustimmung" checked={formData.sepaZustimmung} onChange={handleChange} />
+                <span>
+                  <span className="tc-consent-title">SEPA-Lastschriftmandat <span className="tc-req">*</span></span>
+                  <p>
+                    Ich ermächtige die Tennisschule A bis Z, Zahlungen von meinem Konto mittels Lastschrift einzuziehen.
+                    Zugleich weise ich mein Kreditinstitut an, die von der Tennisschule A bis Z auf mein Konto gezogenen
+                    Lastschriften einzulösen.
+                  </p>
+                </span>
+              </label>
+
+              <label className="tc-consent">
+                <input type="checkbox" name="verbindlicheAnmeldung" checked={formData.verbindlicheAnmeldung} onChange={handleChange} />
+                <span>
+                  <span className="tc-consent-title">Verbindliche Anmeldung <span className="tc-req">*</span></span>
+                  <p>
+                    Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
+                    Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich –
+                    ausschließlich schriftlich per E-Mail an{" "}
+                    <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
+                  </p>
+                </span>
+              </label>
             </div>
 
-            {/* Verbindliche Anmeldung */}
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <div style={{
-                background: "var(--bg-inset)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                padding: 16,
-              }}>
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    name="verbindlicheAnmeldung"
-                    checked={formData.verbindlicheAnmeldung}
-                    onChange={handleChange}
-                    style={{ width: "auto", marginTop: 4 }}
-                  />
-                  <div>
-                    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                      Verbindliche Anmeldung <span style={{ color: "var(--danger)" }}>*</span>
-                    </span>
-                    <p style={{ margin: "8px 0 0 0", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
-                      Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
-                      Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
-                      Eine Absage ist ausschließlich schriftlich per E-Mail an{" "}
-                      <a href="mailto:tennisabisz@gmail.com" style={{ color: "var(--primary)", fontWeight: 600 }}>tennisabisz@gmail.com</a>{" "}
-                      möglich.
-                    </p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 24 }}>
-            <button type="submit" className="btn" disabled={loading}>
-              {loading ? "Wird gesendet..." : "Verbindlich anmelden"}
+            <button type="submit" className="tc-btn" disabled={loading}>
+              {loading
+                ? "Wird gesendet..."
+                : selectedCamp
+                ? `Verbindlich anmelden · ${selectedCamp.price} €`
+                : "Verbindlich anmelden"}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
