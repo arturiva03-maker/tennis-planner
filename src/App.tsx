@@ -6862,6 +6862,55 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                           Trainingsbestätigung
                         </button>
                       )}
+                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#ea580c",
+                            borderColor: "#ea580c",
+                          }}
+                          onClick={() => {
+                            const campLink = `${window.location.origin}/tenniscamp`;
+                            setTrainingInfoEmailSubject(`Einladung: Tenniscamps in den Sommerferien 2026`);
+                            setTrainingInfoIncludeSepa(false);
+                            setTrainingInfoIncludeProbe(false);
+                            setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeErwachsene(false);
+                            setTrainingInfoIncludeBeitragsordnung(false);
+                            setTrainingInfoIncludeProbetraining(false);
+                            setTrainingInfoEmailBody(
+`Hallo {SPIELERNAME},
+
+die Sommerferien stehen vor der Tür – und auch in diesem Jahr bieten wir am BSC Rehberge unsere beliebten Tenniscamps an! Wir würden uns freuen, dich dabei zu haben.
+
+Es gibt zwei Wochen zur Auswahl:
+1. Ferienwoche: 13. - 17. Juli 2026
+Letzte Ferienwoche: 17. - 21. August 2026
+
+Kindercamp: täglich 10:00 - 15:00 Uhr (inkl. Mittagessen) – 270 €
+Erwachsenencamp: täglich 18:00 - 20:00 Uhr – 140 €
+
+Die Teilnehmer werden nach Spielstärke in Gruppen eingeteilt – passend für jedes Niveau. Eine ganze Woche voller Tennis, Spaß und Bewegung auf unserer Anlage:
+
+BSC Rehberge
+Sambesistraße 11, 13351 Berlin-Wedding
+
+Mitzubringen: Sandplatzschuhe (Pflicht), Wasserflasche und ein Tennisschläger (Ausleihe möglich).
+
+Hier kannst du dich direkt anmelden:
+${campLink}
+
+Die Plätze sind begrenzt – sichere dir am besten frühzeitig deinen Platz. Bei Fragen antworte einfach auf diese E-Mail.
+
+Wir freuen uns auf dich!`
+                            );
+                            setTrainingInfoExcluded([]);
+                            setShowTrainingInfoEmail(true);
+                          }}
+                        >
+                          Tenniscamp-Einladung
+                        </button>
+                      )}
                       {selectedTrainingId && tStatus === "geplant" && (
                         <button
                           className="btn"
