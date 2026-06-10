@@ -25,7 +25,7 @@ type TenniscampData = {
   teilnehmerNachname: string;
   zahlungspflichtigerVorname: string;
   zahlungspflichtigerNachname: string;
-  alter: string;
+  geburtsdatum: string;
   telefon: string;
   email: string;
   iban: string;
@@ -126,6 +126,18 @@ function buildNotfallbogenHTML(kindVorname: string, kindNachname: string, select
 </div>`;
 }
 
+// Alter aus ISO-Geburtsdatum (YYYY-MM-DD) berechnen
+function computeAge(iso: string): number | null {
+  if (!iso) return null;
+  const birth = new Date(iso + "T00:00:00");
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 export default function TenniscampForm() {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
@@ -136,7 +148,7 @@ export default function TenniscampForm() {
     teilnehmerNachname: "",
     zahlungspflichtigerVorname: "",
     zahlungspflichtigerNachname: "",
-    alter: "",
+    geburtsdatum: "",
     telefon: "",
     email: "",
     iban: "",
@@ -242,8 +254,19 @@ export default function TenniscampForm() {
       return;
     }
 
-    if (!formData.alter || parseInt(formData.alter) < 1) {
-      setError("Bitte geben Sie ein gültiges Alter ein.");
+    const alterBerechnet = computeAge(formData.geburtsdatum);
+    if (alterBerechnet === null || alterBerechnet < 0 || alterBerechnet > 100) {
+      setError("Bitte geben Sie ein gültiges Geburtsdatum ein.");
+      return;
+    }
+
+    if (isKindercamp && alterBerechnet >= 18) {
+      setError("Das Kindercamp ist für Kinder und Jugendliche unter 18 Jahren – für Erwachsene gibt es das Erwachsenencamp.");
+      return;
+    }
+
+    if (!isKindercamp && alterBerechnet < 18) {
+      setError("Das Erwachsenencamp ist erst ab 18 Jahren – für Kinder und Jugendliche gibt es das Kindercamp.");
       return;
     }
 
@@ -305,7 +328,7 @@ export default function TenniscampForm() {
           teilnehmer_nachname: formData.teilnehmerNachname.trim(),
           zahlungspflichtiger_vorname: isKindercamp ? formData.zahlungspflichtigerVorname.trim() : null,
           zahlungspflichtiger_nachname: isKindercamp ? formData.zahlungspflichtigerNachname.trim() : null,
-          alter: parseInt(formData.alter),
+          alter: alterBerechnet,
           telefon: formData.telefon.trim(),
           email: formData.email.trim(),
           iban: ibanClean,
@@ -395,7 +418,7 @@ export default function TenniscampForm() {
                       <tr>
                         <td style="padding: 8px 0;">
                           <span style="color: #666666; font-size: 13px;">Alter:</span><br>
-                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${formData.alter} Jahre</span>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${alterBerechnet} Jahre</span>
                         </td>
                       </tr>
                     </table>
@@ -454,7 +477,7 @@ Vielen Dank für Ihre Anmeldung!
 Camp: ${selectedCamp?.label}
 Zeitraum: ${selectedCamp?.dates}
 Teilnehmer: ${teilnehmerName}
-Alter: ${formData.alter} Jahre
+Alter: ${alterBerechnet} Jahre
 
 Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
 Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
@@ -507,7 +530,7 @@ Tennisschule A bis Z`;
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">Alter:</span>
-                          <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${formData.alter} Jahre</span>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600; margin-left: 8px;">${alterBerechnet} Jahre</span>
                         </td>
                       </tr>
                       <tr>
@@ -613,7 +636,7 @@ Zeitraum: ${selectedCamp?.dates}
 Preis: ${selectedCamp?.price} €
 
 Teilnehmer: ${teilnehmerName}
-Alter: ${formData.alter} Jahre
+Alter: ${alterBerechnet} Jahre
 Mitglied: ${formData.mitglied === "ja" ? "Ja" : "Nein"}
 ${isKindercamp ? `Zahlungspflichtiger: ${zahlungspflichtiger}\n` : ''}${formData.niveau ? `Spielniveau: ${formData.niveau}\n` : ''}${formData.spielstandBeschreibung.trim() ? `Spielstand-Beschreibung: ${formData.spielstandBeschreibung.trim()}\n` : ''}
 E-Mail: ${formData.email}
@@ -886,8 +909,21 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
               <div className="tc-grid-2">
                 <div className="tc-field">
-                  <label className="tc-label">Alter <span className="tc-req">*</span></label>
-                  <input className="tc-input" type="number" name="alter" value={formData.alter} onChange={handleChange} placeholder="Jahre" min="1" max="99" />
+                  <label className="tc-label">Geburtsdatum <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="date" name="geburtsdatum" value={formData.geburtsdatum} onChange={handleChange} max={new Date().toISOString().slice(0, 10)} />
+                  {(() => {
+                    const a = computeAge(formData.geburtsdatum);
+                    if (a === null || a < 0 || a > 120) return null;
+                    const mismatch = !!selectedCamp && ((isKindercamp && a >= 18) || (!isKindercamp && a < 18));
+                    return (
+                      <p className="tc-hint" style={{ margin: "7px 0 0", color: mismatch ? "#b91c1c" : undefined }}>
+                        Alter: {a} {a === 1 ? "Jahr" : "Jahre"}
+                        {mismatch && (isKindercamp
+                          ? " – das Kindercamp ist für unter 18-Jährige"
+                          : " – das Erwachsenencamp ist ab 18 Jahren")}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="tc-field">
                   <label className="tc-label">Telefon <span className="tc-req">*</span></label>
