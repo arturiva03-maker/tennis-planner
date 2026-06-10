@@ -83,6 +83,9 @@ type SpontaneStunde = {
 
 const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
+// Standardpreis für spontane Trainingsstunden (sofern am Slot kein eigener Preis hinterlegt ist)
+const SPONTAN_PREIS_PRO_STUNDE = 40;
+
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -368,6 +371,9 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
+      const effektiverPreis = selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE;
+      const preisFormatted = effektiverPreis.toFixed(2).replace(".", ",");
+
       const confirmationHtml = `
 <!DOCTYPE html>
 <html>
@@ -434,7 +440,7 @@ export default function WeddingPage() {
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ` border-bottom: 1px solid ${colors.border};` : ''}">
+                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📍</td>
@@ -443,18 +449,16 @@ export default function WeddingPage() {
                           </table>
                         </td>
                       </tr>
-                      ${selectedSlot.customPreisProStunde ? `
                       <tr>
                         <td style="padding: 8px 0;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
+                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisFormatted} EUR <span style="font-size: 13px; font-weight: 400; color: ${colors.textMuted};">pro Stunde · Bezahlung direkt beim Trainer vor Ort</span></td>
                             </tr>
                           </table>
                         </td>
                       </tr>
-                      ` : ''}
                     </table>
                   </td>
                 </tr>
@@ -462,10 +466,25 @@ export default function WeddingPage() {
             </td>
           </tr>
 
+          <!-- Wichtige Hinweise -->
+          <tr>
+            <td style="padding: 0 40px 24px;">
+              <div style="background-color: ${colors.accentBg}; border: 1px solid ${colors.accentLight}; border-radius: 8px; padding: 16px;">
+                <p style="margin: 0 0 8px; color: ${colors.text}; font-size: 13px; font-weight: 700;">Wichtige Hinweise</p>
+                <p style="margin: 0; color: ${colors.text}; font-size: 13px; line-height: 1.7;">
+                  • Die spontanen Trainingsstunden sind nur für Mitglieder des BSC Rehberge buchbar.<br>
+                  • Die Bezahlung erfolgt direkt beim Trainer vor Ort.<br>
+                  • Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                </p>
+              </div>
+            </td>
+          </tr>
+
           <!-- Cancel Link -->
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
-              <p style="margin: 0 0 12px; color: ${colors.textMuted}; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
+              <p style="margin: 0 0 4px; color: ${colors.textMuted}; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
+              <p style="margin: 0 0 12px; color: ${colors.textMuted}; font-size: 13px;">Kostenfrei bis 24 Stunden vor dem Termin – bei späterer Absage wird die Stunde berechnet.</p>
               <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: ${colors.bgLight}; color: ${colors.primary}; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid ${colors.border};">Termin absagen</a>
             </td>
           </tr>
@@ -498,9 +517,7 @@ export default function WeddingPage() {
 </body>
 </html>`;
 
-      const preisText = selectedSlot.customPreisProStunde
-        ? `\nPreis: ${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR`
-        : "";
+      const preisText = `\nPreis: ${preisFormatted} EUR pro Stunde (Bezahlung direkt beim Trainer vor Ort)`;
 
       try {
         await fetch("/api/send-newsletter", {
@@ -509,7 +526,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie bitte rechtzeitig ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nWichtige Hinweise:\n- Die spontanen Trainingsstunden sind nur für Mitglieder des BSC Rehberge buchbar.\n- Die Bezahlung erfolgt direkt beim Trainer vor Ort.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -599,14 +616,12 @@ export default function WeddingPage() {
                           <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
-                      ${selectedSlot.customPreisProStunde ? `
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
+                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisFormatted} EUR <span style="font-size: 13px; font-weight: 400; color: ${colors.textMuted};">pro Stunde · Zahlung beim Trainer vor Ort</span></span>
                         </td>
                       </tr>
-                      ` : ''}
                     </table>
                   </td>
                 </tr>
@@ -705,13 +720,6 @@ export default function WeddingPage() {
       name: "Joshua Kugel",
       qualification: "B-Lizenz Leistungssport",
       bio: "Langjährige Erfahrung als Trainer. Spielt in der höchsten Berliner Liga.",
-    },
-    {
-      name: "Jesper Fremuth",
-      qualification: "Trainer",
-      bio: "Ehemaliger Leistungsspieler mit Erfahrung in den höchsten US-College-Ligen. Nach einer Verletzung widmet er sich nun leidenschaftlich dem Training.",
-      image: "/jesper-fremuth.jpg",
-      imageZoom: 1.3,
     },
     {
       name: "Marc Erdogan",
@@ -1009,7 +1017,10 @@ export default function WeddingPage() {
               lineHeight: 1.6,
               maxWidth: 480,
             }}>
-              Professionelles Tennistraining für alle Alters- und Leistungsstufen in Berlin-Wedding.
+              Professionelles Tennistraining in Berlin-Wedding –{" "}
+              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "rgba(255,255,255,0.95)" }}>
+                vom ersten Schlag bis zum Wettkampf.
+              </span>
             </p>
 
             {/* CTAs */}
@@ -1108,7 +1119,7 @@ export default function WeddingPage() {
           position: "relative",
         }}>
           {[
-            { number: "7", suffix: "", label: "Trainer" },
+            { number: "6", suffix: "", label: "Trainer" },
             { number: "150", suffix: "+", label: "Aktive Spieler" },
             { number: "2", suffix: "", label: "Standorte in Berlin" },
             { number: "DTB", suffix: "", label: "Zertifizierte Methoden" },
@@ -1216,90 +1227,71 @@ export default function WeddingPage() {
                 desc: "Intensives Training in entspannter Atmosphäre. Mehrere Stunden Tennis pro Tag, kombiniert mit Spielen und Spaß.",
               },
             ].map((item, i) => (
-              <ScrollReveal key={i} delay={i * 0.08}>
+              <ScrollReveal key={i} delay={i * 0.06}>
               <div
-                className="flip-card"
+                className="angebot-card"
                 style={{
-                  perspective: 800,
-                  height: 200,
-                  cursor: "pointer",
+                  position: "relative",
+                  height: "100%",
+                  boxSizing: "border-box",
+                  background: colors.white,
+                  borderRadius: 14,
+                  border: `1px solid ${colors.border}`,
+                  padding: "26px 24px 24px",
+                  overflow: "hidden",
+                  transition: "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (!supportsHover) return;
+                  e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(61, 57, 41, 0.10)";
+                  e.currentTarget.style.borderColor = colors.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderColor = colors.border;
                 }}
               >
-                <div className="flip-card-inner" style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "100%",
-                  transition: "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
-                  transformStyle: "preserve-3d",
+                <span aria-hidden="true" style={{
+                  position: "absolute",
+                  top: -16,
+                  right: 8,
+                  fontFamily: "'Fraunces', serif",
+                  fontStyle: "italic",
+                  fontWeight: 900,
+                  fontSize: 90,
+                  lineHeight: 1,
+                  color: colors.primary,
+                  opacity: 0.08,
+                  pointerEvents: "none",
+                  userSelect: "none",
                 }}>
-                  {/* Front */}
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    backfaceVisibility: "hidden",
-                    background: colors.white,
-                    borderRadius: 12,
-                    border: `1px solid ${colors.border}`,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 28,
-                    textAlign: "center",
-                  }}>
-                    <h3 style={{
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: colors.text,
-                      marginBottom: 8,
-                      fontFamily: "'Fraunces', serif",
-                    }}>
-                      {item.title}
-                    </h3>
-                    <p style={{
-                      fontSize: 13,
-                      color: colors.primary,
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      margin: 0,
-                    }}>
-                      {item.subtitle}
-                    </p>
-                  </div>
-                  {/* Back */}
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    backfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)",
-                    background: colors.primary,
-                    borderRadius: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    padding: 28,
-                  }}>
-                    <h4 style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: "rgba(255,255,255,0.7)",
-                      marginBottom: 10,
-                      textTransform: "uppercase",
-                      letterSpacing: "1px",
-                    }}>
-                      {item.title}
-                    </h4>
-                    <p style={{
-                      fontSize: 14,
-                      color: "rgba(255,255,255,0.9)",
-                      lineHeight: 1.6,
-                      margin: 0,
-                    }}>
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <p style={{
+                  fontSize: 11,
+                  color: colors.primary,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "1.5px",
+                  margin: "0 0 10px",
+                }}>
+                  {item.subtitle}
+                </p>
+                <h3 style={{
+                  fontSize: 21,
+                  fontWeight: 700,
+                  color: colors.text,
+                  marginBottom: 10,
+                  fontFamily: "'Fraunces', serif",
+                  letterSpacing: "-0.3px",
+                }}>
+                  {item.title}
+                </h3>
+                <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.65, margin: 0 }}>
+                  {item.desc}
+                </p>
               </div>
               </ScrollReveal>
             ))}
@@ -1334,66 +1326,57 @@ export default function WeddingPage() {
           </div>
           </ScrollReveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-            {/* Einzeltraining */}
-            <div style={{
-              background: colors.white,
-              borderRadius: 16,
-              padding: 32,
-              border: `1px solid ${colors.border}`,
-              textAlign: "center",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{ marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: colors.bgLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.primary} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/></svg>
+          <ScrollReveal delay={0.1}>
+          <div style={{
+            background: "#fffefb",
+            border: `1px solid ${colors.border}`,
+            borderRadius: 20,
+            padding: "10px 40px",
+            boxShadow: "0 10px 40px rgba(61, 57, 41, 0.06)",
+          }}>
+            {[
+              {
+                name: "Einzeltraining",
+                desc: "Individuelles 1:1-Training mit vollem Fokus auf Ihre Ziele",
+                price: "40 €",
+                unit: "pro Stunde",
+              },
+              {
+                name: "Gruppentraining",
+                desc: "Training in Gruppen von bis zu 5 Personen",
+                price: "60 €",
+                unit: "pro Monat",
+              },
+            ].map((tarif, i, arr) => (
+              <div key={tarif.name} style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 24,
+                flexWrap: "wrap",
+                padding: "30px 0",
+                borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : "none",
+              }}>
+                <div style={{ flex: "1 1 240px" }}>
+                  <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: "0 0 6px", fontFamily: "'Fraunces', serif", letterSpacing: "-0.3px" }}>
+                    {tarif.name}
+                  </h3>
+                  <p style={{ fontSize: 14, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
+                    {tarif.desc}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: 40, fontWeight: 900, color: colors.primary, fontFamily: "'Fraunces', serif", lineHeight: 1 }}>
+                    {tarif.price}
+                  </span>
+                  <span style={{ display: "block", fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginTop: 4 }}>
+                    {tarif.unit}
+                  </span>
+                </div>
               </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Einzeltraining</h3>
-              <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24, lineHeight: 1.6 }}>Individuelles 1:1 Training mit vollem Fokus auf Ihre Ziele</p>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 42, fontWeight: 900, color: colors.primary, fontFamily: "'Fraunces', serif" }}>40 €</span>
-                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 6 }}>/ Stunde</span>
-              </div>
-            </div>
-
-            {/* Gruppentraining */}
-            <div style={{
-              background: colors.primary,
-              borderRadius: 16,
-              padding: 32,
-              textAlign: "center",
-              position: "relative",
-              overflow: "hidden",
-              transition: "transform 0.2s, box-shadow 0.2s",
-            }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(23,23,23,0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{ marginBottom: 16, width: 52, height: 52, borderRadius: 12, background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3.5"/><path d="M2.5 21a7 7 0 0 1 13 0"/><circle cx="17" cy="8" r="2.5" opacity="0.7"/><path d="M22 21a4.5 4.5 0 0 0-8 0" opacity="0.7"/></svg>
-              </div>
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: colors.white, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Gruppentraining</h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", marginBottom: 24, lineHeight: 1.6 }}>Training in Gruppen von bis zu 5 Personen</p>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 42, fontWeight: 900, color: colors.white, fontFamily: "'Fraunces', serif" }}>60 €</span>
-                <span style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", marginLeft: 6 }}>/ Monat</span>
-              </div>
-            </div>
+            ))}
           </div>
+          </ScrollReveal>
 
           <p style={{
             marginTop: 24,
@@ -1598,15 +1581,44 @@ export default function WeddingPage() {
               <h2 style={{
                 fontSize: 28,
                 fontFamily: "'Fraunces', serif",
-                fontWeight: 400,
+                fontWeight: 700,
                 color: colors.text,
                 marginBottom: 8,
+                letterSpacing: "-0.5px",
               }}>
                 Spontane Trainingsstunden
               </h2>
               <p style={{ fontSize: 14, color: colors.textMuted }}>
                 Wählen Sie einen Tag mit verfügbaren Terminen
               </p>
+            </div>
+
+            {/* Konditionen für spontane Stunden */}
+            <div style={{
+              maxWidth: 800,
+              margin: "0 auto 32px",
+              background: colors.bgLight,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 14,
+              padding: "22px 24px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+              gap: 18,
+            }}>
+              {[
+                { titel: "Nur für Mitglieder", text: "Buchbar ausschließlich für Mitglieder des BSC Rehberge." },
+                { titel: "40 € pro Stunde", text: "Gilt für die spontane Trainingsstunde, sofern beim Termin nicht anders angegeben." },
+                { titel: "Zahlung vor Ort", text: "Das Training wird direkt beim Trainer vor Ort bezahlt." },
+                { titel: "Absage bis 24 h vorher", text: "Bei späterer Absage muss das Training bezahlt werden." },
+              ].map((k) => (
+                <div key={k.titel}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.primary, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: colors.text, letterSpacing: "0.2px" }}>{k.titel}</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.55, margin: 0 }}>{k.text}</p>
+                </div>
+              ))}
             </div>
 
             <div style={{
@@ -1803,11 +1815,9 @@ export default function WeddingPage() {
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
-                          {slot.customPreisProStunde && (
-                            <span style={{ color: colors.primary, fontWeight: 600 }}>
-                              {slot.customPreisProStunde.toFixed(0)} €
-                            </span>
-                          )}
+                          <span style={{ color: colors.primary, fontWeight: 600 }}>
+                            {(slot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(0)} €
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -2574,21 +2584,22 @@ export default function WeddingPage() {
                     <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
-                  {selectedSlot.customPreisProStunde && (
-                    <div style={{
-                      marginTop: 12,
-                      paddingTop: 12,
-                      borderTop: `1px solid ${colors.border}`,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                    }}>
-                      <span style={{ fontSize: 18 }}>💰</span>
-                      <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
-                        {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
+                  <div style={{
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTop: `1px solid ${colors.border}`,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                  }}>
+                    <span style={{ fontSize: 18 }}>💰</span>
+                    <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
+                      {(selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",")} EUR
+                      <span style={{ display: "block", fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
+                        pro Stunde · Bezahlung direkt beim Trainer vor Ort
                       </span>
-                    </div>
-                  )}
+                    </span>
+                  </div>
                 </div>
 
                 <button
@@ -2649,11 +2660,25 @@ export default function WeddingPage() {
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
-                  {selectedSlot.customPreisProStunde && (
-                    <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
-                      {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
-                    </div>
-                  )}
+                  <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
+                    {(selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",")} EUR
+                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>pro Stunde</span>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: colors.accentBg,
+                  border: `1px solid ${colors.accentLight}`,
+                  borderRadius: 8,
+                  padding: "14px 16px",
+                  marginBottom: 24,
+                  fontSize: 13,
+                  color: colors.text,
+                  lineHeight: 1.6,
+                }}>
+                  <strong>Bitte beachten:</strong> Die spontanen Trainingsstunden sind nur für Mitglieder des
+                  BSC Rehberge buchbar. Die Bezahlung erfolgt direkt beim Trainer vor Ort. Eine kostenfreie
+                  Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
                 </div>
 
                 {bookingError && (
@@ -2772,12 +2797,6 @@ export default function WeddingPage() {
           .camp-card { max-width: 100% !important; }
         }
 
-        /* ── Flip card hover ── */
-        .flip-card:hover .flip-card-inner,
-        .flip-card:focus-within .flip-card-inner {
-          transform: rotateY(180deg);
-        }
-
         /* ── Grain / noise texture (SVG-based) ── */
         .grain-overlay {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -2796,28 +2815,28 @@ export default function WeddingPage() {
         }
 
         /* ── Staggered children reveal ── */
-        .fade-in-visible .flip-card,
+        .fade-in-visible .angebot-card,
         .fade-in-visible .trainer-card,
         .fade-in-visible .stat-item {
           animation: staggerUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .fade-in-visible .flip-card:nth-child(1),
+        .fade-in-visible .angebot-card:nth-child(1),
         .fade-in-visible .trainer-card:nth-child(1),
         .fade-in-visible .stat-item:nth-child(1) { animation-delay: 0s; }
-        .fade-in-visible .flip-card:nth-child(2),
+        .fade-in-visible .angebot-card:nth-child(2),
         .fade-in-visible .trainer-card:nth-child(2),
         .fade-in-visible .stat-item:nth-child(2) { animation-delay: 0.08s; }
-        .fade-in-visible .flip-card:nth-child(3),
+        .fade-in-visible .angebot-card:nth-child(3),
         .fade-in-visible .trainer-card:nth-child(3),
         .fade-in-visible .stat-item:nth-child(3) { animation-delay: 0.16s; }
-        .fade-in-visible .flip-card:nth-child(4),
+        .fade-in-visible .angebot-card:nth-child(4),
         .fade-in-visible .trainer-card:nth-child(4),
         .fade-in-visible .stat-item:nth-child(4) { animation-delay: 0.24s; }
-        .fade-in-visible .flip-card:nth-child(5),
+        .fade-in-visible .angebot-card:nth-child(5),
         .fade-in-visible .trainer-card:nth-child(5) { animation-delay: 0.32s; }
-        .fade-in-visible .flip-card:nth-child(6),
+        .fade-in-visible .angebot-card:nth-child(6),
         .fade-in-visible .trainer-card:nth-child(6) { animation-delay: 0.40s; }
-        .fade-in-visible .flip-card:nth-child(7),
+        .fade-in-visible .angebot-card:nth-child(7),
         .fade-in-visible .trainer-card:nth-child(7) { animation-delay: 0.48s; }
 
         @keyframes staggerUp {
