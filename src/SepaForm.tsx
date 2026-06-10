@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
 import { persistRegistration, type RegistrationPayload } from "./RegistrationForm";
+import { checkIBAN, ibanErrorMessage } from "./iban";
 
 type SepaFormData = {
   vorname: string;
@@ -21,13 +22,6 @@ type SepaFormData = {
 function formatIban(value: string): string {
   const cleaned = value.replace(/\s/g, "").toUpperCase();
   return cleaned.replace(/(.{4})/g, "$1 ").trim();
-}
-
-function validateIban(iban: string): boolean {
-  const cleaned = iban.replace(/\s/g, "");
-  if (cleaned.length < 15 || cleaned.length > 34) return false;
-  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(cleaned)) return false;
-  return true;
 }
 
 function generateMandatsreferenz(): string {
@@ -117,8 +111,9 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
       setError("Bitte geben Sie die IBAN ein.");
       return;
     }
-    if (!validateIban(formData.iban)) {
-      setError("Bitte geben Sie eine gültige IBAN ein.");
+    const ibanCheck = checkIBAN(formData.iban);
+    if (!ibanCheck.valid) {
+      setError(`Bitte geben Sie eine gültige IBAN ein. ${ibanErrorMessage(ibanCheck)}`);
       return;
     }
     if (!formData.email.trim()) {

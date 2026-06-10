@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
+import { checkIBAN, ibanErrorMessage, normalizeIBAN } from "./iban";
 import "./App.css";
 import "./tenniscamp.css";
 
@@ -286,11 +287,16 @@ export default function TenniscampForm() {
       return;
     }
 
-    const ibanClean = formData.iban.replace(/\s/g, "");
-    if (!ibanClean || ibanClean.length < 15) {
-      setError("Bitte geben Sie eine gültige IBAN ein.");
+    const ibanCheck = checkIBAN(formData.iban);
+    if (!ibanCheck.valid) {
+      setError(
+        ibanCheck.reason === "empty"
+          ? "Bitte geben Sie eine IBAN ein."
+          : `Bitte geben Sie eine gültige IBAN ein. ${ibanErrorMessage(ibanCheck)}`
+      );
       return;
     }
+    const ibanClean = normalizeIBAN(formData.iban);
 
     if (!formData.sepaZustimmung) {
       setError("Bitte stimmen Sie dem SEPA-Lastschriftmandat zu.");
@@ -944,6 +950,22 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               <div className="tc-field">
                 <label className="tc-label">IBAN <span className="tc-req">*</span></label>
                 <input className="tc-input" type="text" name="iban" value={formData.iban} onChange={handleIBANChange} placeholder="DE89 3704 0044 0532 0130 00" style={{ fontFamily: "monospace", letterSpacing: 1 }} />
+                {(() => {
+                  const check = checkIBAN(formData.iban);
+                  if (check.reason === "empty") return null;
+                  if (check.valid) {
+                    return (
+                      <p className="tc-hint" style={{ margin: "7px 0 0", color: "var(--tc-green)" }}>
+                        ✓ IBAN gültig
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="tc-hint" style={{ margin: "7px 0 0", color: check.reason === "incomplete" ? undefined : "#b91c1c" }}>
+                      {ibanErrorMessage(check)}
+                    </p>
+                  );
+                })()}
               </div>
 
               <div className="tc-field">
