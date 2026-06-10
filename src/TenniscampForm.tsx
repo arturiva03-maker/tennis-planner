@@ -733,7 +733,6 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             <ul className="tc-perks">
               <li>Einteilung nach Spielstärke</li>
               <li>BSC Rehberge · Berlin-Wedding</li>
-              <li>Kostenlose Stornierung bis 2 Wochen vorher</li>
             </ul>
 
             <div className="tc-panel-foot">
