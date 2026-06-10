@@ -202,27 +202,21 @@ export default function BritzPage() {
     setBookingError(null);
 
     try {
-      const buchung: SpontaneStundeBuchung = {
-        name,
-        email,
-        telefon: telefon || undefined,
-        gebuchtAm: new Date().toISOString(),
-      };
+      // Bucht den Slot und übernimmt ihn serverseitig direkt in den App-Kalender
+      const { data: buchenResult, error } = await supabase.rpc("spontan_buchen", {
+        slot_id: selectedSlot.id,
+        p_name: name,
+        p_email: email,
+        p_telefon: telefon || null,
+      });
 
-      const { error } = await supabase
-        .from("spontane_stunden")
-        .update({
-          status: "gebucht",
-          buchung,
-        })
-        .eq("id", selectedSlot.id)
-        .eq("status", "offen");
-
-      if (error) {
-        console.error("Booking error:", error);
+      if (error || !buchenResult?.ok) {
+        console.error("Booking error:", error, buchenResult);
         setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
         return;
       }
+
+      const autoUebernommen = Boolean(buchenResult?.training_id);
 
       // Send confirmation email to customer
       const datumFormatted = new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
@@ -481,7 +475,7 @@ export default function BritzPage() {
           <!-- Action Note -->
           <tr>
             <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #666666; font-size: 13px;">⚡ Bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen</p>
+              <p style="margin: 0; color: #666666; font-size: 13px;">${autoUebernommen ? "✅ Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : '⚡ Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
             </td>
           </tr>
         </table>
@@ -498,7 +492,7 @@ export default function BritzPage() {
           body: JSON.stringify({
             to: ["tennisabisz@gmail.com"],
             subject: `Neue Spontanbuchung: ${name} – ${datumFormatted}`,
-            body: `Neue Spontanbuchung!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}`,
+            body: `Neue Spontanbuchung!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}\n\n${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen." : "Automatische Übernahme fehlgeschlagen – bitte in der App unter Weiteres → Spontan übernehmen."}`,
             html: adminHtml,
             fromName: "Tennisschule A bis Z",
           }),

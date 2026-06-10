@@ -2,11 +2,31 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 
+const SCHULE_TELEFON = "0155 60062745";
+const SCHULE_EMAIL = "tennisabisz@gmail.com";
+
+type SlotInfo = {
+  datum: string;
+  von: string;
+  bis: string;
+  anlage: string;
+  buchungEmail?: string;
+  buchungName?: string;
+  preis?: number;
+};
+
+type TrainerKontakt = {
+  name?: string;
+  telefon?: string;
+};
+
 export default function AbsagePage() {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"confirm" | "success" | "error" | "already" | "notfound">("confirm");
-  const [slotInfo, setSlotInfo] = useState<{ datum: string; von: string; bis: string; anlage: string; trainingId?: string; buchungEmail?: string; buchungName?: string; accountId?: string; preis?: number } | null>(null);
+  const [slotInfo, setSlotInfo] = useState<SlotInfo | null>(null);
+  const [trainerKontakt, setTrainerKontakt] = useState<TrainerKontakt | null>(null);
+  const [serverKurzfristig, setServerKurzfristig] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -29,34 +49,42 @@ export default function AbsagePage() {
           von: data.uhrzeit_von,
           bis: data.uhrzeit_bis,
           anlage: data.anlage,
-          trainingId: data.training_id ?? undefined,
           buchungEmail: data.buchung?.email ?? undefined,
           buchungName: data.buchung?.name ?? undefined,
-          accountId: data.account_id ?? undefined,
           preis: data.custom_preis_pro_stunde ?? undefined,
         });
         setStatus("confirm");
+
+        // Trainer-Kontakt für kurzfristige Absagen laden (Name + Telefon)
+        try {
+          const { data: kontakt } = await supabase.rpc("spontan_trainer_kontakt", { slot_id: id });
+          if (kontakt) setTrainerKontakt(kontakt as TrainerKontakt);
+        } catch {
+          // optional – Fallback ist die Schul-Telefonnummer
+        }
       }
       setLoading(false);
     }
     load();
   }, [id]);
 
+  // Weniger als 24 Stunden bis Trainingsbeginn?
+  const kurzfristig = (() => {
+    if (serverKurzfristig) return true;
+    if (!slotInfo) return false;
+    const start = new Date(`${slotInfo.datum}T${slotInfo.von}`);
+    if (isNaN(start.getTime())) return false;
+    return start.getTime() - Date.now() < 24 * 60 * 60 * 1000;
+  })();
+
   async function handleAbsage() {
     if (!id) return;
     setSubmitting(true);
 
     try {
-      // Status auf "offen" zurücksetzen, Buchung entfernen, wieder veröffentlichen
-      const { error } = await supabase
-        .from("spontane_stunden")
-        .update({
-          status: "offen",
-          buchung: null,
-          veroeffentlicht: true,
-        })
-        .eq("id", id)
-        .eq("status", "gebucht");
+      // Serverseitig: prüft die 24-h-Frist, entfernt das Training aus dem
+      // Kalender und gibt den Slot wieder zur Buchung frei.
+      const { data, error } = await supabase.rpc("spontan_buchung_absagen", { slot_id: id });
 
       if (error) {
         setStatus("error");
@@ -64,35 +92,23 @@ export default function AbsagePage() {
         return;
       }
 
-      // Verknüpftes Training aus dem Kalender (account_state) löschen
-      if (slotInfo?.trainingId && slotInfo?.accountId) {
-        try {
-          const { data: stateRow } = await supabase
-            .from("account_state")
-            .select("data, updated_at")
-            .eq("account_id", slotInfo.accountId)
-            .single();
-
-          if (stateRow?.data) {
-            const appState = stateRow.data as { trainings?: { id: string }[] };
-            if (appState.trainings) {
-              appState.trainings = appState.trainings.filter(
-                (t) => t.id !== slotInfo.trainingId
-              );
-              const updatedAt = new Date().toISOString();
-              await supabase.from("account_state").upsert({
-                account_id: slotInfo.accountId,
-                data: appState,
-                updated_at: updatedAt,
-              });
-            }
-          }
-        } catch {
-          // Training-Löschung nicht blockieren
-        }
+      if (data === "zu_kurzfristig") {
+        setServerKurzfristig(true);
+        setSubmitting(false);
+        return;
+      }
+      if (data === "nicht_gebucht") {
+        setStatus("already");
+        setSubmitting(false);
+        return;
+      }
+      if (data !== "ok") {
+        setStatus("notfound");
+        setSubmitting(false);
+        return;
       }
 
-      // Benachrichtigung an tennisabisz@gmail.com senden
+      // Benachrichtigung an die Tennisschule senden
       const datumFormatted = slotInfo
         ? new Date(slotInfo.datum + "T12:00:00").toLocaleDateString("de-DE", {
             weekday: "long", day: "2-digit", month: "2-digit", year: "numeric"
@@ -105,10 +121,10 @@ export default function AbsagePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            to: ["tennisabisz@gmail.com"],
+            to: [SCHULE_EMAIL],
             subject: `Absage: Kurzfristiges Training ${datumFormatted}`,
-            body: `Eine kurzfristige Trainingsstunde wurde abgesagt.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo?.anlage ?? ""}\n\nDie Stunde ist jetzt wieder online buchbar.`,
-            html: `<p>Eine kurzfristige Trainingsstunde wurde abgesagt.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo?.anlage ?? ""}</p><p>Die Stunde ist jetzt wieder online buchbar.</p>`,
+            body: `Eine kurzfristige Trainingsstunde wurde abgesagt.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo?.anlage ?? ""}\n\nDas verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.`,
+            html: `<p>Eine kurzfristige Trainingsstunde wurde abgesagt.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo?.anlage ?? ""}</p><p>Das verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.</p>`,
             fromName: "Tennisschule A bis Z",
           }),
         });
@@ -125,8 +141,8 @@ export default function AbsagePage() {
             body: JSON.stringify({
               to: [slotInfo.buchungEmail],
               subject: `Absagebestätigung: Training am ${datumFormatted}`,
-              body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}${slotInfo.preis ? `\nPreis: ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}\n\nBei Fragen erreichen Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
-              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}${slotInfo.preis ? `<br><strong>Preis:</strong> ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:tennisabisz@gmail.com" style="color: #1b5e20; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a></p><div style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
+              body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich und kostenfrei storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}${slotInfo.preis ? `\nPreis: ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}\n\nBei Fragen erreichen Sie uns unter ${SCHULE_EMAIL}.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich und kostenfrei storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}${slotInfo.preis ? `<br><strong>Preis:</strong> ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:${SCHULE_EMAIL}" style="color: #1b5e20; font-weight: 600; text-decoration: none;">${SCHULE_EMAIL}</a></p><div style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
               fromName: "Tennisschule A bis Z",
             }),
           });
@@ -147,6 +163,17 @@ export default function AbsagePage() {
         weekday: "long", day: "2-digit", month: "long", year: "numeric"
       })
     : "";
+
+  const trainerTelefon = trainerKontakt?.telefon?.trim() || null;
+  const telefonAnzeige = trainerTelefon ?? SCHULE_TELEFON;
+  const telefonLabel = trainerTelefon
+    ? `Trainer ${trainerKontakt?.name ?? ""}`.trim()
+    : "Tennisschule";
+  const mailtoHref = `mailto:${SCHULE_EMAIL}?subject=${encodeURIComponent(
+    `Kurzfristige Absage: Training am ${datumFormatted}`
+  )}&body=${encodeURIComponent(
+    `Hallo,\n\nich muss meine Trainingsstunde am ${datumFormatted} (${slotInfo?.von?.slice(0, 5) ?? ""} – ${slotInfo?.bis?.slice(0, 5) ?? ""} Uhr, ${slotInfo?.anlage ?? ""}) leider kurzfristig absagen.\n\nName: ${slotInfo?.buchungName ?? ""}\n\nViele Grüße`
+  )}`;
 
   return (
     <div style={{
@@ -184,20 +211,22 @@ export default function AbsagePage() {
             <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
             <h2 style={{ marginBottom: 8, color: "#22c55e" }}>Absage bestätigt</h2>
             <p style={{ color: "#6b7280" }}>
-              Ihre Buchung für <strong>{datumFormatted}</strong> ({slotInfo?.von} – {slotInfo?.bis} Uhr) wurde storniert.
+              Ihre Buchung für <strong>{datumFormatted}</strong> ({slotInfo?.von} – {slotInfo?.bis} Uhr) wurde kostenfrei storniert.
               Die Tennisschule wurde benachrichtigt.
             </p>
           </>
         ) : status === "error" ? (
           <>
             <h2 style={{ marginBottom: 8, color: "#ef4444" }}>Fehler</h2>
-            <p style={{ color: "#6b7280" }}>Die Absage konnte nicht verarbeitet werden. Bitte kontaktieren Sie uns unter tennisabisz@gmail.com.</p>
+            <p style={{ color: "#6b7280" }}>Die Absage konnte nicht verarbeitet werden. Bitte kontaktieren Sie uns unter {SCHULE_EMAIL}.</p>
           </>
         ) : (
           <>
             <h2 style={{ marginBottom: 8 }}>Termin absagen?</h2>
             <p style={{ color: "#6b7280", marginBottom: 24 }}>
-              Möchten Sie Ihre Buchung für folgenden Termin wirklich absagen?
+              {kurzfristig
+                ? "Ihr Training beginnt in weniger als 24 Stunden."
+                : "Möchten Sie Ihre Buchung für folgenden Termin wirklich absagen?"}
             </p>
             <div style={{
               background: "#f9fafb",
@@ -210,25 +239,87 @@ export default function AbsagePage() {
               <div style={{ color: "#6b7280" }}>{slotInfo?.von} – {slotInfo?.bis} Uhr</div>
               <div style={{ color: "#6b7280" }}>{slotInfo?.anlage}</div>
             </div>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button
-                onClick={handleAbsage}
-                disabled={submitting}
-                style={{
-                  background: "#ef4444",
-                  color: "white",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "12px 28px",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: submitting ? "wait" : "pointer",
-                  opacity: submitting ? 0.7 : 1,
-                }}
-              >
-                {submitting ? "Wird abgesagt..." : "Ja, absagen"}
-              </button>
-            </div>
+
+            {kurzfristig ? (
+              <>
+                <div style={{
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 10,
+                  padding: "16px 20px",
+                  marginBottom: 24,
+                  textAlign: "left",
+                  color: "#991b1b",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Kurzfristige Absage</div>
+                  Da Ihr Training in weniger als 24 Stunden beginnt, ist eine kostenfreie
+                  Online-Absage leider nicht mehr möglich – laut unseren Bedingungen muss die
+                  Stunde in diesem Fall bezahlt werden. Bitte schreiben Sie uns kurz eine
+                  E-Mail oder kontaktieren Sie Ihren Trainer direkt – gemeinsam finden wir
+                  eine Lösung.
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <a
+                    href={mailtoHref}
+                    style={{
+                      display: "block",
+                      background: "#ef4444",
+                      color: "white",
+                      borderRadius: 8,
+                      padding: "13px 28px",
+                      fontWeight: 600,
+                      fontSize: 15,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Kurzfristig per E-Mail absagen
+                  </a>
+                  <a
+                    href={`tel:${telefonAnzeige.replace(/\s/g, "")}`}
+                    style={{
+                      display: "block",
+                      background: "white",
+                      color: "#ef4444",
+                      border: "1.5px solid #ef4444",
+                      borderRadius: 8,
+                      padding: "12px 28px",
+                      fontWeight: 600,
+                      fontSize: 15,
+                      textDecoration: "none",
+                    }}
+                  >
+                    {telefonLabel} anrufen: {telefonAnzeige}
+                  </a>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 16 }}>
+                  Kostenfreie Absage möglich – Ihr Termin liegt mehr als 24 Stunden in der Zukunft.
+                </p>
+                <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                  <button
+                    onClick={handleAbsage}
+                    disabled={submitting}
+                    style={{
+                      background: "#171717",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "12px 28px",
+                      fontWeight: 600,
+                      fontSize: 15,
+                      cursor: submitting ? "wait" : "pointer",
+                      opacity: submitting ? 0.7 : 1,
+                    }}
+                  >
+                    {submitting ? "Wird abgesagt..." : "Ja, kostenfrei absagen"}
+                  </button>
+                </div>
+              </>
+            )}
           </>
         )}
 

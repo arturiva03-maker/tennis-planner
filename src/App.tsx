@@ -28,6 +28,7 @@ type Trainer = {
   name: string;
   nachname?: string;
   email?: string;
+  telefon?: string;
   stundensatz?: number;
   notiz?: string;
   adresse?: string;
@@ -882,6 +883,7 @@ function ensureTrainerList(
       name: t.name?.trim() || `Trainer ${idx + 1}`,
       nachname: (t as any).nachname?.trim() || undefined,
       email: t.email?.trim() || undefined,
+      telefon: (t as any).telefon?.trim() || undefined,
       stundensatz:
         typeof (t as any).stundensatz === "number"
           ? (t as any).stundensatz
@@ -1400,6 +1402,7 @@ export default function App() {
   );
   const [trainerNotiz, setTrainerNotiz] = useState("");
   const [trainerNachname, setTrainerNachname] = useState("");
+  const [trainerTelefon, setTrainerTelefon] = useState("");
   const [trainerAdresse, setTrainerAdresse] = useState("");
   const [trainerIban, setTrainerIban] = useState("");
   const [trainerUstIdNr, setTrainerUstIdNr] = useState("");
@@ -2114,6 +2117,34 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, verwaltungTab, authUser?.accountId]);
 
+  // Backstop: gebuchte spontane Stunden ohne (gültiges) Kalender-Training
+  // automatisch übernehmen. Die Übernahme passiert primär serverseitig direkt
+  // bei der Online-Buchung (RPC spontan_buchen); dieser Effekt heilt Fälle,
+  // in denen das Training durch einen parallelen App-Save verloren ging oder
+  // die Übernahme bei der Buchung fehlschlug. Die RPC ist idempotent.
+  const spontanReconcileRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!authUser?.accountId || authUser.role === "trainer" || !initialSynced) return;
+    spontaneStunden.forEach((s) => {
+      if (s.status !== "gebucht" || !s.buchung) return;
+      if (s.trainingId && trainings.some((t) => t.id === s.trainingId)) return;
+      if (spontanReconcileRef.current.has(s.id)) return;
+      spontanReconcileRef.current.add(s.id);
+      supabase
+        .rpc("spontan_buchung_uebernehmen", { slot_id: s.id })
+        .then(({ data, error }) => {
+          if (error || !data) {
+            console.error("Automatische Spontan-Übernahme fehlgeschlagen:", error);
+            spontanReconcileRef.current.delete(s.id);
+            return;
+          }
+          setSpontaneStunden((prev) =>
+            prev.map((x) => (x.id === s.id ? { ...x, trainingId: data as string } : x))
+          );
+        });
+    });
+  }, [spontaneStunden, trainings, authUser, initialSynced]);
+
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
     [trainers]
@@ -2394,6 +2425,7 @@ export default function App() {
       name,
       nachname: trainerNachname.trim() || undefined,
       email: trainerEmail.trim() || undefined,
+      telefon: trainerTelefon.trim() || undefined,
       stundensatz: rate,
       notiz: trainerNotiz.trim() || undefined,
       adresse: trainerAdresse.trim() || undefined,
@@ -2406,6 +2438,7 @@ export default function App() {
     setTrainerName("");
     setTrainerNachname("");
     setTrainerEmail("");
+    setTrainerTelefon("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
     setTrainerAdresse("");
@@ -2421,6 +2454,7 @@ export default function App() {
     setTrainerName(t.name);
     setTrainerNachname(t.nachname ?? "");
     setTrainerEmail(t.email ?? "");
+    setTrainerTelefon(t.telefon ?? "");
     setTrainerStundensatz(typeof t.stundensatz === "number" ? t.stundensatz : 0);
     setTrainerNotiz(t.notiz ?? "");
     setTrainerAdresse(t.adresse ?? "");
@@ -2444,6 +2478,7 @@ export default function App() {
               name,
               nachname: trainerNachname.trim() || undefined,
               email: trainerEmail.trim() || undefined,
+              telefon: trainerTelefon.trim() || undefined,
               stundensatz: rate,
               notiz: trainerNotiz.trim() || undefined,
               adresse: trainerAdresse.trim() || undefined,
@@ -2459,6 +2494,7 @@ export default function App() {
     setTrainerName("");
     setTrainerNachname("");
     setTrainerEmail("");
+    setTrainerTelefon("");
     setTrainerStundensatz(0);
     setTrainerNotiz("");
     setTrainerAdresse("");
@@ -3955,6 +3991,32 @@ ${txInfo}
     setTIsKurzfristig(false);
   }
 
+  // Beim Löschen eines Trainings den verknüpften Spontan-Slot wieder freigeben:
+  // zukünftige Termine werden wieder online buchbar, vergangene Slots gelöscht.
+  function releaseLinkedSpontaneStunden(trainingIds: Set<string>) {
+    trainingIds.forEach((tid) => {
+      const linked = spontaneStunden.find((s) => s.trainingId === tid);
+      if (!linked) return;
+      if (linked.datum >= todayISO()) {
+        supabase
+          .from("spontane_stunden")
+          .update({ status: "offen", buchung: null, training_id: null, veroeffentlicht: true })
+          .eq("id", linked.id)
+          .then(() => {});
+        setSpontaneStunden((prev) =>
+          prev.map((s) =>
+            s.id === linked.id
+              ? { ...s, status: "offen" as const, buchung: undefined, trainingId: undefined, veroeffentlicht: true }
+              : s
+          )
+        );
+      } else {
+        supabase.from("spontane_stunden").delete().eq("id", linked.id).then(() => {});
+        setSpontaneStunden((prev) => prev.filter((s) => s.id !== linked.id));
+      }
+    });
+  }
+
   function deleteTraining(id: string) {
     if (isTrainer) return;
     const existing = trainings.find((t) => t.id === id);
@@ -3981,14 +4043,8 @@ ${txInfo}
 
     const idsToDelete = new Set(affectedTrainings.map((t) => t.id));
 
-    // Verknüpfte spontane Stunden löschen
-    idsToDelete.forEach((tid) => {
-      const linked = spontaneStunden.find((s) => s.trainingId === tid);
-      if (linked) {
-        supabase.from("spontane_stunden").delete().eq("id", linked.id).then(() => {});
-        setSpontaneStunden((prev) => prev.filter((s) => s.id !== linked.id));
-      }
-    });
+    // Verknüpfte spontane Stunden wieder freigeben
+    releaseLinkedSpontaneStunden(idsToDelete);
 
     clearAdjustmentsForDeletedTrainings(affectedTrainings);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
@@ -4015,14 +4071,8 @@ ${txInfo}
     saveUndoSnapshot(`${trainingsList.length} Training(s) gelöscht`);
     const idsToDelete = new Set(trainingsList.map((t) => t.id));
 
-    // Verknüpfte spontane Stunden löschen
-    idsToDelete.forEach((tid) => {
-      const linked = spontaneStunden.find((s) => s.trainingId === tid);
-      if (linked) {
-        supabase.from("spontane_stunden").delete().eq("id", linked.id).then(() => {});
-        setSpontaneStunden((prev) => prev.filter((s) => s.id !== linked.id));
-      }
-    });
+    // Verknüpfte spontane Stunden wieder freigeben
+    releaseLinkedSpontaneStunden(idsToDelete);
 
     clearAdjustmentsForDeletedTrainings(trainingsList);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
@@ -7216,6 +7266,15 @@ Wir freuen uns auf dich!`
                             />
                           </div>
                           <div className="field">
+                            <label>Telefon</label>
+                            <input
+                              type="tel"
+                              value={trainerTelefon}
+                              onChange={(e) => setTrainerTelefon(e.target.value)}
+                              placeholder="z.B. 0176 1234567"
+                            />
+                          </div>
+                          <div className="field">
                             <label>Stundensatz Trainer Honorar</label>
                             <input
                               type="number"
@@ -7309,6 +7368,7 @@ Wir freuen uns auf dich!`
                               setTrainerName("");
                               setTrainerNachname("");
                               setTrainerEmail("");
+                              setTrainerTelefon("");
                               setTrainerStundensatz(0);
                               setTrainerNotiz("");
                               setTrainerAdresse("");
