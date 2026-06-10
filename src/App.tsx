@@ -6890,6 +6890,8 @@ Letzte Ferienwoche: 17. - 21. August 2026
 Kindercamp: täglich 10:00 - 15:00 Uhr (inkl. Mittagessen) – 270 €
 Erwachsenencamp: täglich 18:00 - 20:00 Uhr – 140 €
 
+Wichtig beim Erwachsenencamp: Die Plätze sind besonders begrenzt – wir können nur die ersten 12 Anmeldungen annehmen, um ein intensives Tenniserlebnis zu ermöglichen.
+
 Die Teilnehmer werden nach Spielstärke in Gruppen eingeteilt – passend für jedes Niveau. Eine ganze Woche voller Tennis, Spaß und Bewegung auf unserer Anlage:
 
 BSC Rehberge
