@@ -6902,7 +6902,7 @@ Mitzubringen: Sandplatzschuhe (Pflicht), Wasserflasche und ein Tennisschläger (
 Hier kannst du dich direkt anmelden:
 ${campLink}
 
-Die Plätze sind begrenzt – sichere dir am besten frühzeitig deinen Platz. Bei Fragen antworte einfach auf diese E-Mail.
+Sichere dir am besten frühzeitig deinen Platz. Bei Fragen antworte einfach auf diese E-Mail.
 
 Wir freuen uns auf dich!`
                             );
