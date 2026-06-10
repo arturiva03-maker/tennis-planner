@@ -227,6 +227,23 @@ export default function TenniscampInfoPage() {
                         {metaItem("Kosten", camp.price, camp.priceNote, true)}
                       </div>
 
+                      {camp.key === "erwachsene" && (
+                        <div
+                          style={{
+                            background: GREEN_TINT,
+                            border: `1px solid ${GREEN_TINT_BORDER}`,
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                            marginBottom: 20,
+                          }}
+                        >
+                          <p style={{ margin: 0, fontSize: 14, color: "#15803d", lineHeight: 1.6 }}>
+                            <strong>Nur 12 Plätze:</strong> Beim Erwachsenencamp sind die Plätze besonders begrenzt –
+                            wir nehmen nur die ersten 12 Anmeldungen an, um ein intensives Tenniserlebnis zu ermöglichen.
+                          </p>
+                        </div>
+                      )}
+
                       <div style={{ ...eyebrow, marginBottom: 6 }}>Mitzubringen</div>
                       <p style={{ margin: 0, fontSize: 14, color: INK_SOFT, lineHeight: 1.6 }}>{camp.bring}</p>
                     </div>

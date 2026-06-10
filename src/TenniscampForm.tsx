@@ -776,10 +776,10 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
               {selectedCamp && !isKindercamp && (
                 <div className="tc-note" style={{ marginTop: 12 }}>
-                  <span className="tc-note-title">Hinweis zur Platzvergabe</span>
-                  Aufgrund begrenzter Plätze nehmen wir primär Mitglieder des BSC Rehberge auf. Vereinsexterne werden
-                  nur berücksichtigt, wenn Plätze frei bleiben, oder über die Warteliste. Bei den Kindercamps nehmen
-                  wir alle Anmeldungen an.
+                  <span className="tc-note-title">Begrenzte Plätze – nur 12 Teilnehmer</span>
+                  Beim Erwachsenencamp sind die Plätze besonders begrenzt: Wir können nur die ersten 12 Anmeldungen
+                  annehmen, um ein intensives Tenniserlebnis zu ermöglichen. Vorrang haben Mitglieder des BSC Rehberge –
+                  Vereinsexterne berücksichtigen wir, wenn Plätze frei bleiben, oder über die Warteliste.
                 </div>
               )}
 
