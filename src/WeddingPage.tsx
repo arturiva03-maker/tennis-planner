@@ -86,6 +86,17 @@ const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 // Standardpreis für spontane Trainingsstunden (sofern am Slot kein eigener Preis hinterlegt ist)
 const SPONTAN_PREIS_PRO_STUNDE = 40;
 
+// Maximale Teilnehmerzahl pro Buchung und Staffelpreis pro Person je Gruppengröße
+const SPONTAN_MAX_TEILNEHMER = 4;
+function spontanPreisProPerson(anzahl: number): number {
+  if (anzahl <= 1) return 40;
+  if (anzahl === 2) return 25;
+  if (anzahl === 3) return 20;
+  return 15; // 4 Personen
+}
+// Wedding-SEPA-Lastschriftmandat (Voraussetzung für die Teilnahme)
+const SEPA_MANDAT_LINK = "/sepa";
+
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -147,6 +158,8 @@ export default function WeddingPage() {
   const [bookingName, setBookingName] = useState("");
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
+  const [bookingSepaMandat, setBookingSepaMandat] = useState<"" | "ja" | "nein">("");
+  const [bookingWeitere, setBookingWeitere] = useState<string[]>([]);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -316,10 +329,18 @@ export default function WeddingPage() {
     setBookingName("");
     setBookingEmail("");
     setBookingTelefon("");
+    setBookingSepaMandat("");
+    setBookingWeitere([]);
     setBookingError(null);
     setBookingSuccess(false);
     setShowBookingModal(true);
   };
+
+  // Aktuelle Teilnehmerzahl / Preis je nach hinzugefügten Personen
+  const weitereTrimmed = bookingWeitere.map((n) => n.trim()).filter(Boolean);
+  const bookingAnzahl = 1 + weitereTrimmed.length;
+  const bookingPreisProPerson = spontanPreisProPerson(bookingAnzahl);
+  const bookingPreisGesamt = bookingPreisProPerson * bookingAnzahl;
 
   const submitBooking = async () => {
     if (!selectedSlot) return;
@@ -327,6 +348,10 @@ export default function WeddingPage() {
     const name = bookingName.trim();
     const email = bookingEmail.trim();
     const telefon = bookingTelefon.trim();
+    const weitere = bookingWeitere.map((n) => n.trim()).filter(Boolean);
+    const anzahl = 1 + weitere.length;
+    const preisProPerson = spontanPreisProPerson(anzahl);
+    const preisGesamt = preisProPerson * anzahl;
 
     if (!name) {
       setBookingError("Bitte geben Sie Ihren Namen ein.");
@@ -334,6 +359,10 @@ export default function WeddingPage() {
     }
     if (!email || !email.includes("@")) {
       setBookingError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
+      return;
+    }
+    if (bookingSepaMandat !== "ja") {
+      setBookingError("Für die Teilnahme ist ein SEPA-Lastschriftmandat erforderlich. Bitte bestätigen Sie es oder erteilen Sie es zuerst.");
       return;
     }
 
@@ -347,6 +376,8 @@ export default function WeddingPage() {
         p_name: name,
         p_email: email,
         p_telefon: telefon || null,
+        p_weitere_teilnehmer: weitere,
+        p_preis_pro_person: preisProPerson,
       });
 
       if (error || !buchenResult?.ok) {
@@ -365,8 +396,14 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
-      const effektiverPreis = selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE;
-      const preisFormatted = effektiverPreis.toFixed(2).replace(".", ",");
+      const preisProPersonFmt = preisProPerson.toFixed(2).replace(".", ",");
+      const preisGesamtFmt = preisGesamt.toFixed(2).replace(".", ",");
+      const teilnehmerListe = [name, ...weitere];
+      const teilnehmerHtml = teilnehmerListe.map((t) => `&bull;&nbsp;${t}`).join("<br>");
+      const teilnehmerText = teilnehmerListe.join(", ");
+      const preisHtmlText = anzahl > 1
+        ? `${preisProPersonFmt} EUR pro Person · ${anzahl} Personen · gesamt ${preisGesamtFmt} EUR`
+        : `${preisProPersonFmt} EUR`;
 
       const confirmationHtml = `
 <!DOCTYPE html>
@@ -400,7 +437,7 @@ export default function WeddingPage() {
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
               <h2 style="margin: 0 0 8px; color: ${colors.primary}; font-size: 22px; font-weight: 600;">Hallo ${name}!</h2>
-              <p style="margin: 0; color: ${colors.textMuted}; font-size: 16px; line-height: 1.5;">Ihre Trainingsstunde wurde erfolgreich gebucht.</p>
+              <p style="margin: 0; color: ${colors.textMuted}; font-size: 16px; line-height: 1.5;">Ihr Training in den Sommerferien wurde erfolgreich gebucht.</p>
             </td>
           </tr>
 
@@ -443,12 +480,22 @@ export default function WeddingPage() {
                           </table>
                         </td>
                       </tr>
+                      ${anzahl > 1 ? `<tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px; vertical-align: top;">👥</td>
+                              <td style="color: ${colors.primary}; font-size: 15px; line-height: 1.6;">${teilnehmerHtml}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>` : ''}
                       <tr>
                         <td style="padding: 8px 0;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisFormatted} EUR <span style="font-size: 13px; font-weight: 400; color: ${colors.textMuted};">pro Stunde · Bezahlung direkt beim Trainer vor Ort</span></td>
+                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisHtmlText}</td>
                             </tr>
                           </table>
                         </td>
@@ -466,8 +513,9 @@ export default function WeddingPage() {
               <div style="background-color: ${colors.accentBg}; border: 1px solid ${colors.accentLight}; border-radius: 8px; padding: 16px;">
                 <p style="margin: 0 0 8px; color: ${colors.text}; font-size: 13px; font-weight: 700;">Wichtige Hinweise</p>
                 <p style="margin: 0; color: ${colors.text}; font-size: 13px; line-height: 1.7;">
-                  • Die spontanen Trainingsstunden sind nur für Mitglieder des BSC Rehberge buchbar.<br>
-                  • Die Bezahlung erfolgt direkt beim Trainer vor Ort.<br>
+                  • In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.<br>
+                  • Das Training ist ausschließlich für Mitglieder buchbar.<br>
+                  • Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.<br>
                   • Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
                 </p>
               </div>
@@ -511,7 +559,7 @@ export default function WeddingPage() {
 </body>
 </html>`;
 
-      const preisText = `\nPreis: ${preisFormatted} EUR pro Stunde (Bezahlung direkt beim Trainer vor Ort)`;
+      const preisText = `\nPreis: ${preisHtmlText}`;
 
       try {
         await fetch("/api/send-newsletter", {
@@ -520,7 +568,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}\n\nWichtige Hinweise:\n- Die spontanen Trainingsstunden sind nur für Mitglieder des BSC Rehberge buchbar.\n- Die Bezahlung erfolgt direkt beim Trainer vor Ort.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding\nTeilnehmer: ${teilnehmerText}${preisText}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -545,7 +593,7 @@ export default function WeddingPage() {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%); padding: 24px 40px; text-align: center;">
-              <h1 style="margin: 0; color: ${colors.white}; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
+              <h1 style="margin: 0; color: ${colors.white}; font-size: 20px; font-weight: 700;">🎾 Neue Buchung – Sommerferien-Training</h1>
             </td>
           </tr>
 
@@ -563,6 +611,14 @@ export default function WeddingPage() {
                           <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
                         </td>
                       </tr>
+                      ${anzahl > 1 ? `
+                      <tr>
+                        <td style="padding: 6px 0;">
+                          <span style="color: ${colors.textMuted}; font-size: 13px;">Teilnehmer (${anzahl}):</span>
+                          <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${teilnehmerListe.join(", ")}</span>
+                        </td>
+                      </tr>
+                      ` : ''}
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: ${colors.textMuted}; font-size: 13px;">E-Mail:</span>
@@ -613,7 +669,7 @@ export default function WeddingPage() {
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisFormatted} EUR <span style="font-size: 13px; font-weight: 400; color: ${colors.textMuted};">pro Stunde · Zahlung beim Trainer vor Ort</span></span>
+                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisHtmlText}</span>
                         </td>
                       </tr>
                     </table>
@@ -642,8 +698,8 @@ export default function WeddingPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: ["tennisabisz@gmail.com"],
-            subject: `Neue Spontanbuchung: ${name} – ${datumFormatted}`,
-            body: `Neue Spontanbuchung!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}\n\n${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen." : "Automatische Übernahme fehlgeschlagen – bitte in der App unter Weiteres → Spontan übernehmen."}`,
+            subject: `Neue Buchung Sommerferien-Training: ${name} – ${datumFormatted}`,
+            body: `Neue Buchung Sommerferien-Training!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}${anzahl > 1 ? `\nTeilnehmer (${anzahl}): ${teilnehmerText}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}\n\n${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen." : "Automatische Übernahme fehlgeschlagen – bitte in der App unter Weiteres → Spontan übernehmen."}`,
             html: adminHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -773,7 +829,7 @@ export default function WeddingPage() {
 
             {/* Desktop Menu */}
             <div style={{ display: "flex", alignItems: "center", gap: 32 }} className="desktop-menu">
-              {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
+              {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Sommertraining"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -833,7 +889,7 @@ export default function WeddingPage() {
               padding: 16,
               borderTop: `1px solid ${colors.border}`,
             }}>
-              {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
+              {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Sommertraining"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -1482,7 +1538,7 @@ export default function WeddingPage() {
 
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
       {!loadingSlots && hasAnySlots && (
-        <section id="spontan"  style={{ padding: "60px 24px", background: colors.white }}>
+        <section id="sommertraining"  style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <p style={{
@@ -1493,7 +1549,7 @@ export default function WeddingPage() {
                 marginBottom: 12,
                 fontWeight: 600,
               }}>
-                Verfügbare Termine
+                Sommerferien
               </p>
               <h2 style={{
                 fontSize: 28,
@@ -1503,39 +1559,27 @@ export default function WeddingPage() {
                 marginBottom: 8,
                 letterSpacing: "-0.5px",
               }}>
-                Spontane Trainingsstunden
+                Training in den Sommerferien
               </h2>
               <p style={{ fontSize: 14, color: colors.textMuted }}>
                 Wählen Sie einen Tag mit verfügbaren Terminen
               </p>
             </div>
 
-            {/* Konditionen für spontane Stunden */}
+            {/* Hinweistext zum Sommerferien-Training */}
             <div style={{
-              maxWidth: 800,
+              maxWidth: 760,
               margin: "0 auto 32px",
               background: colors.bgLight,
               border: `1px solid ${colors.border}`,
               borderRadius: 14,
-              padding: "22px 24px",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-              gap: 18,
+              padding: "24px 26px",
             }}>
-              {[
-                { titel: "Nur für Mitglieder", text: "Buchbar ausschließlich für Mitglieder des BSC Rehberge." },
-                { titel: "40 € pro Stunde", text: "Gilt für die spontane Trainingsstunde, sofern beim Termin nicht anders angegeben." },
-                { titel: "Zahlung vor Ort", text: "Das Training wird direkt beim Trainer vor Ort bezahlt." },
-                { titel: "Absage bis 24 h vorher", text: "Bei späterer Absage muss das Training bezahlt werden." },
-              ].map((k) => (
-                <div key={k.titel}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: colors.primary, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: colors.text, letterSpacing: "0.2px" }}>{k.titel}</span>
-                  </div>
-                  <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.55, margin: 0 }}>{k.text}</p>
-                </div>
-              ))}
+              <p style={{ fontSize: 15, color: colors.text, lineHeight: 1.7, margin: 0 }}>
+                In den Sommerferien findet kein reguläres Training statt. Ein Training mit einem unserer
+                Trainer kann gerne hier gebucht werden. Dies ist ausschließlich für Mitglieder. Für die
+                Teilnahme an unserem Tennistraining ist ein SEPA-Lastschriftmandat erforderlich.
+              </p>
             </div>
 
             <div style={{
@@ -2184,7 +2228,7 @@ export default function WeddingPage() {
             <div>
               <h4 style={{ fontWeight: 700, marginBottom: 12, fontSize: 14, textTransform: "uppercase" }}>Navigation</h4>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Spontan"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
+                {["Angebot", "Tarife", "Aktuelles", ...(hasAnySlots ? ["Sommertraining"] : []), "Trainer", "FAQ", "Kontakt"].map((item) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
@@ -2483,6 +2527,12 @@ export default function WeddingPage() {
                     <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
+                  {weitereTrimmed.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
+                      <span style={{ fontSize: 18 }}>👥</span>
+                      <span style={{ color: colors.text }}>{[bookingName.trim(), ...weitereTrimmed].join(", ")}</span>
+                    </div>
+                  )}
                   <div style={{
                     marginTop: 12,
                     paddingTop: 12,
@@ -2493,9 +2543,9 @@ export default function WeddingPage() {
                   }}>
                     <span style={{ fontSize: 18 }}>💰</span>
                     <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
-                      {(selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",")} EUR
+                      {bookingPreisProPerson.toFixed(2).replace(".", ",")} € pro Person
                       <span style={{ display: "block", fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
-                        pro Stunde · Bezahlung direkt beim Trainer vor Ort
+                        {bookingAnzahl > 1 ? `${bookingAnzahl} Personen · gesamt ${bookingPreisGesamt.toFixed(2).replace(".", ",")} € · ` : ""}Einzug per SEPA-Lastschrift
                       </span>
                     </span>
                   </div>
@@ -2560,8 +2610,10 @@ export default function WeddingPage() {
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
                   <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
-                    {(selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",")} EUR
-                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>pro Stunde</span>
+                    {bookingPreisProPerson.toFixed(2).replace(".", ",")} €
+                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>
+                      pro Person{bookingAnzahl > 1 ? ` · ${bookingAnzahl} Personen · gesamt ${bookingPreisGesamt.toFixed(2).replace(".", ",")} €` : ""}
+                    </span>
                   </div>
                 </div>
 
@@ -2575,9 +2627,10 @@ export default function WeddingPage() {
                   color: colors.text,
                   lineHeight: 1.6,
                 }}>
-                  <strong>Bitte beachten:</strong> Die spontanen Trainingsstunden sind nur für Mitglieder des
-                  BSC Rehberge buchbar. Die Bezahlung erfolgt direkt beim Trainer vor Ort. Eine kostenfreie
-                  Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                  <strong>Bitte beachten:</strong> In den Sommerferien findet kein reguläres Training statt –
+                  dies ist ein Einzeltermin mit einem unserer Trainer, ausschließlich für Mitglieder. Für die
+                  Teilnahme ist ein SEPA-Lastschriftmandat erforderlich; der Betrag wird per Lastschrift eingezogen.
+                  Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
                 </div>
 
                 {bookingError && (
@@ -2653,24 +2706,122 @@ export default function WeddingPage() {
                   />
                 </div>
 
+                {/* Weitere Teilnehmer mit Staffelpreis */}
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                    Weitere Teilnehmer (optional)
+                  </label>
+                  <p style={{ margin: "0 0 10px", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
+                    Sie können für bis zu {SPONTAN_MAX_TEILNEHMER} Personen buchen. Der Preis pro Person richtet sich nach der
+                    Gruppengröße: 1 Person 40 €, 2er 25 €, 3er 20 €, 4er 15 € – jeweils pro Person.
+                  </p>
+                  {bookingWeitere.map((wname, idx) => (
+                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                      <input
+                        type="text"
+                        value={wname}
+                        onChange={(e) => setBookingWeitere((prev) => prev.map((n, i) => (i === idx ? e.target.value : n)))}
+                        placeholder={`Name ${idx + 2}`}
+                        disabled={bookingSubmitting}
+                        style={{ flex: 1, padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setBookingWeitere((prev) => prev.filter((_, i) => i !== idx))}
+                        disabled={bookingSubmitting}
+                        aria-label="Teilnehmer entfernen"
+                        style={{ width: 40, flexShrink: 0, background: colors.bgLight, border: `1px solid ${colors.border}`, borderRadius: 2, cursor: "pointer", color: colors.textMuted, fontSize: 18 }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+                  {bookingAnzahl < SPONTAN_MAX_TEILNEHMER && (
+                    <button
+                      type="button"
+                      onClick={() => setBookingWeitere((prev) => [...prev, ""])}
+                      disabled={bookingSubmitting}
+                      style={{ background: "none", border: "none", color: colors.primary, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: 0 }}
+                    >
+                      + Weitere Person hinzufügen
+                    </button>
+                  )}
+                </div>
+
+                {/* SEPA-Lastschriftmandat – Voraussetzung für die Buchung */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 8, fontSize: 14 }}>
+                    Ich habe der Tennisschule A bis Z bereits ein SEPA-Lastschriftmandat erteilt. *
+                  </label>
+                  <div style={{ display: "flex", gap: 24 }}>
+                    {([["ja", "Ja"], ["nein", "Nein"]] as const).map(([val, lab]) => (
+                      <label key={val} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 15 }}>
+                        <input
+                          type="radio"
+                          name="sepaMandat"
+                          checked={bookingSepaMandat === val}
+                          onChange={() => setBookingSepaMandat(val)}
+                          disabled={bookingSubmitting}
+                        />
+                        {lab}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {bookingSepaMandat === "nein" && (
+                  <div style={{
+                    background: colors.accentBg,
+                    border: `1px solid ${colors.accentLight}`,
+                    borderRadius: 8,
+                    padding: "14px 16px",
+                    marginBottom: 20,
+                    fontSize: 13.5,
+                    color: colors.text,
+                    lineHeight: 1.6,
+                  }}>
+                    Für die Teilnahme an unserem Tennistraining ist ein SEPA-Lastschriftmandat erforderlich.
+                    Bitte erteilen Sie zuerst das Mandat – danach können Sie das Training buchen.
+                    <div style={{ marginTop: 12 }}>
+                      <a
+                        href={SEPA_MANDAT_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-block",
+                          background: colors.primary,
+                          color: colors.white,
+                          padding: "10px 18px",
+                          borderRadius: 6,
+                          fontWeight: 700,
+                          fontSize: 14,
+                          textDecoration: "none",
+                        }}
+                      >
+                        SEPA-Lastschriftmandat erteilen →
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={submitBooking}
-                  disabled={bookingSubmitting}
+                  disabled={bookingSubmitting || bookingSepaMandat !== "ja"}
                   style={{
                     width: "100%",
-                    background: bookingSubmitting ? colors.textMuted : colors.primary,
+                    background: (bookingSubmitting || bookingSepaMandat !== "ja") ? colors.textMuted : colors.primary,
                     color: colors.white,
                     border: "none",
                     padding: "14px 24px",
                     borderRadius: 2,
                     fontWeight: 700,
                     fontSize: 15,
-                    cursor: bookingSubmitting ? "not-allowed" : "pointer",
+                    cursor: (bookingSubmitting || bookingSepaMandat !== "ja") ? "not-allowed" : "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : "Jetzt buchen"}
+                  {bookingSubmitting ? "Wird gebucht..." : `Verbindlich buchen · ${bookingPreisGesamt.toFixed(0)} €`}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>

@@ -1,24 +1,24 @@
 -- ============================================================
--- RPC-Funktionen für spontane Trainingsstunden
+-- RPC-Funktionen für spontane Trainingsstunden / Sommerferien-Training
 -- Angewendet auf die Remote-DB via: npx supabase db query --linked -f supabase/spontan_rpc.sql
 --
 -- Hintergrund: account_state (App-Kalender als JSON-Blob) ist per RLS nur für
 -- eingeloggte Nutzer zugänglich. Die öffentlichen Seiten (Buchung /wedding,
 -- /britz und Absage /absage/:id) brauchen aber eng begrenzte Kalender-
 -- Operationen. Diese SECURITY-DEFINER-Funktionen kapseln genau diese
--- Operationen; die Slot-UUID dient als Capability-Token (wie bisher beim
--- Absage-Link). Die offene Admin-App übernimmt Blob-Änderungen über ihre
--- bestehende Realtime-Subscription auf account_state.
+-- Operationen; die Slot-UUID dient als Capability-Token.
 --
 -- Achtung: spontane_stunden.account_id ist text, account_state.account_id ist
 -- uuid - daher die ::uuid-Casts.
+--
+-- Gruppenbuchung (Wedding/Sommerferien): eine Person kann mehrere Teilnehmer
+-- buchen. buchung.weitereTeilnehmer = Namen der Mitspieler, buchung.preisProPerson
+-- = Staffelpreis (40/25/20/15 je nach Gruppengröße). Die Übernahme legt für jeden
+-- Teilnehmer einen Spieler an und erstellt EIN Training mit allen Spielern,
+-- customPreisProStunde = Preis pro Person, customAbrechnung = 'proSpieler'.
 -- ============================================================
 
--- Gebuchte spontane Stunde in den App-Kalender übernehmen (idempotent).
--- Legt bei Bedarf einen Spieler an (Match per E-Mail) und erstellt das
--- Training inkl. Preis: custom_preis_pro_stunde, sonst Tarif, sonst
--- 40 EUR/Stunde als individueller Preis (nur Anlage Wedding - dort wird
--- dieser Standardpreis auf der Website beworben).
+-- Gebuchte spontane Stunde in den App-Kalender übernehmen (idempotent, mehrere Spieler).
 create or replace function public.spontan_buchung_uebernehmen(slot_id uuid)
 returns text
 language plpgsql
@@ -30,12 +30,15 @@ declare
   state jsonb;
   spieler_arr jsonb;
   trainings_arr jsonb;
-  sp jsonb;
   altes_training jsonb;
   training_existiert boolean := false;
-  spieler_neu boolean := false;
+  participants jsonb;
+  part jsonb;
+  sp jsonb;
+  spieler_ids jsonb := '[]'::jsonb;
+  merged_ids jsonb;
   v_spieler_id text;
-  v_training_id text;
+  v_booker_spieler_id text;
   v_name text;
   v_vorname text;
   v_nachname text;
@@ -43,6 +46,8 @@ declare
   v_telefon text;
   neues_training jsonb;
   v_preis numeric;
+  v_gruppe boolean := false;
+  v_training_id text;
 begin
   select * into slot from spontane_stunden where id = slot_id;
   if not found or slot.status <> 'gebucht' or slot.buchung is null then
@@ -57,119 +62,159 @@ begin
   trainings_arr := coalesce(state->'trainings', '[]'::jsonb);
   spieler_arr := coalesce(state->'spieler', '[]'::jsonb);
 
-  -- Spieler auflösen bzw. anlegen (Match per E-Mail)
-  v_name := coalesce(trim(slot.buchung->>'name'), '');
-  if v_name = '' then v_name := 'Unbekannt'; end if;
-  v_email := lower(coalesce(trim(slot.buchung->>'email'), ''));
-  v_telefon := nullif(trim(coalesce(slot.buchung->>'telefon', '')), '');
-
-  -- Letztes Wort = Nachname (wie in der App)
-  if position(' ' in v_name) > 0 then
-    v_nachname := regexp_replace(v_name, '^.*\s', '');
-    v_vorname := trim(regexp_replace(v_name, '\s+\S+$', ''));
-  else
-    v_vorname := v_name;
-    v_nachname := null;
-  end if;
-
-  select t.value into sp
-  from jsonb_array_elements(spieler_arr) t(value)
-  where v_email <> '' and lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
-  limit 1;
-
-  if sp is not null then
-    v_spieler_id := sp->>'id';
-  else
-    spieler_neu := true;
-    v_spieler_id := gen_random_uuid()::text;
-    sp := jsonb_build_object(
-      'id', v_spieler_id,
-      'vorname', v_vorname,
-      'notizen', 'Spontanbuchung'
+  -- Teilnehmerliste: Bucher (mit E-Mail/Telefon) + weitere (nur Name)
+  participants := jsonb_build_array(jsonb_build_object(
+    'name', coalesce(nullif(trim(slot.buchung->>'name'), ''), 'Unbekannt'),
+    'email', lower(coalesce(trim(slot.buchung->>'email'), '')),
+    'telefon', nullif(trim(coalesce(slot.buchung->>'telefon', '')), '')
+  ));
+  if jsonb_typeof(slot.buchung->'weitereTeilnehmer') = 'array' then
+    participants := participants || (
+      select coalesce(jsonb_agg(jsonb_build_object('name', trim(w.value))), '[]'::jsonb)
+      from jsonb_array_elements_text(slot.buchung->'weitereTeilnehmer') w(value)
+      where trim(coalesce(w.value, '')) <> ''
     );
-    if v_nachname is not null then sp := sp || jsonb_build_object('nachname', v_nachname); end if;
-    if v_email <> '' then sp := sp || jsonb_build_object('kontaktEmail', v_email); end if;
-    if v_telefon is not null then sp := sp || jsonb_build_object('kontaktTelefon', v_telefon); end if;
-    state := jsonb_set(state, '{spieler}', spieler_arr || jsonb_build_array(sp));
   end if;
 
-  -- Existiert das verknüpfte Training noch im Kalender?
+  -- Verknüpftes Training schon vorhanden?
   if slot.training_id is not null then
     select t.value into altes_training
     from jsonb_array_elements(trainings_arr) t(value)
     where t.value->>'id' = slot.training_id
     limit 1;
-
     if altes_training is not null then
       training_existiert := true;
-      v_training_id := slot.training_id;
-
-      -- Bereits vollständig übernommen? Dann nichts schreiben.
-      if not spieler_neu and coalesce(altes_training->'spielerIds', '[]'::jsonb) ? v_spieler_id then
-        return v_training_id;
-      end if;
-
-      -- Spieler ins bestehende Training eintragen (z.B. wenn der Slot über
-      -- das Kurzfristig-Häkchen aus einem Kalender-Training erstellt wurde)
-      trainings_arr := (
-        select coalesce(jsonb_agg(
-          case when t.value->>'id' = slot.training_id then
-            jsonb_set(
-              t.value || jsonb_build_object('isSpontanBuchung', true),
-              '{spielerIds}',
-              case when coalesce(t.value->'spielerIds', '[]'::jsonb) ? v_spieler_id
-                   then coalesce(t.value->'spielerIds', '[]'::jsonb)
-                   else coalesce(t.value->'spielerIds', '[]'::jsonb) || to_jsonb(v_spieler_id) end
-            )
-          else t.value end
-        ), '[]'::jsonb)
-        from jsonb_array_elements(trainings_arr) t(value)
-      );
-      state := jsonb_set(state, '{trainings}', trainings_arr);
-    else
-      v_training_id := slot.training_id; -- Training ging verloren: mit gleicher ID neu anlegen
     end if;
-  else
-    v_training_id := gen_random_uuid()::text;
   end if;
 
-  if not training_existiert then
+  -- Idempotenz: Bucher (per E-Mail) schon im Training? Dann nichts tun.
+  v_email := participants->0->>'email';
+  if v_email <> '' then
+    select t.value->>'id' into v_booker_spieler_id
+    from jsonb_array_elements(spieler_arr) t(value)
+    where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+    limit 1;
+  end if;
+  if training_existiert and v_booker_spieler_id is not null
+     and coalesce(altes_training->'spielerIds', '[]'::jsonb) ? v_booker_spieler_id then
+    return slot.training_id;
+  end if;
+
+  -- Alle Teilnehmer als Spieler auflösen/anlegen, IDs sammeln
+  for part in select value from jsonb_array_elements(participants)
+  loop
+    v_name := coalesce(nullif(trim(part->>'name'), ''), 'Unbekannt');
+    v_email := lower(coalesce(part->>'email', ''));
+    v_telefon := nullif(part->>'telefon', '');
+    if position(' ' in v_name) > 0 then
+      v_nachname := regexp_replace(v_name, '^.*\s', '');
+      v_vorname := trim(regexp_replace(v_name, '\s+\S+$', ''));
+    else
+      v_vorname := v_name;
+      v_nachname := null;
+    end if;
+
+    v_spieler_id := null;
+    if v_email <> '' then
+      select t.value->>'id' into v_spieler_id
+      from jsonb_array_elements(spieler_arr) t(value)
+      where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+      limit 1;
+    end if;
+
+    if v_spieler_id is null then
+      v_spieler_id := gen_random_uuid()::text;
+      sp := jsonb_build_object('id', v_spieler_id, 'vorname', v_vorname, 'notizen', 'Spontanbuchung');
+      if v_nachname is not null then sp := sp || jsonb_build_object('nachname', v_nachname); end if;
+      if v_email <> '' then sp := sp || jsonb_build_object('kontaktEmail', v_email); end if;
+      if v_telefon is not null then sp := sp || jsonb_build_object('kontaktTelefon', v_telefon); end if;
+      spieler_arr := spieler_arr || jsonb_build_array(sp);
+    end if;
+
+    if not (spieler_ids ? v_spieler_id) then
+      spieler_ids := spieler_ids || to_jsonb(v_spieler_id);
+    end if;
+  end loop;
+
+  state := jsonb_set(state, '{spieler}', spieler_arr);
+
+  -- Preis: Staffelpreis pro Person aus der Buchung, sonst slot/40 (Wedding)
+  v_preis := nullif(slot.buchung->>'preisProPerson', '')::numeric;
+  v_gruppe := v_preis is not null;
+  if v_preis is null then
+    v_preis := slot.custom_preis_pro_stunde;
+    if v_preis is null and (slot.tarif_id is null or slot.tarif_id = '') and slot.anlage = 'Wedding' then
+      v_preis := 40;
+    end if;
+  end if;
+
+  if training_existiert then
+    merged_ids := (
+      select coalesce(jsonb_agg(distinct x), '[]'::jsonb)
+      from (
+        select jsonb_array_elements_text(coalesce(altes_training->'spielerIds', '[]'::jsonb)) as x
+        union
+        select jsonb_array_elements_text(spieler_ids) as x
+      ) u
+    );
+    trainings_arr := (
+      select coalesce(jsonb_agg(
+        case when t.value->>'id' = slot.training_id then
+          (t.value
+            || jsonb_build_object('isSpontanBuchung', true, 'spielerIds', merged_ids)
+            || (case when v_preis is not null
+                     then jsonb_build_object('customPreisProStunde', v_preis)
+                          || (case when v_gruppe then jsonb_build_object('customAbrechnung', 'proSpieler') else '{}'::jsonb end)
+                     else '{}'::jsonb end))
+        else t.value end
+      ), '[]'::jsonb)
+      from jsonb_array_elements(trainings_arr) t(value)
+    );
+    state := jsonb_set(state, '{trainings}', trainings_arr);
+    update account_state set data = state, updated_at = now() where account_id = slot.account_id::uuid;
+    return slot.training_id;
+  else
+    v_training_id := coalesce(slot.training_id, gen_random_uuid()::text);
     neues_training := jsonb_build_object(
       'id', v_training_id,
       'trainerId', slot.trainer_id,
       'datum', to_char(slot.datum, 'YYYY-MM-DD'),
       'uhrzeitVon', to_char(slot.uhrzeit_von, 'HH24:MI'),
       'uhrzeitBis', to_char(slot.uhrzeit_bis, 'HH24:MI'),
-      'spielerIds', jsonb_build_array(v_spieler_id),
+      'spielerIds', spieler_ids,
       'status', 'geplant',
       'anlage', slot.anlage,
       'isSpontanBuchung', true
     );
-
     if slot.tarif_id is not null and slot.tarif_id <> '' then
       neues_training := neues_training || jsonb_build_object('tarifId', slot.tarif_id);
     end if;
-
-    v_preis := slot.custom_preis_pro_stunde;
-    if v_preis is null and (slot.tarif_id is null or slot.tarif_id = '') and slot.anlage = 'Wedding' then
-      v_preis := 40; -- beworbener Standardpreis auf der Wedding-Seite
-    end if;
     if v_preis is not null then
       neues_training := neues_training || jsonb_build_object('customPreisProStunde', v_preis);
+      if v_gruppe then
+        neues_training := neues_training || jsonb_build_object('customAbrechnung', 'proSpieler');
+      end if;
     end if;
-
     state := jsonb_set(state, '{trainings}', trainings_arr || jsonb_build_array(neues_training));
+    update account_state set data = state, updated_at = now() where account_id = slot.account_id::uuid;
+    update spontane_stunden set training_id = v_training_id where id = slot_id;
+    return v_training_id;
   end if;
-
-  update account_state set data = state, updated_at = now() where account_id = slot.account_id::uuid;
-  update spontane_stunden set training_id = v_training_id where id = slot_id;
-
-  return v_training_id;
 end;
 $$;
 
 -- Spontane Stunde buchen + sofort in den Kalender übernehmen (atomar).
-create or replace function public.spontan_buchen(slot_id uuid, p_name text, p_email text, p_telefon text default null)
+-- p_weitere_teilnehmer / p_preis_pro_person sind optional (Britz nutzt die
+-- 4-Argument-Form weiterhin ohne Gruppe).
+drop function if exists public.spontan_buchen(uuid, text, text, text);
+create or replace function public.spontan_buchen(
+  slot_id uuid,
+  p_name text,
+  p_email text,
+  p_telefon text default null,
+  p_weitere_teilnehmer text[] default '{}',
+  p_preis_pro_person numeric default null
+)
 returns jsonb
 language plpgsql
 security definer
@@ -178,6 +223,7 @@ as $$
 declare
   slot spontane_stunden%rowtype;
   v_buchung jsonb;
+  v_weitere jsonb;
   v_training_id text;
 begin
   if coalesce(trim(p_name), '') = '' or coalesce(trim(p_email), '') = '' then
@@ -193,6 +239,19 @@ begin
     v_buchung := v_buchung || jsonb_build_object('telefon', trim(p_telefon));
   end if;
 
+  v_weitere := (
+    select coalesce(jsonb_agg(trim(w)), '[]'::jsonb)
+    from unnest(coalesce(p_weitere_teilnehmer, '{}'::text[])) w
+    where trim(coalesce(w, '')) <> ''
+  );
+  v_buchung := v_buchung || jsonb_build_object(
+    'weitereTeilnehmer', v_weitere,
+    'anzahlTeilnehmer', 1 + jsonb_array_length(v_weitere)
+  );
+  if p_preis_pro_person is not null then
+    v_buchung := v_buchung || jsonb_build_object('preisProPerson', p_preis_pro_person);
+  end if;
+
   update spontane_stunden
      set status = 'gebucht', buchung = v_buchung
    where id = slot_id and status = 'offen' and veroeffentlicht = true
@@ -205,7 +264,7 @@ begin
   begin
     v_training_id := spontan_buchung_uebernehmen(slot_id);
   exception when others then
-    v_training_id := null; -- Buchung gilt trotzdem, Übernahme holt die App nach
+    v_training_id := null;
   end;
 
   return jsonb_build_object('ok', true, 'training_id', v_training_id);
@@ -300,14 +359,11 @@ end;
 $$;
 
 grant execute on function public.spontan_buchung_uebernehmen(uuid) to anon, authenticated;
-grant execute on function public.spontan_buchen(uuid, text, text, text) to anon, authenticated;
+grant execute on function public.spontan_buchen(uuid, text, text, text, text[], numeric) to anon, authenticated;
 grant execute on function public.spontan_buchung_absagen(uuid) to anon, authenticated;
 grant execute on function public.spontan_trainer_kontakt(uuid) to anon, authenticated;
 
--- spontane_stunden in die Realtime-Publikation aufnehmen: Die App lauscht auf
--- diese (kleinen) Zeilen als zuverlässigen Buchungs-Trigger. Der account_state-
--- Blob kann das 1-MB-Payload-Limit von Realtime überschreiten - dann kommen
--- dessen Events ohne Daten an und die App lädt per REST nach.
+-- spontane_stunden in die Realtime-Publikation aufnehmen (Buchungs-Trigger für die App).
 do $$
 begin
   if not exists (
