@@ -213,49 +213,49 @@ export default function WeddingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Google Fonts — Cormorant Garamond (display) + Jost (body)
+  // Load Google Fonts — Outfit (display) + Inter (body)
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Jost:wght@300;400;500;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap";
     document.head.appendChild(link);
 
     const style = document.createElement("style");
     style.textContent = `
       .wedding-page {
-        --card: #fdfbf6;
-        --ring: #1f4d2e;
-        --input: #a3a795;
-        --muted: #f1ebdd;
-        --accent: #f3ead7;
-        --border: #ddd3bd;
+        --card: #ffffff;
+        --ring: #1668c7;
+        --input: #9aabbf;
+        --muted: #edf3fb;
+        --accent: #e9f3fd;
+        --border: #d7e3f1;
         --radius: 0.5rem;
-        --chart-1: #1f4d2e;
-        --chart-2: #b08d3e;
-        --chart-3: #ded8c4;
-        --chart-4: #2e6b41;
-        --chart-5: #8c6f2f;
+        --chart-1: #1668c7;
+        --chart-2: #2f8fdb;
+        --chart-3: #cfe3f6;
+        --chart-4: #4a97e6;
+        --chart-5: #1f6fb0;
         --popover: #ffffff;
-        --primary: #1f4d2e;
-        --sidebar: #f5f1e6;
-        --secondary: #f1ebdd;
-        --background: #fdfbf6;
-        --foreground: #1f2a22;
-        --destructive: #9f1d1d;
-        --sidebar-ring: #b5b5b5;
-        --sidebar-accent: #f1ebdd;
-        --sidebar-border: #ebebeb;
-        --card-foreground: #1f2a22;
-        --sidebar-primary: #1f4d2e;
-        --muted-foreground: #6b7265;
-        --accent-foreground: #28261b;
-        --popover-foreground: #28261b;
+        --primary: #1668c7;
+        --sidebar: #eef4fb;
+        --secondary: #edf3fb;
+        --background: #ffffff;
+        --foreground: #14304e;
+        --destructive: #c2392f;
+        --sidebar-ring: #9aabbf;
+        --sidebar-accent: #edf3fb;
+        --sidebar-border: #e6eef8;
+        --card-foreground: #14304e;
+        --sidebar-primary: #1668c7;
+        --muted-foreground: #586a80;
+        --accent-foreground: #14304e;
+        --popover-foreground: #14304e;
         --primary-foreground: #ffffff;
-        --sidebar-foreground: #3d3d3a;
-        --secondary-foreground: #535146;
+        --sidebar-foreground: #44566b;
+        --secondary-foreground: #586a80;
         --destructive-foreground: #ffffff;
-        --sidebar-accent-foreground: #343434;
-        --sidebar-primary-foreground: #fbfbfb;
+        --sidebar-accent-foreground: #14304e;
+        --sidebar-primary-foreground: #fbfdff;
       }
     `;
     document.head.appendChild(style);
@@ -672,27 +672,27 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // ── Theme: Klassischer Tennisclub – Rasengrün, Creme, Messing ──
+  // Theme: Hardcourt – Weiss + Hellblau
   const colors = {
-    primary: "#1f4d2e",        // Hauptfarbe Rasengrün (Buttons, Überschriften)
-    primaryMid: "#1a4127",     // Mittlere Variante (E-Mail-Header Gradient)
-    primaryDark: "#143420",    // Dunklere Variante (Gradient-Ende)
-    primaryLight: "#2e6b41",   // Helle Akzentfarbe (Links, Hover)
-    accent: "#b08d3e",         // Messing/Gold (Badges, Hairlines, Labels)
-    accentLight: "#d3b878",    // Helles Gold
-    accentDark: "#8c6f2f",     // Dunkles Gold
-    accentBg: "#f6f0e0",       // Akzent-Hintergrund (z.B. Info-Boxen)
-    white: "#fdfbf6",          // Warmes Weiß / Hintergrund
-    bgLight: "#f1ebdd",        // Creme-Fläche
-    bgDark: "#15291c",         // Sehr dunkles Grün (Footer)
-    text: "#1f2a22",           // Primärtext (grünliches Ink)
-    textMuted: "#6b7265",      // Gedämpfter Text
-    textSubtle: "#a3a795",     // Subtiler Text (Footer-Details)
-    border: "#ddd3bd",         // Warme Hairline
-    success: "#1f4d2e",        // Erfolg (Bestätigungs-Icons)
-    successDark: "#143420",    // Erfolg dunkel
-    error: "#9f1d1d",          // Fehler
-    errorBg: "#f6e8e0",        // Fehler-Hintergrund
+    primary: "#1668c7",        // Hauptfarbe Rasengrün (Buttons, Überschriften)
+    primaryMid: "#1257a6",     // Mittlere Variante (E-Mail-Header Gradient)
+    primaryDark: "#0e4684",    // Dunklere Variante (Gradient-Ende)
+    primaryLight: "#4a97e6",   // Helle Akzentfarbe (Links, Hover)
+    accent: "#2f8fdb",         // Messing/Gold (Badges, Hairlines, Labels)
+    accentLight: "#a6d4f5",    // Helles Gold
+    accentDark: "#1f6fb0",     // Dunkles Gold
+    accentBg: "#e9f3fd",       // Akzent-Hintergrund (z.B. Info-Boxen)
+    white: "#ffffff",          // Warmes Weiß / Hintergrund
+    bgLight: "#edf3fb",        // Creme-Fläche
+    bgDark: "#0d2a4a",         // Sehr dunkles Grün (Footer)
+    text: "#14304e",           // Primärtext (grünliches Ink)
+    textMuted: "#586a80",      // Gedämpfter Text
+    textSubtle: "#9aabbf",     // Subtiler Text (Footer-Details)
+    border: "#d7e3f1",         // Warme Hairline
+    success: "#1668c7",        // Erfolg (Bestätigungs-Icons)
+    successDark: "#0e4684",    // Erfolg dunkel
+    error: "#c2392f",          // Fehler
+    errorBg: "#fdecea",        // Fehler-Hintergrund
   };
 
 
@@ -741,7 +741,7 @@ export default function WeddingPage() {
     <div className="wedding-page" style={{
       minHeight: "100vh",
       background: colors.white,
-      fontFamily: "'Jost', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       color: colors.text,
       overflowX: "hidden",
     }}>
@@ -767,7 +767,7 @@ export default function WeddingPage() {
               color: scrolled ? colors.primary : colors.white,
               textTransform: "uppercase",
               letterSpacing: "2px",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Outfit', sans-serif",
             }}>
               Tennisschule A bis Z
             </span>
@@ -809,7 +809,7 @@ export default function WeddingPage() {
                     textDecoration: "none",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(23, 23, 23, 0.3)",
+                    boxShadow: "0 4px 12px rgba(22, 104, 199, 0.28)",
                   transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                   }}
                   onPointerDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
@@ -891,7 +891,7 @@ export default function WeddingPage() {
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(23, 23, 23, 0.25)",
+                  boxShadow: "0 4px 12px rgba(22, 104, 199, 0.22)",
                 }}
               >
                 Training buchen
@@ -931,7 +931,7 @@ export default function WeddingPage() {
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(160deg, rgba(10,24,15,0.72) 0%, rgba(16,38,24,0.45) 40%, rgba(16,38,24,0.35) 70%, rgba(8,20,13,0.62) 100%)",
+          background: "linear-gradient(160deg, rgba(8,24,46,0.72) 0%, rgba(13,38,68,0.45) 40%, rgba(13,38,68,0.35) 70%, rgba(7,20,40,0.62) 100%)",
           pointerEvents: "none",
         }} />
         {/* Grain texture */}
@@ -968,13 +968,13 @@ export default function WeddingPage() {
               padding: "10px 20px",
               borderRadius: 100,
               marginBottom: 28,
-              border: "1px solid rgba(211, 184, 120, 0.45)",
+              border: "1px solid rgba(166, 212, 245, 0.55)",
             }}>
               <span style={{
                 width: 8, height: 8, borderRadius: "50%",
                 background: colors.accentLight,
                 display: "inline-block",
-                boxShadow: "0 0 8px rgba(211, 184, 120, 0.6)",
+                boxShadow: "0 0 8px rgba(166, 212, 245, 0.7)",
               }} />
               <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.3px" }}>
                 BSC Rehberge · Berlin-Wedding
@@ -984,7 +984,7 @@ export default function WeddingPage() {
             {/* Headline */}
             <h1 className="hero-title" style={{
               fontSize: "clamp(48px, 9vw, 86px)",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: 700,
               lineHeight: 1.02,
               marginBottom: 24,
@@ -1013,7 +1013,7 @@ export default function WeddingPage() {
               maxWidth: 480,
             }}>
               Professionelles Tennistraining in Berlin-Wedding –{" "}
-              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", color: "rgba(255,255,255,0.95)" }}>
+              <span style={{ fontFamily: "'Outfit', sans-serif", fontStyle: "italic", color: "rgba(255,255,255,0.95)" }}>
                 vom ersten Schlag bis zum Wettkampf.
               </span>
             </p>
@@ -1033,17 +1033,17 @@ export default function WeddingPage() {
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(23, 23, 23, 0.3)",
+                  boxShadow: "0 4px 24px rgba(22, 104, 199, 0.28)",
                   transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                 }}
                 onMouseEnter={(e) => {
                   if (!supportsHover) return;
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(23, 23, 23, 0.4)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(22, 104, 199, 0.38)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(23, 23, 23, 0.3)";
+                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(22, 104, 199, 0.28)";
                 }}
                 onPointerDown={(e) => {
                   e.currentTarget.style.transition = "transform 100ms ease-out";
@@ -1133,7 +1133,7 @@ export default function WeddingPage() {
                 fontSize: 36,
                 fontWeight: 700,
                 color: "#fff",
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "'Outfit', sans-serif",
                 lineHeight: 1,
                 marginBottom: 6,
               }}>
@@ -1170,7 +1170,7 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: 700,
               color: colors.text,
               marginBottom: 16,
@@ -1240,7 +1240,7 @@ export default function WeddingPage() {
                 onMouseEnter={(e) => {
                   if (!supportsHover) return;
                   e.currentTarget.style.transform = "translateY(-5px)";
-                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(61, 57, 41, 0.10)";
+                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(20, 48, 78, 0.12)";
                   e.currentTarget.style.borderColor = colors.primary;
                 }}
                 onMouseLeave={(e) => {
@@ -1253,7 +1253,7 @@ export default function WeddingPage() {
                   position: "absolute",
                   top: -16,
                   right: 8,
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Outfit', sans-serif",
                   fontStyle: "italic",
                   fontWeight: 700,
                   fontSize: 90,
@@ -1280,7 +1280,7 @@ export default function WeddingPage() {
                   fontWeight: 700,
                   color: colors.text,
                   marginBottom: 10,
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Outfit', sans-serif",
                   letterSpacing: "-0.3px",
                 }}>
                   {item.title}
@@ -1312,7 +1312,7 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: 700,
               color: colors.text,
               letterSpacing: "0px",
@@ -1324,11 +1324,11 @@ export default function WeddingPage() {
 
           <ScrollReveal delay={0.1}>
           <div style={{
-            background: "#fffefb",
+            background: "#ffffff",
             border: `1px solid ${colors.border}`,
             borderRadius: 20,
             padding: "10px 40px",
-            boxShadow: "0 10px 40px rgba(61, 57, 41, 0.06)",
+            boxShadow: "0 10px 40px rgba(20, 48, 78, 0.07)",
           }}>
             {[
               {
@@ -1354,7 +1354,7 @@ export default function WeddingPage() {
                 borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : "none",
               }}>
                 <div style={{ flex: "1 1 240px" }}>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: "0 0 6px", fontFamily: "'Cormorant Garamond', serif", letterSpacing: "-0.3px" }}>
+                  <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: "0 0 6px", fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.3px" }}>
                     {tarif.name}
                   </h3>
                   <p style={{ fontSize: 14, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
@@ -1362,7 +1362,7 @@ export default function WeddingPage() {
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: 40, fontWeight: 700, color: colors.primary, fontFamily: "'Cormorant Garamond', serif", lineHeight: 1 }}>
+                  <span style={{ fontSize: 40, fontWeight: 700, color: colors.primary, fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>
                     {tarif.price}
                   </span>
                   <span style={{ display: "block", fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginTop: 4 }}>
@@ -1410,7 +1410,7 @@ export default function WeddingPage() {
             }}>
               Aktuelles
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Jetzt anmelden
             </h2>
           </div>
@@ -1452,7 +1452,7 @@ export default function WeddingPage() {
               {/* Gradient overlay on photo */}
               <div style={{
                 position: "absolute", inset: 0,
-                background: "linear-gradient(to right, transparent 60%, rgba(23, 23, 23, 0.3) 100%)",
+                background: "linear-gradient(to right, transparent 60%, rgba(13, 42, 74, 0.35) 100%)",
                 pointerEvents: "none",
               }} />
             </div>
@@ -1492,7 +1492,7 @@ export default function WeddingPage() {
                   fontWeight: 700,
                   color: colors.white,
                   marginBottom: 20,
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "'Outfit', sans-serif",
                   letterSpacing: "-0.5px",
                   lineHeight: 1.1,
                 }}>
@@ -1543,7 +1543,7 @@ export default function WeddingPage() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(23, 23, 23, 0.35)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(22, 104, 199, 0.32)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
@@ -1576,7 +1576,7 @@ export default function WeddingPage() {
               </p>
               <h2 style={{
                 fontSize: 28,
-                fontFamily: "'Cormorant Garamond', serif",
+                fontFamily: "'Outfit', sans-serif",
                 fontWeight: 700,
                 color: colors.text,
                 marginBottom: 8,
@@ -1852,7 +1852,7 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Cormorant Garamond', serif",
+              fontFamily: "'Outfit', sans-serif",
               fontWeight: 700,
               color: colors.text,
               letterSpacing: "0px",
@@ -1920,13 +1920,13 @@ export default function WeddingPage() {
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: 56, fontWeight: 700, color: colors.border, fontFamily: "'Cormorant Garamond', serif", opacity: 0.5 }}>
+                    <span style={{ fontSize: 56, fontWeight: 700, color: colors.border, fontFamily: "'Outfit', sans-serif", opacity: 0.5 }}>
                       {trainer.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                   )}
                 </div>
                 <div style={{ padding: 22 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Cormorant Garamond', serif", letterSpacing: "-0.3px" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.3px" }}>
                     {trainer.name}
                   </h3>
                   <p style={{
@@ -1970,7 +1970,7 @@ export default function WeddingPage() {
             }}>
               FAQ
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Häufig gestellte Fragen
             </h2>
           </div>
@@ -2039,7 +2039,7 @@ export default function WeddingPage() {
                     gap: 16,
                   }}
                 >
-                  <h3 style={{ fontSize: 20, fontWeight: 600, color: colors.text, margin: 0, lineHeight: 1.35, fontFamily: "'Cormorant Garamond', serif" }}>
+                  <h3 style={{ fontSize: 20, fontWeight: 600, color: colors.text, margin: 0, lineHeight: 1.35, fontFamily: "'Outfit', sans-serif" }}>
                     {faq.q}
                   </h3>
                   <span style={{
@@ -2120,7 +2120,7 @@ export default function WeddingPage() {
             }}>
               Kontakt
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               So erreichen Sie uns
             </h2>
           </div>
@@ -2151,7 +2151,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4.5-7 13-7 13S5 13.5 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Cormorant Garamond', serif" }}>Adresse</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
                 BSC Rehberge 1945 e.V. Abt. Tennis<br />
                 Sambesistraße 11<br />
@@ -2195,7 +2195,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 11.9 19.79 19.79 0 0 1 1 3.32 2 2 0 0 1 2.96 1.1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.18-1.18a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Cormorant Garamond', serif" }}>Telefon</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>Telefon</h3>
               <a
                 href="tel:+4915560062745"
                 style={{
@@ -2234,7 +2234,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Cormorant Garamond', serif" }}>E-Mail</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>E-Mail</h3>
               <a
                 href="mailto:tennisabisz@gmail.com"
                 style={{
@@ -2263,7 +2263,7 @@ export default function WeddingPage() {
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginBottom: 32 }}>
             <div>
-              <span style={{ fontWeight: 700, fontSize: 19, textTransform: "uppercase", letterSpacing: "2px", fontFamily: "'Cormorant Garamond', serif", color: colors.accentLight }}>
+              <span style={{ fontWeight: 700, fontSize: 19, textTransform: "uppercase", letterSpacing: "2px", fontFamily: "'Outfit', sans-serif", color: colors.accentLight }}>
                 Tennisschule A bis Z
               </span>
               <p style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.7)" }}>
@@ -2513,7 +2513,7 @@ export default function WeddingPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
-                  boxShadow: "0 8px 24px rgba(201, 100, 66, 0.25)",
+                  boxShadow: "0 8px 24px rgba(22, 104, 199, 0.25)",
                 }}>
                   <span style={{ color: colors.white, fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>

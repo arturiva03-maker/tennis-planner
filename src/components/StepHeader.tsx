@@ -29,7 +29,7 @@ export default function StepHeader({ current, total }: StepHeaderProps) {
               width: 24,
               height: 4,
               borderRadius: 2,
-              background: i < current ? "var(--primary, #2563eb)" : "#e5e7eb",
+              background: i < current ? "var(--primary, #1668c7)" : "#d7e3f1",
             }}
           />
         ))}

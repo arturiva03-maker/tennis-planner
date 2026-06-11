@@ -137,7 +137,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
       : "Nicht angegeben";
 
   const verfuegbarkeitRows = WOCHENTAGE.map(({ key, label }) =>
-    `<tr><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${label}</strong></td><td style="padding: 8px; border-bottom: 1px solid #eee;">${payload.verfuegbarkeit[key]}</td></tr>`
+    `<tr><td style="padding: 8px; border-bottom: 1px solid #d7e3f1;"><strong>${label}</strong></td><td style="padding: 8px; border-bottom: 1px solid #d7e3f1;">${payload.verfuegbarkeit[key]}</td></tr>`
   ).join("");
 
   const emailHtml = `
@@ -148,11 +148,11 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .header { background: #1668c7; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #eef3fb; padding: 20px; border: 1px solid #d7e3f1; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #d7e3f1; }
     .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
-    .data-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+    .data-row { display: flex; padding: 8px 0; border-bottom: 1px solid #edf3fb; }
     .label { color: #6b7280; min-width: 140px; }
     .value { font-weight: 500; }
     table { width: 100%; border-collapse: collapse; }
@@ -229,13 +229,13 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+    .header { background: #1668c7; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #eef3fb; padding: 20px; border: 1px solid #d7e3f1; }
     .greeting { font-size: 18px; margin-bottom: 16px; }
-    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #d7e3f1; }
     .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
     table { width: 100%; border-collapse: collapse; }
-    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #e5e7eb; }
+    .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; border-top: 1px solid #d7e3f1; }
   </style>
 </head>
 <body>

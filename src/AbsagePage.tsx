@@ -142,7 +142,7 @@ export default function AbsagePage() {
               to: [slotInfo.buchungEmail],
               subject: `Absagebestätigung: Training am ${datumFormatted}`,
               body: `Hallo ${slotInfo.buchungName ?? ""},\n\nIhre Buchung wurde erfolgreich und kostenfrei storniert.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo.anlage}${slotInfo.preis ? `\nPreis: ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}\n\nBei Fragen erreichen Sie uns unter ${SCHULE_EMAIL}.\n\nSportliche Grüße,\nTennisschule A bis Z`,
-              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich und kostenfrei storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}${slotInfo.preis ? `<br><strong>Preis:</strong> ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:${SCHULE_EMAIL}" style="color: #1b5e20; font-weight: 600; text-decoration: none;">${SCHULE_EMAIL}</a></p><div style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
+              html: `<p>Hallo ${slotInfo.buchungName ?? ""},</p><p>Ihre Buchung wurde erfolgreich und kostenfrei storniert.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo.anlage}${slotInfo.preis ? `<br><strong>Preis:</strong> ${slotInfo.preis.toFixed(2).replace(".", ",")} EUR` : ""}</p><p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter <a href="mailto:${SCHULE_EMAIL}" style="color: #1668c7; font-weight: 600; text-decoration: none;">${SCHULE_EMAIL}</a></p><div style="background-color: #eef3fb; padding: 24px 40px; border-top: 1px solid #d7e3f1; margin-top: 24px;"><p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p><p style="margin: 0; color: #1668c7; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p><p style="margin: 12px 0 0; color: #999999; font-size: 12px;">${slotInfo.anlage === "Britz" ? "Standort Britz · TC Blau-Weiß Britz" : "Standort Wedding · BSC Rehberge"}</p></div>`,
               fromName: "Tennisschule A bis Z",
             }),
           });
@@ -178,7 +178,7 @@ export default function AbsagePage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#fafafa",
+      background: "#f4f8fd",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -208,8 +208,8 @@ export default function AbsagePage() {
           </>
         ) : status === "success" ? (
           <>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
-            <h2 style={{ marginBottom: 8, color: "#22c55e" }}>Absage bestätigt</h2>
+            <div style={{ fontSize: 48, marginBottom: 16, color: "#1668c7" }}>&#10003;</div>
+            <h2 style={{ marginBottom: 8, color: "#1668c7" }}>Absage bestätigt</h2>
             <p style={{ color: "#6b7280" }}>
               Ihre Buchung für <strong>{datumFormatted}</strong> ({slotInfo?.von} – {slotInfo?.bis} Uhr) wurde kostenfrei storniert.
               Die Tennisschule wurde benachrichtigt.
@@ -229,7 +229,7 @@ export default function AbsagePage() {
                 : "Möchten Sie Ihre Buchung für folgenden Termin wirklich absagen?"}
             </p>
             <div style={{
-              background: "#f9fafb",
+              background: "#eef3fb",
               borderRadius: 10,
               padding: "16px 20px",
               marginBottom: 24,
@@ -296,7 +296,7 @@ export default function AbsagePage() {
               </>
             ) : (
               <>
-                <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 16 }}>
+                <p style={{ color: "#1668c7", fontSize: 13, marginBottom: 16 }}>
                   Kostenfreie Absage möglich – Ihr Termin liegt mehr als 24 Stunden in der Zukunft.
                 </p>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -304,7 +304,7 @@ export default function AbsagePage() {
                     onClick={handleAbsage}
                     disabled={submitting}
                     style={{
-                      background: "#171717",
+                      background: "#1668c7",
                       color: "white",
                       border: "none",
                       borderRadius: 8,

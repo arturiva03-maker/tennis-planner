@@ -108,9 +108,9 @@ export default function KennlerntennisForm() {
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .header { background: linear-gradient(135deg, #1f6fd6 0%, #1668c7 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #eef3fb; padding: 20px; border: 1px solid #d7e3f1; }
+    .section { background: white; padding: 16px; margin: 16px 0; border-radius: 8px; border: 1px solid #d7e3f1; }
     .section-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; }
     table { width: 100%; border-collapse: collapse; }
     .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
@@ -209,7 +209,7 @@ Interesse weiterführendes Training: ${interesseText}`;
 
   if (success) {
     return (
-      <div className="registrationPage weddingTheme">
+      <div className="registrationPage">
         <div className="card registrationCard">
           <div className="successIcon">&#10003;</div>
           <h1>Anfrage erfolgreich gesendet!</h1>
@@ -222,11 +222,11 @@ Interesse weiterführendes Training: ${interesseText}`;
   }
 
   return (
-    <div className="registrationPage weddingTheme">
+    <div className="registrationPage">
       <div className="card registrationCard" style={{ maxWidth: 600 }}>
         <h1 style={{ marginBottom: 8 }}>Kennlerntennis</h1>
         <div style={{
-          background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+          background: "linear-gradient(135deg, #1f6fd6 0%, #1668c7 100%)",
           color: "#fff",
           padding: "14px 18px",
           borderRadius: 10,
@@ -234,7 +234,7 @@ Interesse weiterführendes Training: ${interesseText}`;
           textAlign: "center",
           fontWeight: 600,
           fontSize: 17,
-          boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
+          boxShadow: "0 4px 12px rgba(22, 104, 199, 0.25)",
         }}>
           Termin: 31.5. um 16 Uhr
         </div>
@@ -414,7 +414,7 @@ Interesse weiterführendes Training: ${interesseText}`;
                 padding: "12px 24px",
                 background: loading
                   ? "#9ca3af"
-                  : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                  : "linear-gradient(135deg, #1f6fd6 0%, #1668c7 100%)",
                 color: "#fff",
                 border: "none",
                 borderRadius: 8,

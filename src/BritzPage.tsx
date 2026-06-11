@@ -147,6 +147,16 @@ export default function BritzPage() {
   }, []);
 
   useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
+  useEffect(() => {
     fetchSpontaneStunden();
   }, [fetchSpontaneStunden]);
 
@@ -233,14 +243,14 @@ export default function BritzPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+<body style="margin: 0; padding: 0; background-color: #eef3fb; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #eef3fb;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1b471b 0%, #2d5a2d 100%); padding: 32px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #1668c7 0%, #1257a6 100%); padding: 32px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Buchungsbestätigung</h1>
             </td>
           </tr>
@@ -248,7 +258,7 @@ export default function BritzPage() {
           <!-- Success Icon -->
           <tr>
             <td align="center" style="padding: 40px 40px 20px;">
-              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+              <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #1668c7 0%, #0e4684 100%); border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
                 <span style="color: #ffffff; font-size: 32px;">✓</span>
               </div>
             </td>
@@ -265,14 +275,14 @@ export default function BritzPage() {
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #eef3fb; border-radius: 8px; border: 1px solid #d7e3f1;">
                 <tr>
                   <td style="padding: 24px;">
-                    <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
+                    <p style="margin: 0 0 16px; color: #1668c7; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Termindetails</p>
 
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid #d7e3f1;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📅</td>
@@ -282,7 +292,7 @@ export default function BritzPage() {
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <td style="padding: 8px 0; border-bottom: 1px solid #d7e3f1;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">🕐</td>
@@ -292,7 +302,7 @@ export default function BritzPage() {
                         </td>
                       </tr>
                       <tr>
-                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
+                        <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #d7e3f1;' : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">📍</td>
@@ -307,7 +317,7 @@ export default function BritzPage() {
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
+                              <td style="color: #1668c7; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
                             </tr>
                           </table>
                         </td>
@@ -324,7 +334,7 @@ export default function BritzPage() {
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
               <p style="margin: 0 0 12px; color: #666666; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
-              <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: #f5f5f5; color: #1b471b; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e5e5;">Termin absagen</a>
+              <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: #eef3fb; color: #1668c7; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #d7e3f1;">Termin absagen</a>
             </td>
           </tr>
 
@@ -332,15 +342,15 @@ export default function BritzPage() {
           <tr>
             <td style="padding: 0 40px 32px; text-align: center;">
               <p style="margin: 0 0 8px; color: #666666; font-size: 14px; line-height: 1.6;">Bei Fragen erreichen Sie uns unter:</p>
-              <a href="mailto:tennisabisz@gmail.com" style="color: #1b471b; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+              <a href="mailto:tennisabisz@gmail.com" style="color: #1668c7; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+            <td style="background-color: #eef3fb; padding: 24px 40px; border-top: 1px solid #d7e3f1;">
               <p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
-              <p style="margin: 0; color: #1b471b; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+              <p style="margin: 0; color: #1668c7; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
               <p style="margin: 12px 0 0; color: #999999; font-size: 12px;">Standort Britz · TC Blau-Weiß Britz</p>
             </td>
           </tr>
@@ -384,14 +394,14 @@ export default function BritzPage() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+<body style="margin: 0; padding: 0; background-color: #eef3fb; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #eef3fb;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, #1668c7 0%, #0e4684 100%); padding: 24px 40px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
             </td>
           </tr>
@@ -399,8 +409,8 @@ export default function BritzPage() {
           <!-- Customer Info -->
           <tr>
             <td style="padding: 32px 40px 24px;">
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8faf8; border-radius: 8px; border: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 16px; color: #1668c7; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Kundendaten</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #eef3fb; border-radius: 8px; border: 1px solid #d7e3f1;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -413,14 +423,14 @@ export default function BritzPage() {
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">E-Mail:</span>
-                          <a href="mailto:${email}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
+                          <a href="mailto:${email}" style="color: #1668c7; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${email}</a>
                         </td>
                       </tr>
                       ${telefon ? `
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="color: #666666; font-size: 13px;">Telefon:</span>
-                          <a href="tel:${telefon}" style="color: #1b471b; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
+                          <a href="tel:${telefon}" style="color: #1668c7; font-size: 15px; font-weight: 600; margin-left: 8px; text-decoration: none;">${telefon}</a>
                         </td>
                       </tr>
                       ` : ''}
@@ -434,8 +444,8 @@ export default function BritzPage() {
           <!-- Booking Details -->
           <tr>
             <td style="padding: 0 40px 32px;">
-              <p style="margin: 0 0 16px; color: #1b471b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fff8e6; border-radius: 8px; border: 1px solid #fcd34d;">
+              <p style="margin: 0 0 16px; color: #1668c7; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termindetails</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e9f3fd; border-radius: 8px; border: 1px solid #a6d4f5;">
                 <tr>
                   <td style="padding: 16px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -461,7 +471,7 @@ export default function BritzPage() {
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
+                          <span style="color: #1668c7; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
                         </td>
                       </tr>
                       ` : ''}
@@ -474,7 +484,7 @@ export default function BritzPage() {
 
           <!-- Action Note -->
           <tr>
-            <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <td style="background-color: #eef3fb; padding: 20px 40px; border-top: 1px solid #d7e3f1; text-align: center;">
               <p style="margin: 0; color: #666666; font-size: 13px;">${autoUebernommen ? "✅ Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : '⚡ Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
             </td>
           </tr>
@@ -521,15 +531,15 @@ export default function BritzPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Vereinsfarben
+  // Theme: Hardcourt – Weiss + Hellblau
   const colors = {
-    primary: "#1b471b",
-    primaryLight: "#418231",
+    primary: "#1668c7",
+    primaryLight: "#4a97e6",
     white: "#ffffff",
-    bgLight: "#f6f6f6",
-    text: "#333333",
-    textMuted: "#666666",
-    border: "#d2d2d2",
+    bgLight: "#eef3fb",
+    text: "#14304e",
+    textMuted: "#586a80",
+    border: "#d7e3f1",
   };
 
 
@@ -585,7 +595,7 @@ export default function BritzPage() {
     <div style={{
       minHeight: "100vh",
       background: colors.white,
-      fontFamily: "'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       color: colors.text,
     }}>
       {/* Navigation */}
@@ -664,7 +674,7 @@ export default function BritzPage() {
                 <a
                   href="/anmeldung-britz"
                   style={{
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    background: "linear-gradient(135deg, #1668c7 0%, #0e4684 100%)",
                     color: "#fff",
                     padding: "11px 23px",
                     borderRadius: 6,
@@ -673,7 +683,7 @@ export default function BritzPage() {
                     textDecoration: "none",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                    boxShadow: "0 4px 12px rgba(22, 104, 199, 0.28)",
                   }}
                 >
                   Training buchen
@@ -745,7 +755,7 @@ export default function BritzPage() {
                 href="/anmeldung-britz"
                 style={{
                   display: "block",
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  background: "linear-gradient(135deg, #1668c7 0%, #0e4684 100%)",
                   color: "#fff",
                   padding: "12px 20px",
                   borderRadius: 6,
@@ -754,7 +764,7 @@ export default function BritzPage() {
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
+                  boxShadow: "0 4px 12px rgba(22, 104, 199, 0.28)",
                 }}
               >
                 Training buchen
@@ -771,7 +781,7 @@ export default function BritzPage() {
           minHeight: "70vh",
           display: "flex",
           alignItems: "center",
-          background: `linear-gradient(135deg, #0f2f1a 0%, ${colors.primary} 50%, #1a3d24 100%)`,
+          background: `linear-gradient(135deg, #0d2a4a 0%, #1668c7 50%, #0e4684 100%)`,
           overflow: "hidden",
         }}
       >
@@ -796,7 +806,7 @@ export default function BritzPage() {
           right: "-10%",
           width: "50%",
           height: "70%",
-          background: "radial-gradient(ellipse, rgba(245, 158, 11, 0.15) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(47, 143, 219, 0.18) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
         <div style={{
@@ -805,7 +815,7 @@ export default function BritzPage() {
           left: "-10%",
           width: "60%",
           height: "60%",
-          background: "radial-gradient(ellipse, rgba(34, 197, 94, 0.1) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(166, 212, 245, 0.18) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
 
@@ -847,6 +857,7 @@ export default function BritzPage() {
 
             {/* Headline */}
             <h1 style={{
+              fontFamily: "'Outfit', sans-serif",
               fontSize: "clamp(36px, 7vw, 64px)",
               fontWeight: 800,
               lineHeight: 1.1,
@@ -855,7 +866,7 @@ export default function BritzPage() {
               <span style={{ color: "#fff" }}>Tennisschule</span>
               <br />
               <span style={{
-                background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+                background: "linear-gradient(135deg, #4a97e6 0%, #a6d4f5 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -883,23 +894,23 @@ export default function BritzPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  background: "linear-gradient(135deg, #1668c7 0%, #0e4684 100%)",
                   color: "#fff",
                   padding: "16px 32px",
                   borderRadius: 8,
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(245, 158, 11, 0.4)",
+                  boxShadow: "0 4px 20px rgba(22, 104, 199, 0.34)",
                   transition: "transform 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 6px 24px rgba(245, 158, 11, 0.5)";
+                  e.currentTarget.style.boxShadow = "0 6px 24px rgba(22, 104, 199, 0.4)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(245, 158, 11, 0.4)";
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(22, 104, 199, 0.34)";
                 }}
               >
                 Jetzt anmelden
@@ -952,6 +963,7 @@ export default function BritzPage() {
               Unser Angebot
             </p>
             <h2 style={{
+              fontFamily: "'Outfit', sans-serif",
               fontSize: 28,
               fontWeight: 700,
               color: colors.text,
@@ -1193,7 +1205,7 @@ export default function BritzPage() {
             }}>
               Aktuelles
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 700, color: colors.text }}>
               Jetzt anmelden
             </h2>
           </div>
@@ -1205,10 +1217,10 @@ export default function BritzPage() {
             {/* Sommertraining Card */}
             <div
               style={{
-                background: `linear-gradient(135deg, ${colors.primary} 0%, #2d5a2d 100%)`,
+                background: `linear-gradient(135deg, #1668c7 0%, #1257a6 100%)`,
                 borderRadius: 16,
                 padding: "32px",
-                boxShadow: "0 12px 40px rgba(27, 71, 27, 0.25)",
+                boxShadow: "0 12px 40px rgba(22, 104, 199, 0.25)",
                 position: "relative",
                 overflow: "hidden",
                 display: "flex",
@@ -1293,6 +1305,7 @@ export default function BritzPage() {
                 Verfügbare Termine
               </p>
               <h2 style={{
+                fontFamily: "'Outfit', sans-serif",
                 fontSize: 24,
                 fontWeight: 700,
                 color: colors.text,
@@ -1491,7 +1504,7 @@ export default function BritzPage() {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.borderColor = colors.primary;
-                            e.currentTarget.style.background = "#f8fdf8";
+                            e.currentTarget.style.background = "#eef6fd";
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.borderColor = colors.border;
@@ -1534,6 +1547,7 @@ export default function BritzPage() {
               Unser Team
             </p>
             <h2 style={{
+              fontFamily: "'Outfit', sans-serif",
               fontSize: 28,
               fontWeight: 700,
               color: colors.text,
@@ -1642,7 +1656,7 @@ export default function BritzPage() {
             }}>
               FAQ
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 700, color: colors.text }}>
               Häufig gestellte Fragen
             </h2>
           </div>
@@ -1747,7 +1761,7 @@ export default function BritzPage() {
             }}>
               Kontakt
             </p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: colors.text }}>
+            <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 28, fontWeight: 700, color: colors.text }}>
               So erreichen Sie uns
             </h2>
           </div>
@@ -1952,7 +1966,7 @@ export default function BritzPage() {
           </div>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            <p>&copy; 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
+            <p>&copy; 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
@@ -2126,12 +2140,12 @@ export default function BritzPage() {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+                  background: "linear-gradient(135deg, #1668c7 0%, #0e4684 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
-                  boxShadow: "0 8px 24px rgba(34, 197, 94, 0.25)",
+                  boxShadow: "0 8px 24px rgba(22, 104, 199, 0.25)",
                 }}>
                   <span style={{ color: "#fff", fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>

@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import "./App.css";
 import "./tenniscamp.css";
 
-const GREEN = "#16a34a";
-const GREEN_TINT = "#f0fdf4";
-const GREEN_TINT_BORDER = "#bbf7d0";
-const INK = "#0a0a0a";
-const INK_SOFT = "#52525b";
-const MUTED = "#71717a";
-const BORDER = "#e4e4e7";
-const SURFACE = "#f6f7f6";
+const GREEN = "#1668c7";
+const GREEN_TINT = "#e9f3fd";
+const GREEN_TINT_BORDER = "#b9dcf7";
+const INK = "#14304e";
+const INK_SOFT = "#586a80";
+const MUTED = "#586a80";
+const BORDER = "#d7e3f1";
+const SURFACE = "#f2f7fd";
 
 type Camp = {
   key: "kinder" | "erwachsene";
@@ -88,7 +88,7 @@ export default function TenniscampInfoPage() {
           background: "#fff",
           borderRadius: 24,
           overflow: "hidden",
-          boxShadow: "0 24px 60px -22px rgba(8, 30, 20, 0.30)",
+          boxShadow: "0 24px 60px -22px rgba(13, 42, 74, 0.30)",
           animation: "tc-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both",
         }}
       >
@@ -145,7 +145,7 @@ export default function TenniscampInfoPage() {
                     borderRadius: 16,
                     overflow: "hidden",
                     background: "#fff",
-                    boxShadow: isOpen ? "0 0 0 3px rgba(34,197,94,0.10)" : "none",
+                    boxShadow: isOpen ? "0 0 0 3px rgba(47,143,219,0.12)" : "none",
                     transition: "border-color 0.15s, box-shadow 0.15s",
                   }}
                 >
@@ -237,7 +237,7 @@ export default function TenniscampInfoPage() {
                             marginBottom: 20,
                           }}
                         >
-                          <p style={{ margin: 0, fontSize: 14, color: "#15803d", lineHeight: 1.6 }}>
+                          <p style={{ margin: 0, fontSize: 14, color: "#1f6fb0", lineHeight: 1.6 }}>
                             <strong>Nur 12 Plätze:</strong> Beim Erwachsenencamp sind die Plätze besonders begrenzt –
                             wir nehmen nur die ersten 12 Anmeldungen an, um ein intensives Tenniserlebnis zu ermöglichen.
                           </p>
