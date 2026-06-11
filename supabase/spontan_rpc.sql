@@ -433,8 +433,9 @@ end;
 $$;
 
 -- Namens-Autocomplete für das Sommerferien-Buchungsformular: liefert zu einer
--- Eingabe (>= 2 Zeichen) passende Personen + ob sie ein Mandat haben. Quelle:
--- App-Spieler + sepa_mandates. Liefert maximal ~10 deduplizierte Treffer.
+-- Eingabe (>= 2 Zeichen) passende Personen-NAMEN (ohne Mandats-Status; dieser
+-- wird erst bei der Auswahl per spontan_hat_mandat geprüft). Quelle: App-Spieler
+-- + sepa_mandates. Liefert maximal ~10 deduplizierte Namen.
 create or replace function public.spontan_spieler_suche(p_account_id text, q text)
 returns jsonb
 language plpgsql
@@ -457,10 +458,7 @@ begin
   -- App-Spieler, deren Name die Eingabe enthält
   if state is not null then
     for rec in
-      select
-        trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', '')) as name,
-        lower(coalesce(sp->>'kontaktEmail', '')) as email,
-        (coalesce(trim(sp->>'mandatsreferenz'), '') <> '' or coalesce(trim(sp->>'iban'), '') <> '') as hat_blob
+      select distinct trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', '')) as name
       from jsonb_array_elements(coalesce(state->'spieler', '[]'::jsonb)) t(sp)
       where lower(trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', ''))) like '%' || v_q || '%'
       order by 1
@@ -470,22 +468,12 @@ begin
         continue;
       end if;
       seen := seen || lower(rec.name);
-      result := result || jsonb_build_array(jsonb_build_object(
-        'name', rec.name,
-        'hatMandat', rec.hat_blob or exists (
-          select 1 from sepa_mandates m
-          where m.account_id = p_account_id
-            and (
-              lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = lower(rec.name)
-              or (rec.email <> '' and lower(coalesce(m.email, '')) = rec.email)
-            )
-        )
-      ));
+      result := result || to_jsonb(rec.name);
       exit when jsonb_array_length(result) >= 10;
     end loop;
   end if;
 
-  -- Personen, die nur im SEPA-Formular stehen (haben ein Mandat)
+  -- Personen, die nur im SEPA-Formular stehen
   if jsonb_array_length(result) < 10 then
     for rec in
       select distinct trim(coalesce(vorname, '') || ' ' || coalesce(nachname, '')) as name
@@ -499,7 +487,7 @@ begin
         continue;
       end if;
       seen := seen || lower(rec.name);
-      result := result || jsonb_build_array(jsonb_build_object('name', rec.name, 'hatMandat', true));
+      result := result || to_jsonb(rec.name);
       exit when jsonb_array_length(result) >= 10;
     end loop;
   end if;

@@ -97,10 +97,10 @@ function spontanPreisProPerson(anzahl: number): number {
 // Wedding-SEPA-Lastschriftmandat (Voraussetzung für die Teilnahme)
 const SEPA_MANDAT_LINK = "/sepa";
 
-type SpielerTreffer = { name: string; hatMandat: boolean };
-
-// Namensfeld mit Live-Vorschlägen aus der Spieler-/Mandatsdatenbank und
-// automatischer SEPA-Mandats-Prüfung. hatMandat: null = noch unbekannt.
+// Namensfeld mit Live-Vorschlägen aus der Spieler-/Mandatsdatenbank. Der
+// Mandats-Status wird NICHT in der Vorschlagsliste angezeigt, sondern erst
+// nach Auswahl eines Spielers (oder exaktem Treffer) per spontan_hat_mandat
+// geprüft. hatMandat: null = noch unbekannt.
 function MandatNameField({
   value,
   hatMandat,
@@ -118,10 +118,20 @@ function MandatNameField({
   colors: Record<string, string>;
   disabled?: boolean;
 }) {
-  const [suggestions, setSuggestions] = useState<SpielerTreffer[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const reqRef = useRef(0);
   const pickedRef = useRef(false);
+
+  // Mandat erst bei Auswahl / exaktem Treffer prüfen (nicht für die ganze Liste)
+  const resolveMandat = async (name: string) => {
+    try {
+      const { data } = await supabase.rpc("spontan_hat_mandat", { p_account_id: accountId, p_name: name, p_email: null });
+      onChange(name, Boolean(data));
+    } catch {
+      onChange(name, false);
+    }
+  };
 
   useEffect(() => {
     const q = value.trim();
@@ -139,11 +149,12 @@ function MandatNameField({
       try {
         const { data } = await supabase.rpc("spontan_spieler_suche", { p_account_id: accountId, q });
         if (my !== reqRef.current) return;
-        const list = (Array.isArray(data) ? data : []) as SpielerTreffer[];
+        const list = (Array.isArray(data) ? data : []) as string[];
         setSuggestions(list);
         setOpen(list.length > 0);
-        const exact = list.find((s) => s.name.toLowerCase() === q.toLowerCase());
-        onChange(value, exact ? exact.hatMandat : false);
+        // Mandat nur prüfen, wenn der getippte Name exakt einem Vorschlag entspricht
+        const exact = list.find((s) => s.toLowerCase() === q.toLowerCase());
+        if (exact) resolveMandat(exact);
       } catch {
         setSuggestions([]);
       }
@@ -152,11 +163,12 @@ function MandatNameField({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, accountId]);
 
-  const pick = (s: SpielerTreffer) => {
+  const pick = (name: string) => {
     pickedRef.current = true;
-    onChange(s.name, s.hatMandat);
     setOpen(false);
     setSuggestions([]);
+    onChange(name, null);     // Name sofort übernehmen
+    resolveMandat(name);      // Mandat im Hintergrund prüfen
   };
 
   const showStatus = value.trim().length >= 2 && hatMandat !== null && !open;
@@ -195,16 +207,13 @@ function MandatNameField({
           overflowY: "auto",
           boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
         }}>
-          {suggestions.map((s, i) => (
+          {suggestions.map((name, i) => (
             <button
               key={i}
               type="button"
-              onMouseDown={(e) => { e.preventDefault(); pick(s); }}
+              onMouseDown={(e) => { e.preventDefault(); pick(name); }}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 10,
+                display: "block",
                 width: "100%",
                 textAlign: "left",
                 padding: "9px 12px",
@@ -216,10 +225,7 @@ function MandatNameField({
                 color: colors.text,
               }}
             >
-              <span>{s.name}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: s.hatMandat ? "#1a7a3a" : "#c2392f", whiteSpace: "nowrap" }}>
-                {s.hatMandat ? "✓ Mandat" : "kein Mandat"}
-              </span>
+              {name}
             </button>
           ))}
         </div>
