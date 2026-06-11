@@ -225,9 +225,35 @@ declare
   v_buchung jsonb;
   v_weitere jsonb;
   v_training_id text;
+  v_account text;
+  v_anlage text;
+  v_ohne_mandat text[] := '{}';
+  w text;
 begin
   if coalesce(trim(p_name), '') = '' or coalesce(trim(p_email), '') = '' then
     return jsonb_build_object('ok', false, 'fehler', 'eingabe');
+  end if;
+
+  -- Slot-Stammdaten für Mandatsprüfung
+  select account_id, anlage into v_account, v_anlage from spontane_stunden where id = slot_id;
+  if v_account is null then
+    return jsonb_build_object('ok', false, 'fehler', 'belegt');
+  end if;
+
+  -- Mandatspflicht nur für Wedding (Sommerferien-Training): Bucher + alle Mitspieler
+  -- müssen ein SEPA-Lastschriftmandat hinterlegt haben.
+  if v_anlage = 'Wedding' then
+    if not spontan_hat_mandat(v_account, p_name, p_email) then
+      v_ohne_mandat := v_ohne_mandat || trim(p_name);
+    end if;
+    foreach w in array coalesce(p_weitere_teilnehmer, '{}'::text[]) loop
+      if trim(coalesce(w, '')) <> '' and not spontan_hat_mandat(v_account, w, null) then
+        v_ohne_mandat := v_ohne_mandat || trim(w);
+      end if;
+    end loop;
+    if array_length(v_ohne_mandat, 1) > 0 then
+      return jsonb_build_object('ok', false, 'fehler', 'kein_mandat', 'ohneMandat', to_jsonb(v_ohne_mandat));
+    end if;
   end if;
 
   v_buchung := jsonb_build_object(
@@ -358,10 +384,136 @@ begin
 end;
 $$;
 
+-- Hat eine Person (per vollständigem Namen ODER E-Mail) ein SEPA-Lastschriftmandat?
+-- Prüft beide Quellen: App-Spieler (mandatsreferenz/iban) und die sepa_mandates-Tabelle.
+create or replace function public.spontan_hat_mandat(p_account_id text, p_name text, p_email text default null)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  state jsonb;
+  v_name text := lower(trim(coalesce(p_name, '')));
+  v_email text := lower(trim(coalesce(p_email, '')));
+begin
+  if v_name = '' and v_email = '' then
+    return false;
+  end if;
+
+  select data into state from account_state where account_id = p_account_id::uuid;
+
+  -- App-Spieler mit hinterlegtem Mandat (Match per Name oder E-Mail)
+  if state is not null and exists (
+    select 1
+    from jsonb_array_elements(coalesce(state->'spieler', '[]'::jsonb)) t(sp)
+    where (coalesce(trim(sp->>'mandatsreferenz'), '') <> '' or coalesce(trim(sp->>'iban'), '') <> '')
+      and (
+        (v_name <> '' and lower(trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', ''))) = v_name)
+        or (v_email <> '' and lower(coalesce(sp->>'kontaktEmail', '')) = v_email)
+      )
+  ) then
+    return true;
+  end if;
+
+  -- Mandat aus dem öffentlichen SEPA-Formular (sepa_mandates)
+  if exists (
+    select 1 from sepa_mandates m
+    where m.account_id = p_account_id
+      and (
+        (v_name <> '' and lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = v_name)
+        or (v_email <> '' and lower(coalesce(m.email, '')) = v_email)
+      )
+  ) then
+    return true;
+  end if;
+
+  return false;
+end;
+$$;
+
+-- Namens-Autocomplete für das Sommerferien-Buchungsformular: liefert zu einer
+-- Eingabe (>= 2 Zeichen) passende Personen + ob sie ein Mandat haben. Quelle:
+-- App-Spieler + sepa_mandates. Liefert maximal ~10 deduplizierte Treffer.
+create or replace function public.spontan_spieler_suche(p_account_id text, q text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  state jsonb;
+  v_q text := lower(trim(coalesce(q, '')));
+  result jsonb := '[]'::jsonb;
+  seen text[] := '{}';
+  rec record;
+begin
+  if length(v_q) < 2 then
+    return '[]'::jsonb;
+  end if;
+
+  select data into state from account_state where account_id = p_account_id::uuid;
+
+  -- App-Spieler, deren Name die Eingabe enthält
+  if state is not null then
+    for rec in
+      select
+        trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', '')) as name,
+        lower(coalesce(sp->>'kontaktEmail', '')) as email,
+        (coalesce(trim(sp->>'mandatsreferenz'), '') <> '' or coalesce(trim(sp->>'iban'), '') <> '') as hat_blob
+      from jsonb_array_elements(coalesce(state->'spieler', '[]'::jsonb)) t(sp)
+      where lower(trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', ''))) like '%' || v_q || '%'
+      order by 1
+      limit 20
+    loop
+      if rec.name = '' or lower(rec.name) = any(seen) then
+        continue;
+      end if;
+      seen := seen || lower(rec.name);
+      result := result || jsonb_build_array(jsonb_build_object(
+        'name', rec.name,
+        'hatMandat', rec.hat_blob or exists (
+          select 1 from sepa_mandates m
+          where m.account_id = p_account_id
+            and (
+              lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = lower(rec.name)
+              or (rec.email <> '' and lower(coalesce(m.email, '')) = rec.email)
+            )
+        )
+      ));
+      exit when jsonb_array_length(result) >= 10;
+    end loop;
+  end if;
+
+  -- Personen, die nur im SEPA-Formular stehen (haben ein Mandat)
+  if jsonb_array_length(result) < 10 then
+    for rec in
+      select distinct trim(coalesce(vorname, '') || ' ' || coalesce(nachname, '')) as name
+      from sepa_mandates
+      where account_id = p_account_id
+        and lower(trim(coalesce(vorname, '') || ' ' || coalesce(nachname, ''))) like '%' || v_q || '%'
+      order by 1
+      limit 20
+    loop
+      if rec.name = '' or lower(rec.name) = any(seen) then
+        continue;
+      end if;
+      seen := seen || lower(rec.name);
+      result := result || jsonb_build_array(jsonb_build_object('name', rec.name, 'hatMandat', true));
+      exit when jsonb_array_length(result) >= 10;
+    end loop;
+  end if;
+
+  return result;
+end;
+$$;
+
 grant execute on function public.spontan_buchung_uebernehmen(uuid) to anon, authenticated;
 grant execute on function public.spontan_buchen(uuid, text, text, text, text[], numeric) to anon, authenticated;
 grant execute on function public.spontan_buchung_absagen(uuid) to anon, authenticated;
 grant execute on function public.spontan_trainer_kontakt(uuid) to anon, authenticated;
+grant execute on function public.spontan_hat_mandat(text, text, text) to anon, authenticated;
+grant execute on function public.spontan_spieler_suche(text, text) to anon, authenticated;
 
 -- spontane_stunden in die Realtime-Publikation aufnehmen (Buchungs-Trigger für die App).
 do $$

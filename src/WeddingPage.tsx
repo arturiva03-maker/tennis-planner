@@ -97,6 +97,142 @@ function spontanPreisProPerson(anzahl: number): number {
 // Wedding-SEPA-Lastschriftmandat (Voraussetzung für die Teilnahme)
 const SEPA_MANDAT_LINK = "/sepa";
 
+type SpielerTreffer = { name: string; hatMandat: boolean };
+
+// Namensfeld mit Live-Vorschlägen aus der Spieler-/Mandatsdatenbank und
+// automatischer SEPA-Mandats-Prüfung. hatMandat: null = noch unbekannt.
+function MandatNameField({
+  value,
+  hatMandat,
+  onChange,
+  placeholder,
+  accountId,
+  colors,
+  disabled,
+}: {
+  value: string;
+  hatMandat: boolean | null;
+  onChange: (name: string, hatMandat: boolean | null) => void;
+  placeholder: string;
+  accountId: string;
+  colors: Record<string, string>;
+  disabled?: boolean;
+}) {
+  const [suggestions, setSuggestions] = useState<SpielerTreffer[]>([]);
+  const [open, setOpen] = useState(false);
+  const reqRef = useRef(0);
+  const pickedRef = useRef(false);
+
+  useEffect(() => {
+    const q = value.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    if (pickedRef.current) {
+      pickedRef.current = false;
+      return;
+    }
+    const my = ++reqRef.current;
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await supabase.rpc("spontan_spieler_suche", { p_account_id: accountId, q });
+        if (my !== reqRef.current) return;
+        const list = (Array.isArray(data) ? data : []) as SpielerTreffer[];
+        setSuggestions(list);
+        setOpen(list.length > 0);
+        const exact = list.find((s) => s.name.toLowerCase() === q.toLowerCase());
+        onChange(value, exact ? exact.hatMandat : false);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, accountId]);
+
+  const pick = (s: SpielerTreffer) => {
+    pickedRef.current = true;
+    onChange(s.name, s.hatMandat);
+    setOpen(false);
+    setSuggestions([]);
+  };
+
+  const showStatus = value.trim().length >= 2 && hatMandat !== null && !open;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value, null)}
+        onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          border: `1px solid ${hatMandat === false ? "#c2392f" : colors.border}`,
+          borderRadius: 2,
+          fontSize: 15,
+          boxSizing: "border-box",
+        }}
+      />
+      {open && suggestions.length > 0 && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          background: colors.white,
+          border: `1px solid ${colors.border}`,
+          borderTop: "none",
+          maxHeight: 220,
+          overflowY: "auto",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+        }}>
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); pick(s); }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+                width: "100%",
+                textAlign: "left",
+                padding: "9px 12px",
+                background: "none",
+                border: "none",
+                borderBottom: `1px solid ${colors.bgLight}`,
+                cursor: "pointer",
+                fontSize: 14,
+                color: colors.text,
+              }}
+            >
+              <span>{s.name}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: s.hatMandat ? "#1a7a3a" : "#c2392f", whiteSpace: "nowrap" }}>
+                {s.hatMandat ? "✓ Mandat" : "kein Mandat"}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {showStatus && (
+        <p style={{ margin: "6px 0 0", fontSize: 12.5, fontWeight: 600, color: hatMandat ? "#1a7a3a" : "#c2392f" }}>
+          {hatMandat ? "✓ SEPA-Lastschriftmandat hinterlegt" : "⚠ Kein SEPA-Lastschriftmandat hinterlegt"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -156,10 +292,10 @@ export default function WeddingPage() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SpontaneStunde | null>(null);
   const [bookingName, setBookingName] = useState("");
+  const [bookingNameMandat, setBookingNameMandat] = useState<boolean | null>(null);
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
-  const [bookingSepaMandat, setBookingSepaMandat] = useState<"" | "ja" | "nein">("");
-  const [bookingWeitere, setBookingWeitere] = useState<string[]>([]);
+  const [bookingWeitere, setBookingWeitere] = useState<{ name: string; hatMandat: boolean | null }[]>([]);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -327,9 +463,9 @@ export default function WeddingPage() {
   const openBookingModal = (slot: SpontaneStunde) => {
     setSelectedSlot(slot);
     setBookingName("");
+    setBookingNameMandat(null);
     setBookingEmail("");
     setBookingTelefon("");
-    setBookingSepaMandat("");
     setBookingWeitere([]);
     setBookingError(null);
     setBookingSuccess(false);
@@ -337,10 +473,20 @@ export default function WeddingPage() {
   };
 
   // Aktuelle Teilnehmerzahl / Preis je nach hinzugefügten Personen
-  const weitereTrimmed = bookingWeitere.map((n) => n.trim()).filter(Boolean);
+  const weitereTrimmed = bookingWeitere.map((w) => w.name.trim()).filter(Boolean);
   const bookingAnzahl = 1 + weitereTrimmed.length;
   const bookingPreisProPerson = spontanPreisProPerson(bookingAnzahl);
   const bookingPreisGesamt = bookingPreisProPerson * bookingAnzahl;
+
+  // SEPA-Mandats-Gate: alle benannten Teilnehmer brauchen ein hinterlegtes Mandat
+  const ohneMandatNamen = [
+    ...(bookingName.trim() && bookingNameMandat === false ? [bookingName.trim()] : []),
+    ...bookingWeitere.filter((w) => w.name.trim() && w.hatMandat === false).map((w) => w.name.trim()),
+  ];
+  const alleMandateOk =
+    bookingName.trim() !== "" &&
+    bookingNameMandat === true &&
+    bookingWeitere.every((w) => w.name.trim() === "" || w.hatMandat === true);
 
   const submitBooking = async () => {
     if (!selectedSlot) return;
@@ -348,7 +494,7 @@ export default function WeddingPage() {
     const name = bookingName.trim();
     const email = bookingEmail.trim();
     const telefon = bookingTelefon.trim();
-    const weitere = bookingWeitere.map((n) => n.trim()).filter(Boolean);
+    const weitere = bookingWeitere.map((w) => w.name.trim()).filter(Boolean);
     const anzahl = 1 + weitere.length;
     const preisProPerson = spontanPreisProPerson(anzahl);
     const preisGesamt = preisProPerson * anzahl;
@@ -361,8 +507,8 @@ export default function WeddingPage() {
       setBookingError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
       return;
     }
-    if (bookingSepaMandat !== "ja") {
-      setBookingError("Für die Teilnahme ist ein SEPA-Lastschriftmandat erforderlich. Bitte bestätigen Sie es oder erteilen Sie es zuerst.");
+    if (!alleMandateOk) {
+      setBookingError("Für alle Teilnehmer ist ein hinterlegtes SEPA-Lastschriftmandat erforderlich. Bitte erteilen Sie fehlende Mandate zuerst.");
       return;
     }
 
@@ -382,7 +528,12 @@ export default function WeddingPage() {
 
       if (error || !buchenResult?.ok) {
         console.error("Booking error:", error, buchenResult);
-        setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
+        if (buchenResult?.fehler === "kein_mandat") {
+          const namen = Array.isArray(buchenResult.ohneMandat) ? buchenResult.ohneMandat.join(", ") : "";
+          setBookingError(`Für folgende Personen ist kein SEPA-Lastschriftmandat hinterlegt: ${namen}. Bitte erteilen Sie zuerst das Mandat.`);
+        } else {
+          setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
+        }
         return;
       }
 
@@ -2650,19 +2801,14 @@ export default function WeddingPage() {
                   <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
                     Name *
                   </label>
-                  <input
-                    type="text"
+                  <MandatNameField
                     value={bookingName}
-                    onChange={(e) => setBookingName(e.target.value)}
-                    placeholder="Ihr Name"
+                    hatMandat={bookingNameMandat}
+                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}
+                    placeholder="Vor- und Nachname"
+                    accountId={WEDDING_ACCOUNT_ID}
+                    colors={colors}
                     disabled={bookingSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 2,
-                      fontSize: 15,
-                    }}
                   />
                 </div>
 
@@ -2715,22 +2861,25 @@ export default function WeddingPage() {
                     Sie können für bis zu {SPONTAN_MAX_TEILNEHMER} Personen buchen. Der Preis pro Person richtet sich nach der
                     Gruppengröße: 1 Person 40 €, 2er 25 €, 3er 20 €, 4er 15 € – jeweils pro Person.
                   </p>
-                  {bookingWeitere.map((wname, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        value={wname}
-                        onChange={(e) => setBookingWeitere((prev) => prev.map((n, i) => (i === idx ? e.target.value : n)))}
-                        placeholder={`Name ${idx + 2}`}
-                        disabled={bookingSubmitting}
-                        style={{ flex: 1, padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15 }}
-                      />
+                  {bookingWeitere.map((w, idx) => (
+                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "flex-start" }}>
+                      <div style={{ flex: 1 }}>
+                        <MandatNameField
+                          value={w.name}
+                          hatMandat={w.hatMandat}
+                          onChange={(n, m) => setBookingWeitere((prev) => prev.map((x, i) => (i === idx ? { name: n, hatMandat: m } : x)))}
+                          placeholder={`Name ${idx + 2}`}
+                          accountId={WEDDING_ACCOUNT_ID}
+                          colors={colors}
+                          disabled={bookingSubmitting}
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => setBookingWeitere((prev) => prev.filter((_, i) => i !== idx))}
                         disabled={bookingSubmitting}
                         aria-label="Teilnehmer entfernen"
-                        style={{ width: 40, flexShrink: 0, background: colors.bgLight, border: `1px solid ${colors.border}`, borderRadius: 2, cursor: "pointer", color: colors.textMuted, fontSize: 18 }}
+                        style={{ width: 40, height: 41, flexShrink: 0, background: colors.bgLight, border: `1px solid ${colors.border}`, borderRadius: 2, cursor: "pointer", color: colors.textMuted, fontSize: 18 }}
                       >
                         &times;
                       </button>
@@ -2739,7 +2888,7 @@ export default function WeddingPage() {
                   {bookingAnzahl < SPONTAN_MAX_TEILNEHMER && (
                     <button
                       type="button"
-                      onClick={() => setBookingWeitere((prev) => [...prev, ""])}
+                      onClick={() => setBookingWeitere((prev) => [...prev, { name: "", hatMandat: null }])}
                       disabled={bookingSubmitting}
                       style={{ background: "none", border: "none", color: colors.primary, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: 0 }}
                     >
@@ -2748,31 +2897,11 @@ export default function WeddingPage() {
                   )}
                 </div>
 
-                {/* SEPA-Lastschriftmandat – Voraussetzung für die Buchung */}
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontWeight: 700, marginBottom: 8, fontSize: 14 }}>
-                    Ich habe der Tennisschule A bis Z bereits ein SEPA-Lastschriftmandat erteilt. *
-                  </label>
-                  <div style={{ display: "flex", gap: 24 }}>
-                    {([["ja", "Ja"], ["nein", "Nein"]] as const).map(([val, lab]) => (
-                      <label key={val} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 15 }}>
-                        <input
-                          type="radio"
-                          name="sepaMandat"
-                          checked={bookingSepaMandat === val}
-                          onChange={() => setBookingSepaMandat(val)}
-                          disabled={bookingSubmitting}
-                        />
-                        {lab}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {bookingSepaMandat === "nein" && (
+                {/* Automatische SEPA-Mandats-Prüfung: Hinweis, wenn jemandem das Mandat fehlt */}
+                {ohneMandatNamen.length > 0 && (
                   <div style={{
-                    background: colors.accentBg,
-                    border: `1px solid ${colors.accentLight}`,
+                    background: colors.errorBg,
+                    border: "1px solid #e8b4af",
                     borderRadius: 8,
                     padding: "14px 16px",
                     marginBottom: 20,
@@ -2780,8 +2909,8 @@ export default function WeddingPage() {
                     color: colors.text,
                     lineHeight: 1.6,
                   }}>
-                    Für die Teilnahme an unserem Tennistraining ist ein SEPA-Lastschriftmandat erforderlich.
-                    Bitte erteilen Sie zuerst das Mandat – danach können Sie das Training buchen.
+                    Für <strong>{ohneMandatNamen.join(", ")}</strong> ist kein SEPA-Lastschriftmandat hinterlegt.
+                    Eine Buchung ist nur mit gültigem Mandat möglich – bitte erteilen Sie es zuerst:
                     <div style={{ marginTop: 12 }}>
                       <a
                         href={SEPA_MANDAT_LINK}
@@ -2806,17 +2935,17 @@ export default function WeddingPage() {
 
                 <button
                   onClick={submitBooking}
-                  disabled={bookingSubmitting || bookingSepaMandat !== "ja"}
+                  disabled={bookingSubmitting || !alleMandateOk}
                   style={{
                     width: "100%",
-                    background: (bookingSubmitting || bookingSepaMandat !== "ja") ? colors.textMuted : colors.primary,
+                    background: (bookingSubmitting || !alleMandateOk) ? colors.textMuted : colors.primary,
                     color: colors.white,
                     border: "none",
                     padding: "14px 24px",
                     borderRadius: 2,
                     fontWeight: 700,
                     fontSize: 15,
-                    cursor: (bookingSubmitting || bookingSepaMandat !== "ja") ? "not-allowed" : "pointer",
+                    cursor: (bookingSubmitting || !alleMandateOk) ? "not-allowed" : "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
                   }}
