@@ -83,17 +83,8 @@ type SpontaneStunde = {
 
 const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-// Standardpreis für spontane Trainingsstunden (sofern am Slot kein eigener Preis hinterlegt ist)
+// Standardpreis für das Sommerferien-Training (sofern am Slot kein eigener Preis hinterlegt ist)
 const SPONTAN_PREIS_PRO_STUNDE = 40;
-
-// Maximale Teilnehmerzahl pro Buchung und Staffelpreis pro Person je Gruppengröße
-const SPONTAN_MAX_TEILNEHMER = 4;
-function spontanPreisProPerson(anzahl: number): number {
-  if (anzahl <= 1) return 40;
-  if (anzahl === 2) return 25;
-  if (anzahl === 3) return 20;
-  return 15; // 4 Personen
-}
 // Wedding-SEPA-Lastschriftmandat (Voraussetzung für die Teilnahme)
 const SEPA_MANDAT_LINK = "/sepa";
 
@@ -301,7 +292,7 @@ export default function WeddingPage() {
   const [bookingNameMandat, setBookingNameMandat] = useState<boolean | null>(null);
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
-  const [bookingWeitere, setBookingWeitere] = useState<{ name: string; hatMandat: boolean | null }[]>([]);
+  const [bookingHinweis, setBookingHinweis] = useState("");
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -472,27 +463,16 @@ export default function WeddingPage() {
     setBookingNameMandat(null);
     setBookingEmail("");
     setBookingTelefon("");
-    setBookingWeitere([]);
+    setBookingHinweis("");
     setBookingError(null);
     setBookingSuccess(false);
     setShowBookingModal(true);
   };
 
-  // Aktuelle Teilnehmerzahl / Preis je nach hinzugefügten Personen
-  const weitereTrimmed = bookingWeitere.map((w) => w.name.trim()).filter(Boolean);
-  const bookingAnzahl = 1 + weitereTrimmed.length;
-  const bookingPreisProPerson = spontanPreisProPerson(bookingAnzahl);
-  const bookingPreisGesamt = bookingPreisProPerson * bookingAnzahl;
-
-  // SEPA-Mandats-Gate: alle benannten Teilnehmer brauchen ein hinterlegtes Mandat
-  const ohneMandatNamen = [
-    ...(bookingName.trim() && bookingNameMandat === false ? [bookingName.trim()] : []),
-    ...bookingWeitere.filter((w) => w.name.trim() && w.hatMandat === false).map((w) => w.name.trim()),
-  ];
-  const alleMandateOk =
-    bookingName.trim() !== "" &&
-    bookingNameMandat === true &&
-    bookingWeitere.every((w) => w.name.trim() === "" || w.hatMandat === true);
+  // Preis des Slots (Standard 40 €) und SEPA-Mandats-Gate (nur Hauptbucher)
+  const bookingPreis = selectedSlot?.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE;
+  const ohneMandatNamen = bookingName.trim() && bookingNameMandat === false ? [bookingName.trim()] : [];
+  const alleMandateOk = bookingName.trim() !== "" && bookingNameMandat === true;
 
   const submitBooking = async () => {
     if (!selectedSlot) return;
@@ -500,10 +480,7 @@ export default function WeddingPage() {
     const name = bookingName.trim();
     const email = bookingEmail.trim();
     const telefon = bookingTelefon.trim();
-    const weitere = bookingWeitere.map((w) => w.name.trim()).filter(Boolean);
-    const anzahl = 1 + weitere.length;
-    const preisProPerson = spontanPreisProPerson(anzahl);
-    const preisGesamt = preisProPerson * anzahl;
+    const hinweis = bookingHinweis.trim();
 
     if (!name) {
       setBookingError("Bitte geben Sie Ihren Namen ein.");
@@ -514,7 +491,7 @@ export default function WeddingPage() {
       return;
     }
     if (!alleMandateOk) {
-      setBookingError("Für alle Teilnehmer ist ein hinterlegtes SEPA-Lastschriftmandat erforderlich. Bitte erteilen Sie fehlende Mandate zuerst.");
+      setBookingError("Für die Buchung ist ein hinterlegtes SEPA-Lastschriftmandat erforderlich. Bitte erteilen Sie es zuerst.");
       return;
     }
 
@@ -528,8 +505,7 @@ export default function WeddingPage() {
         p_name: name,
         p_email: email,
         p_telefon: telefon || null,
-        p_weitere_teilnehmer: weitere,
-        p_preis_pro_person: preisProPerson,
+        p_hinweis: hinweis || null,
       });
 
       if (error || !buchenResult?.ok) {
@@ -553,14 +529,9 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
-      const preisProPersonFmt = preisProPerson.toFixed(2).replace(".", ",");
-      const preisGesamtFmt = preisGesamt.toFixed(2).replace(".", ",");
-      const teilnehmerListe = [name, ...weitere];
-      const teilnehmerHtml = teilnehmerListe.map((t) => `&bull;&nbsp;${t}`).join("<br>");
-      const teilnehmerText = teilnehmerListe.join(", ");
-      const preisHtmlText = anzahl > 1
-        ? `${preisProPersonFmt} EUR pro Person · ${anzahl} Personen · gesamt ${preisGesamtFmt} EUR`
-        : `${preisProPersonFmt} EUR`;
+      const preisFmt = (selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",");
+      const preisHtmlText = `${preisFmt} EUR`;
+      const hinweisHtml = hinweis.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
       const confirmationHtml = `
 <!DOCTYPE html>
@@ -637,18 +608,8 @@ export default function WeddingPage() {
                           </table>
                         </td>
                       </tr>
-                      ${anzahl > 1 ? `<tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
-                          <table role="presentation" cellspacing="0" cellpadding="0">
-                            <tr>
-                              <td style="width: 32px; font-size: 18px; vertical-align: top;">👥</td>
-                              <td style="color: ${colors.primary}; font-size: 15px; line-height: 1.6;">${teilnehmerHtml}</td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>` : ''}
                       <tr>
-                        <td style="padding: 8px 0;">
+                        <td style="padding: 8px 0;${hinweis ? ` border-bottom: 1px solid ${colors.border};` : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
                               <td style="width: 32px; font-size: 18px;">💰</td>
@@ -657,6 +618,16 @@ export default function WeddingPage() {
                           </table>
                         </td>
                       </tr>
+                      ${hinweis ? `<tr>
+                        <td style="padding: 8px 0;">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px; vertical-align: top;">📝</td>
+                              <td style="color: ${colors.primary}; font-size: 15px; line-height: 1.6;">${hinweisHtml}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>` : ''}
                     </table>
                   </td>
                 </tr>
@@ -725,7 +696,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding\nTeilnehmer: ${teilnehmerText}${preisText}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -768,11 +739,11 @@ export default function WeddingPage() {
                           <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${name}</span>
                         </td>
                       </tr>
-                      ${anzahl > 1 ? `
+                      ${hinweis ? `
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="color: ${colors.textMuted}; font-size: 13px;">Teilnehmer (${anzahl}):</span>
-                          <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${teilnehmerListe.join(", ")}</span>
+                          <span style="color: ${colors.textMuted}; font-size: 13px;">Hinweis:</span>
+                          <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600; margin-left: 8px;">${hinweisHtml}</span>
                         </td>
                       </tr>
                       ` : ''}
@@ -856,7 +827,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: ["tennisabisz@gmail.com"],
             subject: `Neue Buchung Sommerferien-Training: ${name} – ${datumFormatted}`,
-            body: `Neue Buchung Sommerferien-Training!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}${anzahl > 1 ? `\nTeilnehmer (${anzahl}): ${teilnehmerText}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}\n\n${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen." : "Automatische Übernahme fehlgeschlagen – bitte in der App unter Weiteres → Spontan übernehmen."}`,
+            body: `Neue Buchung Sommerferien-Training!\n\nName: ${name}\nE-Mail: ${email}${telefon ? `\nTelefon: ${telefon}` : ""}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nAnlage: ${selectedSlot.anlage}${preisText}\n\n${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen." : "Automatische Übernahme fehlgeschlagen – bitte in der App unter Weiteres → Spontan übernehmen."}`,
             html: adminHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -2684,10 +2655,10 @@ export default function WeddingPage() {
                     <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
-                  {weitereTrimmed.length > 0 && (
+                  {bookingHinweis.trim() && (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
-                      <span style={{ fontSize: 18 }}>👥</span>
-                      <span style={{ color: colors.text }}>{[bookingName.trim(), ...weitereTrimmed].join(", ")}</span>
+                      <span style={{ fontSize: 18 }}>📝</span>
+                      <span style={{ color: colors.text }}>{bookingHinweis.trim()}</span>
                     </div>
                   )}
                   <div style={{
@@ -2700,9 +2671,9 @@ export default function WeddingPage() {
                   }}>
                     <span style={{ fontSize: 18 }}>💰</span>
                     <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
-                      {bookingPreisProPerson.toFixed(2).replace(".", ",")} € pro Person
+                      {bookingPreis.toFixed(2).replace(".", ",")} € pro Person
                       <span style={{ display: "block", fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
-                        {bookingAnzahl > 1 ? `${bookingAnzahl} Personen · gesamt ${bookingPreisGesamt.toFixed(2).replace(".", ",")} € · ` : ""}Einzug per SEPA-Lastschrift
+                        Einzug per SEPA-Lastschrift
                       </span>
                     </span>
                   </div>
@@ -2767,10 +2738,8 @@ export default function WeddingPage() {
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
                   <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
-                    {bookingPreisProPerson.toFixed(2).replace(".", ",")} €
-                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>
-                      pro Person{bookingAnzahl > 1 ? ` · ${bookingAnzahl} Personen · gesamt ${bookingPreisGesamt.toFixed(2).replace(".", ",")} €` : ""}
-                    </span>
+                    {bookingPreis.toFixed(2).replace(".", ",")} €
+                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>pro Person</span>
                   </div>
                 </div>
 
@@ -2858,49 +2827,32 @@ export default function WeddingPage() {
                   />
                 </div>
 
-                {/* Weitere Teilnehmer mit Staffelpreis */}
+                {/* Hinweis-Feld (z.B. weitere Mitspieler) */}
                 <div style={{ marginBottom: 24 }}>
                   <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
-                    Weitere Teilnehmer (optional)
+                    Hinweis (optional)
                   </label>
-                  <p style={{ margin: "0 0 10px", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
-                    Sie können für bis zu {SPONTAN_MAX_TEILNEHMER} Personen buchen. Der Preis pro Person richtet sich nach der
-                    Gruppengröße: 1 Person 40 €, 2er 25 €, 3er 20 €, 4er 15 € – jeweils pro Person.
+                  <textarea
+                    value={bookingHinweis}
+                    onChange={(e) => setBookingHinweis(e.target.value)}
+                    placeholder="z.B. wenn Sie weitere Mitspieler mitbringen möchten"
+                    disabled={bookingSubmitting}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 2,
+                      fontSize: 15,
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <p style={{ margin: "8px 0 0", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
+                    Wenn Sie weitere Mitspieler mitbringen, passt sich der Preis an: 1 Person 40 €, 2 Personen je 25 €,
+                    3 Personen je 20 €, 4 Personen je 15 € (pro Person). Den genauen Preis stimmen wir dann mit Ihnen ab.
                   </p>
-                  {bookingWeitere.map((w, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "flex-start" }}>
-                      <div style={{ flex: 1 }}>
-                        <MandatNameField
-                          value={w.name}
-                          hatMandat={w.hatMandat}
-                          onChange={(n, m) => setBookingWeitere((prev) => prev.map((x, i) => (i === idx ? { name: n, hatMandat: m } : x)))}
-                          placeholder={`Name ${idx + 2}`}
-                          accountId={WEDDING_ACCOUNT_ID}
-                          colors={colors}
-                          disabled={bookingSubmitting}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setBookingWeitere((prev) => prev.filter((_, i) => i !== idx))}
-                        disabled={bookingSubmitting}
-                        aria-label="Teilnehmer entfernen"
-                        style={{ width: 40, height: 41, flexShrink: 0, background: colors.bgLight, border: `1px solid ${colors.border}`, borderRadius: 2, cursor: "pointer", color: colors.textMuted, fontSize: 18 }}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                  {bookingAnzahl < SPONTAN_MAX_TEILNEHMER && (
-                    <button
-                      type="button"
-                      onClick={() => setBookingWeitere((prev) => [...prev, { name: "", hatMandat: null }])}
-                      disabled={bookingSubmitting}
-                      style={{ background: "none", border: "none", color: colors.primary, fontWeight: 600, fontSize: 14, cursor: "pointer", padding: 0 }}
-                    >
-                      + Weitere Person hinzufügen
-                    </button>
-                  )}
                 </div>
 
                 {/* Automatische SEPA-Mandats-Prüfung: Hinweis, wenn jemandem das Mandat fehlt */}
@@ -2956,7 +2908,7 @@ export default function WeddingPage() {
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : `Verbindlich buchen · ${bookingPreisGesamt.toFixed(0)} €`}
+                  {bookingSubmitting ? "Wird gebucht..." : `Verbindlich buchen · ${bookingPreis.toFixed(0)} €`}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>

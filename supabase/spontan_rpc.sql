@@ -195,6 +195,9 @@ begin
         neues_training := neues_training || jsonb_build_object('customAbrechnung', 'proSpieler');
       end if;
     end if;
+    if coalesce(trim(slot.buchung->>'hinweis'), '') <> '' then
+      neues_training := neues_training || jsonb_build_object('notiz', trim(slot.buchung->>'hinweis'));
+    end if;
     state := jsonb_set(state, '{trainings}', trainings_arr || jsonb_build_array(neues_training));
     update account_state set data = state, updated_at = now() where account_id = slot.account_id::uuid;
     update spontane_stunden set training_id = v_training_id where id = slot_id;
@@ -207,13 +210,13 @@ $$;
 -- p_weitere_teilnehmer / p_preis_pro_person sind optional (Britz nutzt die
 -- 4-Argument-Form weiterhin ohne Gruppe).
 drop function if exists public.spontan_buchen(uuid, text, text, text);
+drop function if exists public.spontan_buchen(uuid, text, text, text, text[], numeric);
 create or replace function public.spontan_buchen(
   slot_id uuid,
   p_name text,
   p_email text,
   p_telefon text default null,
-  p_weitere_teilnehmer text[] default '{}',
-  p_preis_pro_person numeric default null
+  p_hinweis text default null
 )
 returns jsonb
 language plpgsql
@@ -223,12 +226,9 @@ as $$
 declare
   slot spontane_stunden%rowtype;
   v_buchung jsonb;
-  v_weitere jsonb;
   v_training_id text;
   v_account text;
   v_anlage text;
-  v_ohne_mandat text[] := '{}';
-  w text;
 begin
   if coalesce(trim(p_name), '') = '' or coalesce(trim(p_email), '') = '' then
     return jsonb_build_object('ok', false, 'fehler', 'eingabe');
@@ -240,20 +240,10 @@ begin
     return jsonb_build_object('ok', false, 'fehler', 'belegt');
   end if;
 
-  -- Mandatspflicht nur für Wedding (Sommerferien-Training): Bucher + alle Mitspieler
-  -- müssen ein SEPA-Lastschriftmandat hinterlegt haben.
-  if v_anlage = 'Wedding' then
-    if not spontan_hat_mandat(v_account, p_name, p_email) then
-      v_ohne_mandat := v_ohne_mandat || trim(p_name);
-    end if;
-    foreach w in array coalesce(p_weitere_teilnehmer, '{}'::text[]) loop
-      if trim(coalesce(w, '')) <> '' and not spontan_hat_mandat(v_account, w, null) then
-        v_ohne_mandat := v_ohne_mandat || trim(w);
-      end if;
-    end loop;
-    if array_length(v_ohne_mandat, 1) > 0 then
-      return jsonb_build_object('ok', false, 'fehler', 'kein_mandat', 'ohneMandat', to_jsonb(v_ohne_mandat));
-    end if;
+  -- Mandatspflicht nur für Wedding (Sommerferien-Training): nur der Hauptbucher
+  -- muss ein SEPA-Lastschriftmandat hinterlegt haben.
+  if v_anlage = 'Wedding' and not spontan_hat_mandat(v_account, p_name, p_email) then
+    return jsonb_build_object('ok', false, 'fehler', 'kein_mandat', 'ohneMandat', to_jsonb(array[trim(p_name)]));
   end if;
 
   v_buchung := jsonb_build_object(
@@ -264,18 +254,8 @@ begin
   if p_telefon is not null and trim(p_telefon) <> '' then
     v_buchung := v_buchung || jsonb_build_object('telefon', trim(p_telefon));
   end if;
-
-  v_weitere := (
-    select coalesce(jsonb_agg(trim(w)), '[]'::jsonb)
-    from unnest(coalesce(p_weitere_teilnehmer, '{}'::text[])) w
-    where trim(coalesce(w, '')) <> ''
-  );
-  v_buchung := v_buchung || jsonb_build_object(
-    'weitereTeilnehmer', v_weitere,
-    'anzahlTeilnehmer', 1 + jsonb_array_length(v_weitere)
-  );
-  if p_preis_pro_person is not null then
-    v_buchung := v_buchung || jsonb_build_object('preisProPerson', p_preis_pro_person);
+  if p_hinweis is not null and trim(p_hinweis) <> '' then
+    v_buchung := v_buchung || jsonb_build_object('hinweis', trim(p_hinweis));
   end if;
 
   update spontane_stunden
@@ -497,7 +477,7 @@ end;
 $$;
 
 grant execute on function public.spontan_buchung_uebernehmen(uuid) to anon, authenticated;
-grant execute on function public.spontan_buchen(uuid, text, text, text, text[], numeric) to anon, authenticated;
+grant execute on function public.spontan_buchen(uuid, text, text, text, text) to anon, authenticated;
 grant execute on function public.spontan_buchung_absagen(uuid) to anon, authenticated;
 grant execute on function public.spontan_trainer_kontakt(uuid) to anon, authenticated;
 grant execute on function public.spontan_hat_mandat(text, text, text) to anon, authenticated;
