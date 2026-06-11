@@ -1948,6 +1948,57 @@ export default function App() {
 
   /* ::::: Realtime Sync (nur für Admin) ::::: */
 
+  function applyCloudState(raw: Partial<AppState>, updatedAt?: string) {
+    if (updatedAt) lastKnownUpdatedAtRef.current = updatedAt;
+    skipSaveRef.current = true;
+    const cloud = normalizeState(raw);
+    setTrainers(cloud.trainers);
+    setSpieler(cloud.spieler);
+    setTarife(cloud.tarife);
+    setTrainings(cloud.trainings);
+    setPayments(cloud.payments ?? {});
+    setTrainerPayments(cloud.trainerPayments ?? {});
+    setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
+    setTrainerBarSettled(cloud.trainerBarSettled ?? {});
+    setNotizen(cloud.notizen ?? []);
+    setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
+    setVertretungen(cloud.vertretungen ?? []);
+    setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
+    setTrainerHonorarAnpassungen(cloud.trainerHonorarAnpassungen ?? {});
+    setTrainerZuschlaege(cloud.trainerZuschlaege ?? {});
+  }
+
+  // Zustand per REST nachladen und übernehmen, wenn er neuer ist als der
+  // lokale Stand. Nötig, weil Realtime bei großen account_state-Zeilen
+  // (> 1 MB) die Daten nicht mitliefert ("Payload Too Large") - das Event
+  // kommt dann ohne data an.
+  async function refetchAccountState() {
+    if (!authUser?.accountId) return;
+    const { data } = await supabase
+      .from("account_state")
+      .select("data, updated_at")
+      .eq("account_id", authUser.accountId)
+      .maybeSingle();
+    if (!data?.data) return;
+    if (
+      data.updated_at &&
+      lastKnownUpdatedAtRef.current &&
+      data.updated_at <= lastKnownUpdatedAtRef.current
+    ) {
+      return;
+    }
+    applyCloudState(data.data as Partial<AppState>, data.updated_at ?? undefined);
+  }
+
+  const stateRefetchTimerRef = useRef<number | null>(null);
+  function scheduleStateRefetch() {
+    if (stateRefetchTimerRef.current) window.clearTimeout(stateRefetchTimerRef.current);
+    stateRefetchTimerRef.current = window.setTimeout(() => {
+      stateRefetchTimerRef.current = null;
+      void refetchAccountState();
+    }, 400);
+  }
+
   useEffect(() => {
     if (!authUser?.accountId) return;
     if (!initialSynced) return;
@@ -1964,47 +2015,55 @@ export default function App() {
           filter: `account_id=eq.${authUser.accountId}`,
         },
         (payload) => {
-          if (payload.eventType === "UPDATE") {
-            const newRow = payload.new as any;
+          const newRow = payload.new as any;
+          const incomingUpdatedAt = newRow?.updated_at as string | undefined;
 
-            if (newRow?.data) {
-              // Prüfe ob das Update neuer ist als unser letztes bekanntes Update
-              const incomingUpdatedAt = newRow.updated_at;
-              if (lastKnownUpdatedAtRef.current && incomingUpdatedAt) {
-                if (incomingUpdatedAt <= lastKnownUpdatedAtRef.current) {
-                  // Ignoriere ältere oder gleiche Updates
-                  return;
-                }
-              }
-
-              // Update ist neuer, also übernehmen
-              lastKnownUpdatedAtRef.current = incomingUpdatedAt;
-              skipSaveRef.current = true;
-
-              const cloud = normalizeState(newRow.data as Partial<AppState>);
-              setTrainers(cloud.trainers);
-              setSpieler(cloud.spieler);
-              setTarife(cloud.tarife);
-              setTrainings(cloud.trainings);
-              setPayments(cloud.payments ?? {});
-              setTrainerPayments(cloud.trainerPayments ?? {});
-              setTrainerMonthSettled(cloud.trainerMonthSettled ?? {});
-              setTrainerBarSettled(cloud.trainerBarSettled ?? {});
-              setNotizen(cloud.notizen ?? []);
-              setMonthlyAdjustments(cloud.monthlyAdjustments ?? {});
-              setVertretungen(cloud.vertretungen ?? []);
-              setWirdAbgebucht(cloud.wirdAbgebucht ?? {});
-              setTrainerHonorarAnpassungen(cloud.trainerHonorarAnpassungen ?? {});
-              setTrainerZuschlaege(cloud.trainerZuschlaege ?? {});
-            }
+          if (
+            incomingUpdatedAt &&
+            lastKnownUpdatedAtRef.current &&
+            incomingUpdatedAt <= lastKnownUpdatedAtRef.current
+          ) {
+            return; // älteres oder bereits bekanntes Update ignorieren
           }
+
+          if (newRow?.data) {
+            applyCloudState(newRow.data as Partial<AppState>, incomingUpdatedAt);
+          } else {
+            scheduleStateRefetch();
+          }
+        }
+      )
+      .subscribe();
+
+    // Website-Buchungen/-Absagen: spontane_stunden-Zeilen sind klein und
+    // kommen zuverlässig per Realtime an. Liste aktualisieren und den
+    // Kalender (account_state) nachladen.
+    const spontanChannel = supabase
+      .channel(`spontane_stunden:${authUser.accountId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "spontane_stunden",
+          filter: `account_id=eq.${authUser.accountId}`,
+        },
+        () => {
+          fetchSpontaneStunden();
+          scheduleStateRefetch();
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(spontanChannel);
+      if (stateRefetchTimerRef.current) {
+        window.clearTimeout(stateRefetchTimerRef.current);
+        stateRefetchTimerRef.current = null;
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.accountId, authUser?.role, initialSynced]);
 
 
@@ -2126,8 +2185,16 @@ export default function App() {
   useEffect(() => {
     if (!authUser?.accountId || authUser.role === "trainer" || !initialSynced) return;
     spontaneStunden.forEach((s) => {
-      if (s.status !== "gebucht" || !s.buchung) return;
-      if (s.trainingId && trainings.some((t) => t.id === s.trainingId)) return;
+      const buchung = s.buchung;
+      if (s.status !== "gebucht" || !buchung) return;
+      const training = s.trainingId ? trainings.find((t) => t.id === s.trainingId) : undefined;
+      if (training) {
+        // Vollständig übernommen, wenn der gebuchte Spieler im Training steht
+        const gebuchterSpieler = spieler.find(
+          (p) => p.kontaktEmail?.toLowerCase() === buchung.email.toLowerCase()
+        );
+        if (gebuchterSpieler && training.spielerIds.includes(gebuchterSpieler.id)) return;
+      }
       if (spontanReconcileRef.current.has(s.id)) return;
       spontanReconcileRef.current.add(s.id);
       supabase
@@ -2143,7 +2210,7 @@ export default function App() {
           );
         });
     });
-  }, [spontaneStunden, trainings, authUser, initialSynced]);
+  }, [spontaneStunden, trainings, spieler, authUser, initialSynced]);
 
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
