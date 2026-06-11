@@ -213,49 +213,49 @@ export default function WeddingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Load Google Fonts — Outfit (display) + Inter (body)
+  // Load Google Fonts — Fraunces (display) + Outfit (body)
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&family=Outfit:wght@300;400;500;600;700&display=swap";
     document.head.appendChild(link);
 
     const style = document.createElement("style");
     style.textContent = `
       .wedding-page {
-        --card: #ffffff;
-        --ring: #1668c7;
-        --input: #9aabbf;
-        --muted: #edf3fb;
-        --accent: #e9f3fd;
-        --border: #d7e3f1;
+        --card: #faf9f5;
+        --ring: #c96442;
+        --input: #b4b2a7;
+        --muted: #ede9de;
+        --accent: #e9e6dc;
+        --border: #dad9d4;
         --radius: 0.5rem;
-        --chart-1: #1668c7;
-        --chart-2: #2f8fdb;
-        --chart-3: #cfe3f6;
-        --chart-4: #4a97e6;
-        --chart-5: #1f6fb0;
+        --chart-1: #b05730;
+        --chart-2: #9c87f5;
+        --chart-3: #ded8c4;
+        --chart-4: #dbd3f0;
+        --chart-5: #b4552d;
         --popover: #ffffff;
-        --primary: #1668c7;
-        --sidebar: #eef4fb;
-        --secondary: #edf3fb;
-        --background: #ffffff;
-        --foreground: #14304e;
-        --destructive: #c2392f;
-        --sidebar-ring: #9aabbf;
-        --sidebar-accent: #edf3fb;
-        --sidebar-border: #e6eef8;
-        --card-foreground: #14304e;
-        --sidebar-primary: #1668c7;
-        --muted-foreground: #586a80;
-        --accent-foreground: #14304e;
-        --popover-foreground: #14304e;
+        --primary: #c96442;
+        --sidebar: #f5f4ee;
+        --secondary: #e9e6dc;
+        --background: #faf9f5;
+        --foreground: #3d3929;
+        --destructive: #141413;
+        --sidebar-ring: #b5b5b5;
+        --sidebar-accent: #e9e6dc;
+        --sidebar-border: #ebebeb;
+        --card-foreground: #141413;
+        --sidebar-primary: #c96442;
+        --muted-foreground: #83827d;
+        --accent-foreground: #28261b;
+        --popover-foreground: #28261b;
         --primary-foreground: #ffffff;
-        --sidebar-foreground: #44566b;
-        --secondary-foreground: #586a80;
+        --sidebar-foreground: #3d3d3a;
+        --secondary-foreground: #535146;
         --destructive-foreground: #ffffff;
-        --sidebar-accent-foreground: #14304e;
-        --sidebar-primary-foreground: #fbfdff;
+        --sidebar-accent-foreground: #343434;
+        --sidebar-primary-foreground: #fbfbfb;
       }
     `;
     document.head.appendChild(style);
@@ -672,27 +672,27 @@ export default function WeddingPage() {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
   const weekDayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-  // Theme: Hardcourt – Weiss + Hellblau
+  // ── Theme: Alle Farben hier ändern ──
   const colors = {
-    primary: "#1668c7",        // Hauptfarbe Rasengrün (Buttons, Überschriften)
-    primaryMid: "#1257a6",     // Mittlere Variante (E-Mail-Header Gradient)
-    primaryDark: "#0e4684",    // Dunklere Variante (Gradient-Ende)
-    primaryLight: "#4a97e6",   // Helle Akzentfarbe (Links, Hover)
-    accent: "#2f8fdb",         // Messing/Gold (Badges, Hairlines, Labels)
-    accentLight: "#a6d4f5",    // Helles Gold
-    accentDark: "#1f6fb0",     // Dunkles Gold
-    accentBg: "#e9f3fd",       // Akzent-Hintergrund (z.B. Info-Boxen)
-    white: "#ffffff",          // Warmes Weiß / Hintergrund
-    bgLight: "#edf3fb",        // Creme-Fläche
-    bgDark: "#0d2a4a",         // Sehr dunkles Grün (Footer)
-    text: "#14304e",           // Primärtext (grünliches Ink)
-    textMuted: "#586a80",      // Gedämpfter Text
-    textSubtle: "#9aabbf",     // Subtiler Text (Footer-Details)
-    border: "#d7e3f1",         // Warme Hairline
-    success: "#1668c7",        // Erfolg (Bestätigungs-Icons)
-    successDark: "#0e4684",    // Erfolg dunkel
-    error: "#c2392f",          // Fehler
-    errorBg: "#fdecea",        // Fehler-Hintergrund
+    primary: "#c96442",        // Hauptfarbe (Buttons, Überschriften)
+    primaryMid: "#a8533a",     // Mittlere Variante (E-Mail-Header Gradient)
+    primaryDark: "#8b4430",    // Dunklere Variante (Gradient-Ende)
+    primaryLight: "#d97757",   // Helle Akzentfarbe (Links, Highlights)
+    accent: "#c96442",         // Akzent (Badges, Borders, Dots)
+    accentLight: "#e8a48e",    // Heller Akzent (Gradient-Mitte)
+    accentDark: "#b05730",     // Dunkler Akzent
+    accentBg: "#faf3ef",       // Akzent-Hintergrund (z.B. Info-Boxen)
+    white: "#faf9f5",          // Weiß / Hintergrund
+    bgLight: "#ede9de",        // Heller Hintergrund
+    bgDark: "#3d3929",         // Dunkler Hintergrund (Footer)
+    text: "#3d3929",           // Primärtext
+    textMuted: "#83827d",      // Gedämpfter Text
+    textSubtle: "#b4b2a7",     // Subtiler Text (Footer-Details)
+    border: "#dad9d4",         // Rahmenfarbe
+    success: "#c96442",        // Erfolg (Bestätigungs-Icons)
+    successDark: "#b05730",    // Erfolg dunkel
+    error: "#141413",          // Fehler
+    errorBg: "#ede9de",        // Fehler-Hintergrund
   };
 
 
@@ -741,7 +741,7 @@ export default function WeddingPage() {
     <div className="wedding-page" style={{
       minHeight: "100vh",
       background: colors.white,
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
       color: colors.text,
       overflowX: "hidden",
     }}>
@@ -763,11 +763,10 @@ export default function WeddingPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", height: 70 }}>
             <span style={{
               fontWeight: 700,
-              fontSize: 21,
+              fontSize: 18,
               color: scrolled ? colors.primary : colors.white,
               textTransform: "uppercase",
-              letterSpacing: "2px",
-              fontFamily: "'Outfit', sans-serif",
+              letterSpacing: "0.5px",
             }}>
               Tennisschule A bis Z
             </span>
@@ -809,7 +808,7 @@ export default function WeddingPage() {
                     textDecoration: "none",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(22, 104, 199, 0.28)",
+                    boxShadow: "0 4px 12px rgba(23, 23, 23, 0.3)",
                   transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                   }}
                   onPointerDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
@@ -891,7 +890,7 @@ export default function WeddingPage() {
                   textDecoration: "none",
                   textAlign: "center",
                   marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(22, 104, 199, 0.22)",
+                  boxShadow: "0 4px 12px rgba(23, 23, 23, 0.25)",
                 }}
               >
                 Training buchen
@@ -931,7 +930,7 @@ export default function WeddingPage() {
         <div style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(160deg, rgba(8,24,46,0.72) 0%, rgba(13,38,68,0.45) 40%, rgba(13,38,68,0.35) 70%, rgba(7,20,40,0.62) 100%)",
+          background: "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(23,23,23,0.35) 40%, rgba(23,23,23,0.25) 70%, rgba(10,10,10,0.45) 100%)",
           pointerEvents: "none",
         }} />
         {/* Grain texture */}
@@ -963,18 +962,18 @@ export default function WeddingPage() {
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.08)",
               backdropFilter: "blur(12px)",
               padding: "10px 20px",
               borderRadius: 100,
               marginBottom: 28,
-              border: "1px solid rgba(166, 212, 245, 0.55)",
+              border: "1px solid rgba(255,255,255,0.12)",
             }}>
               <span style={{
                 width: 8, height: 8, borderRadius: "50%",
-                background: colors.accentLight,
+                background: colors.accent,
                 display: "inline-block",
-                boxShadow: "0 0 8px rgba(166, 212, 245, 0.7)",
+                boxShadow: "0 0 8px rgba(201, 100, 66, 0.6)",
               }} />
               <span style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", fontWeight: 500, letterSpacing: "0.3px" }}>
                 BSC Rehberge · Berlin-Wedding
@@ -983,12 +982,12 @@ export default function WeddingPage() {
 
             {/* Headline */}
             <h1 className="hero-title" style={{
-              fontSize: "clamp(48px, 9vw, 86px)",
-              fontFamily: "'Outfit', sans-serif",
-              fontWeight: 700,
-              lineHeight: 1.02,
+              fontSize: "clamp(44px, 9vw, 80px)",
+              fontFamily: "'Fraunces', serif",
+              fontWeight: 900,
+              lineHeight: 1.0,
               marginBottom: 24,
-              letterSpacing: "-0.5px",
+              letterSpacing: "-2px",
             }}>
               <span style={{ color: colors.white, display: "block" }}>Tennisschule</span>
               <span style={{
@@ -1013,7 +1012,7 @@ export default function WeddingPage() {
               maxWidth: 480,
             }}>
               Professionelles Tennistraining in Berlin-Wedding –{" "}
-              <span style={{ fontFamily: "'Outfit', sans-serif", fontStyle: "italic", color: "rgba(255,255,255,0.95)" }}>
+              <span style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "rgba(255,255,255,0.95)" }}>
                 vom ersten Schlag bis zum Wettkampf.
               </span>
             </p>
@@ -1033,17 +1032,17 @@ export default function WeddingPage() {
                   fontWeight: 700,
                   fontSize: 16,
                   textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(22, 104, 199, 0.28)",
+                  boxShadow: "0 4px 24px rgba(23, 23, 23, 0.3)",
                   transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)",
                 }}
                 onMouseEnter={(e) => {
                   if (!supportsHover) return;
                   e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(22, 104, 199, 0.38)";
+                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(23, 23, 23, 0.4)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(22, 104, 199, 0.28)";
+                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(23, 23, 23, 0.3)";
                 }}
                 onPointerDown={(e) => {
                   e.currentTarget.style.transition = "transform 100ms ease-out";
@@ -1093,13 +1092,12 @@ export default function WeddingPage() {
 
       </header>
 
-      {/* Social Proof Strip — klassisches Band mit Messing-Hairlines */}
+      {/* Social Proof Strip — diagonal cut top */}
       <div style={{
         background: colors.primary,
-        padding: "44px 24px",
+        padding: "40px 24px",
         position: "relative",
-        borderTop: `1px solid ${colors.accentLight}`,
-        borderBottom: `1px solid ${colors.accentLight}`,
+        clipPath: "polygon(0 0, 100% 12px, 100% 100%, 0 100%)",
       }}>
         {/* Subtle noise */}
         <div className="grain-overlay" style={{
@@ -1131,15 +1129,15 @@ export default function WeddingPage() {
             >
               <div style={{
                 fontSize: 36,
-                fontWeight: 700,
+                fontWeight: 900,
                 color: "#fff",
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Fraunces', serif",
                 lineHeight: 1,
                 marginBottom: 6,
               }}>
                 <AnimatedCounter value={stat.number} suffix={stat.suffix} />
               </div>
-              <div style={{ fontSize: 12, color: colors.accentLight, fontWeight: 500, textTransform: "uppercase", letterSpacing: "2px" }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px" }}>
                 {stat.label}
               </div>
             </motion.div>
@@ -1170,12 +1168,12 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Fraunces', serif",
               fontWeight: 700,
               color: colors.text,
               marginBottom: 16,
               lineHeight: 1.1,
-              letterSpacing: "0px",
+              letterSpacing: "-1px",
             }}>
               Tennis für jedes Alter und Level
             </h2>
@@ -1240,7 +1238,7 @@ export default function WeddingPage() {
                 onMouseEnter={(e) => {
                   if (!supportsHover) return;
                   e.currentTarget.style.transform = "translateY(-5px)";
-                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(20, 48, 78, 0.12)";
+                  e.currentTarget.style.boxShadow = "0 18px 40px rgba(61, 57, 41, 0.10)";
                   e.currentTarget.style.borderColor = colors.primary;
                 }}
                 onMouseLeave={(e) => {
@@ -1253,13 +1251,13 @@ export default function WeddingPage() {
                   position: "absolute",
                   top: -16,
                   right: 8,
-                  fontFamily: "'Outfit', sans-serif",
+                  fontFamily: "'Fraunces', serif",
                   fontStyle: "italic",
-                  fontWeight: 700,
+                  fontWeight: 900,
                   fontSize: 90,
                   lineHeight: 1,
-                  color: colors.accent,
-                  opacity: 0.18,
+                  color: colors.primary,
+                  opacity: 0.08,
                   pointerEvents: "none",
                   userSelect: "none",
                 }}>
@@ -1267,7 +1265,7 @@ export default function WeddingPage() {
                 </span>
                 <p style={{
                   fontSize: 11,
-                  color: colors.accentDark,
+                  color: colors.primary,
                   fontWeight: 600,
                   textTransform: "uppercase",
                   letterSpacing: "1.5px",
@@ -1280,7 +1278,7 @@ export default function WeddingPage() {
                   fontWeight: 700,
                   color: colors.text,
                   marginBottom: 10,
-                  fontFamily: "'Outfit', sans-serif",
+                  fontFamily: "'Fraunces', serif",
                   letterSpacing: "-0.3px",
                 }}>
                   {item.title}
@@ -1312,10 +1310,10 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Fraunces', serif",
               fontWeight: 700,
               color: colors.text,
-              letterSpacing: "0px",
+              letterSpacing: "-1px",
             }}>
               Unsere Preise
             </h2>
@@ -1324,11 +1322,11 @@ export default function WeddingPage() {
 
           <ScrollReveal delay={0.1}>
           <div style={{
-            background: "#ffffff",
+            background: "#fffefb",
             border: `1px solid ${colors.border}`,
             borderRadius: 20,
             padding: "10px 40px",
-            boxShadow: "0 10px 40px rgba(20, 48, 78, 0.07)",
+            boxShadow: "0 10px 40px rgba(61, 57, 41, 0.06)",
           }}>
             {[
               {
@@ -1354,7 +1352,7 @@ export default function WeddingPage() {
                 borderBottom: i < arr.length - 1 ? `1px solid ${colors.border}` : "none",
               }}>
                 <div style={{ flex: "1 1 240px" }}>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: "0 0 6px", fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.3px" }}>
+                  <h3 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: "0 0 6px", fontFamily: "'Fraunces', serif", letterSpacing: "-0.3px" }}>
                     {tarif.name}
                   </h3>
                   <p style={{ fontSize: 14, color: colors.textMuted, margin: 0, lineHeight: 1.6 }}>
@@ -1362,7 +1360,7 @@ export default function WeddingPage() {
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <span style={{ fontSize: 40, fontWeight: 700, color: colors.primary, fontFamily: "'Outfit', sans-serif", lineHeight: 1 }}>
+                  <span style={{ fontSize: 40, fontWeight: 900, color: colors.primary, fontFamily: "'Fraunces', serif", lineHeight: 1 }}>
                     {tarif.price}
                   </span>
                   <span style={{ display: "block", fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "1px", marginTop: 4 }}>
@@ -1410,7 +1408,7 @@ export default function WeddingPage() {
             }}>
               Aktuelles
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Jetzt anmelden
             </h2>
           </div>
@@ -1452,7 +1450,7 @@ export default function WeddingPage() {
               {/* Gradient overlay on photo */}
               <div style={{
                 position: "absolute", inset: 0,
-                background: "linear-gradient(to right, transparent 60%, rgba(13, 42, 74, 0.35) 100%)",
+                background: "linear-gradient(to right, transparent 60%, rgba(23, 23, 23, 0.3) 100%)",
                 pointerEvents: "none",
               }} />
             </div>
@@ -1489,10 +1487,10 @@ export default function WeddingPage() {
 
                 <h3 style={{
                   fontSize: 28,
-                  fontWeight: 700,
+                  fontWeight: 900,
                   color: colors.white,
                   marginBottom: 20,
-                  fontFamily: "'Outfit', sans-serif",
+                  fontFamily: "'Fraunces', serif",
                   letterSpacing: "-0.5px",
                   lineHeight: 1.1,
                 }}>
@@ -1543,7 +1541,7 @@ export default function WeddingPage() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(22, 104, 199, 0.32)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(23, 23, 23, 0.35)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
@@ -1566,7 +1564,7 @@ export default function WeddingPage() {
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <p style={{
                 fontSize: 12,
-                color: colors.accent,
+                color: colors.primary,
                 textTransform: "uppercase",
                 letterSpacing: "3px",
                 marginBottom: 12,
@@ -1576,7 +1574,7 @@ export default function WeddingPage() {
               </p>
               <h2 style={{
                 fontSize: 28,
-                fontFamily: "'Outfit', sans-serif",
+                fontFamily: "'Fraunces', serif",
                 fontWeight: 700,
                 color: colors.text,
                 marginBottom: 8,
@@ -1852,10 +1850,10 @@ export default function WeddingPage() {
             </p>
             <h2 style={{
               fontSize: "clamp(28px, 5vw, 42px)",
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: "'Fraunces', serif",
               fontWeight: 700,
               color: colors.text,
-              letterSpacing: "0px",
+              letterSpacing: "-1px",
               lineHeight: 1.1,
             }}>
               Trainer
@@ -1870,9 +1868,8 @@ export default function WeddingPage() {
                 className="trainer-card"
                 style={{
                   background: colors.white,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   overflow: "hidden",
-                  border: `1px solid ${colors.border}`,
                   boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                   transition: "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
                   transform: i % 3 === 1 ? "translateY(24px)" : "translateY(0)",
@@ -1920,13 +1917,13 @@ export default function WeddingPage() {
                       }}
                     />
                   ) : (
-                    <span style={{ fontSize: 56, fontWeight: 700, color: colors.border, fontFamily: "'Outfit', sans-serif", opacity: 0.5 }}>
+                    <span style={{ fontSize: 56, fontWeight: 900, color: colors.border, fontFamily: "'Fraunces', serif", opacity: 0.5 }}>
                       {trainer.name.split(" ").map((n) => n[0]).join("")}
                     </span>
                   )}
                 </div>
                 <div style={{ padding: 22 }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.3px" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif", letterSpacing: "-0.3px" }}>
                     {trainer.name}
                   </h3>
                   <p style={{
@@ -1970,13 +1967,13 @@ export default function WeddingPage() {
             }}>
               FAQ
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               Häufig gestellte Fragen
             </h2>
           </div>
           </ScrollReveal>
 
-          <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${colors.border}` }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {[
               {
                 q: "Ab welchem Alter kann mein Kind Tennis lernen?",
@@ -2018,17 +2015,19 @@ export default function WeddingPage() {
               <div
                 key={i}
                 style={{
-                  background: "transparent",
-                  borderBottom: `1px solid ${colors.border}`,
+                  background: openFaqIndex === i ? colors.white : colors.bgLight,
+                  borderRadius: 14,
                   overflow: "hidden",
-                  transition: "background 0.3s ease",
+                  transition: "background 0.3s ease, box-shadow 0.3s ease",
+                  boxShadow: openFaqIndex === i ? "0 4px 20px rgba(0,0,0,0.06)" : "none",
+                  border: `1px solid ${openFaqIndex === i ? colors.border : "transparent"}`,
                 }}
               >
                 <button
                   onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
                   style={{
                     width: "100%",
-                    padding: "22px 12px",
+                    padding: "22px 24px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -2039,7 +2038,7 @@ export default function WeddingPage() {
                     gap: 16,
                   }}
                 >
-                  <h3 style={{ fontSize: 20, fontWeight: 600, color: colors.text, margin: 0, lineHeight: 1.35, fontFamily: "'Outfit', sans-serif" }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, color: colors.text, margin: 0, lineHeight: 1.4 }}>
                     {faq.q}
                   </h3>
                   <span style={{
@@ -2069,7 +2068,7 @@ export default function WeddingPage() {
                   opacity: openFaqIndex === i ? 1 : 0,
                 }}>
                   <div style={{ minHeight: 0, overflow: "hidden" }}>
-                  <div style={{ padding: "0 12px 24px" }}>
+                  <div style={{ padding: "0 24px 24px" }}>
                     <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>
                       {faq.a}
                     </p>
@@ -2103,10 +2102,15 @@ export default function WeddingPage() {
       {/* Kontakt Section */}
       <section id="kontakt" style={{
         padding: "100px 24px",
-        background: colors.bgLight,
-        borderTop: `1px solid ${colors.border}`,
+        background: `linear-gradient(165deg, ${colors.bgLight} 0%, ${colors.border} 100%)`,
         position: "relative",
       }}>
+        {/* Diagonal top cut */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 60,
+          background: colors.white,
+          clipPath: "polygon(0 0, 100% 0, 100% 0%, 0 100%)",
+        }} />
         <div style={{ maxWidth: 900, margin: "0 auto", position: "relative" }}>
           <ScrollReveal>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
@@ -2120,7 +2124,7 @@ export default function WeddingPage() {
             }}>
               Kontakt
             </p>
-            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Outfit', sans-serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
+            <h2 style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: "'Fraunces', serif", fontWeight: 700, color: colors.text, letterSpacing: "-1px" }}>
               So erreichen Sie uns
             </h2>
           </div>
@@ -2151,7 +2155,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 4.5-7 13-7 13S5 13.5 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>Adresse</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
                 BSC Rehberge 1945 e.V. Abt. Tennis<br />
                 Sambesistraße 11<br />
@@ -2195,7 +2199,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 11.9 19.79 19.79 0 0 1 1 3.32 2 2 0 0 1 2.96 1.1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.18-1.18a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16.92z"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>Telefon</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>Telefon</h3>
               <a
                 href="tel:+4915560062745"
                 style={{
@@ -2234,7 +2238,7 @@ export default function WeddingPage() {
               }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Outfit', sans-serif" }}>E-Mail</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>E-Mail</h3>
               <a
                 href="mailto:tennisabisz@gmail.com"
                 style={{
@@ -2263,7 +2267,7 @@ export default function WeddingPage() {
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 32, marginBottom: 32 }}>
             <div>
-              <span style={{ fontWeight: 700, fontSize: 19, textTransform: "uppercase", letterSpacing: "2px", fontFamily: "'Outfit', sans-serif", color: colors.accentLight }}>
+              <span style={{ fontWeight: 700, fontSize: 16, textTransform: "uppercase" }}>
                 Tennisschule A bis Z
               </span>
               <p style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.7)" }}>
@@ -2513,7 +2517,7 @@ export default function WeddingPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   margin: "0 auto 24px",
-                  boxShadow: "0 8px 24px rgba(22, 104, 199, 0.25)",
+                  boxShadow: "0 8px 24px rgba(201, 100, 66, 0.25)",
                 }}>
                   <span style={{ color: colors.white, fontSize: 36, fontWeight: 300 }}>✓</span>
                 </div>

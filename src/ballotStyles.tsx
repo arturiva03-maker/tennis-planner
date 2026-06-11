@@ -3,8 +3,8 @@ import React, { useEffect } from "react";
 export type BallotAnlage = "Wedding" | "Britz";
 
 export const BALLOT_THEME = {
-  Wedding: { h: 248, a: "oklch(0.58 0.15 248)" },
-  Britz: { h: 248, a: "oklch(0.58 0.15 248)" },
+  Wedding: { h: 45, a: "oklch(0.58 0.14 45)" },
+  Britz: { h: 260, a: "oklch(0.55 0.2 260)" },
 } as const;
 
 export function getBallotThemeStyle(anlage: BallotAnlage): React.CSSProperties {
