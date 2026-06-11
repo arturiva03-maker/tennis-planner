@@ -795,29 +795,6 @@ export default function WeddingPage() {
                   {item}
                 </button>
               ))}
-              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
-                <a
-                  href="https://tennistrainer-app.de/anmeldung-wedding"
-                  style={{
-                    background: colors.primary,
-                    color: colors.white,
-                    padding: "11px 23px",
-                    borderRadius: 6,
-                    fontWeight: 700,
-                    fontSize: 13,
-                    textDecoration: "none",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    boxShadow: "0 4px 12px rgba(23, 23, 23, 0.3)",
-                  transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
-                  }}
-                  onPointerDown={(e) => { e.currentTarget.style.transform = "scale(0.97)"; }}
-                  onPointerUp={(e) => { e.currentTarget.style.transform = ""; }}
-                  onPointerLeave={(e) => { e.currentTarget.style.transform = ""; }}
-                >
-                  Training buchen
-                </a>
-              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -877,24 +854,6 @@ export default function WeddingPage() {
                   {item}
                 </button>
               ))}
-              <a
-                href="https://tennistrainer-app.de/anmeldung-wedding"
-                style={{
-                  display: "block",
-                  background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-                  color: colors.white,
-                  padding: "12px 20px",
-                  borderRadius: 6,
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                  textAlign: "center",
-                  marginTop: 16,
-                  boxShadow: "0 4px 12px rgba(23, 23, 23, 0.25)",
-                }}
-              >
-                Training buchen
-              </a>
             </motion.div>
           )}
           </AnimatePresence>
@@ -1019,42 +978,6 @@ export default function WeddingPage() {
 
             {/* CTAs */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center" }}>
-              <a
-                href="https://tennistrainer-app.de/anmeldung-wedding"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-                  color: colors.white,
-                  padding: "16px 36px",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  fontSize: 16,
-                  textDecoration: "none",
-                  boxShadow: "0 4px 24px rgba(23, 23, 23, 0.3)",
-                  transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!supportsHover) return;
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(23, 23, 23, 0.4)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 24px rgba(23, 23, 23, 0.3)";
-                }}
-                onPointerDown={(e) => {
-                  e.currentTarget.style.transition = "transform 100ms ease-out";
-                  e.currentTarget.style.transform = "scale(0.97)";
-                }}
-                onPointerUp={(e) => {
-                  e.currentTarget.style.transition = "transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                Jetzt anmelden
-              </a>
               <a
                 href="#trainer"
                 style={{
@@ -2072,24 +1995,6 @@ export default function WeddingPage() {
                     <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>
                       {faq.a}
                     </p>
-                    {faq.q.includes("Probestunde") && (
-                      <a
-                        href="/anmeldung-wedding"
-                        style={{
-                          display: "inline-block",
-                          marginTop: 12,
-                          padding: "8px 16px",
-                          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-                          color: colors.white,
-                          borderRadius: 6,
-                          fontSize: 13,
-                          fontWeight: 600,
-                          textDecoration: "none",
-                        }}
-                      >
-                        Jetzt anmelden
-                      </a>
-                    )}
                   </div>
                   </div>
                 </div>
