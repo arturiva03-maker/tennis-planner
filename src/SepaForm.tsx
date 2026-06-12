@@ -392,6 +392,21 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
                 onChange={handleChange}
                 autoComplete="off"
               />
+              {formData.iban.trim() !== "" && (() => {
+                const c = checkIBAN(formData.iban);
+                if (c.reason === "empty" || c.reason === "incomplete") return null;
+                return (
+                  <p style={{
+                    margin: "8px 0 0",
+                    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                    fontSize: "0.78rem",
+                    letterSpacing: "0.04em",
+                    color: c.valid ? "#1a7a3a" : "var(--danger)",
+                  }}>
+                    {c.valid ? "✓ IBAN gültig" : ibanErrorMessage(c)}
+                  </p>
+                );
+              })()}
             </div>
           </div>
 
