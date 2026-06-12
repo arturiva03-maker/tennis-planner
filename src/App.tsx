@@ -2487,6 +2487,17 @@ export default function App() {
       .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
   }, [spontaneStunden, weekStart, kalenderTrainerFilter, kalenderAnlageFilter]);
 
+  // Trainings, die mit einer offenen (noch nicht gebuchten) spontanen Stunde
+  // verknüpft sind (z.B. „direkt im Kalender als spontan gegeben"): Diese werden
+  // wie die „Spontan · frei"-Platzhalter dargestellt, bis sie gebucht werden.
+  const offeneSpontanTrainingIds = useMemo(() => {
+    const set = new Set<string>();
+    spontaneStunden.forEach((s) => {
+      if (s.status === "offen" && s.trainingId) set.add(s.trainingId);
+    });
+    return set;
+  }, [spontaneStunden]);
+
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
@@ -6309,8 +6320,14 @@ Tennisschule A bis Z`;
                                 t.id
                               );
 
+                              // Offener (noch nicht gebuchter) Spontan-Slot? Dann wie die
+                              // gelben „Spontan · frei"-Platzhalter darstellen.
+                              const istOffenerSpontanSlot = offeneSpontanTrainingIds.has(t.id);
+
                               // Farbschema: dezente Hintergründe mit farbigem linken Rand
-                              const accentColor = t.isPrivat
+                              const accentColor = istOffenerSpontanSlot && !isSelected
+                                ? "#eab308"
+                                : t.isPrivat
                                 ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
                                 : hasVertretung
                                 ? isVertretungOffen ? "#dc2626" : "#22c55e"
@@ -6323,6 +6340,8 @@ Tennisschule A bis Z`;
                                 : "#3b82f6";
                               const bg = isSelected
                                 ? "rgba(139, 92, 246, 0.18)"
+                                : istOffenerSpontanSlot
+                                ? "repeating-linear-gradient(135deg, rgba(234,179,8,0.18) 0px, rgba(234,179,8,0.18) 6px, rgba(234,179,8,0.05) 6px, rgba(234,179,8,0.05) 12px)"
                                 : isDone
                                 ? "rgba(34, 197, 94, 0.14)"
                                 : isCancel
@@ -6359,7 +6378,7 @@ Tennisschule A bis Z`;
                                     height,
                                     width: `${widthPercent}%`,
                                     left: `${leftPercent}%`,
-                                    background: t.isPrivat
+                                    background: t.isPrivat && !istOffenerSpontanSlot
                                       ? isDone
                                         ? `repeating-linear-gradient(135deg, rgba(34,197,94,0.18) 0px, rgba(34,197,94,0.18) 6px, rgba(34,197,94,0.05) 6px, rgba(34,197,94,0.05) 12px)`
                                         : isCancel
@@ -6367,9 +6386,9 @@ Tennisschule A bis Z`;
                                         : `repeating-linear-gradient(135deg, rgba(59,130,246,0.15) 0px, rgba(59,130,246,0.15) 6px, rgba(59,130,246,0.04) 6px, rgba(59,130,246,0.04) 12px)`
                                       : bg,
                                     borderLeft: `3px solid ${border}`,
-                                    borderTop: "none",
-                                    borderRight: "none",
-                                    borderBottom: "none",
+                                    borderTop: istOffenerSpontanSlot ? "1px dashed #ca8a04" : "none",
+                                    borderRight: istOffenerSpontanSlot ? "1px dashed #ca8a04" : "none",
+                                    borderBottom: istOffenerSpontanSlot ? "1px dashed #ca8a04" : "none",
                                     opacity: isCancel ? 0.8 : 1,
                                     transform: isPulse
                                       ? "scale(1.05)"
@@ -6440,7 +6459,7 @@ Tennisschule A bis Z`;
                                           {t.spielerIds.length}
                                         </span>
                                       )}
-                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{sp || "Privat"}</span>
+                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "🎾 Spontan · frei" : (sp || "Privat")}</span>
                                     </div>
                                     <div
                                       style={{
@@ -6451,7 +6470,7 @@ Tennisschule A bis Z`;
                                         opacity: 0.7,
                                       }}
                                     >
-                                      {t.uhrzeitVon}–{t.uhrzeitBis} · {taLine}
+                                      {t.uhrzeitVon}–{t.uhrzeitBis} · {istOffenerSpontanSlot ? (t.anlage ?? "Wedding") : taLine}
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
@@ -6483,7 +6502,7 @@ Tennisschule A bis Z`;
                                         P
                                       </span>
                                     )}
-                                    {t.isSpontanBuchung && (
+                                    {t.isSpontanBuchung && !istOffenerSpontanSlot && (
                                       <span
                                         style={{
                                           fontSize: 8,
@@ -6511,17 +6530,19 @@ Tennisschule A bis Z`;
                                         V
                                       </span>
                                     )}
-                                    <div
-                                      style={{
-                                        width: 14,
-                                        height: 14,
-                                        borderRadius: "999px",
-                                        border: "2px solid white",
-                                        boxShadow:
-                                          "0 0 0 1px rgba(15,23,42,0.15)",
-                                        backgroundColor: statusDotColor(t.status),
-                                      }}
-                                    />
+                                    {!istOffenerSpontanSlot && (
+                                      <div
+                                        style={{
+                                          width: 14,
+                                          height: 14,
+                                          borderRadius: "999px",
+                                          border: "2px solid white",
+                                          boxShadow:
+                                            "0 0 0 1px rgba(15,23,42,0.15)",
+                                          backgroundColor: statusDotColor(t.status),
+                                        }}
+                                      />
+                                    )}
                                   </div>
                                 </div>
                               );
