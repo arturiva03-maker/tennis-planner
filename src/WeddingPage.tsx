@@ -321,8 +321,8 @@ export default function WeddingPage() {
   const [bookingError, setBookingError] = useState<string | null>(null);
 
 
-  const fetchSpontaneStunden = useCallback(async () => {
-    setLoadingSlots(true);
+  const fetchSpontaneStunden = useCallback(async (silent = false) => {
+    if (!silent) setLoadingSlots(true);
     try {
       const monthStart = getMonthStart(currentMonth.year, currentMonth.month);
       const monthEnd = getMonthEnd(currentMonth.year, currentMonth.month);
@@ -372,7 +372,7 @@ export default function WeddingPage() {
     } catch (err) {
       console.error("Error fetching slots:", err);
     } finally {
-      setLoadingSlots(false);
+      if (!silent) setLoadingSlots(false);
     }
   }, [currentMonth]);
 
@@ -478,6 +478,42 @@ export default function WeddingPage() {
 
   useEffect(() => {
     ladeNaechstenSlot();
+  }, [ladeNaechstenSlot]);
+
+  // Realtime: Slot-Änderungen aus der App (Freigabe, neue Stunden, Buchungen)
+  // sofort anzeigen, ohne dass die Seite neu geladen werden muss. Der Fetch
+  // läuft "silent", damit der Kalender dabei nicht kurz ausgraut. Ref statt
+  // Dependency, damit der Channel bei Monatswechseln nicht neu aufgebaut wird.
+  const fetchSpontaneStundenRef = useRef(fetchSpontaneStunden);
+  useEffect(() => {
+    fetchSpontaneStundenRef.current = fetchSpontaneStunden;
+  }, [fetchSpontaneStunden]);
+
+  useEffect(() => {
+    let debounce: number | undefined;
+    const channel = supabase
+      .channel("wedding_spontane_stunden")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "spontane_stunden",
+          filter: `account_id=eq.${WEDDING_ACCOUNT_ID}`,
+        },
+        () => {
+          if (debounce) window.clearTimeout(debounce);
+          debounce = window.setTimeout(() => {
+            fetchSpontaneStundenRef.current(true);
+            ladeNaechstenSlot();
+          }, 250);
+        }
+      )
+      .subscribe();
+    return () => {
+      if (debounce) window.clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
   }, [ladeNaechstenSlot]);
 
   const scrollToSection = (id: string) => {

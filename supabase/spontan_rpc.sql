@@ -545,3 +545,8 @@ begin
     alter publication supabase_realtime add table public.spontane_stunden;
   end if;
 end $$;
+
+-- REPLICA IDENTITY FULL: Ohne dies enthalten DELETE-Events nur den Primärschlüssel,
+-- der account_id-Filter der Realtime-Subscriptions (Wedding-/Britz-Seite) kann dann
+-- nicht matchen und gelöschte Slots verschwinden nicht live von der Website.
+alter table public.spontane_stunden replica identity full;

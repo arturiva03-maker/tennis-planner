@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
 
@@ -85,8 +85,8 @@ export default function BritzPage() {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [expandedAngebot, setExpandedAngebot] = useState<number | null>(null);
 
-  const fetchSpontaneStunden = useCallback(async () => {
-    setLoadingSlots(true);
+  const fetchSpontaneStunden = useCallback(async (silent = false) => {
+    if (!silent) setLoadingSlots(true);
     try {
       const monthStart = getMonthStart(currentMonth.year, currentMonth.month);
       const monthEnd = getMonthEnd(currentMonth.year, currentMonth.month);
@@ -136,7 +136,7 @@ export default function BritzPage() {
     } catch (err) {
       console.error("Error fetching slots:", err);
     } finally {
-      setLoadingSlots(false);
+      if (!silent) setLoadingSlots(false);
     }
   }, [currentMonth]);
 
@@ -151,21 +151,58 @@ export default function BritzPage() {
   }, [fetchSpontaneStunden]);
 
   // Check if there are ANY slots available (for showing/hiding the section)
-  useEffect(() => {
-    async function checkAnySlots() {
-      const { data } = await supabase
-        .from("spontane_stunden")
-        .select("id")
-        .eq("account_id", WEDDING_ACCOUNT_ID)
-        .eq("anlage", "Britz")
-        .eq("veroeffentlicht", true)
-        .eq("status", "offen")
-        .gte("datum", todayISO())
-        .limit(1);
-      setHasAnySlots((data || []).length > 0);
-    }
-    checkAnySlots();
+  const checkAnySlots = useCallback(async () => {
+    const { data } = await supabase
+      .from("spontane_stunden")
+      .select("id")
+      .eq("account_id", WEDDING_ACCOUNT_ID)
+      .eq("anlage", "Britz")
+      .eq("veroeffentlicht", true)
+      .eq("status", "offen")
+      .gte("datum", todayISO())
+      .limit(1);
+    setHasAnySlots((data || []).length > 0);
   }, []);
+
+  useEffect(() => {
+    checkAnySlots();
+  }, [checkAnySlots]);
+
+  // Realtime: Slot-Änderungen aus der App (Freigabe, neue Stunden, Buchungen)
+  // sofort anzeigen, ohne dass die Seite neu geladen werden muss. Der Fetch
+  // läuft "silent", damit der Kalender dabei nicht kurz ausgraut. Ref statt
+  // Dependency, damit der Channel bei Monatswechseln nicht neu aufgebaut wird.
+  const fetchSpontaneStundenRef = useRef(fetchSpontaneStunden);
+  useEffect(() => {
+    fetchSpontaneStundenRef.current = fetchSpontaneStunden;
+  }, [fetchSpontaneStunden]);
+
+  useEffect(() => {
+    let debounce: number | undefined;
+    const channel = supabase
+      .channel("britz_spontane_stunden")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "spontane_stunden",
+          filter: `account_id=eq.${WEDDING_ACCOUNT_ID}`,
+        },
+        () => {
+          if (debounce) window.clearTimeout(debounce);
+          debounce = window.setTimeout(() => {
+            fetchSpontaneStundenRef.current(true);
+            checkAnySlots();
+          }, 250);
+        }
+      )
+      .subscribe();
+    return () => {
+      if (debounce) window.clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+  }, [checkAnySlots]);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
