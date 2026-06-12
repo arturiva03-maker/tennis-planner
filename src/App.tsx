@@ -3761,6 +3761,117 @@ ${txInfo}
     }
   }
 
+  // Gebuchte spontane Stunde wieder freigeben: Slot wird erneut buchbar,
+  // das verknüpfte Training fliegt aus dem Kalender, der Spieler bekommt
+  // eine Info-E-Mail (keine 24-h-Frist - Admin darf jederzeit freigeben).
+  async function freigebenSpontaneStunde(s: SpontaneStunde) {
+    if (!s.buchung) return;
+    const buchung = s.buchung;
+    const von = s.uhrzeitVon.slice(0, 5);
+    const bis = s.uhrzeitBis.slice(0, 5);
+    const datumFormatted = new Date(s.datum + "T12:00:00").toLocaleDateString("de-DE", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+    if (
+      !window.confirm(
+        `Buchung von ${buchung.name} am ${datumFormatted}, ${von}–${bis} Uhr stornieren und den Termin wieder freigeben?\n\n${buchung.name} erhält eine Info-E-Mail an ${buchung.email}.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({ status: "offen", buchung: null, training_id: null, veroeffentlicht: true })
+        .eq("id", s.id);
+
+      if (error) {
+        console.error("Error releasing spontane stunde:", error);
+        alert("Fehler beim Freigeben: " + error.message);
+        return;
+      }
+
+      // Verknüpftes Training aus dem Kalender entfernen
+      if (s.trainingId) {
+        setTrainings((prev) => prev.filter((t) => t.id !== s.trainingId));
+      }
+      setSpontaneStunden((prev) =>
+        prev.map((x) =>
+          x.id === s.id
+            ? { ...x, status: "offen", buchung: undefined, trainingId: undefined, veroeffentlicht: true }
+            : x
+        )
+      );
+
+      // Info-E-Mail an den Spieler
+      const ort = s.anlage === "Britz" ? "Britz" : "BSC Rehberge, Wedding";
+      const mailText = `Hallo ${buchung.name},\n\nIhre Buchung für das Training in den Sommerferien musste leider storniert werden:\n\nTermin: ${datumFormatted}\nUhrzeit: ${von} – ${bis} Uhr\nOrt: ${ort}\n\nEs wird selbstverständlich nichts per SEPA-Lastschrift eingezogen.\n\nDer Termin steht wieder zur Buchung frei - gerne können Sie sich einen neuen Termin auf unserer Website aussuchen.\n\nBei Fragen erreichen Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`;
+      const mailHtml = `<!DOCTYPE html>
+<html>
+<body style="margin:0; padding:0; background:#faf6f2; font-family: Arial, Helvetica, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#faf6f2; padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="background:#ffffff; border-radius:8px; overflow:hidden; max-width:560px; width:100%;">
+        <tr><td style="background:#c96442; padding:20px 28px;">
+          <span style="color:#ffffff; font-size:18px; font-weight:bold;">Tennisschule A bis Z</span>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <p style="margin:0 0 16px; color:#2d2a26; font-size:15px;">Hallo ${buchung.name},</p>
+          <p style="margin:0 0 18px; color:#2d2a26; font-size:15px; line-height:1.6;">
+            Ihre Buchung für das <strong>Training in den Sommerferien</strong> musste leider storniert werden:
+          </p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 18px; background:#faf6f2; border-left:4px solid #c96442; width:100%;">
+            <tr><td style="padding:14px 18px;">
+              <p style="margin:0 0 6px; color:#2d2a26; font-size:15px;"><strong>Termin:</strong> ${datumFormatted}</p>
+              <p style="margin:0 0 6px; color:#2d2a26; font-size:15px;"><strong>Uhrzeit:</strong> ${von} – ${bis} Uhr</p>
+              <p style="margin:0; color:#2d2a26; font-size:15px;"><strong>Ort:</strong> ${ort}</p>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 16px; color:#2d2a26; font-size:15px; line-height:1.6;">
+            Es wird selbstverständlich <strong>nichts per SEPA-Lastschrift eingezogen</strong>.
+            Der Termin steht wieder zur Buchung frei – gerne können Sie sich einen neuen Termin auf unserer Website aussuchen.
+          </p>
+          <p style="margin:0 0 24px; color:#2d2a26; font-size:15px; line-height:1.6;">
+            Bei Fragen erreichen Sie uns unter <a href="mailto:tennisabisz@gmail.com" style="color:#c96442;">tennisabisz@gmail.com</a>.
+          </p>
+          <p style="margin:0; color:#2d2a26; font-size:15px;">Sportliche Grüße<br>Tennisschule A bis Z</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+      try {
+        const resp = await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: [buchung.email],
+            subject: `Ihr Training am ${datumFormatted} wurde storniert`,
+            body: mailText,
+            html: mailHtml,
+            fromName: "Tennisschule A bis Z",
+          }),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        alert(`Termin freigegeben. ${buchung.name} wurde per E-Mail informiert (${buchung.email}).`);
+      } catch (mailErr) {
+        console.error("Freigabe-E-Mail fehlgeschlagen:", mailErr);
+        alert(
+          `Der Termin wurde freigegeben, aber die Info-E-Mail konnte nicht versendet werden.\nBitte informieren Sie ${buchung.name} manuell: ${buchung.email}`
+        );
+      }
+    } catch (err) {
+      console.error("Error releasing spontane stunde:", err);
+      alert("Fehler beim Freigeben. Bitte versuchen Sie es erneut.");
+    }
+  }
+
   async function toggleSpontanVeroeffentlicht(id: string, current: boolean) {
     try {
       const { error } = await supabase
@@ -13926,6 +14037,16 @@ Wir freuen uns auf dich!`
                                         </button>
                                       );
                                     })()}
+                                    {s.status === "gebucht" && s.buchung && (
+                                      <button
+                                        className="btn micro"
+                                        style={{ background: "#f59e0b" }}
+                                        onClick={() => freigebenSpontaneStunde(s)}
+                                        title="Buchung stornieren, Termin wieder zur Buchung freigeben und den Spieler per E-Mail informieren"
+                                      >
+                                        Freigeben
+                                      </button>
+                                    )}
                                     {s.status !== "gebucht" && s.trainingId && (
                                       <span className="muted" style={{ fontSize: 12 }}>
                                         ✓ Im Kalender
