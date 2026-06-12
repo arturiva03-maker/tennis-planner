@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
 import "./App.css";
 import { supabase } from "./supabaseClient";
+import { checkIBAN, normalizeIBAN } from "./iban";
 
 const supportsHover = typeof window !== "undefined"
   ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
@@ -85,8 +86,19 @@ const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
 // Standardpreis für das Sommerferien-Training (sofern am Slot kein eigener Preis hinterlegt ist)
 const SPONTAN_PREIS_PRO_STUNDE = 40;
-// Wedding-SEPA-Lastschriftmandat (Voraussetzung für die Teilnahme)
-const SEPA_MANDAT_LINK = "/sepa";
+// IBAN in 4er-Blöcken formatieren (Eingabekomfort im eingebetteten Mandat)
+function formatIbanGroups(value: string): string {
+  return value.replace(/\s/g, "").toUpperCase().replace(/(.{4})/g, "$1 ").trim();
+}
+// Mandatsreferenz für ein direkt im Buchungsfenster erteiltes SEPA-Mandat
+function generateSpontanMandatsreferenz(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const rnd = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `SEPA-${y}${m}${d}-${rnd}`;
+}
 
 // Namensfeld mit Live-Vorschlägen aus der Spieler-/Mandatsdatenbank. Der
 // Mandats-Status wird NICHT in der Vorschlagsliste angezeigt, sondern erst
@@ -171,7 +183,11 @@ function MandatNameField({
         value={value}
         onChange={(e) => onChange(e.target.value, null)}
         onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() => setTimeout(() => {
+          setOpen(false);
+          const v = value.trim();
+          if (v.length >= 2) resolveMandat(v);
+        }, 180)}
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
@@ -293,6 +309,12 @@ export default function WeddingPage() {
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
   const [bookingHinweis, setBookingHinweis] = useState("");
+  // Eingebettetes SEPA-Mandat (nur falls für den Bucher noch keines hinterlegt ist)
+  const [bookingIban, setBookingIban] = useState("");
+  const [bookingStrasse, setBookingStrasse] = useState("");
+  const [bookingPlz, setBookingPlz] = useState("");
+  const [bookingOrt, setBookingOrt] = useState("");
+  const [bookingMandatConsent, setBookingMandatConsent] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -464,6 +486,11 @@ export default function WeddingPage() {
     setBookingEmail("");
     setBookingTelefon("");
     setBookingHinweis("");
+    setBookingIban("");
+    setBookingStrasse("");
+    setBookingPlz("");
+    setBookingOrt("");
+    setBookingMandatConsent(false);
     setBookingError(null);
     setBookingSuccess(false);
     setShowBookingModal(true);
@@ -471,8 +498,19 @@ export default function WeddingPage() {
 
   // Preis des Slots (Standard 40 €) und SEPA-Mandats-Gate (nur Hauptbucher)
   const bookingPreis = selectedSlot?.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE;
-  const ohneMandatNamen = bookingName.trim() && bookingNameMandat === false ? [bookingName.trim()] : [];
-  const alleMandateOk = bookingName.trim() !== "" && bookingNameMandat === true;
+  // Fehlt dem Bucher ein Mandat, wird es direkt im Fenster erteilt.
+  const mandatNeeded = bookingNameMandat === false;
+  const ibanCheckLive = checkIBAN(bookingIban);
+  const mandatFormOk =
+    ibanCheckLive.valid &&
+    bookingStrasse.trim() !== "" &&
+    bookingPlz.trim() !== "" &&
+    bookingOrt.trim() !== "" &&
+    bookingMandatConsent;
+  const alleMandateOk =
+    bookingName.trim() !== "" &&
+    bookingNameMandat !== null &&
+    (bookingNameMandat === true || mandatFormOk);
 
   const submitBooking = async () => {
     if (!selectedSlot) return;
@@ -490,8 +528,16 @@ export default function WeddingPage() {
       setBookingError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
       return;
     }
-    if (!alleMandateOk) {
-      setBookingError("Für die Buchung ist ein hinterlegtes SEPA-Lastschriftmandat erforderlich. Bitte erteilen Sie es zuerst.");
+    if (bookingNameMandat === null) {
+      setBookingError("Bitte geben Sie Ihren vollständigen Namen ein.");
+      return;
+    }
+    if (mandatNeeded && !mandatFormOk) {
+      setBookingError(
+        !ibanCheckLive.valid
+          ? "Bitte geben Sie eine gültige IBAN für das SEPA-Mandat ein."
+          : "Bitte füllen Sie die Bankdaten aus und bestätigen Sie das SEPA-Lastschriftmandat."
+      );
       return;
     }
 
@@ -499,6 +545,36 @@ export default function WeddingPage() {
     setBookingError(null);
 
     try {
+      // Kein Mandat hinterlegt? Dann wird es direkt hier erteilt (kein Link, keine
+      // Weiterleitung), damit sofort gebucht werden kann.
+      if (mandatNeeded) {
+        const parts = name.split(/\s+/);
+        const vorname = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+        const nachname = parts.length > 1 ? parts[parts.length - 1] : "";
+        const { error: mandatError } = await supabase.from("sepa_mandates").insert({
+          account_id: WEDDING_ACCOUNT_ID,
+          vorname,
+          nachname,
+          ist_kind: false,
+          elternteil_name: null,
+          strasse: bookingStrasse.trim(),
+          plz: bookingPlz.trim(),
+          ort: bookingOrt.trim(),
+          iban: normalizeIBAN(bookingIban),
+          email,
+          telefon: telefon || "",
+          mandatsreferenz: generateSpontanMandatsreferenz(),
+          unterschriftsdatum: new Date().toISOString().split("T")[0],
+          anlage: "Wedding",
+        });
+        if (mandatError) {
+          console.error("Mandat-Fehler:", mandatError);
+          setBookingError("Das SEPA-Mandat konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.");
+          setBookingSubmitting(false);
+          return;
+        }
+      }
+
       // Bucht den Slot und übernimmt ihn serverseitig direkt in den App-Kalender
       const { data: buchenResult, error } = await supabase.rpc("spontan_buchen", {
         slot_id: selectedSlot.id,
@@ -1711,10 +1787,10 @@ export default function WeddingPage() {
             </div>
 
             <div style={{
-              display: "grid",
-              gridTemplateColumns: selectedDate ? "1fr 1fr" : "1fr",
+              display: "flex",
+              flexDirection: "column",
               gap: 24,
-              maxWidth: selectedDate ? 800 : 400,
+              maxWidth: 400,
               margin: "0 auto",
             }}>
               {/* Calendar Grid */}
@@ -2559,27 +2635,24 @@ export default function WeddingPage() {
       {/* Booking Modal */}
       {showBookingModal && selectedSlot && (
         <div
+          className="tcb-overlay"
           style={{
             position: "fixed",
             inset: 0,
             background: "rgba(0,0,0,0.6)",
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
             zIndex: 100,
-            padding: 16,
           }}
           onClick={() => !bookingSubmitting && setShowBookingModal(false)}
         >
           <div
+            className="tcb-card"
             style={{
               background: colors.white,
-              maxWidth: 500,
               width: "100%",
-              maxHeight: "85vh",
               overflow: "auto",
-              padding: 32,
-              borderRadius: 16,
+              WebkitOverflowScrolling: "touch",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2855,39 +2928,84 @@ export default function WeddingPage() {
                   </p>
                 </div>
 
-                {/* Automatische SEPA-Mandats-Prüfung: Hinweis, wenn jemandem das Mandat fehlt */}
-                {ohneMandatNamen.length > 0 && (
+                {/* Kein Mandat hinterlegt? SEPA-Lastschriftmandat direkt hier erteilen */}
+                {mandatNeeded && (
                   <div style={{
-                    background: colors.errorBg,
-                    border: "1px solid #e8b4af",
+                    background: colors.bgLight,
+                    border: `1px solid ${colors.border}`,
                     borderRadius: 8,
-                    padding: "14px 16px",
+                    padding: 16,
                     marginBottom: 20,
-                    fontSize: 13.5,
-                    color: colors.text,
-                    lineHeight: 1.6,
                   }}>
-                    Für <strong>{ohneMandatNamen.join(", ")}</strong> ist kein SEPA-Lastschriftmandat hinterlegt.
-                    Eine Buchung ist nur mit gültigem Mandat möglich – bitte erteilen Sie es zuerst:
-                    <div style={{ marginTop: 12 }}>
-                      <a
-                        href={SEPA_MANDAT_LINK}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: "inline-block",
-                          background: colors.primary,
-                          color: colors.white,
-                          padding: "10px 18px",
-                          borderRadius: 6,
-                          fontWeight: 700,
-                          fontSize: 14,
-                          textDecoration: "none",
-                        }}
-                      >
-                        SEPA-Lastschriftmandat erteilen →
-                      </a>
+                    <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 14, color: colors.text }}>SEPA-Lastschriftmandat</p>
+                    <p style={{ margin: "0 0 14px", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
+                      Für Sie ist noch kein Mandat hinterlegt. Erteilen Sie es einmalig direkt hier – danach buchen Sie sofort, ganz ohne Umweg.
+                    </p>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>IBAN *</label>
+                      <input
+                        type="text"
+                        value={bookingIban}
+                        onChange={(e) => setBookingIban(formatIbanGroups(e.target.value))}
+                        placeholder="DE00 0000 0000 0000 0000 00"
+                        disabled={bookingSubmitting}
+                        autoComplete="off"
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${bookingIban.trim() && !ibanCheckLive.valid ? "#c2392f" : colors.border}`, borderRadius: 2, fontSize: 15, fontFamily: "monospace", letterSpacing: 0.5, boxSizing: "border-box" }}
+                      />
+                      {bookingIban.trim() && !ibanCheckLive.valid && (
+                        <p style={{ margin: "5px 0 0", fontSize: 12, color: "#c2392f" }}>Bitte geben Sie eine gültige IBAN ein.</p>
+                      )}
                     </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Straße und Hausnummer *</label>
+                      <input
+                        type="text"
+                        value={bookingStrasse}
+                        onChange={(e) => setBookingStrasse(e.target.value)}
+                        placeholder="Musterstraße 1"
+                        disabled={bookingSubmitting}
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                      <div style={{ width: 110, flexShrink: 0 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>PLZ *</label>
+                        <input
+                          type="text"
+                          value={bookingPlz}
+                          onChange={(e) => setBookingPlz(e.target.value)}
+                          placeholder="12345"
+                          inputMode="numeric"
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Ort *</label>
+                        <input
+                          type="text"
+                          value={bookingOrt}
+                          onChange={(e) => setBookingOrt(e.target.value)}
+                          placeholder="Berlin"
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                    </div>
+
+                    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 12.5, color: colors.text, lineHeight: 1.5 }}>
+                      <input
+                        type="checkbox"
+                        checked={bookingMandatConsent}
+                        onChange={(e) => setBookingMandatConsent(e.target.checked)}
+                        disabled={bookingSubmitting}
+                        style={{ marginTop: 2, flexShrink: 0, width: 18, height: 18 }}
+                      />
+                      <span>Ich ermächtige die Tennisschule A bis Z, Zahlungen von meinem Konto mittels SEPA-Lastschrift einzuziehen, und weise mein Kreditinstitut an, die Lastschriften einzulösen.</span>
+                    </label>
                   </div>
                 )}
 
@@ -2908,7 +3026,7 @@ export default function WeddingPage() {
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : `Verbindlich buchen · ${bookingPreis.toFixed(0)} €`}
+                  {bookingSubmitting ? "Wird gebucht..." : `${mandatNeeded ? "Mandat erteilen & buchen" : "Verbindlich buchen"} · ${bookingPreis.toFixed(0)} €`}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
@@ -2932,6 +3050,14 @@ export default function WeddingPage() {
         }
         @media (max-width: 1100px) {
           .camp-card { max-width: 100% !important; }
+        }
+
+        /* ── Buchungs-Modal (mobil-freundlich, auf kleinen Screens als Bottom-Sheet) ── */
+        .tcb-overlay { align-items: center; padding: 16px; }
+        .tcb-card { max-width: 500px; max-height: 85vh; padding: 32px; border-radius: 16px; }
+        @media (max-width: 600px) {
+          .tcb-overlay { align-items: flex-end; padding: 0; }
+          .tcb-card { max-width: 100%; max-height: 94vh; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; }
         }
 
         /* ── Grain / noise texture (SVG-based) ── */
