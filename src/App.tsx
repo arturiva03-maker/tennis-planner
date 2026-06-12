@@ -255,6 +255,7 @@ type SpontaneStundeBuchung = {
   email: string;
   telefon?: string;
   gebuchtAm: string;
+  hinweis?: string;
 };
 
 type SpontaneStunde = {
@@ -1481,6 +1482,9 @@ export default function App() {
   const [spontanAnlage, setSpontanAnlage] = useState<"Wedding" | "Britz">("Wedding");
   const [spontanVeroeffentlicht, setSpontanVeroeffentlicht] = useState(false);
   const [editingSpontanId, setEditingSpontanId] = useState<string | null>(null);
+  // Listen-Filter für den Spontan-Tab
+  const [spontanFilter, setSpontanFilter] = useState<"alle" | "offen" | "gebucht">("alle");
+  const [spontanZeigeVergangene, setSpontanZeigeVergangene] = useState(false);
 
   // Sascha-Rechner (Weiteres > Rechner)
   const [rechnerGehalt, setRechnerGehalt] = useState("220");
@@ -13950,128 +13954,237 @@ Wir freuen uns auf dich!`
                         <p className="muted">Lade...</p>
                       ) : spontaneStunden.length === 0 ? (
                         <p className="muted">Keine spontanen Stunden vorhanden.</p>
-                      ) : (
-                        <ul className="list">
-                          {spontaneStunden
-                            .sort((a, b) => {
-                              const dateA = new Date(a.datum + "T" + a.uhrzeitVon);
-                              const dateB = new Date(b.datum + "T" + b.uhrzeitVon);
-                              return dateA.getTime() - dateB.getTime();
-                            })
-                            .map((s) => {
-                              const trainer = trainers.find((t) => t.id === s.trainerId);
-                              const tarif = tarife.find((t) => t.id === s.tarifId);
-                              const preis = s.customPreisProStunde ?? tarif?.preisProStunde;
-                              const datumFormatted = new Date(s.datum + "T12:00:00").toLocaleDateString("de-DE", {
-                                weekday: "short",
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric"
-                              });
+                      ) : (() => {
+                        const heute = todayISO();
+                        const vergangene = spontaneStunden.filter((s) => s.datum < heute);
+                        const aktuelle = spontaneStunden.filter((s) => s.datum >= heute);
+                        const offenCount = aktuelle.filter((s) => s.status !== "gebucht").length;
+                        const gebuchtCount = aktuelle.filter((s) => s.status === "gebucht").length;
+                        const basis = spontanZeigeVergangene ? spontaneStunden : aktuelle;
+                        const gefiltert = basis.filter((s) =>
+                          spontanFilter === "alle"
+                            ? true
+                            : spontanFilter === "gebucht"
+                            ? s.status === "gebucht"
+                            : s.status !== "gebucht"
+                        );
+                        const sortiert = [...gefiltert].sort((a, b) =>
+                          (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
+                        );
+                        const gruppen: { datum: string; slots: SpontaneStunde[] }[] = [];
+                        sortiert.forEach((s) => {
+                          const letzte = gruppen[gruppen.length - 1];
+                          if (letzte && letzte.datum === s.datum) letzte.slots.push(s);
+                          else gruppen.push({ datum: s.datum, slots: [s] });
+                        });
 
-                              return (
-                                <li key={s.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                    <div>
-                                      <strong>{datumFormatted}</strong>
-                                      <span style={{ marginLeft: 8 }}>{s.uhrzeitVon} – {s.uhrzeitBis}</span>
-                                      <div className="muted" style={{ fontSize: 13 }}>
-                                        Trainer: {trainer?.name ?? "–"} | Anlage: {s.anlage}
-                                        {preis && ` | ${euro(preis)}/h`}
-                                      </div>
-                                      {s.buchung && (
-                                        <div style={{ marginTop: 4, padding: "6px 10px", background: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
-                                          <strong>Gebucht von:</strong> {s.buchung.name} ({s.buchung.email})
-                                          {s.buchung.telefon && ` | Tel: ${s.buchung.telefon}`}
-                                          <br />
-                                          <span className="muted">am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE")}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                                      <span
-                                        style={{
-                                          padding: "3px 8px",
-                                          borderRadius: 4,
-                                          fontSize: 12,
-                                          fontWeight: 600,
-                                          background: s.status === "gebucht" ? "#22c55e" : "#3b82f6",
-                                          color: "white"
-                                        }}
-                                      >
-                                        {s.status === "gebucht" ? "Gebucht" : "Offen"}
-                                      </span>
-                                      <button
-                                        className={`btn micro ${s.veroeffentlicht ? "btnPrimary" : "btnGhost"}`}
-                                        onClick={() => toggleSpontanVeroeffentlicht(s.id, s.veroeffentlicht)}
-                                        title={s.veroeffentlicht ? "Veröffentlicht" : "Nicht veröffentlicht"}
-                                      >
-                                        {s.veroeffentlicht ? "Online" : "Offline"}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="smallActions" style={{ justifyContent: "flex-end" }}>
-                                    {s.status === "gebucht" && s.buchung && (() => {
-                                      const linkedTraining = s.trainingId ? trainings.find(t => t.id === s.trainingId) : null;
-                                      const spielerUebernommen = linkedTraining && linkedTraining.spielerIds.length > 0 && s.buchung && (() => {
-                                        const buchungsEmail = s.buchung!.email.toLowerCase();
-                                        return linkedTraining.spielerIds.some(id => {
-                                          const sp = spielerById.get(id);
-                                          return sp?.kontaktEmail?.toLowerCase() === buchungsEmail;
-                                        });
-                                      })();
-                                      if (spielerUebernommen) {
-                                        return (
-                                          <span className="muted" style={{ fontSize: 12 }}>
-                                            ✓ Übernommen
-                                          </span>
-                                        );
-                                      }
-                                      return (
-                                        <button
-                                          className="btn micro"
-                                          style={{ background: "#eab308" }}
-                                          onClick={() => uebernehmenSpontanBuchung(s)}
-                                        >
-                                          In Kalender übernehmen
-                                        </button>
-                                      );
-                                    })()}
-                                    {s.status === "gebucht" && s.buchung && (
-                                      <button
-                                        className="btn micro"
-                                        style={{ background: "#f59e0b" }}
-                                        onClick={() => freigebenSpontaneStunde(s)}
-                                        title="Buchung stornieren, Termin wieder zur Buchung freigeben und den Spieler per E-Mail informieren"
-                                      >
-                                        Freigeben
-                                      </button>
-                                    )}
-                                    {s.status !== "gebucht" && s.trainingId && (
-                                      <span className="muted" style={{ fontSize: 12 }}>
-                                        ✓ Im Kalender
-                                      </span>
-                                    )}
-                                    {s.status !== "gebucht" && (
-                                      <button
-                                        className="btn micro btnGhost"
-                                        onClick={() => startEditSpontaneStunde(s)}
-                                      >
-                                        Bearbeiten
-                                      </button>
-                                    )}
-                                    <button
-                                      className="btn micro btnWarn"
-                                      onClick={() => deleteSpontaneStunde(s.id)}
+                        return (
+                          <>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", margin: "12px 0 16px" }}>
+                              {([
+                                ["alle", `Alle (${aktuelle.length})`],
+                                ["offen", `Offen (${offenCount})`],
+                                ["gebucht", `Gebucht (${gebuchtCount})`],
+                              ] as const).map(([key, label]) => (
+                                <button
+                                  key={key}
+                                  className={`btn micro ${spontanFilter === key ? "btnPrimary" : "btnGhost"}`}
+                                  onClick={() => setSpontanFilter(key)}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                              {vergangene.length > 0 && (
+                                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, marginLeft: "auto" }} className="muted">
+                                  <input
+                                    type="checkbox"
+                                    checked={spontanZeigeVergangene}
+                                    onChange={(e) => setSpontanZeigeVergangene(e.target.checked)}
+                                  />
+                                  Vergangene anzeigen ({vergangene.length})
+                                </label>
+                              )}
+                            </div>
+
+                            {gruppen.length === 0 ? (
+                              <p className="muted">Keine Stunden für diesen Filter.</p>
+                            ) : (
+                              gruppen.map((g) => {
+                                const datumHeader = new Date(g.datum + "T12:00:00").toLocaleDateString("de-DE", {
+                                  weekday: "long",
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                });
+                                const istVergangen = g.datum < heute;
+                                return (
+                                  <div key={g.datum} style={{ marginBottom: 14, opacity: istVergangen ? 0.55 : 1 }}>
+                                    <div
+                                      style={{
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        padding: "5px 10px",
+                                        background: "var(--bg-inset, #f1f5f9)",
+                                        borderRadius: 6,
+                                        marginBottom: 6,
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                      }}
                                     >
-                                      Löschen
-                                    </button>
+                                      <span>{datumHeader}</span>
+                                      <span className="muted" style={{ fontWeight: 500 }}>
+                                        {g.slots.length} {g.slots.length === 1 ? "Stunde" : "Stunden"}
+                                      </span>
+                                    </div>
+                                    <ul className="list" style={{ margin: 0 }}>
+                                      {g.slots.map((s) => {
+                                        const trainer = trainers.find((t) => t.id === s.trainerId);
+                                        const tarif = tarife.find((t) => t.id === s.tarifId);
+                                        const preis = s.customPreisProStunde ?? tarif?.preisProStunde;
+                                        const gebucht = s.status === "gebucht";
+                                        return (
+                                          <li
+                                            key={s.id}
+                                            className="listItem"
+                                            style={{
+                                              flexDirection: "column",
+                                              alignItems: "stretch",
+                                              gap: 6,
+                                              padding: "8px 12px",
+                                              borderLeft: `3px solid ${gebucht ? "#22c55e" : "#3b82f6"}`,
+                                              background: gebucht ? "rgba(34,197,94,0.07)" : undefined,
+                                            }}
+                                          >
+                                            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                              <strong style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                                                {s.uhrzeitVon.slice(0, 5)}–{s.uhrzeitBis.slice(0, 5)}
+                                              </strong>
+                                              <span style={{ fontSize: 13 }}>{trainer?.name ?? "–"}</span>
+                                              <span
+                                                style={{
+                                                  fontSize: 10,
+                                                  fontWeight: 700,
+                                                  background: s.anlage === "Britz" ? "#f59e0b" : "#2563eb",
+                                                  color: "white",
+                                                  padding: "1px 5px",
+                                                  borderRadius: 3,
+                                                }}
+                                              >
+                                                {s.anlage === "Britz" ? "Britz" : "Wedding"}
+                                              </span>
+                                              {preis !== undefined && (
+                                                <span className="muted" style={{ fontSize: 13 }}>{euro(preis)}/h</span>
+                                              )}
+                                              {gebucht && (
+                                                <span
+                                                  style={{
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    background: "#22c55e",
+                                                    color: "white",
+                                                    padding: "2px 7px",
+                                                    borderRadius: 4,
+                                                  }}
+                                                >
+                                                  Gebucht
+                                                </span>
+                                              )}
+                                              {!s.veroeffentlicht && (
+                                                <span
+                                                  style={{
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    background: "#94a3b8",
+                                                    color: "white",
+                                                    padding: "2px 7px",
+                                                    borderRadius: 4,
+                                                  }}
+                                                >
+                                                  Offline
+                                                </span>
+                                              )}
+                                              <div style={{ display: "flex", gap: 6, alignItems: "center", marginLeft: "auto", flexWrap: "wrap" }}>
+                                                {gebucht && s.buchung && (() => {
+                                                  const linkedTraining = s.trainingId ? trainings.find((t) => t.id === s.trainingId) : null;
+                                                  const spielerUebernommen = linkedTraining && linkedTraining.spielerIds.length > 0 && s.buchung && (() => {
+                                                    const buchungsEmail = s.buchung!.email.toLowerCase();
+                                                    return linkedTraining.spielerIds.some((id) => {
+                                                      const sp = spielerById.get(id);
+                                                      return sp?.kontaktEmail?.toLowerCase() === buchungsEmail;
+                                                    });
+                                                  })();
+                                                  if (spielerUebernommen) {
+                                                    return (
+                                                      <span className="muted" style={{ fontSize: 12, whiteSpace: "nowrap" }}>✓ Übernommen</span>
+                                                    );
+                                                  }
+                                                  return (
+                                                    <button
+                                                      className="btn micro"
+                                                      style={{ background: "#eab308" }}
+                                                      onClick={() => uebernehmenSpontanBuchung(s)}
+                                                    >
+                                                      In Kalender übernehmen
+                                                    </button>
+                                                  );
+                                                })()}
+                                                {gebucht && s.buchung && (
+                                                  <button
+                                                    className="btn micro"
+                                                    style={{ background: "#f59e0b" }}
+                                                    onClick={() => freigebenSpontaneStunde(s)}
+                                                    title="Buchung stornieren, Termin wieder zur Buchung freigeben und den Spieler per E-Mail informieren"
+                                                  >
+                                                    Freigeben
+                                                  </button>
+                                                )}
+                                                {!gebucht && (
+                                                  <button
+                                                    className={`btn micro ${s.veroeffentlicht ? "btnPrimary" : "btnGhost"}`}
+                                                    onClick={() => toggleSpontanVeroeffentlicht(s.id, s.veroeffentlicht)}
+                                                    title={s.veroeffentlicht ? "Auf der Website sichtbar - Klick zum Verstecken" : "Nicht auf der Website - Klick zum Veröffentlichen"}
+                                                  >
+                                                    {s.veroeffentlicht ? "Online" : "Offline"}
+                                                  </button>
+                                                )}
+                                                {!gebucht && (
+                                                  <button
+                                                    className="btn micro btnGhost"
+                                                    onClick={() => startEditSpontaneStunde(s)}
+                                                  >
+                                                    Bearbeiten
+                                                  </button>
+                                                )}
+                                                <button
+                                                  className="btn micro btnWarn"
+                                                  onClick={() => deleteSpontaneStunde(s.id)}
+                                                >
+                                                  Löschen
+                                                </button>
+                                              </div>
+                                            </div>
+                                            {s.buchung && (
+                                              <div style={{ padding: "6px 10px", background: "#dcfce7", borderRadius: 4, fontSize: 13 }}>
+                                                <strong>{s.buchung.name}</strong> · {s.buchung.email}
+                                                {s.buchung.telefon && <> · Tel: {s.buchung.telefon}</>}
+                                                <span className="muted"> · gebucht am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}</span>
+                                                {s.buchung.hinweis && (
+                                                  <div style={{ marginTop: 3 }}>📝 {s.buchung.hinweis}</div>
+                                                )}
+                                              </div>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
                                   </div>
-                                </li>
-                              );
-                            })}
-                        </ul>
-                      )}
+                                );
+                              })
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </>
                 )}
