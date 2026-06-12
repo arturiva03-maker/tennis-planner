@@ -48,6 +48,8 @@ declare
   v_preis numeric;
   v_gruppe boolean := false;
   v_training_id text;
+  v_mandat sepa_mandates%rowtype;
+  v_mandat_fields jsonb;
 begin
   select * into slot from spontane_stunden where id = slot_id;
   if not found or slot.status <> 'gebucht' or slot.buchung is null then
@@ -100,7 +102,9 @@ begin
     return slot.training_id;
   end if;
 
-  -- Alle Teilnehmer als Spieler auflösen/anlegen, IDs sammeln
+  -- Alle Teilnehmer als Spieler auflösen/anlegen, IDs sammeln. Wurde im Buchungs-
+  -- formular (oder vorher per /sepa) ein SEPA-Lastschriftmandat erteilt, wird es dem
+  -- Spieler automatisch zugeordnet (mandatsreferenz/iban/... aus sepa_mandates).
   for part in select value from jsonb_array_elements(participants)
   loop
     v_name := coalesce(nullif(trim(part->>'name'), ''), 'Unbekannt');
@@ -112,6 +116,43 @@ begin
     else
       v_vorname := v_name;
       v_nachname := null;
+    end if;
+
+    -- Passendes Mandat (per E-Mail oder vollständigem Namen), neuestes zuerst.
+    v_mandat := null;
+    select m.* into v_mandat
+    from sepa_mandates m
+    where m.account_id = slot.account_id
+      and (
+        (v_email <> '' and lower(coalesce(m.email, '')) = v_email)
+        or lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = lower(v_name)
+      )
+    order by m.created_at desc nulls last
+    limit 1;
+
+    -- Mandatsfelder für den Spieler aufbereiten (nur wenn echtes Mandat vorhanden).
+    v_mandat_fields := '{}'::jsonb;
+    if v_mandat.id is not null and coalesce(trim(v_mandat.mandatsreferenz), '') <> '' then
+      v_mandat_fields := jsonb_build_object(
+        'mandatsreferenz', trim(v_mandat.mandatsreferenz),
+        'sepaSequenz', 'RCUR'
+      );
+      if coalesce(trim(v_mandat.iban), '') <> '' then
+        v_mandat_fields := v_mandat_fields || jsonb_build_object('iban', trim(v_mandat.iban));
+      end if;
+      if v_mandat.unterschriftsdatum is not null then
+        v_mandat_fields := v_mandat_fields || jsonb_build_object('unterschriftsdatum', to_char(v_mandat.unterschriftsdatum, 'YYYY-MM-DD'));
+      end if;
+      if coalesce(v_mandat.ist_kind, false) and coalesce(trim(v_mandat.elternteil_name), '') <> '' then
+        v_mandat_fields := v_mandat_fields
+          || jsonb_build_object('abweichenderEmpfaenger', true, 'empfaengerName', trim(v_mandat.elternteil_name));
+      end if;
+      if coalesce(trim(v_mandat.strasse), '') <> '' or coalesce(trim(v_mandat.plz), '') <> '' or coalesce(trim(v_mandat.ort), '') <> '' then
+        v_mandat_fields := v_mandat_fields || jsonb_build_object(
+          'rechnungsAdresse',
+          trim(concat_ws(', ', nullif(trim(coalesce(v_mandat.strasse, '')), ''), nullif(trim(concat_ws(' ', v_mandat.plz, v_mandat.ort)), '')))
+        );
+      end if;
     end if;
 
     v_spieler_id := null;
@@ -128,7 +169,18 @@ begin
       if v_nachname is not null then sp := sp || jsonb_build_object('nachname', v_nachname); end if;
       if v_email <> '' then sp := sp || jsonb_build_object('kontaktEmail', v_email); end if;
       if v_telefon is not null then sp := sp || jsonb_build_object('kontaktTelefon', v_telefon); end if;
+      sp := sp || v_mandat_fields;  -- Mandat direkt zuordnen (falls vorhanden)
       spieler_arr := spieler_arr || jsonb_build_array(sp);
+    elsif v_mandat_fields <> '{}'::jsonb then
+      -- Bestehender Spieler ohne Mandat: ergänzen, vorhandenes Mandat nie überschreiben.
+      spieler_arr := (
+        select coalesce(jsonb_agg(
+          case when t.value->>'id' = v_spieler_id and coalesce(trim(t.value->>'mandatsreferenz'), '') = ''
+            then t.value || v_mandat_fields
+            else t.value end
+        ), '[]'::jsonb)
+        from jsonb_array_elements(spieler_arr) t(value)
+      );
     end if;
 
     if not (spieler_ids ? v_spieler_id) then
