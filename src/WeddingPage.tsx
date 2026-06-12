@@ -2977,7 +2977,7 @@ export default function WeddingPage() {
                   />
                   <p style={{ margin: "8px 0 0", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
                     Wenn Sie weitere Mitspieler mitbringen, passt sich der Preis an: 1 Person 40 €, 2 Personen je 25 €,
-                    3 Personen je 20 €, 4 Personen je 15 € (pro Person). Den genauen Preis stimmen wir dann mit Ihnen ab.
+                    3 Personen je 20 €, 4 Personen je 15 € (pro Person).
                   </p>
                 </div>
 
