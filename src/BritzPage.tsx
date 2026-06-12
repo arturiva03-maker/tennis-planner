@@ -70,6 +70,8 @@ export default function BritzPage() {
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [hasAnySlots, setHasAnySlots] = useState(false);
+  // Trainer-Vornamen (id -> Name), damit gleichzeitige Slots verschiedener Trainer unterscheidbar sind
+  const [trainerNamen, setTrainerNamen] = useState<Record<string, string>>({});
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -167,6 +169,15 @@ export default function BritzPage() {
   useEffect(() => {
     checkAnySlots();
   }, [checkAnySlots]);
+
+  // Trainer-Vornamen laden (einmalig; nur id -> Vorname, via SECURITY-DEFINER-RPC)
+  useEffect(() => {
+    supabase
+      .rpc("spontan_trainer_namen", { p_account_id: WEDDING_ACCOUNT_ID })
+      .then(({ data }) => {
+        if (data && typeof data === "object") setTrainerNamen(data as Record<string, string>);
+      });
+  }, []);
 
   // Realtime: Slot-Änderungen aus der App (Freigabe, neue Stunden, Buchungen)
   // sofort anzeigen, ohne dass die Seite neu geladen werden muss. Der Fetch
@@ -1536,11 +1547,18 @@ export default function BritzPage() {
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
-                          {slot.customPreisProStunde && (
-                            <span style={{ color: colors.primary, fontWeight: 600 }}>
-                              {slot.customPreisProStunde.toFixed(0)} €
-                            </span>
-                          )}
+                          <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            {trainerNamen[slot.trainerId] && (
+                              <span style={{ color: colors.textMuted, fontWeight: 600, fontSize: 14 }}>
+                                {trainerNamen[slot.trainerId]}
+                              </span>
+                            )}
+                            {slot.customPreisProStunde && (
+                              <span style={{ color: colors.primary, fontWeight: 600 }}>
+                                {slot.customPreisProStunde.toFixed(0)} €
+                              </span>
+                            )}
+                          </span>
                         </button>
                       ))}
                     </div>

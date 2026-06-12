@@ -528,12 +528,43 @@ begin
 end;
 $$;
 
+-- Trainer-Vornamen zum Account, als Map { trainerId: vorname }. Für die
+-- öffentliche Slot-Anzeige, wenn mehrere Trainer gleichzeitig anbieten -
+-- bewusst NUR id + Vorname, keine Kontakt- oder Abrechnungsdaten.
+create or replace function public.spontan_trainer_namen(p_account_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  state jsonb;
+  result jsonb := '{}'::jsonb;
+  rec record;
+begin
+  select data into state from account_state where account_id = p_account_id::uuid;
+  if state is null then
+    return result;
+  end if;
+  for rec in
+    select t.value->>'id' as id, trim(coalesce(t.value->>'name', '')) as name
+    from jsonb_array_elements(coalesce(state->'trainers', '[]'::jsonb)) t(value)
+  loop
+    if rec.id is not null and rec.name <> '' then
+      result := result || jsonb_build_object(rec.id, rec.name);
+    end if;
+  end loop;
+  return result;
+end;
+$$;
+
 grant execute on function public.spontan_buchung_uebernehmen(uuid) to anon, authenticated;
 grant execute on function public.spontan_buchen(uuid, text, text, text, text) to anon, authenticated;
 grant execute on function public.spontan_buchung_absagen(uuid) to anon, authenticated;
 grant execute on function public.spontan_trainer_kontakt(uuid) to anon, authenticated;
 grant execute on function public.spontan_hat_mandat(text, text, text) to anon, authenticated;
 grant execute on function public.spontan_spieler_suche(text, text) to anon, authenticated;
+grant execute on function public.spontan_trainer_namen(text) to anon, authenticated;
 
 -- spontane_stunden in die Realtime-Publikation aufnehmen (Buchungs-Trigger für die App).
 do $$

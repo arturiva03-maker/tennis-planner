@@ -296,6 +296,8 @@ export default function WeddingPage() {
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [hasAnySlots, setHasAnySlots] = useState(false);
   const [naechsterSlot, setNaechsterSlot] = useState<{ datum: string; uhrzeitVon: string } | null>(null);
+  // Trainer-Vornamen (id -> Name), damit gleichzeitige Slots verschiedener Trainer unterscheidbar sind
+  const [trainerNamen, setTrainerNamen] = useState<Record<string, string>>({});
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -480,6 +482,15 @@ export default function WeddingPage() {
     ladeNaechstenSlot();
   }, [ladeNaechstenSlot]);
 
+  // Trainer-Vornamen laden (einmalig; nur id -> Vorname, via SECURITY-DEFINER-RPC)
+  useEffect(() => {
+    supabase
+      .rpc("spontan_trainer_namen", { p_account_id: WEDDING_ACCOUNT_ID })
+      .then(({ data }) => {
+        if (data && typeof data === "object") setTrainerNamen(data as Record<string, string>);
+      });
+  }, []);
+
   // Realtime: Slot-Änderungen aus der App (Freigabe, neue Stunden, Buchungen)
   // sofort anzeigen, ohne dass die Seite neu geladen werden muss. Der Fetch
   // läuft "silent", damit der Kalender dabei nicht kurz ausgraut. Ref statt
@@ -649,6 +660,7 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
+      const trainerName = trainerNamen[selectedSlot.trainerId] || "";
       const preisUebersichtHtml =
         "1 Person 40 €<br>2 Personen je 25 € pro Person<br>3 Personen je 20 € pro Person<br>4 Personen je 15 € pro Person";
       const preisUebersichtText =
@@ -720,6 +732,16 @@ export default function WeddingPage() {
                           </table>
                         </td>
                       </tr>
+                      ${trainerName ? `<tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">🎾</td>
+                              <td style="color: ${colors.primary}; font-size: 15px;">Trainer: ${trainerName}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>` : ""}
                       <tr>
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
@@ -821,7 +843,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${trainerName ? `\nTrainer: ${trainerName}` : ""}${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -919,6 +941,12 @@ export default function WeddingPage() {
                           <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
+                      ${trainerName ? `<tr>
+                        <td style="padding: 6px 0;">
+                          <span style="font-size: 16px; margin-right: 8px;">🎾</span>
+                          <span style="color: ${colors.primary}; font-size: 15px;">Trainer: ${trainerName}</span>
+                        </td>
+                      </tr>` : ""}
                       <tr>
                         <td style="padding: 6px 0;">
                           <span style="font-size: 16px; margin-right: 8px; vertical-align: top;">💰</span>
@@ -2078,6 +2106,11 @@ export default function WeddingPage() {
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
+                          {trainerNamen[slot.trainerId] && (
+                            <span style={{ color: colors.primary, fontWeight: 600, fontSize: 14 }}>
+                              {trainerNamen[slot.trainerId]}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -2824,6 +2857,12 @@ export default function WeddingPage() {
                     <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
+                  {trainerNamen[selectedSlot.trainerId] && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+                      <span style={{ fontSize: 18 }}>🎾</span>
+                      <span style={{ color: colors.text }}>Trainer: {trainerNamen[selectedSlot.trainerId]}</span>
+                    </div>
+                  )}
                   {bookingHinweis.trim() && (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
                       <span style={{ fontSize: 18 }}>📝</span>
@@ -2903,6 +2942,11 @@ export default function WeddingPage() {
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
+                  {trainerNamen[selectedSlot.trainerId] && (
+                    <div style={{ color: colors.textMuted }}>
+                      Trainer: {trainerNamen[selectedSlot.trainerId]}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{

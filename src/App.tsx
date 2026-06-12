@@ -6264,33 +6264,41 @@ Tennisschule A bis Z`;
                         const dayEvents = trainingsInWeek.filter(
                           (t) => t.datum === day
                         );
+                        const dayGhosts = offeneSpontanInWeek.filter((s) => s.datum === day);
                         const startMin = 7 * 60;
 
-                        // Überlappende Trainings für parallele Darstellung gruppieren
-                        const groupedEvents: Training[][] = [];
-                        dayEvents.forEach((training) => {
-                          const startA = toMinutes(training.uhrzeitVon);
-                          const endA = toMinutes(training.uhrzeitBis);
+                        // Trainings UND offene Spontan-Platzhalter gemeinsam auf Überlappung
+                        // gruppieren, damit gleichzeitige Angebote (z.B. zwei Trainer parallel)
+                        // nebeneinander statt übereinander dargestellt werden.
+                        const layoutItems: { key: string; von: number; bis: number }[] = [
+                          ...dayEvents.map((t) => ({
+                            key: t.id,
+                            von: toMinutes(t.uhrzeitVon),
+                            bis: toMinutes(t.uhrzeitBis),
+                          })),
+                          ...dayGhosts.map((s) => ({
+                            key: `spontan-${s.id}`,
+                            von: toMinutes(s.uhrzeitVon),
+                            bis: toMinutes(s.uhrzeitBis),
+                          })),
+                        ].sort((a, b) => a.von - b.von || a.bis - b.bis);
 
+                        const groupedItems: { key: string; von: number; bis: number }[][] = [];
+                        layoutItems.forEach((item) => {
                           let placed = false;
-                          for (const group of groupedEvents) {
-                            const hasOverlap = group.some((t) => {
-                              const startB = toMinutes(t.uhrzeitVon);
-                              const endB = toMinutes(t.uhrzeitBis);
-                              return startA < endB && endA > startB;
-                            });
-
-                            if (hasOverlap) {
-                              group.push(training);
+                          for (const group of groupedItems) {
+                            if (group.some((o) => item.von < o.bis && item.bis > o.von)) {
+                              group.push(item);
                               placed = true;
                               break;
                             }
                           }
-
-                          if (!placed) {
-                            groupedEvents.push([training]);
-                          }
+                          if (!placed) groupedItems.push([item]);
                         });
+                        const layoutByKey = new Map<string, { size: number; index: number }>();
+                        groupedItems.forEach((g) =>
+                          g.forEach((item, i) => layoutByKey.set(item.key, { size: g.length, index: i }))
+                        );
 
                         const isToday = day === todayISO();
 
@@ -6319,8 +6327,7 @@ Tennisschule A bis Z`;
                             ))}
 
                             {/* Offene Spontan-Slots als gestrichelte Platzhalter (klick-durchlässig, hinter echten Trainings) */}
-                            {offeneSpontanInWeek
-                              .filter((s) => s.datum === day)
+                            {dayGhosts
                               .map((s) => {
                                 const top = Math.max(0, (toMinutes(s.uhrzeitVon) - startMin) / 60) * 40;
                                 const height = Math.max(26, ((toMinutes(s.uhrzeitBis) - toMinutes(s.uhrzeitVon)) / 60) * 40);
@@ -6328,6 +6335,7 @@ Tennisschule A bis Z`;
                                 const trainerName = trainerById.get(s.trainerId)?.name ?? "Trainer";
                                 const von = s.uhrzeitVon.slice(0, 5);
                                 const bis = s.uhrzeitBis.slice(0, 5);
+                                const lay = layoutByKey.get(`spontan-${s.id}`) ?? { size: 1, index: 0 };
                                 return (
                                   <div
                                     key={`spontan-${s.id}`}
@@ -6335,8 +6343,8 @@ Tennisschule A bis Z`;
                                     style={{
                                       top,
                                       height,
-                                      width: "100%",
-                                      left: 0,
+                                      width: `${100 / lay.size}%`,
+                                      left: `${(lay.index * 100) / lay.size}%`,
                                       background:
                                         "repeating-linear-gradient(135deg, rgba(234,179,8,0.18) 0px, rgba(234,179,8,0.18) 6px, rgba(234,179,8,0.05) 6px, rgba(234,179,8,0.05) 12px)",
                                       border: "1px dashed #ca8a04",
@@ -6497,22 +6505,10 @@ Tennisschule A bis Z`;
                                 : "rgba(59, 130, 246, 0.12)";
                               const border = accentColor;
 
-                              // Position für überlappende Trainings berechnen
-                              let groupSize = 1;
-                              let indexInGroup = 0;
-
-                              for (const group of groupedEvents) {
-                                if (group.includes(t)) {
-                                  groupSize = group.length;
-                                  indexInGroup = group.indexOf(t);
-                                  break;
-                                }
-                              }
-
-                              const widthPercent =
-                                groupSize > 1 ? 100 / groupSize : 100;
-                              const leftPercent =
-                                groupSize > 1 ? indexInGroup * widthPercent : 0;
+                              // Position bei Überlappung (gemeinsame Gruppierung mit offenen Spontan-Slots)
+                              const lay = layoutByKey.get(t.id) ?? { size: 1, index: 0 };
+                              const widthPercent = 100 / lay.size;
+                              const leftPercent = lay.index * widthPercent;
 
                               return (
                                 <div
