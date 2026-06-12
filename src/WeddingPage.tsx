@@ -315,6 +315,8 @@ export default function WeddingPage() {
   const [bookingStrasse, setBookingStrasse] = useState("");
   const [bookingPlz, setBookingPlz] = useState("");
   const [bookingOrt, setBookingOrt] = useState("");
+  const [bookingKontoinhaberAbweichend, setBookingKontoinhaberAbweichend] = useState(false);
+  const [bookingKontoinhaberName, setBookingKontoinhaberName] = useState("");
   const [bookingMandatConsent, setBookingMandatConsent] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -496,6 +498,8 @@ export default function WeddingPage() {
     setBookingStrasse("");
     setBookingPlz("");
     setBookingOrt("");
+    setBookingKontoinhaberAbweichend(false);
+    setBookingKontoinhaberName("");
     setBookingMandatConsent(false);
     setBookingError(null);
     setBookingSuccess(false);
@@ -512,6 +516,7 @@ export default function WeddingPage() {
     bookingStrasse.trim() !== "" &&
     bookingPlz.trim() !== "" &&
     bookingOrt.trim() !== "" &&
+    (!bookingKontoinhaberAbweichend || bookingKontoinhaberName.trim() !== "") &&
     bookingMandatConsent;
   const alleMandateOk =
     bookingName.trim() !== "" &&
@@ -561,8 +566,8 @@ export default function WeddingPage() {
           account_id: WEDDING_ACCOUNT_ID,
           vorname,
           nachname,
-          ist_kind: false,
-          elternteil_name: null,
+          ist_kind: bookingKontoinhaberAbweichend,
+          elternteil_name: bookingKontoinhaberAbweichend ? bookingKontoinhaberName.trim() : null,
           strasse: bookingStrasse.trim(),
           plz: bookingPlz.trim(),
           ort: bookingOrt.trim(),
@@ -611,8 +616,10 @@ export default function WeddingPage() {
         year: "numeric"
       });
 
-      const preisFmt = (selectedSlot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(2).replace(".", ",");
-      const preisHtmlText = `${preisFmt} EUR`;
+      const preisUebersichtHtml =
+        "1 Person 40 €<br>2 Personen je 25 € pro Person<br>3 Personen je 20 € pro Person<br>4 Personen je 15 € pro Person";
+      const preisUebersichtText =
+        "1 Person 40 €, 2 Personen je 25 € p.P., 3 Personen je 20 € p.P., 4 Personen je 15 € p.P.";
       const hinweisHtml = hinweis.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
       const confirmationHtml = `
@@ -694,8 +701,11 @@ export default function WeddingPage() {
                         <td style="padding: 8px 0;${hinweis ? ` border-bottom: 1px solid ${colors.border};` : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">💰</td>
-                              <td style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisHtmlText}</td>
+                              <td style="width: 32px; font-size: 18px; vertical-align: top;">💰</td>
+                              <td style="color: ${colors.primary}; font-size: 14px; font-weight: 600; line-height: 1.65;">
+                                ${preisUebersichtHtml}
+                                <span style="display: block; font-weight: 400; font-size: 12px; color: ${colors.textMuted}; margin-top: 4px;">Preis je nach Gruppengröße · Einzug per SEPA-Lastschrift</span>
+                              </td>
                             </tr>
                           </table>
                         </td>
@@ -769,7 +779,7 @@ export default function WeddingPage() {
 </body>
 </html>`;
 
-      const preisText = `\nPreis: ${preisHtmlText}`;
+      const preisText = `\nPreis: ${preisUebersichtText}`;
 
       try {
         await fetch("/api/send-newsletter", {
@@ -878,8 +888,8 @@ export default function WeddingPage() {
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">💰</span>
-                          <span style="color: ${colors.primary}; font-size: 16px; font-weight: 700;">${preisHtmlText}</span>
+                          <span style="font-size: 16px; margin-right: 8px; vertical-align: top;">💰</span>
+                          <span style="color: ${colors.primary}; font-size: 13.5px; font-weight: 600; line-height: 1.6;">${preisUebersichtHtml}</span>
                         </td>
                       </tr>
                     </table>
@@ -3052,6 +3062,29 @@ export default function WeddingPage() {
                       </div>
                     </div>
 
+                    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 12.5, color: colors.text, lineHeight: 1.5, marginBottom: 12 }}>
+                      <input
+                        type="checkbox"
+                        checked={bookingKontoinhaberAbweichend}
+                        onChange={(e) => setBookingKontoinhaberAbweichend(e.target.checked)}
+                        disabled={bookingSubmitting}
+                        style={{ marginTop: 2, flexShrink: 0, width: 18, height: 18 }}
+                      />
+                      <span>Kontoinhaber/in weicht vom Teilnehmer ab (z.B. Elternteil bei Kindern).</span>
+                    </label>
+                    {bookingKontoinhaberAbweichend && (
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Name des Kontoinhabers / der/des Erziehungsberechtigten *</label>
+                        <input
+                          type="text"
+                          value={bookingKontoinhaberName}
+                          onChange={(e) => setBookingKontoinhaberName(e.target.value)}
+                          placeholder="Vor- und Nachname"
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                    )}
                     <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 12.5, color: colors.text, lineHeight: 1.5 }}>
                       <input
                         type="checkbox"
