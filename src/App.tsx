@@ -3609,6 +3609,27 @@ ${txInfo}
     anlage: "Wedding" | "Britz" = "Wedding"
   ) {
     if (!authUser?.accountId) return;
+
+    // Optimistisch sofort in den State, damit die Kalenderkarte ohne kurzes
+    // blaues "Privat"-Aufblitzen direkt als "Spontan · frei" rendert.
+    const tempId = `temp-${trainingId}`;
+    setSpontaneStunden((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        datum,
+        uhrzeitVon: von,
+        uhrzeitBis: bis,
+        trainerId,
+        tarifId,
+        customPreisProStunde: customPreis,
+        status: "offen",
+        anlage,
+        veroeffentlicht: true,
+        trainingId,
+      },
+    ]);
+
     try {
       const { data, error } = await supabase
         .from("spontane_stunden")
@@ -3630,6 +3651,7 @@ ${txInfo}
 
       if (error) {
         console.error("Error creating spontane stunde from training:", error);
+        setSpontaneStunden((prev) => prev.filter((s) => s.id !== tempId));
         return;
       }
 
@@ -3647,9 +3669,18 @@ ${txInfo}
         buchung: data.buchung,
         trainingId: data.training_id,
       };
-      setSpontaneStunden((prev) => [...prev, created]);
+      // Temp-Eintrag ersetzen; falls ein paralleler Fetch ihn schon entfernt
+      // hat, die echte Zeile anhängen (sofern nicht ebenfalls schon geladen).
+      setSpontaneStunden((prev) => {
+        if (prev.some((s) => s.id === tempId)) {
+          return prev.map((s) => (s.id === tempId ? created : s));
+        }
+        if (prev.some((s) => s.id === created.id)) return prev;
+        return [...prev, created];
+      });
     } catch (err) {
       console.error("Error creating spontane stunde from training:", err);
+      setSpontaneStunden((prev) => prev.filter((s) => s.id !== tempId));
     }
   }
 
@@ -6443,9 +6474,10 @@ Tennisschule A bis Z`;
                                         display: "flex",
                                         alignItems: "center",
                                         gap: 4,
+                                        color: istOffenerSpontanSlot ? "#854d0e" : undefined,
                                       }}
                                     >
-                                      {t.spielerIds.length > 0 && (
+                                      {t.spielerIds.length > 0 && !istOffenerSpontanSlot && (
                                         <span style={{
                                           fontSize: 9,
                                           fontWeight: 700,
@@ -6467,7 +6499,7 @@ Tennisschule A bis Z`;
                                         whiteSpace: "nowrap",
                                         textOverflow: "ellipsis",
                                         overflow: "hidden",
-                                        opacity: 0.7,
+                                        opacity: istOffenerSpontanSlot ? 0.75 : 0.7,
                                       }}
                                     >
                                       {t.uhrzeitVon}–{t.uhrzeitBis} · {istOffenerSpontanSlot ? (t.anlage ?? "Wedding") : taLine}
