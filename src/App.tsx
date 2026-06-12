@@ -2470,6 +2470,23 @@ export default function App() {
       );
   }, [trainings, weekStart, kalenderTrainerFilter, kalenderAnlageFilter, defaultTrainerId, vertretungen]);
 
+  // Offene (noch nicht gebuchte) spontane Stunden der sichtbaren Woche - werden im
+  // Kalender als gestrichelte "Spontan · frei"-Platzhalter angezeigt, damit der
+  // Trainer seine Slots auch ohne Buchung sieht. Gleiche Trainer-/Anlage-Filter wie Trainings.
+  const offeneSpontanInWeek = useMemo(() => {
+    const end = addDaysISO(weekStart, 7);
+    return spontaneStunden
+      .filter((s) => s.status === "offen" && !s.trainingId)
+      .filter((s) => s.datum >= weekStart && s.datum < end)
+      .filter((s) => {
+        const anlage = s.anlage ?? "Wedding";
+        if (kalenderAnlageFilter !== "alle" && anlage !== kalenderAnlageFilter) return false;
+        if (kalenderTrainerFilter.length === 0) return true;
+        return kalenderTrainerFilter.includes(s.trainerId);
+      })
+      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
+  }, [spontaneStunden, weekStart, kalenderTrainerFilter, kalenderAnlageFilter]);
+
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
@@ -6143,6 +6160,93 @@ Tennisschule A bis Z`;
                                 }}
                               />
                             ))}
+
+                            {/* Offene Spontan-Slots als gestrichelte Platzhalter (klick-durchlässig, hinter echten Trainings) */}
+                            {offeneSpontanInWeek
+                              .filter((s) => s.datum === day)
+                              .map((s) => {
+                                const top = Math.max(0, (toMinutes(s.uhrzeitVon) - startMin) / 60) * 40;
+                                const height = Math.max(26, ((toMinutes(s.uhrzeitBis) - toMinutes(s.uhrzeitVon)) / 60) * 40);
+                                const anlage = s.anlage ?? "Wedding";
+                                const trainerName = trainerById.get(s.trainerId)?.name ?? "Trainer";
+                                const von = s.uhrzeitVon.slice(0, 5);
+                                const bis = s.uhrzeitBis.slice(0, 5);
+                                return (
+                                  <div
+                                    key={`spontan-${s.id}`}
+                                    className="kEvent"
+                                    style={{
+                                      top,
+                                      height,
+                                      width: "100%",
+                                      left: 0,
+                                      background:
+                                        "repeating-linear-gradient(135deg, rgba(234,179,8,0.18) 0px, rgba(234,179,8,0.18) 6px, rgba(234,179,8,0.05) 6px, rgba(234,179,8,0.05) 12px)",
+                                      border: "1px dashed #ca8a04",
+                                      borderLeft: "3px solid #eab308",
+                                      display: "flex",
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      justifyContent: "space-between",
+                                      overflow: "hidden",
+                                      padding: "6px 8px",
+                                      gap: 6,
+                                      pointerEvents: "none",
+                                    }}
+                                    title={`Freier Spontan-Slot\nZeit: ${von}–${bis}\nAnlage: ${anlage}\nTrainer: ${trainerName}\nNoch nicht gebucht`}
+                                  >
+                                    <div style={{ flex: "1 1 auto", overflow: "hidden" }}>
+                                      <div
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: 600,
+                                          whiteSpace: "nowrap",
+                                          textOverflow: "ellipsis",
+                                          overflow: "hidden",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 4,
+                                          color: "#854d0e",
+                                        }}
+                                      >
+                                        <span style={{ fontSize: 12 }}>🎾</span>
+                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>Spontan · frei</span>
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontSize: 10,
+                                          whiteSpace: "nowrap",
+                                          textOverflow: "ellipsis",
+                                          overflow: "hidden",
+                                          opacity: 0.75,
+                                        }}
+                                      >
+                                        {von}–{bis}
+                                        {isTrainer
+                                          ? ` · ${anlage}`
+                                          : trainers.length > 1
+                                          ? ` · ${anlage} | ${trainerName}`
+                                          : ` · ${anlage}`}
+                                      </div>
+                                    </div>
+                                    {!isTrainer && kalenderAnlageFilter === "alle" && (
+                                      <span
+                                        style={{
+                                          fontSize: 8,
+                                          fontWeight: 700,
+                                          background: anlage === "Britz" ? "#f59e0b" : "#2563eb",
+                                          color: "white",
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
+                                          flex: "0 0 auto",
+                                        }}
+                                      >
+                                        {anlage === "Britz" ? "B" : "W"}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
 
                             {dayEvents.map((t) => {
                               const top =
