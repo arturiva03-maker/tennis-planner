@@ -297,6 +297,7 @@ export default function WeddingPage() {
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [hasAnySlots, setHasAnySlots] = useState(false);
+  const [naechsterSlot, setNaechsterSlot] = useState<{ datum: string; uhrzeitVon: string } | null>(null);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -457,22 +458,27 @@ export default function WeddingPage() {
     fetchSpontaneStunden();
   }, [fetchSpontaneStunden]);
 
-  // Check if there are ANY slots available (for showing/hiding the section)
-  useEffect(() => {
-    async function checkAnySlots() {
-      const { data } = await supabase
-        .from("spontane_stunden")
-        .select("id")
-        .eq("account_id", WEDDING_ACCOUNT_ID)
-        .eq("anlage", "Wedding")
-        .eq("veroeffentlicht", true)
-        .eq("status", "offen")
-        .gte("datum", todayISO())
-        .limit(1);
-      setHasAnySlots((data || []).length > 0);
-    }
-    checkAnySlots();
+  // Gibt es überhaupt freie Termine? Und wann ist das nächste freie Training?
+  const ladeNaechstenSlot = useCallback(async () => {
+    const { data } = await supabase
+      .from("spontane_stunden")
+      .select("datum, uhrzeit_von")
+      .eq("account_id", WEDDING_ACCOUNT_ID)
+      .eq("anlage", "Wedding")
+      .eq("veroeffentlicht", true)
+      .eq("status", "offen")
+      .gte("datum", todayISO())
+      .order("datum", { ascending: true })
+      .order("uhrzeit_von", { ascending: true })
+      .limit(1);
+    const first = (data || [])[0] as { datum: string; uhrzeit_von: string } | undefined;
+    setHasAnySlots(Boolean(first));
+    setNaechsterSlot(first ? { datum: first.datum, uhrzeitVon: first.uhrzeit_von } : null);
   }, []);
+
+  useEffect(() => {
+    ladeNaechstenSlot();
+  }, [ladeNaechstenSlot]);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -914,6 +920,7 @@ export default function WeddingPage() {
 
       setBookingSuccess(true);
       setSpontaneStunden((prev) => prev.filter((s) => s.id !== selectedSlot.id));
+      ladeNaechstenSlot();
     } catch (err) {
       console.error("Booking error:", err);
       setBookingError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.");
@@ -1741,7 +1748,7 @@ export default function WeddingPage() {
       </section>
 
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
-      {!loadingSlots && hasAnySlots && (
+      {hasAnySlots && (
         <section id="sommertraining"  style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1793,6 +1800,42 @@ export default function WeddingPage() {
               maxWidth: 400,
               margin: "0 auto",
             }}>
+              {/* Nächstes freies Training – schneller Einstieg */}
+              {naechsterSlot && (
+                <button
+                  onClick={() => {
+                    const d = new Date(naechsterSlot.datum + "T12:00:00");
+                    setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
+                    setSelectedDate(naechsterSlot.datum);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    width: "100%",
+                    background: colors.accentBg,
+                    border: `1px solid ${colors.accentLight}`,
+                    borderRadius: 12,
+                    padding: "13px 16px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    touchAction: "manipulation",
+                  }}
+                >
+                  <span style={{ fontSize: 13.5, color: colors.text, lineHeight: 1.5 }}>
+                    <span style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: colors.accentDark, marginBottom: 2 }}>
+                      Nächstes freies Training
+                    </span>
+                    <strong>
+                      {new Date(naechsterSlot.datum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "long" })}
+                      {" · "}{naechsterSlot.uhrzeitVon.slice(0, 5)} Uhr
+                    </strong>
+                  </span>
+                  <span style={{ color: colors.primary, fontWeight: 700, fontSize: 18, flexShrink: 0 }}>→</span>
+                </button>
+              )}
+
               {/* Calendar Grid */}
               <div style={{
                 background: colors.white,
@@ -1820,6 +1863,7 @@ export default function WeddingPage() {
                       fontSize: 20,
                       color: colors.textMuted,
                       padding: 8,
+                      touchAction: "manipulation",
                     }}
                   >
                     ‹
@@ -1840,6 +1884,7 @@ export default function WeddingPage() {
                       fontSize: 20,
                       color: colors.textMuted,
                       padding: 8,
+                      touchAction: "manipulation",
                     }}
                   >
                     ›
@@ -1871,6 +1916,8 @@ export default function WeddingPage() {
                   display: "grid",
                   gridTemplateColumns: "repeat(7, 1fr)",
                   gap: 4,
+                  opacity: loadingSlots ? 0.55 : 1,
+                  transition: "opacity 0.2s ease",
                 }}>
                   {calendarDays.map((day, i) => {
                     if (!day) {
@@ -1890,14 +1937,15 @@ export default function WeddingPage() {
                         disabled={!hasSlots || isPast}
                         style={{
                           aspectRatio: "1",
-                          border: isToday ? `2px solid ${colors.primary}` : isSelected ? `2px solid ${colors.primary}` : "1px solid transparent",
+                          border: isToday || isSelected ? `2px solid ${colors.primary}` : "2px solid transparent",
                           borderRadius: 8,
                           background: isSelected ? colors.primary : "transparent",
                           color: isSelected ? colors.white : isPast ? colors.border : colors.text,
                           cursor: hasSlots && !isPast ? "pointer" : "default",
                           fontWeight: isToday || isSelected ? 600 : 400,
                           fontSize: 14,
-                          transition: "all 0.15s",
+                          transition: "background 0.15s, color 0.15s, border-color 0.15s",
+                          touchAction: "manipulation",
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
@@ -1929,13 +1977,20 @@ export default function WeddingPage() {
                 )}
               </div>
 
-              {/* Time Slots Panel */}
-              {selectedDate && (
-                <div style={{
-                  background: colors.bgLight,
-                  borderRadius: 12,
-                  padding: 20,
-                }}>
+              {/* Time Slots Panel – immer gerendert, damit beim Tippen nichts aufklappt/springt */}
+              <div style={{
+                background: colors.bgLight,
+                borderRadius: 12,
+                padding: 20,
+                minHeight: 118,
+                boxSizing: "border-box",
+              }}>
+                {!selectedDate ? (
+                  <p style={{ color: colors.textMuted, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                    Wählen Sie oben einen Tag mit Punkt-Markierung, um die freien Uhrzeiten zu sehen.
+                  </p>
+                ) : (
+                <>
                   <div style={{
                     fontSize: 14,
                     fontWeight: 600,
@@ -1991,8 +2046,9 @@ export default function WeddingPage() {
                       Keine Termine an diesem Tag
                     </p>
                   )}
-                </div>
-              )}
+                </>
+                )}
+              </div>
             </div>
           </div>
         </section>
