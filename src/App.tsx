@@ -3767,7 +3767,7 @@ ${txInfo}
 
   // Gebuchte spontane Stunde wieder freigeben: Slot wird erneut buchbar,
   // das verknüpfte Training fliegt aus dem Kalender, der Spieler bekommt
-  // eine Info-E-Mail (keine 24-h-Frist - Admin darf jederzeit freigeben).
+  // eine Info-E-Mail (keine 48-h-Frist - Admin darf jederzeit freigeben).
   async function freigebenSpontaneStunde(s: SpontaneStunde) {
     if (!s.buchung) return;
     const buchung = s.buchung;

@@ -329,7 +329,7 @@ begin
 end;
 $$;
 
--- Gebuchte spontane Stunde absagen. Erzwingt die 24-Stunden-Frist serverseitig,
+-- Gebuchte spontane Stunde absagen. Erzwingt die 48-Stunden-Frist serverseitig,
 -- entfernt das verknüpfte Training aus dem Kalender und gibt den Slot wieder frei.
 create or replace function public.spontan_buchung_absagen(slot_id uuid)
 returns text
@@ -352,7 +352,7 @@ begin
   end if;
 
   start_ts := (slot.datum::text || ' ' || slot.uhrzeit_von::text)::timestamp at time zone 'Europe/Berlin';
-  if start_ts - now() < interval '24 hours' then
+  if start_ts - now() < interval '48 hours' then
     return 'zu_kurzfristig';
   end if;
 

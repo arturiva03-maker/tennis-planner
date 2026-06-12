@@ -733,7 +733,7 @@ export default function WeddingPage() {
                   • In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.<br>
                   • Das Training ist ausschließlich für Mitglieder buchbar.<br>
                   • Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.<br>
-                  • Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                  • Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
                 </p>
               </div>
             </td>
@@ -743,7 +743,7 @@ export default function WeddingPage() {
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
               <p style="margin: 0 0 4px; color: ${colors.textMuted}; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
-              <p style="margin: 0 0 12px; color: ${colors.textMuted}; font-size: 13px;">Kostenfrei bis 24 Stunden vor dem Termin – bei späterer Absage wird die Stunde berechnet.</p>
+              <p style="margin: 0 0 12px; color: ${colors.textMuted}; font-size: 13px;">Kostenfrei bis 48 Stunden vor dem Termin – bei späterer Absage wird die Stunde berechnet.</p>
               <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: ${colors.bgLight}; color: ${colors.primary}; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid ${colors.border};">Termin absagen</a>
             </td>
           </tr>
@@ -785,7 +785,7 @@ export default function WeddingPage() {
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -2882,7 +2882,7 @@ export default function WeddingPage() {
                   <strong>Bitte beachten:</strong> In den Sommerferien findet kein reguläres Training statt –
                   dies ist ein Einzeltermin mit einem unserer Trainer, ausschließlich für Mitglieder. Für die
                   Teilnahme ist ein SEPA-Lastschriftmandat erforderlich; der Betrag wird per Lastschrift eingezogen.
-                  Eine kostenfreie Absage ist bis 24 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                  Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
                 </div>
 
                 {bookingError && (

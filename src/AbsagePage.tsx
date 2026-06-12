@@ -68,13 +68,13 @@ export default function AbsagePage() {
     load();
   }, [id]);
 
-  // Weniger als 24 Stunden bis Trainingsbeginn?
+  // Weniger als 48 Stunden bis Trainingsbeginn?
   const kurzfristig = (() => {
     if (serverKurzfristig) return true;
     if (!slotInfo) return false;
     const start = new Date(`${slotInfo.datum}T${slotInfo.von}`);
     if (isNaN(start.getTime())) return false;
-    return start.getTime() - Date.now() < 24 * 60 * 60 * 1000;
+    return start.getTime() - Date.now() < 48 * 60 * 60 * 1000;
   })();
 
   async function handleAbsage() {
@@ -82,7 +82,7 @@ export default function AbsagePage() {
     setSubmitting(true);
 
     try {
-      // Serverseitig: prüft die 24-h-Frist, entfernt das Training aus dem
+      // Serverseitig: prüft die 48-h-Frist, entfernt das Training aus dem
       // Kalender und gibt den Slot wieder zur Buchung frei.
       const { data, error } = await supabase.rpc("spontan_buchung_absagen", { slot_id: id });
 
@@ -225,7 +225,7 @@ export default function AbsagePage() {
             <h2 style={{ marginBottom: 8 }}>Termin absagen?</h2>
             <p style={{ color: "#6b7280", marginBottom: 24 }}>
               {kurzfristig
-                ? "Ihr Training beginnt in weniger als 24 Stunden."
+                ? "Ihr Training beginnt in weniger als 48 Stunden."
                 : "Möchten Sie Ihre Buchung für folgenden Termin wirklich absagen?"}
             </p>
             <div style={{
@@ -254,7 +254,7 @@ export default function AbsagePage() {
                   lineHeight: 1.6,
                 }}>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>Kurzfristige Absage</div>
-                  Da Ihr Training in weniger als 24 Stunden beginnt, ist eine kostenfreie
+                  Da Ihr Training in weniger als 48 Stunden beginnt, ist eine kostenfreie
                   Online-Absage leider nicht mehr möglich – laut unseren Bedingungen muss die
                   Stunde in diesem Fall bezahlt werden. Bitte schreiben Sie uns kurz eine
                   E-Mail oder kontaktieren Sie Ihren Trainer direkt – gemeinsam finden wir
@@ -297,7 +297,7 @@ export default function AbsagePage() {
             ) : (
               <>
                 <p style={{ color: "#16a34a", fontSize: 13, marginBottom: 16 }}>
-                  Kostenfreie Absage möglich – Ihr Termin liegt mehr als 24 Stunden in der Zukunft.
+                  Kostenfreie Absage möglich – Ihr Termin liegt mehr als 48 Stunden in der Zukunft.
                 </p>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
                   <button
