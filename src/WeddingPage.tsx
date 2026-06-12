@@ -84,8 +84,6 @@ type SpontaneStunde = {
 
 const WEDDING_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-// Standardpreis für das Sommerferien-Training (sofern am Slot kein eigener Preis hinterlegt ist)
-const SPONTAN_PREIS_PRO_STUNDE = 40;
 // IBAN in 4er-Blöcken formatieren (Eingabekomfort im eingebetteten Mandat)
 function formatIbanGroups(value: string): string {
   return value.replace(/\s/g, "").toUpperCase().replace(/(.{4})/g, "$1 ").trim();
@@ -506,8 +504,7 @@ export default function WeddingPage() {
     setShowBookingModal(true);
   };
 
-  // Preis des Slots (Standard 40 €) und SEPA-Mandats-Gate (nur Hauptbucher)
-  const bookingPreis = selectedSlot?.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE;
+  // SEPA-Mandats-Gate (nur Hauptbucher).
   // Fehlt dem Bucher ein Mandat, wird es direkt im Fenster erteilt.
   const mandatNeeded = bookingNameMandat === false;
   const ibanCheckLive = checkIBAN(bookingIban);
@@ -2045,9 +2042,6 @@ export default function WeddingPage() {
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
-                          <span style={{ color: colors.primary, fontWeight: 600 }}>
-                            {(slot.customPreisProStunde ?? SPONTAN_PREIS_PRO_STUNDE).toFixed(0)} €
-                          </span>
                         </button>
                       ))}
                     </div>
@@ -2809,11 +2803,8 @@ export default function WeddingPage() {
                     gap: 12,
                   }}>
                     <span style={{ fontSize: 18 }}>💰</span>
-                    <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
-                      {bookingPreis.toFixed(2).replace(".", ",")} € pro Person
-                      <span style={{ display: "block", fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
-                        Einzug per SEPA-Lastschrift
-                      </span>
+                    <span style={{ fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
+                      Einzug per SEPA-Lastschrift
                     </span>
                   </div>
                 </div>
@@ -2875,10 +2866,6 @@ export default function WeddingPage() {
                   </div>
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
-                  </div>
-                  <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
-                    {bookingPreis.toFixed(2).replace(".", ",")} €
-                    <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginLeft: 6 }}>pro Person</span>
                   </div>
                 </div>
 
@@ -3115,7 +3102,7 @@ export default function WeddingPage() {
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : `${mandatNeeded ? "Mandat erteilen & buchen" : "Verbindlich buchen"} · ${bookingPreis.toFixed(0)} €`}
+                  {bookingSubmitting ? "Wird gebucht..." : mandatNeeded ? "Mandat erteilen & buchen" : "Verbindlich buchen"}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
