@@ -1090,6 +1090,18 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
       bio: "30 Jahre Erfahrung im Training seiner Söhne – bis in den Berliner und deutschen Spitzensport.",
       image: "/sascha-ivanenko.jpg",
     },
+    {
+      name: "Ramon Odavas",
+      qualification: "C-Trainer in Ausbildung",
+      bio: "",
+      image: "/ramon-odavas.jpg",
+      imagePosition: "center 20%",
+    },
+    {
+      name: "Leon Weinfurtner",
+      qualification: "C-Trainer",
+      bio: "",
+    },
   ];
 
   return (
