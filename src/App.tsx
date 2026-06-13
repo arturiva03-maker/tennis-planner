@@ -1485,6 +1485,12 @@ export default function App() {
   // Listen-Filter für den Spontan-Tab
   const [spontanFilter, setSpontanFilter] = useState<"alle" | "offen" | "gebucht">("alle");
   const [spontanZeigeVergangene, setSpontanZeigeVergangene] = useState(false);
+  // Direkt im Kalender einen offenen Spontan-Slot bearbeiten (Zeit/Trainer/Datum)
+  const [calSpontanEdit, setCalSpontanEdit] = useState<SpontaneStunde | null>(null);
+  const [calSpontanDatum, setCalSpontanDatum] = useState("");
+  const [calSpontanVon, setCalSpontanVon] = useState("");
+  const [calSpontanBis, setCalSpontanBis] = useState("");
+  const [calSpontanTrainerId, setCalSpontanTrainerId] = useState("");
 
   // Sascha-Rechner (Weiteres > Rechner)
   const [rechnerGehalt, setRechnerGehalt] = useState("220");
@@ -3946,6 +3952,66 @@ ${txInfo}
     setSpontanVeroeffentlicht(false);
   }
 
+  // Offenen Spontan-Slot direkt aus dem Kalender heraus bearbeiten (Zeit/Trainer/Datum)
+  function openCalendarSpontanEdit(s: SpontaneStunde) {
+    if (isTrainer) return;
+    setCalSpontanEdit(s);
+    setCalSpontanDatum(s.datum);
+    setCalSpontanVon(s.uhrzeitVon.slice(0, 5));
+    setCalSpontanBis(s.uhrzeitBis.slice(0, 5));
+    setCalSpontanTrainerId(s.trainerId);
+  }
+
+  async function saveCalendarSpontanEdit() {
+    const s = calSpontanEdit;
+    if (!s || isTrainer) return;
+    if (!calSpontanDatum || !calSpontanVon || !calSpontanBis || !calSpontanTrainerId) {
+      alert("Bitte Datum, Uhrzeit und Trainer ausfüllen.");
+      return;
+    }
+    if (calSpontanVon >= calSpontanBis) {
+      alert("Die Endzeit muss nach der Startzeit liegen.");
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({
+          datum: calSpontanDatum,
+          uhrzeit_von: calSpontanVon,
+          uhrzeit_bis: calSpontanBis,
+          trainer_id: calSpontanTrainerId,
+        })
+        .eq("id", s.id);
+      if (error) {
+        console.error("Error updating spontane stunde (calendar):", error);
+        alert("Fehler beim Speichern: " + error.message);
+        return;
+      }
+      setSpontaneStunden((prev) =>
+        prev.map((x) =>
+          x.id === s.id
+            ? { ...x, datum: calSpontanDatum, uhrzeitVon: calSpontanVon, uhrzeitBis: calSpontanBis, trainerId: calSpontanTrainerId }
+            : x
+        )
+      );
+      // Verknüpftes (noch offenes) Training im Kalender synchron halten
+      if (s.trainingId) {
+        setTrainings((prev) =>
+          prev.map((t) =>
+            t.id === s.trainingId
+              ? { ...t, datum: calSpontanDatum, uhrzeitVon: calSpontanVon, uhrzeitBis: calSpontanBis, trainerId: calSpontanTrainerId }
+              : t
+          )
+        );
+      }
+      setCalSpontanEdit(null);
+    } catch (err) {
+      console.error("Error updating spontane stunde (calendar):", err);
+      alert("Fehler beim Speichern. Bitte erneut versuchen.");
+    }
+  }
+
   async function uebernehmenSpontanBuchung(s: SpontaneStunde) {
     if (!s.buchung) return;
 
@@ -5944,6 +6010,76 @@ Tennisschule A bis Z`;
 
             {tab === "kalender" && (
               <div className="card">
+                {/* Modal: offenen Spontan-Slot direkt aus dem Kalender bearbeiten */}
+                {calSpontanEdit && (
+                  <div
+                    onClick={() => setCalSpontanEdit(null)}
+                    style={{
+                      position: "fixed",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.45)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 1000,
+                      padding: 16,
+                    }}
+                  >
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: "#ffffff",
+                        borderRadius: 12,
+                        padding: 20,
+                        width: "100%",
+                        maxWidth: 380,
+                        boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <h3 style={{ margin: "0 0 14px" }}>Spontan-Slot bearbeiten</h3>
+                      <div className="field" style={{ marginBottom: 10 }}>
+                        <label>Datum</label>
+                        <input type="date" value={calSpontanDatum} onChange={(e) => setCalSpontanDatum(e.target.value)} />
+                      </div>
+                      <div className="row" style={{ marginBottom: 10 }}>
+                        <div className="field" style={{ flex: 1 }}>
+                          <label>Von</label>
+                          <input type="time" value={calSpontanVon} onChange={(e) => setCalSpontanVon(e.target.value)} />
+                        </div>
+                        <div className="field" style={{ flex: 1 }}>
+                          <label>Bis</label>
+                          <input type="time" value={calSpontanBis} onChange={(e) => setCalSpontanBis(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="field" style={{ marginBottom: 16 }}>
+                        <label>Trainer</label>
+                        <select value={calSpontanTrainerId} onChange={(e) => setCalSpontanTrainerId(e.target.value)}>
+                          <option value="">Trainer auswählen...</option>
+                          {trainers.map((tr) => (
+                            <option key={tr.id} value={tr.id}>{tr.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                        <button
+                          className="btn micro btnWarn"
+                          onClick={() => {
+                            const id = calSpontanEdit.id;
+                            setCalSpontanEdit(null);
+                            deleteSpontaneStunde(id);
+                          }}
+                        >
+                          Löschen
+                        </button>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button className="btn btnGhost" onClick={() => setCalSpontanEdit(null)}>Abbrechen</button>
+                          <button className="btn" onClick={saveCalendarSpontanEdit}>Speichern</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Erinnerung: vergangene Trainings, die noch nicht abgeschlossen wurden – gruppiert nach Trainer */}
                 {offeneVergangeneTrainings.length > 0 && (() => {
                   const gruppen: { id: string; name: string; items: Training[] }[] = [];
@@ -6507,9 +6643,13 @@ Tennisschule A bis Z`;
                                       overflow: "hidden",
                                       padding: "6px 8px",
                                       gap: 6,
-                                      pointerEvents: "none",
+                                      pointerEvents: isTrainer ? "none" : "auto",
+                                      cursor: isTrainer ? "default" : "pointer",
                                     }}
-                                    title={`Freier Spontan-Slot\nZeit: ${von}–${bis}\nAnlage: ${anlage}\nTrainer: ${trainerName}\nNoch nicht gebucht`}
+                                    onClick={isTrainer ? undefined : () => openCalendarSpontanEdit(s)}
+                                    title={isTrainer
+                                      ? `Freier Spontan-Slot\nZeit: ${von}–${bis}\nAnlage: ${anlage}\nTrainer: ${trainerName}\nNoch nicht gebucht`
+                                      : `Freier Spontan-Slot bearbeiten\nZeit: ${von}–${bis}\nTrainer: ${trainerName}`}
                                   >
                                     <div style={{ flex: "1 1 auto", overflow: "hidden" }}>
                                       <div
@@ -6699,10 +6839,20 @@ Tennisschule A bis Z`;
                                     padding: "6px 8px",
                                     gap: 6,
                                   }}
-                                  onClick={(e) => handleCalendarEventClick(t, e)}
+                                  onClick={(e) => {
+                                    if (istOffenerSpontanSlot && !isTrainer) {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const slot = spontaneStunden.find((x) => x.trainingId === t.id && x.status === "offen");
+                                      if (slot) openCalendarSpontanEdit(slot);
+                                      return;
+                                    }
+                                    handleCalendarEventClick(t, e);
+                                  }}
                                   onDoubleClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
+                                    if (istOffenerSpontanSlot) return;
                                     handleCalendarEventDoubleClick(t);
                                   }}
                                   onTouchStart={() => handleCalendarEventTouchStart(t)}
