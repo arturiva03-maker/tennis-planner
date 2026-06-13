@@ -6039,14 +6039,24 @@ Tennisschule A bis Z`;
                                       </span>
                                     </button>
                                     {!isTrainer && (
-                                      <button
-                                        className="btn micro"
-                                        style={{ background: "#22c55e", flexShrink: 0 }}
-                                        onClick={() => markTrainingDone(t.id)}
-                                        title="Als durchgeführt abschließen"
-                                      >
-                                        Abschließen
-                                      </button>
+                                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                                        <button
+                                          className="btn micro"
+                                          style={{ background: "#22c55e" }}
+                                          onClick={() => markTrainingDone(t.id)}
+                                          title="Als durchgeführt abschließen"
+                                        >
+                                          Abschließen
+                                        </button>
+                                        <button
+                                          className="btn micro"
+                                          style={{ background: "#0d9488" }}
+                                          onClick={() => markTrainingDoneAndBarBezahlt(t.id)}
+                                          title="Als durchgeführt abschließen und bar bezahlt markieren"
+                                        >
+                                          Bar
+                                        </button>
+                                      </div>
                                     )}
                                   </div>
                                 );
