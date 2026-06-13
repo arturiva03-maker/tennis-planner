@@ -2144,11 +2144,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
-                          {trainerNamen[slot.trainerId] && (
-                            <span style={{ color: colors.primary, fontWeight: 600, fontSize: 14 }}>
-                              {trainerNamen[slot.trainerId]}
-                            </span>
-                          )}
                         </button>
                       ))}
                     </div>
@@ -2895,12 +2890,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
-                  {trainerNamen[selectedSlot.trainerId] && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
-                      <span style={{ fontSize: 18 }}>🎾</span>
-                      <span style={{ color: colors.text }}>Trainer: {trainerNamen[selectedSlot.trainerId]}</span>
-                    </div>
-                  )}
                   {bookingHinweis.trim() && (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
                       <span style={{ fontSize: 18 }}>📝</span>
@@ -2980,11 +2969,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
-                  {trainerNamen[selectedSlot.trainerId] && (
-                    <div style={{ color: colors.textMuted }}>
-                      Trainer: {trainerNamen[selectedSlot.trainerId]}
-                    </div>
-                  )}
                 </div>
 
                 <div style={{
