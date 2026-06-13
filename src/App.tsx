@@ -2502,6 +2502,32 @@ export default function App() {
     return set;
   }, [spontaneStunden]);
 
+  // Vergangene, noch nicht abgeschlossene Trainings (Status "geplant", Endzeit
+  // bereits vorbei). Erinnerung oben im Kalender, damit nichts vergessen wird.
+  // Offene Spontan-Platzhalter (noch nicht gebucht) sind ausgenommen - die sind
+  // keine echten Trainings. Gleiche Trainer-/Anlage-Filter wie der Kalender.
+  const offeneVergangeneTrainings = useMemo(() => {
+    const jetzt = new Date();
+    return trainings
+      .filter((t) => t.status === "geplant" && !offeneSpontanTrainingIds.has(t.id))
+      .filter((t) => {
+        const ende = new Date(`${t.datum}T${t.uhrzeitBis || "23:59"}`);
+        return !isNaN(ende.getTime()) && ende < jetzt;
+      })
+      .filter((t) => {
+        if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
+        if (kalenderTrainerFilter.length === 0) return true;
+        const tid = t.trainerId || defaultTrainerId;
+        const vertretung = vertretungen.find((v) => v.trainingId === t.id);
+        if (vertretung) {
+          if (!vertretung.vertretungTrainerId) return false;
+          return kalenderTrainerFilter.includes(vertretung.vertretungTrainerId);
+        }
+        return kalenderTrainerFilter.includes(tid);
+      })
+      .sort((a, b) => (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon));
+  }, [trainings, offeneSpontanTrainingIds, kalenderTrainerFilter, kalenderAnlageFilter, defaultTrainerId, vertretungen]);
+
   const filteredSpielerForPick = useMemo(() => {
     const q = spielerSuche.trim().toLowerCase();
     if (!q) return spieler;
@@ -5918,6 +5944,89 @@ Tennisschule A bis Z`;
 
             {tab === "kalender" && (
               <div className="card">
+                {/* Erinnerung: vergangene Trainings, die noch nicht abgeschlossen wurden */}
+                {offeneVergangeneTrainings.length > 0 && (
+                  <div
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #fcd34d",
+                      borderLeft: "4px solid #f59e0b",
+                      borderRadius: 10,
+                      padding: "12px 14px",
+                      marginBottom: 16,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontWeight: 700, fontSize: 14, color: "#92400e" }}>
+                      <span style={{ fontSize: 16 }}>⏰</span>
+                      Noch nicht abgeschlossen ({offeneVergangeneTrainings.length})
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 240, overflowY: "auto" }}>
+                      {offeneVergangeneTrainings.map((t) => {
+                        const namen = t.spielerIds.map((id) => getSpielerDisplayName(id)).join(", ") || (t.isPrivat ? "Privat" : "—");
+                        const trName = trainerById.get(t.trainerId || defaultTrainerId)?.name ?? "";
+                        const datumKurz = new Date(t.datum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+                        return (
+                          <div
+                            key={t.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                              flexWrap: "wrap",
+                              padding: "7px 10px",
+                              background: "#fffbeb",
+                              border: "1px solid #fde68a",
+                              borderRadius: 8,
+                            }}
+                          >
+                            <button
+                              onClick={() => {
+                                setWeekAnchor(t.datum);
+                                const d = new Date(t.datum + "T12:00:00");
+                                setDayIndex((d.getDay() + 6) % 7);
+                              }}
+                              title="Im Kalender anzeigen"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                flex: "1 1 auto",
+                                minWidth: 0,
+                                background: "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                padding: 0,
+                                fontSize: 13,
+                                color: "#3a3a3a",
+                              }}
+                            >
+                              <strong style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                                {datumKurz} · {t.uhrzeitVon.slice(0, 5)}–{t.uhrzeitBis.slice(0, 5)}
+                              </strong>
+                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {namen}
+                                {!isTrainer && trName && trainers.length > 1 ? ` · ${trName}` : ""}
+                              </span>
+                            </button>
+                            {!isTrainer && (
+                              <button
+                                className="btn micro"
+                                style={{ background: "#22c55e", flexShrink: 0 }}
+                                onClick={() => markTrainingDone(t.id)}
+                                title="Als durchgeführt abschließen"
+                              >
+                                ✓ Abschließen
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Oberer Bereich: Einstellungen (collapsed auf Mobile) */}
                 <div className="calendarSettings">
                   <div className="row">
