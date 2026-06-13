@@ -114,7 +114,7 @@ function MandatNameField({
   value: string;
   hatMandat: boolean | null;
   onChange: (name: string, hatMandat: boolean | null) => void;
-  placeholder: string;
+  placeholder?: string;
   accountId: string;
   colors: Record<string, string>;
   disabled?: boolean;
@@ -3007,7 +3007,6 @@ export default function WeddingPage() {
                     value={bookingName}
                     hatMandat={bookingNameMandat}
                     onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}
-                    placeholder="Vor- und Nachname"
                     accountId={WEDDING_ACCOUNT_ID}
                     colors={colors}
                     disabled={bookingSubmitting}
@@ -3021,8 +3020,7 @@ export default function WeddingPage() {
                   <input
                     type="email"
                     value={bookingEmail}
-                    onChange={(e) => setBookingEmail(e.target.value)}
-                    placeholder="ihre@email.de"
+                    onChange={(e) => setBookingEmail(e.target.value)}
                     disabled={bookingSubmitting}
                     style={{
                       width: "100%",
@@ -3041,8 +3039,7 @@ export default function WeddingPage() {
                   <input
                     type="tel"
                     value={bookingTelefon}
-                    onChange={(e) => setBookingTelefon(e.target.value)}
-                    placeholder="Ihre Telefonnummer"
+                    onChange={(e) => setBookingTelefon(e.target.value)}
                     disabled={bookingSubmitting}
                     style={{
                       width: "100%",
@@ -3061,8 +3058,7 @@ export default function WeddingPage() {
                   </label>
                   <textarea
                     value={bookingHinweis}
-                    onChange={(e) => setBookingHinweis(e.target.value)}
-                    placeholder="z.B. wenn Sie weitere Mitspieler mitbringen möchten"
+                    onChange={(e) => setBookingHinweis(e.target.value)}
                     disabled={bookingSubmitting}
                     rows={3}
                     style={{
@@ -3101,8 +3097,7 @@ export default function WeddingPage() {
                       <input
                         type="text"
                         value={bookingIban}
-                        onChange={(e) => setBookingIban(formatIbanGroups(e.target.value))}
-                        placeholder="DE00 0000 0000 0000 0000 00"
+                        onChange={(e) => setBookingIban(formatIbanGroups(e.target.value))}
                         disabled={bookingSubmitting}
                         autoComplete="off"
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${bookingIban.trim() && !ibanCheckLive.valid ? "#c2392f" : colors.border}`, borderRadius: 2, fontSize: 15, fontFamily: "monospace", letterSpacing: 0.5, boxSizing: "border-box" }}
@@ -3117,8 +3112,7 @@ export default function WeddingPage() {
                       <input
                         type="text"
                         value={bookingStrasse}
-                        onChange={(e) => setBookingStrasse(e.target.value)}
-                        placeholder="Musterstraße 1"
+                        onChange={(e) => setBookingStrasse(e.target.value)}
                         disabled={bookingSubmitting}
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
                       />
@@ -3130,8 +3124,7 @@ export default function WeddingPage() {
                         <input
                           type="text"
                           value={bookingPlz}
-                          onChange={(e) => setBookingPlz(e.target.value)}
-                          placeholder="12345"
+                          onChange={(e) => setBookingPlz(e.target.value)}
                           inputMode="numeric"
                           disabled={bookingSubmitting}
                           style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
@@ -3142,8 +3135,7 @@ export default function WeddingPage() {
                         <input
                           type="text"
                           value={bookingOrt}
-                          onChange={(e) => setBookingOrt(e.target.value)}
-                          placeholder="Berlin"
+                          onChange={(e) => setBookingOrt(e.target.value)}
                           disabled={bookingSubmitting}
                           style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
                         />
@@ -3166,8 +3158,7 @@ export default function WeddingPage() {
                         <input
                           type="text"
                           value={bookingKontoinhaberName}
-                          onChange={(e) => setBookingKontoinhaberName(e.target.value)}
-                          placeholder="Vor- und Nachname"
+                          onChange={(e) => setBookingKontoinhaberName(e.target.value)}
                           disabled={bookingSubmitting}
                           style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
                         />
