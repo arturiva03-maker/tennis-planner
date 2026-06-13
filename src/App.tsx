@@ -15710,6 +15710,28 @@ Tennisschule A bis Z`)}
                   return withoutHinweis.trimEnd() + "\n\n" + block.trimEnd();
                 });
               };
+              // Zusätzlicher Hinweis NUR für die Probemitgliedschaft: Antrag ausgefüllt zurücksenden.
+              const probeRuecksendeHinweis = "Bitte fülle den beigefügten Antrag auf Probemitgliedschaft aus und sende ihn ausgefüllt per E-Mail an tennisabisz@gmail.com zurück.";
+              const applyProbeRuecksendeHinweis = (probe: boolean) => {
+                setTrainingInfoEmailBody((prev) => {
+                  const without = prev.replace(
+                    /Bitte fülle den beigefügten Antrag auf Probemitgliedschaft aus und sende ihn ausgefüllt per E-Mail an tennisabisz@gmail\.com zurück\.\n+/,
+                    ""
+                  );
+                  if (!probe) return without;
+                  const block = `${probeRuecksendeHinweis}\n\n`;
+                  if (without.includes("Für die Abrechnung erteile uns bitte")) {
+                    return without.replace("Für die Abrechnung erteile uns bitte", `${block}Für die Abrechnung erteile uns bitte`);
+                  }
+                  if (without.includes("Bei unsicherem Wetter")) {
+                    return without.replace("Bei unsicherem Wetter", `${block}Bei unsicherem Wetter`);
+                  }
+                  if (without.includes("Solltest du Fragen haben")) {
+                    return without.replace("Solltest du Fragen haben", `${block}Solltest du Fragen haben`);
+                  }
+                  return without.trimEnd() + "\n\n" + block.trimEnd();
+                });
+              };
               return (
                 <>
                   <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, fontSize: 14, cursor: "pointer" }}>
@@ -15720,6 +15742,7 @@ Tennisschule A bis Z`)}
                         const checked = e.target.checked;
                         setTrainingInfoIncludeProbe(checked);
                         applyMitgliedschaftHinweis(checked, trainingInfoIncludeMitglied);
+                        applyProbeRuecksendeHinweis(checked);
                       }}
                     />
                     Antrag auf Probemitgliedschaft (PDF anhängen)
