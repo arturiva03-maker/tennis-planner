@@ -31,7 +31,7 @@ root.render(
         <Route path="/agb" element={<AGBPage />} />
         <Route path="/agb-britz" element={<AGBPageBritz />} />
         <Route path="/wedding" element={<WeddingPage />} />
-        <Route path="/sommertraining" element={<WeddingPage autoScrollSommertraining />} />
+        <Route path="/wedding-sommertraining" element={<WeddingPage autoScrollSommertraining />} />
         <Route path="/britz" element={<BritzPage />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
