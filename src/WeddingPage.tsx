@@ -1939,9 +1939,30 @@ export default function WeddingPage() {
                   >
                     ‹
                   </button>
-                  <span style={{ fontWeight: 600, color: colors.text, fontSize: 16 }}>
-                    {monthNames[currentMonth.month]} {currentMonth.year}
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                    <span style={{ fontWeight: 600, color: colors.text, fontSize: 16 }}>
+                      {monthNames[currentMonth.month]} {currentMonth.year}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const d = new Date();
+                        setCurrentMonth({ year: d.getFullYear(), month: d.getMonth() });
+                        setSelectedDate(todayISO());
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: colors.primary,
+                        padding: "2px 8px",
+                        touchAction: "manipulation",
+                      }}
+                    >
+                      Heute
+                    </button>
+                  </div>
                   <button
                     onClick={() => setCurrentMonth(prev => {
                       const newMonth = prev.month + 1;
