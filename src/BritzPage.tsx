@@ -59,7 +59,7 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-export default function BritzPage({ autoScrollSommertraining = false }: { autoScrollSommertraining?: boolean } = {}) {
+export default function BritzPage({ sommertrainingOnly = false }: { sommertrainingOnly?: boolean } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showImpressum, setShowImpressum] = useState(false);
@@ -214,23 +214,6 @@ export default function BritzPage({ autoScrollSommertraining = false }: { autoSc
       supabase.removeChannel(channel);
     };
   }, [checkAnySlots]);
-
-  // Route /britz-sommertraining: direkt zum Buchungs-Abschnitt scrollen. Der Abschnitt
-  // erscheint erst, sobald Slots geladen sind -> kurz pollen, bis er da ist.
-  useEffect(() => {
-    if (!autoScrollSommertraining) return;
-    let tries = 0;
-    const iv = window.setInterval(() => {
-      const el = document.getElementById("spontan");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-        window.clearInterval(iv);
-      } else if (++tries > 40) {
-        window.clearInterval(iv); // nach ~8s aufgeben (keine Termine vorhanden)
-      }
-    }, 200);
-    return () => window.clearInterval(iv);
-  }, [autoScrollSommertraining]);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -653,6 +636,8 @@ export default function BritzPage({ autoScrollSommertraining = false }: { autoSc
       fontFamily: "'PT Sans', -apple-system, BlinkMacSystemFont, sans-serif",
       color: colors.text,
     }}>
+      {!sommertrainingOnly && (
+      <>
       {/* Navigation */}
       <nav
         style={{
@@ -1341,9 +1326,20 @@ export default function BritzPage({ autoScrollSommertraining = false }: { autoSc
           </div>
         </div>
       </section>
+      </>
+      )}
+
+      {sommertrainingOnly && (
+        <header style={{ background: colors.primary, color: "#fff", padding: "32px 24px", textAlign: "center" }}>
+          <div style={{ maxWidth: 800, margin: "0 auto" }}>
+            <div style={{ fontWeight: 700, fontSize: 20, textTransform: "uppercase", letterSpacing: "0.5px" }}>Tennisschule A bis Z</div>
+            <div style={{ fontSize: 14, opacity: 0.85, marginTop: 6 }}>Sommertraining Britz – freie Termine buchen</div>
+          </div>
+        </header>
+      )}
 
       {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
-      {!loadingSlots && hasAnySlots && (
+      {!loadingSlots && hasAnySlots ? (
         <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1589,8 +1585,19 @@ export default function BritzPage({ autoScrollSommertraining = false }: { autoSc
             </div>
           </div>
         </section>
-      )}
+      ) : sommertrainingOnly ? (
+        <section style={{ padding: "60px 24px", background: colors.white }}>
+          <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 12 }}>Aktuell keine Termine verfügbar</h2>
+            <p style={{ fontSize: 15, color: colors.textMuted, lineHeight: 1.6 }}>
+              Momentan sind keine freien Termine eingestellt. Es kommen nach und nach weitere dazu – schauen Sie gern später noch einmal vorbei.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
+      {!sommertrainingOnly && (
+      <>
       {/* Trainer Section */}
       <section id="trainer" style={{ padding: "80px 24px", background: colors.bgLight }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
@@ -2028,6 +2035,18 @@ export default function BritzPage({ autoScrollSommertraining = false }: { autoSc
           </div>
         </div>
       </footer>
+      </>
+      )}
+
+      {sommertrainingOnly && (
+        <footer style={{ background: colors.primary, color: "#fff", padding: "28px 24px", textAlign: "center", fontSize: 13 }}>
+          <div style={{ display: "flex", gap: 20, justifyContent: "center", marginBottom: 10 }}>
+            <button onClick={() => setShowImpressum(true)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.85)", cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Impressum</button>
+            <button onClick={() => setShowDatenschutz(true)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.85)", cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Datenschutz</button>
+          </div>
+          <p style={{ opacity: 0.6, margin: 0 }}>&copy; 2025 Tennisschule A bis Z</p>
+        </footer>
+      )}
 
       {/* Impressum Modal */}
       {showImpressum && (
