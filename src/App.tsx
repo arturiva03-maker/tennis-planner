@@ -6816,7 +6816,7 @@ Tennisschule A bis Z`;
                               const accentColor = istOffenerSpontanSlot && !isSelected
                                 ? "#eab308"
                                 : t.isTenniscamp && !isSelected
-                                ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#14b8a6"
+                                ? isDone ? "#16a34a" : isCancel ? "#ef4444" : "#f59e0b"
                                 : t.isPrivat
                                 ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
                                 : hasVertretung
@@ -6837,7 +6837,7 @@ Tennisschule A bis Z`;
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.10)"
                                 : t.isTenniscamp
-                                ? "rgba(20, 184, 166, 0.12)"
+                                ? "rgba(245, 158, 11, 0.16)"
                                 : t.isPrivat
                                 ? "rgba(59, 130, 246, 0.10)"
                                 : "rgba(59, 130, 246, 0.12)";
