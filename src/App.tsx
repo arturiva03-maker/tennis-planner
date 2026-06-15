@@ -6641,6 +6641,7 @@ Tennisschule A bis Z`;
                                   if (isTrainer) return;
                                   resetTrainingForm();
                                   setTDatum(day);
+                                  setTCampBisDatum(day);
                                   setRepeatPeriods([{ von: day, bis: "2026-07-12" }, { von: "2026-08-24", bis: "2026-09-30" }]);
                                   setTVon(`${pad2(h)}:00`);
                                   setTBis(`${pad2(h + 1)}:00`);
@@ -7090,7 +7091,12 @@ Tennisschule A bis Z`;
                         <input
                           type="date"
                           value={tDatum}
-                          onChange={(e) => setTDatum(e.target.value)}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setTDatum(v);
+                            // Tenniscamp: Enddatum mitziehen, damit der Zeitraum nie auf einen Tag kollabiert
+                            if (tCampBisDatum < v) setTCampBisDatum(v);
+                          }}
                         />
                       </div>
                       <div className="field">
@@ -7332,28 +7338,28 @@ Tennisschule A bis Z`;
                       const hoursPerDay = durationMin(tVon, tBis) / 60;
                       const rate = trainerById.get(tTrainerId || defaultTrainerId)?.stundensatz ?? 0;
                       const honorar = round2(dayCount * hoursPerDay * rate);
+                      const ersterTagLabel = (() => {
+                        const [yy, mm, dd] = tDatum.split("-");
+                        return dd && mm && yy ? `${dd}.${mm}.${yy}` : tDatum;
+                      })();
                       return (
                         <div className="card cardInset">
                           <h2>Tenniscamp-Zeitraum</h2>
-                          <div className="row">
-                            <div className="field" style={{ minWidth: 180 }}>
-                              <label>Erster Tag</label>
-                              <input
-                                type="date"
-                                value={tDatum}
-                                onChange={(e) => {
-                                  setTDatum(e.target.value);
-                                  if (tCampBisDatum < e.target.value) setTCampBisDatum(e.target.value);
-                                }}
-                              />
-                            </div>
+                          <div className="row" style={{ alignItems: "end" }}>
+                            <span className="pill">
+                              Erster Tag: <strong>{ersterTagLabel}</strong>
+                              <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>(oben „Datum")</span>
+                            </span>
                             <div className="field" style={{ minWidth: 180 }}>
                               <label>Letzter Tag</label>
                               <input
                                 type="date"
                                 value={tCampBisDatum}
                                 min={tDatum}
-                                onChange={(e) => setTCampBisDatum(e.target.value)}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setTCampBisDatum(v < tDatum ? tDatum : v);
+                                }}
                               />
                             </div>
                             <span className="pill">
@@ -7362,7 +7368,7 @@ Tennisschule A bis Z`;
                           </div>
                           <div className="muted" style={{ marginTop: 6 }}>
                             {bisOk
-                              ? `Es werden ${dayCount} Trainingstag${dayCount === 1 ? "" : "e"} (${tVon}–${tBis}, ${hoursPerDay.toLocaleString("de-DE")} Std./Tag) für ${selectedTrainerName} angelegt. Spieler werden nicht abgerechnet – Trainer-Honorar gesamt ≈ ${euro(honorar)} (${euro(rate)}/Std.).`
+                              ? `Es werden ${dayCount} Trainingstag${dayCount === 1 ? "" : "e"} (${ersterTagLabel} – ${(() => { const [yy, mm, dd] = tCampBisDatum.split("-"); return dd && mm && yy ? `${dd}.${mm}.${yy}` : tCampBisDatum; })()}, ${tVon}–${tBis}, ${hoursPerDay.toLocaleString("de-DE")} Std./Tag) für ${selectedTrainerName} angelegt. Spieler werden nicht abgerechnet – Trainer-Honorar gesamt ≈ ${euro(honorar)} (${euro(rate)}/Std.).`
                               : "Bitte einen gültigen Zeitraum wählen (Letzter Tag darf nicht vor dem Ersten Tag liegen)."}
                           </div>
                         </div>
