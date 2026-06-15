@@ -246,6 +246,7 @@ type Training = {
   anlage?: string;
   isSpontanBuchung?: boolean;
   isPrivat?: boolean;
+  isTenniscamp?: boolean; // Tenniscamp über einen Zeitraum: keine Spieler-Abrechnung, Trainer wird normal vergütet
   cancelFee?: number; // pro-Spieler-Betrag bei Absage mit Teilgebühr (nur proTraining/proSpieler)
   actualMinutes?: number; // tatsächliche Dauer in Minuten (wenn Training nur teilweise durchgeführt)
 };
@@ -1531,6 +1532,8 @@ export default function App() {
   const [tAnlage, setTAnlage] = useState("Wedding");
   const [tIsPrivat, setTIsPrivat] = useState(false);
   const [tIsKurzfristig, setTIsKurzfristig] = useState(false);
+  const [tIsTenniscamp, setTIsTenniscamp] = useState(false);
+  const [tCampBisDatum, setTCampBisDatum] = useState(todayISO());
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
@@ -4226,7 +4229,7 @@ ${txInfo}
 
 
   const trainingPreisGesamt = useCallback((t: Training) => {
-    if (t.isPrivat) return 0;
+    if (t.isPrivat || t.isTenniscamp) return 0;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
 
@@ -4242,7 +4245,7 @@ ${txInfo}
   }, [tarifById]);
 
   const priceFuerSpieler = useCallback((t: Training) => {
-    if (t.isPrivat) return 0;
+    if (t.isPrivat || t.isTenniscamp) return 0;
     if (t.status === "abgesagt" && t.cancelFee !== undefined) return t.cancelFee;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
@@ -4298,6 +4301,8 @@ ${txInfo}
     setTCustomAbrechnung(t.customAbrechnung ?? "proTraining");
     setTAnlage(t.anlage ?? "Wedding");
     setTIsPrivat(t.isPrivat ?? false);
+    setTIsTenniscamp(t.isTenniscamp ?? false);
+    setTCampBisDatum(t.datum);
     setTab("training");
   }
 
@@ -4322,6 +4327,8 @@ ${txInfo}
     setTAnlage("Wedding");
     setTIsPrivat(false);
     setTIsKurzfristig(false);
+    setTIsTenniscamp(false);
+    setTCampBisDatum(todayISO());
   }
 
   // Beim Löschen eines Trainings den verknüpften Spontan-Slot wieder freigeben:
@@ -4801,12 +4808,43 @@ Tennisschule A bis Z`;
         ? tCustomPreisProStunde
         : undefined;
 
-    if (!tDatum || !tVon || !tBis || (!tIsPrivat && !tIsKurzfristig && tSpielerIds.length === 0)) return;
+    if (!tDatum || !tVon || !tBis || (!tIsPrivat && !tIsKurzfristig && !tIsTenniscamp && tSpielerIds.length === 0)) return;
     const mins = durationMin(tVon, tBis);
     if (mins <= 0) return;
-    if (!tIsPrivat && !tIsKurzfristig && !hasTarif && !customPreis) return;
+    if (!tIsPrivat && !tIsKurzfristig && !tIsTenniscamp && !hasTarif && !customPreis) return;
     const trainerIdForSave = tTrainerId || defaultTrainerId;
     if (!trainerIdForSave) return;
+
+    // Tenniscamp: über einen Zeitraum für jeden Tag ein (spielerloses) Training anlegen.
+    // Keine Spieler-Abrechnung – der Trainer wird pro Tag mit seinem Stundensatz vergütet.
+    if (tIsTenniscamp && !selectedTrainingId) {
+      const bis = tCampBisDatum && tCampBisDatum >= tDatum ? tCampBisDatum : tDatum;
+      const serieId = uid();
+      const created: Training[] = [];
+      let d = tDatum;
+      while (d <= bis) {
+        created.push({
+          id: uid(),
+          datum: d,
+          uhrzeitVon: tVon,
+          uhrzeitBis: tBis,
+          trainerId: trainerIdForSave,
+          spielerIds: [],
+          status: tStatus,
+          notiz: tNotiz.trim() || undefined,
+          serieId,
+          anlage: tAnlage,
+          isTenniscamp: true,
+        });
+        d = addDaysISO(d, 1);
+      }
+      if (created.length === 0) return;
+      saveUndoSnapshot("Tenniscamp angelegt");
+      setTrainings((prev) => [...prev, ...created]);
+      resetTrainingForm();
+      setTab("kalender");
+      return;
+    }
 
     const existing = selectedTrainingId
       ? trainings.find((x) => x.id === selectedTrainingId)
@@ -4944,6 +4982,7 @@ Tennisschule A bis Z`;
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
+        isTenniscamp: tIsTenniscamp || undefined,
         actualMinutes: tStatus === "durchgefuehrt" && tActualMinutes !== "" ? (parseInt(tActualMinutes) || undefined) : undefined,
         cancelFee: tStatus === "abgesagt" ? (pendingCancelFee ?? existing.cancelFee) : undefined,
       };
@@ -4973,6 +5012,7 @@ Tennisschule A bis Z`;
               customAbrechnung: payload.customAbrechnung,
               anlage: payload.anlage,
               isPrivat: payload.isPrivat,
+              isTenniscamp: payload.isTenniscamp,
             };
           })
         );
@@ -5067,6 +5107,7 @@ Tennisschule A bis Z`;
         customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
+        isTenniscamp: tIsTenniscamp || undefined,
         isSpontanBuchung: tIsKurzfristig || undefined,
       },
     ]);
@@ -5448,7 +5489,8 @@ Tennisschule A bis Z`;
       const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
       const name = trainerById.get(tid)?.name ?? "Trainer";
       const cfg = getPreisConfig(t, tarifById);
-      if (!cfg) return;
+      // Tenniscamp hat keinen Tarif (cfg === null), der Trainer wird trotzdem vergütet.
+      if (!cfg && !t.isTenniscamp) return;
 
       const honorar = trainerHonorarFuerTraining(t);
       let entry =
@@ -5461,7 +5503,7 @@ Tennisschule A bis Z`;
           honorarOffen: 0,
         };
 
-      if (cfg.abrechnung === "monatlich") {
+      if (cfg && cfg.abrechnung === "monatlich") {
         const tarifKey = t.tarifId || `custom-${cfg.preisProStunde}`;
         t.spielerIds.forEach((pid) => {
           const processKey = `${tid}__${pid}__${tarifKey}`;
@@ -6132,7 +6174,7 @@ Tennisschule A bis Z`;
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               {g.items.map((t) => {
-                                const namen = t.spielerIds.map((id) => getSpielerDisplayName(id)).join(", ") || (t.isPrivat ? "Privat" : "—");
+                                const namen = t.spielerIds.map((id) => getSpielerDisplayName(id)).join(", ") || (t.isPrivat ? "Privat" : t.isTenniscamp ? "Tenniscamp" : "—");
                                 const datumKurz = new Date(t.datum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
                                 return (
                                   <div
@@ -6772,6 +6814,8 @@ Tennisschule A bis Z`;
                               // Farbschema: dezente Hintergründe mit farbigem linken Rand
                               const accentColor = istOffenerSpontanSlot && !isSelected
                                 ? "#eab308"
+                                : t.isTenniscamp && !isSelected
+                                ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#14b8a6"
                                 : t.isPrivat
                                 ? isDone ? "#22c55e" : isCancel ? "#ef4444" : "#3b82f6"
                                 : hasVertretung
@@ -6791,6 +6835,8 @@ Tennisschule A bis Z`;
                                 ? "rgba(34, 197, 94, 0.14)"
                                 : isCancel
                                 ? "rgba(239, 68, 68, 0.10)"
+                                : t.isTenniscamp
+                                ? "rgba(20, 184, 166, 0.12)"
                                 : t.isPrivat
                                 ? "rgba(59, 130, 246, 0.10)"
                                 : "rgba(59, 130, 246, 0.12)";
@@ -6868,7 +6914,7 @@ Tennisschule A bis Z`;
                                       : ""
                                   }\nStatus: ${statusLabel(
                                     t.status
-                                  )}${t.isPrivat ? "\n⚡ Privat (keine Abrechnung)" : ""}`}
+                                  )}${t.isPrivat ? "\n⚡ Privat (keine Abrechnung)" : ""}${t.isTenniscamp ? "\nTenniscamp – keine Spieler-Abrechnung, Trainer normal vergütet" : ""}`}
                                 >
                                   <div
                                     style={{
@@ -6903,7 +6949,7 @@ Tennisschule A bis Z`;
                                           {t.spielerIds.length}
                                         </span>
                                       )}
-                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "🎾 Spontan · frei" : (sp || "Privat")}</span>
+                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "🎾 Spontan · frei" : (sp || (t.isTenniscamp ? "Tenniscamp" : "Privat"))}</span>
                                     </div>
                                     <div
                                       style={{
@@ -6944,6 +6990,20 @@ Tennisschule A bis Z`;
                                         }}
                                       >
                                         P
+                                      </span>
+                                    )}
+                                    {t.isTenniscamp && (
+                                      <span
+                                        style={{
+                                          fontSize: 8,
+                                          fontWeight: 700,
+                                          background: "#14b8a6",
+                                          color: "white",
+                                          padding: "1px 3px",
+                                          borderRadius: 2,
+                                        }}
+                                      >
+                                        Camp
                                       </span>
                                     )}
                                     {t.isSpontanBuchung && !istOffenerSpontanSlot && (
@@ -7092,6 +7152,7 @@ Tennisschule A bis Z`;
                             setTIsPrivat(checked);
                             if (checked) {
                               // Privattraining hat keine Abrechnung -> Tarif/Preis zuruecksetzen
+                              setTIsTenniscamp(false);
                               setTTarifId("");
                               setTCustomPreisProStunde("");
                             }
@@ -7107,6 +7168,7 @@ Tennisschule A bis Z`;
                           onChange={(e) => {
                             setTIsKurzfristig(e.target.checked);
                             if (e.target.checked) {
+                              setTIsTenniscamp(false);
                               setRepeatWeekly(false);
                               setRepeatPeriods([]);
                             }
@@ -7115,6 +7177,30 @@ Tennisschule A bis Z`;
                         />
                         Kurzfristiges Training
                       </label>
+                      <label className="pill" style={{ cursor: "pointer", alignSelf: "end", marginBottom: 6, background: tIsTenniscamp ? "rgba(20, 184, 166, 0.15)" : undefined }}>
+                        <input
+                          type="checkbox"
+                          checked={tIsTenniscamp}
+                          disabled={!!selectedTrainingId}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setTIsTenniscamp(checked);
+                            if (checked) {
+                              // Tenniscamp: keine Spieler-Abrechnung, kein Tarif, läuft über einen Zeitraum
+                              setTIsPrivat(false);
+                              setTIsKurzfristig(false);
+                              setTTarifId("");
+                              setTCustomPreisProStunde("");
+                              setTSpielerIds([]);
+                              setRepeatWeekly(false);
+                              setRepeatPeriods([]);
+                              if (!tCampBisDatum || tCampBisDatum < tDatum) setTCampBisDatum(tDatum);
+                            }
+                          }}
+                          style={{ marginRight: 8 }}
+                        />
+                        Tenniscamp
+                      </label>
                     </div>
 
                     <div className="row">
@@ -7122,7 +7208,7 @@ Tennisschule A bis Z`;
                         <label>Tarif (optional)</label>
                         <select
                           value={tTarifId}
-                          disabled={tIsPrivat}
+                          disabled={tIsPrivat || tIsTenniscamp}
                           onChange={(e) => setTTarifId(e.target.value)}
                         >
                           <option value="">
@@ -7145,7 +7231,9 @@ Tennisschule A bis Z`;
                           })}
                         </select>
                         <div className="muted">
-                          {tIsPrivat
+                          {tIsTenniscamp
+                            ? "Beim Tenniscamp nicht relevant – es gibt keine Spieler-Abrechnung. Der Trainer wird normal mit seinem Stundensatz vergütet."
+                            : tIsPrivat
                             ? "Bei Privattraining nicht relevant – es findet keine Abrechnung statt."
                             : "Entweder einen Tarif auswählen oder unten einen individuellen Preis pro Stunde eingeben."}
                         </div>
@@ -7201,7 +7289,7 @@ Tennisschule A bis Z`;
                             }
                           }}
                           placeholder="z.B. 60"
-                          disabled={!!tTarifId || tIsPrivat}
+                          disabled={!!tTarifId || tIsPrivat || tIsTenniscamp}
                         />
                         {!!tTarifId && <div className="muted" style={{ fontSize: 12 }}>Durch Tarif überschrieben</div>}
                       </div>
@@ -7214,7 +7302,7 @@ Tennisschule A bis Z`;
                               e.target.value as "proTraining" | "proSpieler"
                             )
                           }
-                          disabled={!!tTarifId || tIsPrivat}
+                          disabled={!!tTarifId || tIsPrivat || tIsTenniscamp}
                         >
                           <option value="proTraining">Pro Training</option>
                           <option value="proSpieler">Pro Spieler</option>
@@ -7236,7 +7324,52 @@ Tennisschule A bis Z`;
 
                     <div style={{ height: 10 }} />
 
-                    {!selectedTrainingId && !tIsKurzfristig && (
+                    {tIsTenniscamp && !selectedTrainingId && (() => {
+                      const bisOk = tCampBisDatum && tCampBisDatum >= tDatum;
+                      const dayCount = bisOk
+                        ? Math.floor((Date.parse(tCampBisDatum) - Date.parse(tDatum)) / 86400000) + 1
+                        : 0;
+                      const hoursPerDay = durationMin(tVon, tBis) / 60;
+                      const rate = trainerById.get(tTrainerId || defaultTrainerId)?.stundensatz ?? 0;
+                      const honorar = round2(dayCount * hoursPerDay * rate);
+                      return (
+                        <div className="card cardInset">
+                          <h2>Tenniscamp-Zeitraum</h2>
+                          <div className="row">
+                            <div className="field" style={{ minWidth: 180 }}>
+                              <label>Erster Tag</label>
+                              <input
+                                type="date"
+                                value={tDatum}
+                                onChange={(e) => {
+                                  setTDatum(e.target.value);
+                                  if (tCampBisDatum < e.target.value) setTCampBisDatum(e.target.value);
+                                }}
+                              />
+                            </div>
+                            <div className="field" style={{ minWidth: 180 }}>
+                              <label>Letzter Tag</label>
+                              <input
+                                type="date"
+                                value={tCampBisDatum}
+                                min={tDatum}
+                                onChange={(e) => setTCampBisDatum(e.target.value)}
+                              />
+                            </div>
+                            <span className="pill">
+                              Stunden/Tag: <strong>{tVon}–{tBis}</strong>
+                            </span>
+                          </div>
+                          <div className="muted" style={{ marginTop: 6 }}>
+                            {bisOk
+                              ? `Es werden ${dayCount} Trainingstag${dayCount === 1 ? "" : "e"} (${tVon}–${tBis}, ${hoursPerDay.toLocaleString("de-DE")} Std./Tag) für ${selectedTrainerName} angelegt. Spieler werden nicht abgerechnet – Trainer-Honorar gesamt ≈ ${euro(honorar)} (${euro(rate)}/Std.).`
+                              : "Bitte einen gültigen Zeitraum wählen (Letzter Tag darf nicht vor dem Ersten Tag liegen)."}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {!selectedTrainingId && !tIsKurzfristig && !tIsTenniscamp && (
                       <div className="card cardInset">
                         <h2>Wiederholung</h2>
                         <div className="row">
@@ -7629,13 +7762,16 @@ Wir freuen uns auf dich!`
                             : "Als bar bezahlt markieren"}
                         </button>
                       )}
-                      <span className="pill">
-                        Preis Vorschau:{" "}
-                        <strong>{euro(preisVorschau)}</strong>
-                      </span>
+                      {!tIsTenniscamp && (
+                        <span className="pill">
+                          Preis Vorschau:{" "}
+                          <strong>{euro(preisVorschau)}</strong>
+                        </span>
+                      )}
                     </div>
                   </div>
 
+                  {!tIsTenniscamp && (
                   <div className="card">
                     <h2>Spieler auswählen</h2>
                     <div className="row">
@@ -7773,6 +7909,7 @@ Wir freuen uns auf dich!`
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               ))}
 
@@ -12486,7 +12623,7 @@ Wir freuen uns auf dich!`
                                       const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
                                       const spielerNamen = t.spielerIds
                                         .map((id) => getSpielerDisplayName(id))
-                                        .join(", ");
+                                        .join(", ") || (t.isTenniscamp ? "Tenniscamp" : "");
                                       return (
                                         <tr key={t.id}>
                                           <td>{germanDate}</td>
@@ -12852,7 +12989,7 @@ Wir freuen uns auf dich!`
                                       const germanDate = d && m && y ? `${d}.${m}.${y}` : t.datum;
                                       const spielerNamen = t.spielerIds
                                         .map((id) => getSpielerDisplayName(id))
-                                        .join(", ");
+                                        .join(", ") || (t.isTenniscamp ? "Tenniscamp" : "");
                                       return (
                                         <tr key={t.id}>
                                           <td>{germanDate}</td>
@@ -12962,6 +13099,8 @@ Wir freuen uns auf dich!`
                               : tarif.name
                             : t.customPreisProStunde
                             ? `Individuell (${t.customPreisProStunde} EUR pro Stunde)`
+                            : t.isTenniscamp
+                            ? "Tenniscamp (keine Spieler-Abrechnung)"
                             : "Tarif";
                           
                           // Bei aktiver Spielersuche nur gesuchte Spieler anzeigen
@@ -13022,7 +13161,7 @@ Wir freuen uns auf dich!`
                                   className="muted"
                                   style={{ marginTop: 4 }}
                                 >
-                                  Spieler: {sp}
+                                  Spieler: {t.isTenniscamp ? "Tenniscamp" : sp}
                                 </div>
                                 <div className="muted">
                                   Tarif: {ta}
