@@ -33,6 +33,7 @@ root.render(
         <Route path="/wedding" element={<WeddingPage />} />
         <Route path="/wedding-sommertraining" element={<WeddingPage autoScrollSommertraining />} />
         <Route path="/britz" element={<BritzPage />} />
+        <Route path="/britz-sommertraining" element={<BritzPage autoScrollSommertraining />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />

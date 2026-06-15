@@ -7752,7 +7752,7 @@ Wir freuen uns auf dich!`
                             const letztesTrainingISO = addDaysISO("2026-07-06", (weekday + 6) % 7);
                             const letztesTraining = new Date(letztesTrainingISO + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
                             const sommerLink = tAnlage === "Britz"
-                              ? `${window.location.origin}/britz#spontan`
+                              ? `${window.location.origin}/britz-sommertraining`
                               : `${window.location.origin}/wedding-sommertraining`;
                             setTrainingInfoEmailSubject(`Letztes Training vor den Sommerferien & Sommertraining`);
                             setTrainingInfoIncludeSepa(false);

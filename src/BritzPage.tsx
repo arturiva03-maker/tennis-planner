@@ -59,7 +59,7 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-export default function BritzPage() {
+export default function BritzPage({ autoScrollSommertraining = false }: { autoScrollSommertraining?: boolean } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showImpressum, setShowImpressum] = useState(false);
@@ -214,6 +214,23 @@ export default function BritzPage() {
       supabase.removeChannel(channel);
     };
   }, [checkAnySlots]);
+
+  // Route /britz-sommertraining: direkt zum Buchungs-Abschnitt scrollen. Der Abschnitt
+  // erscheint erst, sobald Slots geladen sind -> kurz pollen, bis er da ist.
+  useEffect(() => {
+    if (!autoScrollSommertraining) return;
+    let tries = 0;
+    const iv = window.setInterval(() => {
+      const el = document.getElementById("spontan");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.clearInterval(iv);
+      } else if (++tries > 40) {
+        window.clearInterval(iv); // nach ~8s aufgeben (keine Termine vorhanden)
+      }
+    }, 200);
+    return () => window.clearInterval(iv);
+  }, [autoScrollSommertraining]);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
