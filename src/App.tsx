@@ -7738,6 +7738,55 @@ Wir freuen uns auf dich!`
                           Tenniscamp-Einladung
                         </button>
                       )}
+                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <button
+                          className="btn"
+                          style={{
+                            backgroundColor: "#0891b2",
+                            borderColor: "#0891b2",
+                          }}
+                          onClick={() => {
+                            // Letztes reguläres Training = passender Wochentag dieses Trainings
+                            // in der Woche vom Montag, 6. Juli 2026.
+                            const weekday = new Date(tDatum + "T12:00:00").getDay(); // 0=So..6=Sa
+                            const letztesTrainingISO = addDaysISO("2026-07-06", (weekday + 6) % 7);
+                            const letztesTraining = new Date(letztesTrainingISO + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+                            const sommerLink = tAnlage === "Britz"
+                              ? `${window.location.origin}/britz#spontan`
+                              : `${window.location.origin}/wedding-sommertraining`;
+                            setTrainingInfoEmailSubject(`Letztes Training vor den Sommerferien & Sommertraining`);
+                            setTrainingInfoIncludeSepa(false);
+                            setTrainingInfoIncludeProbe(false);
+                            setTrainingInfoIncludeMitglied(false);
+                            setTrainingInfoIncludeErwachsene(false);
+                            setTrainingInfoIncludeBeitragsordnung(false);
+                            setTrainingInfoIncludeProbetraining(false);
+                            setTrainingInfoEmailBody(
+`Hallo {SPIELERNAME},
+
+die Sommerferien stehen vor der Tür! Dein letztes reguläres Training vor den Ferien findet am ${letztesTraining} statt.
+
+In den Sommerferien pausiert das reguläre Training, da viele von euch verreist sind.
+
+Aufs Tennis verzichten musst du deshalb aber nicht: Du kannst jederzeit ein Training für dich allein oder zusammen mit weiteren Personen bei einem unserer Trainer buchen – ganz flexibel nach deinen Wünschen.
+
+Hier kannst du dein Sommertraining buchen:
+${sommerLink}
+
+Aktuell sind dort erst einige Termine eingestellt – nach und nach kommen weitere dazu. Schau daher am besten regelmäßig vorbei, um einen passenden Termin zu finden.
+
+Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich danach wieder fit und erholt auf dem Platz zu begrüßen!
+
+Sportliche Grüße
+Tennisschule A bis Z`
+                            );
+                            setTrainingInfoExcluded([]);
+                            setShowTrainingInfoEmail(true);
+                          }}
+                        >
+                          Sommerferien-Info
+                        </button>
+                      )}
                       {selectedTrainingId && tStatus === "geplant" && (
                         <button
                           className="btn"
