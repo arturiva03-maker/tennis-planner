@@ -1343,8 +1343,10 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
         </header>
       )}
 
-      {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden */}
-      {!loadingSlots && hasAnySlots ? (
+      {/* Spontane Stunden Buchung Section - nur anzeigen wenn überhaupt Slots vorhanden.
+          Gate NUR auf hasAnySlots (nicht auf loadingSlots), sonst verschwindet die
+          Sektion beim Monatswechsel und springt - der Kalender graut stattdessen aus. */}
+      {hasAnySlots ? (
         <section id="spontan" style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1660,7 +1662,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
             </div>
           </div>
         </section>
-      ) : sommertrainingOnly ? (
+      ) : sommertrainingOnly && !loadingSlots ? (
         <section style={{ padding: "60px 24px", background: colors.white }}>
           <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 12 }}>Aktuell keine Termine verfügbar</h2>
