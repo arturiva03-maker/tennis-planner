@@ -278,6 +278,8 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
         month: "long",
         year: "numeric"
       });
+      // Trainername erscheint NICHT im öffentlichen Kalender, sondern erst hier in der Bestätigung.
+      const trainerName = trainerNamen[selectedSlot.trainerId] || "";
 
       const confirmationHtml = `
 <!DOCTYPE html>
@@ -344,6 +346,16 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                           </table>
                         </td>
                       </tr>
+                      ${trainerName ? `<tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                          <table role="presentation" cellspacing="0" cellpadding="0">
+                            <tr>
+                              <td style="width: 32px; font-size: 18px;">🎾</td>
+                              <td style="color: #333333; font-size: 15px;">Trainer: ${trainerName}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>` : ''}
                       <tr>
                         <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
@@ -1636,18 +1648,12 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                           }}
                         >
                           <span>{slot.uhrzeitVon.slice(0, 5)} – {slot.uhrzeitBis.slice(0, 5)} Uhr</span>
-                          <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                            {trainerNamen[slot.trainerId] && (
-                              <span style={{ color: colors.textMuted, fontWeight: 600, fontSize: 14 }}>
-                                {trainerNamen[slot.trainerId]}
-                              </span>
-                            )}
-                            {slot.customPreisProStunde && (
-                              <span style={{ color: colors.primary, fontWeight: 600 }}>
-                                {slot.customPreisProStunde.toFixed(0)} €
-                              </span>
-                            )}
-                          </span>
+                          {/* Trainername bewusst NICHT im Kalender - erscheint erst in der Buchungsbestätigung */}
+                          {slot.customPreisProStunde && (
+                            <span style={{ color: colors.primary, fontWeight: 600 }}>
+                              {slot.customPreisProStunde.toFixed(0)} €
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
