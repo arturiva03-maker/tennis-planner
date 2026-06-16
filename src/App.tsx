@@ -16326,7 +16326,7 @@ Tennisschule A bis Z`)}
               />
             </div>
 
-            <div className="modalActions">
+            <div className="modalActions" style={{ position: "sticky", bottom: 0, background: "var(--bg-card)", marginTop: 8, paddingTop: 12, borderTop: "1px solid var(--border)", marginBottom: -24, paddingBottom: 24, zIndex: 5 }}>
               <button
                 className="btn btnGhost"
                 onClick={() => setShowTrainingInfoEmail(false)}
