@@ -10,6 +10,7 @@ import React, {
 import "./App.css";
 import { supabase } from "./supabaseClient";
 import BankImportModal from "./BankImportModal";
+import ActionMenu from "./components/ActionMenu";
 
 // Security: Escape HTML to prevent XSS attacks
 function escapeHtml(str: string | number | null | undefined): string {
@@ -7554,6 +7555,12 @@ Tennisschule A bis Z`;
                         </>
                       )}
                       {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
+                        <ActionMenu
+                          label="E-Mail senden"
+                          buttonClassName="btn"
+                          buttonStyle={{ backgroundColor: "#0e7490", borderColor: "#0e7490" }}
+                          menuWidth={260}
+                        >
                         <button
                           className="btn"
                           style={{
@@ -7603,8 +7610,6 @@ Grundsätzlich gilt: Falls keine Absage erfolgt, wird von Stunde zu Stunde entsc
                         >
                           Trainer-Tel bei Regen
                         </button>
-                      )}
-                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
                         <button
                           className="btn"
                           style={{
@@ -7686,8 +7691,6 @@ Solltest du Fragen haben, antworte bitte auf diese E-Mail.`
                         >
                           Trainingsbestätigung
                         </button>
-                      )}
-                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
                         <button
                           className="btn"
                           style={{
@@ -7737,8 +7740,6 @@ Wir freuen uns auf dich!`
                         >
                           Tenniscamp-Einladung
                         </button>
-                      )}
-                      {tSpielerIds.length > 0 && tSpielerIds.some(id => spielerById.get(id)?.kontaktEmail) && (
                         <button
                           className="btn"
                           style={{
@@ -7786,6 +7787,7 @@ Tennisschule A bis Z`
                         >
                           Sommerferien-Info
                         </button>
+                        </ActionMenu>
                       )}
                       {selectedTrainingId && tStatus === "geplant" && (
                         <button
