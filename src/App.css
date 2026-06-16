@@ -202,13 +202,30 @@ body {
    HEADER
    ═══════════════════════════════════════════════════════════════ */
 
+/* Seitenkopf entfaellt: Titel + Beschreibung stehen bereits in der Sidebar
+   (Desktop) bzw. in der mobileTopBar (Mobil) - der h1-Header war ein Duplikat
+   und hat in jedem Tab Hoehe gekostet. Rein dekorativ, keine Funktion daran. */
 .header {
-  display: flex;
+  display: none;
   gap: 20px;
   align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+/* Immer sichtbare Aktionsleiste am unteren Rand langer Formulare/Karten:
+   "klebt" beim Scrollen unten, sodass Speichern/Abbrechen ohne Runterscrollen
+   erreichbar bleiben. Reines Layout - Buttons/Handler unveraendert.
+   Hintergrund pro Einsatzort via Inline-Style (Karte = --bg-card, Inset = --bg-inset). */
+.stickyActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 16px;
+  padding: 12px 0 2px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
 }
 
 .hTitle h1 {

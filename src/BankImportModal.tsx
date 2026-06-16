@@ -1109,6 +1109,14 @@ export default function BankImportModal({
                 display: "flex",
                 gap: 8,
                 justifyContent: "flex-end",
+                position: "sticky",
+                bottom: 0,
+                background: "var(--bg-card)",
+                paddingTop: 12,
+                borderTop: "1px solid var(--border)",
+                marginBottom: -24,
+                paddingBottom: 24,
+                zIndex: 5,
               }}
             >
               <button

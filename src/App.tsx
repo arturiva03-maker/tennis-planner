@@ -8173,7 +8173,7 @@ Tennisschule A bis Z`
                           </label>
                         </div>
 
-                        <div className="row" style={{ marginTop: 12 }}>
+                        <div className="row stickyActions" style={{ marginTop: 12, background: "var(--bg-inset)" }}>
                           <button
                             className="btn"
                             onClick={() => {
@@ -8723,7 +8723,7 @@ Tennisschule A bis Z`
                           </div>
                         )}
 
-                        <div className="row" style={{ marginTop: 20 }}>
+                        <div className="row stickyActions" style={{ marginTop: 20, background: "var(--bg-inset)" }}>
                           <button
                             className="btn"
                             onClick={() => {
@@ -8959,7 +8959,7 @@ Tennisschule A bis Z`
                           </div>
                         </div>
 
-                        <div className="row">
+                        <div className="row stickyActions" style={{ background: "var(--bg-inset)" }}>
                           <button
                             className="btn"
                             onClick={() => {
@@ -11505,7 +11505,7 @@ Tennisschule A bis Z`
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <div className="stickyActions" style={{ display: "flex", gap: 12, alignItems: "center" }}>
                       <button
                         className="btn"
                         disabled={newsletterSending || !newsletterSubject.trim() || !newsletterBody.trim() || (getNewsletterRecipients().length === 0 && newsletterExtraEmails.length === 0)}
