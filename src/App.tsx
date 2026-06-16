@@ -6178,16 +6178,7 @@ Tennisschule A bis Z`;
                                 const namen = t.spielerIds.map((id) => getSpielerDisplayName(id)).join(", ") || (t.isPrivat ? "Privat" : t.isTenniscamp ? "Tenniscamp" : "—");
                                 const datumKurz = new Date(t.datum + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
                                 return (
-                                  <div
-                                    key={t.id}
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 10,
-                                      flexWrap: "wrap",
-                                      padding: "8px 0",
-                                    }}
-                                  >
+                                  <div key={t.id} className="openTrainingRow">
                                     <button
                                       onClick={() => {
                                         setWeekAnchor(t.datum);
@@ -6195,30 +6186,17 @@ Tennisschule A bis Z`;
                                         setDayIndex((d.getDay() + 6) % 7);
                                       }}
                                       title="Im Kalender anzeigen"
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "baseline",
-                                        gap: 10,
-                                        flex: "1 1 auto",
-                                        minWidth: 0,
-                                        background: "transparent",
-                                        border: "none",
-                                        cursor: "pointer",
-                                        textAlign: "left",
-                                        padding: 0,
-                                        fontSize: 13,
-                                        color: "var(--fg, #3a3a3a)",
-                                      }}
+                                      className="openTrainingInfo"
                                     >
-                                      <strong style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", minWidth: 132 }}>
+                                      <strong className="openTrainingDate">
                                         {datumKurz} · {t.uhrzeitVon.slice(0, 5)}–{t.uhrzeitBis.slice(0, 5)}
                                       </strong>
-                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                      <span className="openTrainingNames">
                                         {namen}
                                       </span>
                                     </button>
                                     {!isTrainer && (
-                                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                                      <div className="openTrainingActions">
                                         <button
                                           className="btn micro"
                                           style={{ background: "#22c55e" }}
@@ -6268,11 +6246,13 @@ Tennisschule A bis Z`;
                           className="dropdownToggle"
                           onClick={() => setShowTrainerDropdown(!showTrainerDropdown)}
                         >
-                          {kalenderTrainerFilter.length === 0
-                            ? "Alle Trainer"
-                            : kalenderTrainerFilter.length === 1
-                              ? trainerById.get(kalenderTrainerFilter[0])?.name
-                              : `${kalenderTrainerFilter.length} Trainer`}
+                          <span className="dropdownLabel">
+                            {kalenderTrainerFilter.length === 0
+                              ? "Alle Trainer"
+                              : kalenderTrainerFilter.length === 1
+                                ? trainerById.get(kalenderTrainerFilter[0])?.name
+                                : `${kalenderTrainerFilter.length} Trainer`}
+                          </span>
                           <span className="dropdownArrow">▼</span>
                         </button>
                         {showTrainerDropdown && (
@@ -6515,11 +6495,13 @@ Tennisschule A bis Z`;
                         className="dropdownToggle"
                         onClick={() => setShowTrainerDropdown(!showTrainerDropdown)}
                       >
-                        {kalenderTrainerFilter.length === 0
-                          ? "Alle Trainer"
-                          : kalenderTrainerFilter.length === 1
-                            ? trainerById.get(kalenderTrainerFilter[0])?.name
-                            : `${kalenderTrainerFilter.length} Trainer`}
+                        <span className="dropdownLabel">
+                          {kalenderTrainerFilter.length === 0
+                            ? "Alle Trainer"
+                            : kalenderTrainerFilter.length === 1
+                              ? trainerById.get(kalenderTrainerFilter[0])?.name
+                              : `${kalenderTrainerFilter.length} Trainer`}
+                        </span>
                         <span className="dropdownArrow">▼</span>
                       </button>
                       {showTrainerDropdown && (

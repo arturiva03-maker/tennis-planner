@@ -1803,8 +1803,12 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     padding: "12px 16px",
                     borderLeft: `3px solid ${colors.accent}`,
                   }}>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "1px" }}>Erwachsenencamp</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "1px" }}>Erwachsenencamp</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: colors.bgDark, background: colors.accent, borderRadius: 999, padding: "2px 8px" }}>Warteliste</span>
+                    </div>
                     <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>18:00–20:00 Uhr · 140 €</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 4, lineHeight: 1.4 }}>Ausgebucht – Anmeldung nur noch über die Warteliste</div>
                   </div>
                 </div>
 

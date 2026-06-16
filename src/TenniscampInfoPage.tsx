@@ -238,8 +238,9 @@ export default function TenniscampInfoPage() {
                           }}
                         >
                           <p style={{ margin: 0, fontSize: 14, color: "#15803d", lineHeight: 1.6 }}>
-                            <strong>Nur 12 Plätze:</strong> Beim Erwachsenencamp sind die Plätze besonders begrenzt –
-                            wir nehmen nur die ersten 12 Anmeldungen an, um ein intensives Tenniserlebnis zu ermöglichen.
+                            <strong>Ausgebucht – nur noch Warteliste:</strong> Die Plätze im Erwachsenencamp (max. 12 Teilnehmer)
+                            sind bereits vergeben. Über das Anmeldeformular kannst du dich auf die Warteliste setzen – wird ein
+                            Platz frei, melden wir uns in der Reihenfolge der Anmeldungen. Mitglieder des BSC Rehberge haben Vorrang.
                           </p>
                         </div>
                       )}

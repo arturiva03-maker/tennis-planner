@@ -636,6 +636,7 @@ input::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   text-align: left;
 }
 
@@ -643,9 +644,19 @@ input::placeholder {
   border-color: var(--primary);
 }
 
+/* Label im Toggle bei langen Trainernamen sauber kürzen statt überlaufen lassen */
+.dropdownLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dropdownArrow {
   font-size: 10px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .dropdownMenu {
@@ -696,6 +707,49 @@ input::placeholder {
 
 .dropdownReset:hover {
   background: var(--border);
+}
+
+/* Liste "Noch nicht abgeschlossen" – schnelles Abschließen vergangener Trainings */
+.openTrainingRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.openTrainingInfo {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font-size: 13px;
+  color: var(--fg, #3a3a3a);
+}
+
+.openTrainingDate {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 132px;
+  flex-shrink: 0;
+}
+
+.openTrainingNames {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.openTrainingActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 
@@ -1415,15 +1469,19 @@ input::placeholder {
     opacity: 0.6;
   }
 
-  /* Mobile Trainer-Filter und Anlage-Filter */
+  /* Mobile Trainer-Filter und Anlage-Filter – jeweils volle Breite,
+     damit lange Trainernamen im Toggle und im Dropdown Platz haben */
   .mobileTrainerFilter {
     display: block;
-    margin-bottom: 12px;
-    padding: 0 4px;
+    flex: 1 1 100%;
+    width: 100%;
+    margin-bottom: 0;
   }
 
   .mobileAnlageFilter {
     display: block;
+    flex: 1 1 100%;
+    width: 100%;
   }
 
   .mobileTrainerFilter select {
@@ -1434,6 +1492,43 @@ input::placeholder {
     border-radius: var(--radius-md);
     background: var(--bg-card);
     color: var(--text-primary);
+  }
+
+  /* Dropdown-Menü des Trainerfilters auf Mobile: volle Breite, scrollbar bei vielen Trainern */
+  .mobileTrainerFilter .dropdownMenu {
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  /* "Noch nicht abgeschlossen" auf Mobile: gestapelt, damit Namen und Buttons
+     sich nicht mehr überlappen */
+  .openTrainingRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 0;
+  }
+
+  .openTrainingInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .openTrainingDate {
+    min-width: 0;
+  }
+
+  .openTrainingNames {
+    white-space: normal;
+  }
+
+  .openTrainingActions {
+    width: 100%;
+  }
+
+  .openTrainingActions .btn {
+    flex: 1 1 0;
   }
 
   .kHeadCell {

@@ -168,6 +168,8 @@ export default function TenniscampForm() {
 
   const selectedCamp = CAMP_OPTIONS.find(c => c.id === formData.campId);
   const isKindercamp = selectedCamp?.type === "kind";
+  // Das Erwachsenencamp ist ausgebucht – Anmeldungen laufen nur noch über die Warteliste.
+  const isErwachsenencamp = !!selectedCamp && selectedCamp.type === "erwachsene";
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -344,7 +346,7 @@ export default function TenniscampForm() {
           mitglied: formData.mitglied === "ja",
           mandatsreferenz: mandatsreferenz,
           sepa_zustimmung: formData.sepaZustimmung,
-          status: "neu",
+          status: isErwachsenencamp ? "warteliste" : "neu",
         });
 
       if (insertError) {
@@ -357,6 +359,24 @@ export default function TenniscampForm() {
       const zahlungspflichtiger = isKindercamp
         ? `${formData.zahlungspflichtigerVorname} ${formData.zahlungspflichtigerNachname}`
         : teilnehmerName;
+
+      // Erwachsenencamp ist ausgebucht -> Anmeldung läuft nur über die Warteliste
+      const istWarteliste = isErwachsenencamp;
+      const mailTitel = istWarteliste ? "Warteliste Tenniscamp" : "Anmeldung Tenniscamp";
+      const mailGruss = istWarteliste ? "Du stehst auf der Warteliste!" : "Vielen Dank für Ihre Anmeldung!";
+      const mailGrussText = istWarteliste
+        ? "Du stehst jetzt auf der Warteliste für das Erwachsenencamp. Wird ein Platz frei, melden wir uns bei dir."
+        : "Ihre Tenniscamp-Anmeldung wurde erfolgreich übermittelt.";
+      const mailZahlungText = istWarteliste
+        ? "Es entstehen vorerst keine Kosten. Die Campgebühr wird nur eingezogen, wenn ein Platz frei wird und Sie diesen erhalten – dann zwei Wochen vor Beginn per SEPA-Lastschrift."
+        : "Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich. Eine Absage ist ausschließlich schriftlich per E-Mail an tennisabisz@gmail.com möglich.";
+      const mailZahlungHtml = istWarteliste
+        ? "Es entstehen vorerst keine Kosten. Die Campgebühr wird nur eingezogen, wenn ein Platz frei wird und Sie diesen erhalten &ndash; dann zwei Wochen vor Beginn per SEPA-Lastschrift."
+        : `Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
+                  Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
+                  Eine Absage ist ausschließlich schriftlich per E-Mail an
+                  <a href="mailto:tennisabisz@gmail.com" style="color: #525252; font-weight: 600;">tennisabisz@gmail.com</a>
+                  möglich.`;
 
       // Bestätigungsmail an Anmelder
       const bestatigungHtml = `
@@ -374,7 +394,7 @@ export default function TenniscampForm() {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #171717 0%, #404040 100%); padding: 32px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Anmeldung Tenniscamp</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">${mailTitel}</h1>
             </td>
           </tr>
 
@@ -390,8 +410,8 @@ export default function TenniscampForm() {
           <!-- Greeting -->
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
-              <h2 style="margin: 0 0 8px; color: #333333; font-size: 22px; font-weight: 600;">Vielen Dank für Ihre Anmeldung!</h2>
-              <p style="margin: 0; color: #666666; font-size: 16px; line-height: 1.5;">Ihre Tenniscamp-Anmeldung wurde erfolgreich übermittelt.</p>
+              <h2 style="margin: 0 0 8px; color: #333333; font-size: 22px; font-weight: 600;">${mailGruss}</h2>
+              <p style="margin: 0; color: #666666; font-size: 16px; line-height: 1.5;">${mailGrussText}</p>
             </td>
           </tr>
 
@@ -440,11 +460,7 @@ export default function TenniscampForm() {
               <div style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5; padding: 16px;">
                 <p style="margin: 0 0 8px; color: #525252; font-size: 14px; font-weight: 600;">Zahlungsinformation</p>
                 <p style="margin: 0; color: #525252; font-size: 13px; line-height: 1.5;">
-                  Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
-                  Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
-                  Eine Absage ist ausschließlich schriftlich per E-Mail an
-                  <a href="mailto:tennisabisz@gmail.com" style="color: #525252; font-weight: 600;">tennisabisz@gmail.com</a>
-                  möglich.
+                  ${mailZahlungHtml}
                 </p>
               </div>
             </td>
@@ -476,18 +492,16 @@ export default function TenniscampForm() {
 </body>
 </html>`;
 
-      const bestatigungText = `Anmeldung Tenniscamp
+      const bestatigungText = `${mailTitel}
 
-Vielen Dank für Ihre Anmeldung!
+${mailGruss}
 
 Camp: ${selectedCamp?.label}
 Zeitraum: ${selectedCamp?.dates}
 Teilnehmer: ${teilnehmerName}
 Alter: ${alterBerechnet} Jahre
 
-Die Campgebühr wird zwei Wochen vor Beginn des Camps per SEPA-Lastschrift eingezogen.
-Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich.
-Eine Absage ist ausschließlich schriftlich per E-Mail an tennisabisz@gmail.com möglich.
+${mailZahlungText}
 
 Bei Fragen erreichen Sie uns unter: tennisabisz@gmail.com
 
@@ -510,7 +524,7 @@ Tennisschule A bis Z`;
           <!-- Header -->
           <tr>
             <td style="background: #171717; padding: 24px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">&#127934; Neue Tenniscamp-Anmeldung</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">${istWarteliste ? "Neue Warteliste-Anmeldung (Erwachsenencamp)" : "&#127934; Neue Tenniscamp-Anmeldung"}</h1>
             </td>
           </tr>
 
@@ -635,7 +649,7 @@ Tennisschule A bis Z`;
 </body>
 </html>`;
 
-      const adminText = `Neue Tenniscamp-Anmeldung
+      const adminText = `${istWarteliste ? "Neue Warteliste-Anmeldung (Erwachsenencamp)" : "Neue Tenniscamp-Anmeldung"}
 
 Camp: ${selectedCamp?.label}
 Zeitraum: ${selectedCamp?.dates}
@@ -657,7 +671,9 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: [formData.email.trim()],
-            subject: `Anmeldebestätigung Tenniscamp - ${selectedCamp?.label}`,
+            subject: istWarteliste
+              ? `Warteliste Tenniscamp - ${selectedCamp?.label}`
+              : `Anmeldebestätigung Tenniscamp - ${selectedCamp?.label}`,
             body: bestatigungText,
             html: bestatigungHtml,
             fromName: "Tennisschule A bis Z",
@@ -673,7 +689,9 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: ["tennisabisz@gmail.com"],
-            subject: `Neue Tenniscamp-Anmeldung: ${teilnehmerName} - ${selectedCamp?.label}`,
+            subject: istWarteliste
+              ? `Warteliste-Anmeldung: ${teilnehmerName} - ${selectedCamp?.label}`
+              : `Neue Tenniscamp-Anmeldung: ${teilnehmerName} - ${selectedCamp?.label}`,
             body: adminText,
             html: adminHtml,
             fromName: "Tennisschule A bis Z",
@@ -698,17 +716,23 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
         <div className="tc-success">
           <div className="tc-success-head">
             <div className="tc-success-check">&#10003;</div>
-            <h1>Anmeldung erfolgreich!</h1>
+            <h1>{isErwachsenencamp ? "Du stehst auf der Warteliste!" : "Anmeldung erfolgreich!"}</h1>
           </div>
           <div className="tc-success-body">
             <p style={{ margin: "0 0 22px", fontSize: 15, color: "#52525b", lineHeight: 1.65, textAlign: "center" }}>
-              Vielen Dank für deine Anmeldung zum Tenniscamp. Du erhältst in Kürze eine Bestätigungs-E-Mail.
+              {isErwachsenencamp
+                ? "Danke! Du stehst jetzt auf der Warteliste für das Erwachsenencamp. Wird ein Platz frei, melden wir uns bei dir. Eine Bestätigung der Warteliste-Anmeldung erhältst du in Kürze per E-Mail."
+                : "Vielen Dank für deine Anmeldung zum Tenniscamp. Du erhältst in Kürze eine Bestätigungs-E-Mail."}
             </p>
             <div className="tc-note">
               <span className="tc-note-title">Hinweis zur Zahlung</span>
-              Die Campgebühr wird zwei Wochen vor Beginn per SEPA-Lastschrift eingezogen. Eine kostenfreie Stornierung
-              ist nur bis zu diesem Zeitpunkt möglich – ausschließlich schriftlich per E-Mail an{" "}
-              <a href="mailto:tennisabisz@gmail.com" style={{ color: "#16a34a", fontWeight: 600 }}>tennisabisz@gmail.com</a>.
+              {isErwachsenencamp
+                ? "Es entstehen dir vorerst keine Kosten. Die Campgebühr wird nur eingezogen, wenn du einen Platz erhältst – dann zwei Wochen vor Beginn per SEPA-Lastschrift."
+                : "Die Campgebühr wird zwei Wochen vor Beginn per SEPA-Lastschrift eingezogen. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich – ausschließlich schriftlich per E-Mail an "}
+              {!isErwachsenencamp && (
+                <a href="mailto:tennisabisz@gmail.com" style={{ color: "#16a34a", fontWeight: 600 }}>tennisabisz@gmail.com</a>
+              )}
+              {!isErwachsenencamp && "."}
             </div>
 
             {isKindercamp && (
@@ -805,10 +829,11 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
 
               {selectedCamp && !isKindercamp && (
                 <div className="tc-note" style={{ marginTop: 12 }}>
-                  <span className="tc-note-title">Begrenzte Plätze – nur 12 Teilnehmer</span>
-                  Beim Erwachsenencamp sind die Plätze besonders begrenzt: Wir können nur die ersten 12 Anmeldungen
-                  annehmen, um ein intensives Tenniserlebnis zu ermöglichen. Vorrang haben Mitglieder des BSC Rehberge –
-                  Vereinsexterne berücksichtigen wir, wenn Plätze frei bleiben, oder über die Warteliste.
+                  <span className="tc-note-title">Erwachsenencamp ausgebucht – nur noch Warteliste</span>
+                  Die Plätze im Erwachsenencamp sind bereits vergeben. Du kannst dich hier auf die Warteliste setzen:
+                  Wird ein Platz frei, melden wir uns bei dir in der Reihenfolge der Anmeldungen. Mitglieder des
+                  BSC Rehberge haben dabei Vorrang. Die Campgebühr wird erst eingezogen, wenn du einen Platz erhältst –
+                  bis dahin entstehen dir keine Kosten.
                 </div>
               )}
 
@@ -999,13 +1024,26 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               <label className="tc-consent">
                 <input type="checkbox" name="verbindlicheAnmeldung" checked={formData.verbindlicheAnmeldung} onChange={handleChange} />
                 <span>
-                  <span className="tc-consent-title">Verbindliche Anmeldung <span className="tc-req">*</span></span>
-                  <p>
-                    Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
-                    Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich –
-                    ausschließlich schriftlich per E-Mail an{" "}
-                    <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
-                  </p>
+                  {isErwachsenencamp ? (
+                    <>
+                      <span className="tc-consent-title">Anmeldung zur Warteliste <span className="tc-req">*</span></span>
+                      <p>
+                        Ich setze mich auf die Warteliste für das Erwachsenencamp. Sollte ein Platz frei werden, melden
+                        wir uns bei mir. Erst wenn ich einen Platz verbindlich erhalte, wird die Campgebühr zwei Wochen
+                        vor Beginn fällig – bis dahin entstehen mir keine Kosten.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="tc-consent-title">Verbindliche Anmeldung <span className="tc-req">*</span></span>
+                      <p>
+                        Hiermit melde ich mich/mein Kind verbindlich zum Tenniscamp an. Die Campgebühr wird zwei Wochen vor
+                        Beginn des Camps fällig. Eine kostenfreie Stornierung ist nur bis zu diesem Zeitpunkt möglich –
+                        ausschließlich schriftlich per E-Mail an{" "}
+                        <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
+                      </p>
+                    </>
+                  )}
                 </span>
               </label>
             </div>
@@ -1013,6 +1051,8 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
             <button type="submit" className="tc-btn" disabled={loading}>
               {loading
                 ? "Wird gesendet..."
+                : isErwachsenencamp
+                ? "Auf die Warteliste setzen"
                 : selectedCamp
                 ? `Verbindlich anmelden · ${selectedCamp.price} €`
                 : "Verbindlich anmelden"}
