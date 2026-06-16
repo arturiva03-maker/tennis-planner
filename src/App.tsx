@@ -6357,6 +6357,7 @@ Tennisschule A bis Z`;
                         Ausgewählte Trainings:{" "}
                         <strong>{selectedTrainingIds.length}</strong>
                       </span>
+                      <ActionMenu label="Status setzen" buttonClassName="btn micro" menuWidth={230}>
                       <button
                         className="btn micro"
                         onClick={() =>
@@ -6395,6 +6396,7 @@ Tennisschule A bis Z`;
                       >
                         Alle abgesagt
                       </button>
+                      </ActionMenu>
                       <button
                         className="btn micro btnWarn"
                         onClick={batchDeleteSelectedTrainings}
@@ -9266,6 +9268,7 @@ Tennisschule A bis Z`
                                 <span className="muted" style={{ fontSize: 13 }}>
                                   {selectedRequestIds.size} ausgewählt
                                 </span>
+                                <ActionMenu label="Aktionen" buttonClassName="btn micro" menuWidth={240}>
                                 <button
                                   className="btn micro btnGhost"
                                   onClick={async () => {
@@ -9438,6 +9441,7 @@ Tennisschule A bis Z`
                                 >
                                   Auswahl aufheben
                                 </button>
+                                </ActionMenu>
                               </>
                             )}
                           </div>
