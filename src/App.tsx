@@ -11801,6 +11801,7 @@ Tennisschule A bis Z`
                           <span className="pill">
                             SEPA-Auswahl: <strong>{sepaExportSelection.size}</strong>
                           </span>
+                          <ActionMenu label="SEPA / Export" buttonClassName="btn" menuWidth={260}>
                           <button
                             className="btn btnGhost"
                             onClick={() => {
@@ -11839,6 +11840,7 @@ Tennisschule A bis Z`
                           >
                             Bank-Umsätze importieren
                           </button>
+                          </ActionMenu>
                         </div>
                       </div>
                       <div style={{ height: 8 }} />
