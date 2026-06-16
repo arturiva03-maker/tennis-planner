@@ -228,6 +228,24 @@ body {
   background: var(--bg-card);
 }
 
+/* Gleichmaessiges 2-spaltiges Feld-Raster fuer lange Formulare (statt unregelmaessig
+   umbrechender flex-.row). Felder/Inputs/Handler unveraendert - reines Layout.
+   min-width:0 ueberschreibt die mobile .field-Regel, damit Handys nicht ueberlaufen. */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+.fieldGrid > .field {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .hTitle h1 {
   margin: 0;
   font-size: 26px;

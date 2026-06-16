@@ -8072,7 +8072,7 @@ Tennisschule A bis Z`
                     {(showTrainerForm || editingTrainerId) && (
                       <div className="card cardInset" style={{ marginTop: 16 }}>
                         <h3>{editingTrainerId ? "Trainer bearbeiten" : "Neuen Trainer hinzufügen"}</h3>
-                        <div className="row">
+                        <div className="fieldGrid">
                           <div className="field">
                             <label>Name</label>
                             <input
@@ -8346,7 +8346,7 @@ Tennisschule A bis Z`
                           </div>
                         )}
                         
-                        <div className="row">
+                        <div className="fieldGrid">
                           <div className="field">
                             <label>Vorname</label>
                             <input
