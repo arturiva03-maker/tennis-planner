@@ -4,6 +4,7 @@ import { supabase } from "./supabaseClient";
 import { checkIBAN, ibanErrorMessage, normalizeIBAN } from "./iban";
 import "./App.css";
 import "./tenniscamp.css";
+import { LegalFooter } from "./LegalText";
 
 type CampOption = {
   id: string;
@@ -1101,6 +1102,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
           </form>
         </div>
       </div>
+      <LegalFooter />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
+import { LegalFooter } from "./LegalText";
 
 export default function AGBPageBritz() {
   const themeStyle = getBallotThemeStyle("Britz");
@@ -61,7 +62,7 @@ export default function AGBPageBritz() {
           </p>
           <p>
             (4) Eingabefehler können vor dem Absenden über die üblichen Browserfunktionen korrigiert werden (§ 312i BGB). Der Vertragstext wird nach
-            Vertragsschluss zusammen mit diesen AGB und der Widerrufsbelehrung in Textform zur Verfügung gestellt. Vertragssprache ist Deutsch.
+            Vertragsschluss zusammen mit diesen AGB in Textform zur Verfügung gestellt. Vertragssprache ist Deutsch.
           </p>
         </div>
 
@@ -315,60 +316,13 @@ export default function AGBPageBritz() {
           </p>
         </div>
 
-        {/* Widerrufsbelehrung */}
-        <div className="section-head">
-          <span className="num">A</span>
-          <span className="title">Widerrufsbelehrung (Verbraucher, Fernabsatz)</span>
-        </div>
-        <div className="prose">
-          <p><strong>Widerrufsrecht.</strong> Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.
-            Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.</p>
-          <p>
-            Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (Tennisschule Zlatan Palazov und Artur Ivanenko GbR, Ricarda-Huch-Straße 40, 14480 Potsdam,
-            E-Mail tennisabisz@gmail.com) mittels einer eindeutigen Erklärung (z. B. Brief oder E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen,
-            informieren. Sie können dafür das untenstehende Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist. Zur Wahrung der Frist genügt die
-            rechtzeitige Absendung der Mitteilung.
-          </p>
-          <p>
-            <strong>Folgen des Widerrufs.</strong> Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich
-            und spätestens binnen vierzehn Tagen ab Zugang Ihres Widerrufs zurückzuzahlen. Wir verwenden dasselbe Zahlungsmittel wie bei der ursprünglichen
-            Transaktion; Entgelte berechnen wir Ihnen wegen der Rückzahlung nicht.
-          </p>
-          <p>
-            Haben Sie verlangt, dass die Dienstleistungen während der Widerrufsfrist beginnen, so haben Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil
-            der bis zum Widerruf bereits erbrachten Leistungen entspricht.
-          </p>
-          <p className="muted-note">
-            <strong>Hinweis zum Nichtbestehen des Widerrufsrechts bei Tenniscamps:</strong> Bei Verträgen über Tenniscamps, die für einen konkret bestimmten Termin
-            oder Zeitraum gebucht werden, besteht kein Widerrufsrecht (§ 312g Abs. 2 Nr. 9 BGB – Freizeitdienstleistung mit spezifischem Termin).
-          </p>
-        </div>
-
-        {/* Muster-Widerrufsformular */}
-        <div className="mandate-block" style={{ marginTop: 24 }}>
-          <p className="mandate-title">B · Muster-Widerrufsformular</p>
-          <div className="prose">
-            <p className="muted-note">(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden es zurück.)</p>
-            <p>An: Tennisschule Zlatan Palazov und Artur Ivanenko GbR, Ricarda-Huch-Straße 40, 14480 Potsdam, E-Mail tennisabisz@gmail.com</p>
-            <p>
-              Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung:
-              ____________________________________________
-            </p>
-            <p>– Bestellt/angemeldet am: ______________</p>
-            <p>– Name des/der Verbraucher(s): ______________</p>
-            <p>– Anschrift des/der Verbraucher(s): ______________</p>
-            <p>– Unterschrift (nur bei Mitteilung auf Papier): ______________</p>
-            <p>– Datum: ______________</p>
-            <p className="muted-note">(*) Unzutreffendes streichen.</p>
-          </div>
-        </div>
-
         <div className="prose" style={{ marginTop: 32 }}>
           <p className="muted-note">
-            Stand: Juni 2026. Diese Bedingungen sollten vor der Veröffentlichung anwaltlich geprüft werden, insbesondere zu Widerrufsrecht und Haftung.
+            Stand: Juni 2026. Diese Bedingungen sollten vor der Veröffentlichung anwaltlich geprüft werden, insbesondere zur Haftung.
           </p>
         </div>
       </div>
+      <LegalFooter anlage="Britz" />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import "./App.css";
+import { LegalFooter } from "./LegalText";
 
 type FormData = {
   vorname: string;
@@ -427,6 +428,7 @@ Interesse weiterführendes Training: ${interesseText}`;
           </div>
         </form>
       </div>
+      <LegalFooter />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
 import { persistRegistration, type RegistrationPayload } from "./RegistrationForm";
 import { checkIBAN, ibanErrorMessage } from "./iban";
+import { LegalFooter } from "./LegalText";
 
 type SepaFormData = {
   vorname: string;
@@ -497,6 +498,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           </div>
         </form>
       </div>
+      <LegalFooter anlage={anlage} />
     </div>
   );
 }

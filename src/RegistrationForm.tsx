@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
+import { LegalFooter } from "./LegalText";
 
 type Wochentag = "montag" | "dienstag" | "mittwoch" | "donnerstag" | "freitag" | "samstag" | "sonntag";
 
@@ -1195,6 +1196,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           </div>
         </div>
       )}
+      <LegalFooter anlage={anlage} />
     </div>
   );
 }

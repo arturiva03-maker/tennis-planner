@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./App.css";
 import "./tenniscamp.css";
+import { LegalFooter } from "./LegalText";
 
 const GREEN = "#16a34a";
 const GREEN_TINT = "#f0fdf4";
@@ -275,6 +276,7 @@ export default function TenniscampInfoPage() {
           </div>
         </div>
       </div>
+      <LegalFooter />
     </div>
   );
 }

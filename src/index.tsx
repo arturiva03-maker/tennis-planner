@@ -14,6 +14,8 @@ import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import AbsagePage from './AbsagePage';
 import KennlerntennisForm from './KennlerntennisForm';
+import ImpressumPage from './ImpressumPage';
+import DatenschutzPage from './DatenschutzPage';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(
@@ -30,6 +32,8 @@ root.render(
         <Route path="/sepa-britz" element={<SepaForm anlage="Britz" />} />
         <Route path="/agb" element={<AGBPage />} />
         <Route path="/agb-britz" element={<AGBPageBritz />} />
+        <Route path="/impressum" element={<ImpressumPage />} />
+        <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/wedding" element={<WeddingPage />} />
         <Route path="/wedding-sommertraining" element={<WeddingPage autoScrollSommertraining />} />
         <Route path="/britz" element={<BritzPage />} />
