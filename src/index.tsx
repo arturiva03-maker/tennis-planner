@@ -9,6 +9,7 @@ import SepaForm from './SepaForm';
 import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
 import WeddingPage from './WeddingPage';
+import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import AbsagePage from './AbsagePage';
@@ -35,11 +36,10 @@ root.render(
         <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/wedding" element={<WeddingPage />} />
         <Route path="/wedding-sommertraining" element={<WeddingPage autoScrollSommertraining />} />
-        {/* Britz-Website vorerst ausgeblendet – nur das Anmeldeformular ist erreichbar.
-            Zum Reaktivieren: BritzPage wieder importieren und die beiden Routen auf
-            <BritzPage /> bzw. <BritzPage sommertrainingOnly /> zurücksetzen. */}
-        <Route path="/britz" element={<Navigate to="/anmeldung-britz" replace />} />
-        <Route path="/britz-sommertraining" element={<Navigate to="/anmeldung-britz" replace />} />
+        {/* Britz: nur das Sommertraining-Formular ist sichtbar. Die Marketing-Startseite
+            (/britz) leitet darauf um; die volle <BritzPage /> wird derzeit nicht angezeigt. */}
+        <Route path="/britz" element={<Navigate to="/britz-sommertraining" replace />} />
+        <Route path="/britz-sommertraining" element={<BritzPage sommertrainingOnly />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />
