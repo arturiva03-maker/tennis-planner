@@ -4136,6 +4136,53 @@ ${txInfo}
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Aus einer Tenniscamp-Anmeldung einen Spieler anlegen – inkl. SEPA-Mandat
+  // (IBAN, Mandatsreferenz, Unterschriftsdatum, abweichender Empfänger bei
+  // Kindern). Füllt das Spieler-Formular vor, damit man vor dem Speichern
+  // noch prüfen kann.
+  function adoptPlayerFromTenniscamp(anmeldung: TenniscampAnmeldung) {
+    setSpielerVorname((anmeldung.teilnehmer_vorname || "").trim());
+    setSpielerNachname((anmeldung.teilnehmer_nachname || "").trim());
+    setSpielerEmail(anmeldung.email || "");
+    setSpielerZusaetzlicheEmails([]);
+    setSpielerNeueEmail("");
+    setSpielerTelefon(anmeldung.telefon || "");
+    setSpielerRechnung(""); // Adresse wird im Camp-Formular nicht erfasst
+    setSpielerNotizen("");
+
+    // SEPA-Mandat aus der Anmeldung übernehmen
+    setSpielerIban(anmeldung.iban || "");
+    setSpielerBankname("");
+    setSpielerMandatsreferenz(anmeldung.mandatsreferenz || "");
+    // Das SEPA-Mandat wurde bei der Anmeldung erteilt -> Anmeldedatum als Unterschriftsdatum
+    setSpielerUnterschriftsdatum((anmeldung.created_at || "").slice(0, 10));
+    setSpielerSepaSequenz("RCUR");
+    setSpielerSepaLastschriftart("CORE");
+
+    // Abweichender Rechnungsempfänger (Zahlungspflichtiger, z.B. Eltern beim Kindercamp)
+    const zahlerName = `${(anmeldung.zahlungspflichtiger_vorname || "").trim()} ${(anmeldung.zahlungspflichtiger_nachname || "").trim()}`.trim();
+    if (zahlerName) {
+      setSpielerAbweichenderEmpfaenger(true);
+      setSpielerEmpfaengerName(zahlerName);
+    } else {
+      setSpielerAbweichenderEmpfaenger(false);
+      setSpielerEmpfaengerName("");
+    }
+
+    // Label "Tenniscamp" zur Filterung
+    setSpielerLabels(["Tenniscamp"]);
+    setNewLabelInput("");
+
+    // UI-State: zum Spieler-Formular wechseln
+    setTab("verwaltung");
+    setVerwaltungTab("spieler");
+    setShowSpielerForm(true);
+    setEditingSpielerId(null);
+    setSpielerError(null);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function adoptMultiplePlayersFromRequests() {
     const selectedReqs = registrationRequests.filter(r => selectedRequestIds.has(r.id));
     if (selectedReqs.length === 0) return;
@@ -10296,7 +10343,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         minute: "2-digit"
                                       })}
                                     </div>
-                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                       <select
                                         value={anmeldung.status}
                                         onChange={(e) => updateTenniscampStatus(anmeldung.id, e.target.value)}
@@ -10306,6 +10353,14 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         <option value="bestaetigt">Bestätigt</option>
                                         <option value="storniert">Storniert</option>
                                       </select>
+                                      <button
+                                        className="btn micro"
+                                        style={{ backgroundColor: "#059669", borderColor: "#059669" }}
+                                        onClick={() => adoptPlayerFromTenniscamp(anmeldung)}
+                                        title="Spieler inkl. SEPA-Mandat aus dieser Anmeldung anlegen"
+                                      >
+                                        Als Spieler übernehmen
+                                      </button>
                                       <button
                                         className="btn micro btnGhost"
                                         onClick={() => {
