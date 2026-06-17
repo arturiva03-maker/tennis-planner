@@ -443,8 +443,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
             <p>
               Ich ermächtige die Tennisschule Zlatan Palazov und Artur Ivanenko GbR,
               Zahlungen von meinem Konto mittels Lastschrift einzuziehen. Zugleich
-              weise ich mein Kreditinstitut an, die von der Tennisschule auf mein
-              Konto gezogenen Lastschriften einzulösen.
+              weise ich mein Kreditinstitut an, die von der Tennisschule Zlatan Palazov
+              und Artur Ivanenko GbR auf mein Konto gezogenen Lastschriften einzulösen.
             </p>
             <p>
               Hinweis: Ich kann innerhalb von acht Wochen, beginnend mit dem
@@ -487,7 +487,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
               </a>
               . Ihre Daten werden verschlüsselt gespeichert, nur zur Abwicklung
               der Trainingsbeiträge verwendet und nach Ende des Trainings­verhältnisses
-              gelöscht. Auskunft &amp; Löschung:{" "}
+              gelöscht, soweit keine gesetzlichen (insbesondere steuerlichen)
+              Aufbewahrungspflichten entgegenstehen. Auskunft &amp; Löschung:{" "}
               <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
             </p>
             <button className="primary" type="submit" disabled={loading}>
