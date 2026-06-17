@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import WeddingRegistrationWrapper from './WeddingRegistrationWrapper';
@@ -9,7 +9,6 @@ import SepaForm from './SepaForm';
 import AGBPage from './AGBPage';
 import AGBPageBritz from './AGBPageBritz';
 import WeddingPage from './WeddingPage';
-import BritzPage from './BritzPage';
 import TenniscampForm from './TenniscampForm';
 import TenniscampInfoPage from './TenniscampInfoPage';
 import AbsagePage from './AbsagePage';
@@ -36,8 +35,11 @@ root.render(
         <Route path="/datenschutz" element={<DatenschutzPage />} />
         <Route path="/wedding" element={<WeddingPage />} />
         <Route path="/wedding-sommertraining" element={<WeddingPage autoScrollSommertraining />} />
-        <Route path="/britz" element={<BritzPage />} />
-        <Route path="/britz-sommertraining" element={<BritzPage sommertrainingOnly />} />
+        {/* Britz-Website vorerst ausgeblendet – nur das Anmeldeformular ist erreichbar.
+            Zum Reaktivieren: BritzPage wieder importieren und die beiden Routen auf
+            <BritzPage /> bzw. <BritzPage sommertrainingOnly /> zurücksetzen. */}
+        <Route path="/britz" element={<Navigate to="/anmeldung-britz" replace />} />
+        <Route path="/britz-sommertraining" element={<Navigate to="/anmeldung-britz" replace />} />
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />
