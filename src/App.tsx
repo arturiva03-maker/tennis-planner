@@ -7736,6 +7736,10 @@ Wir freuen uns auf dich!`
                             const weekday = new Date(tDatum + "T12:00:00").getDay(); // 0=So..6=Sa
                             const letztesTrainingISO = addDaysISO("2026-07-06", (weekday + 6) % 7);
                             const letztesTraining = new Date(letztesTrainingISO + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+                            // Erstes reguläres Training nach den Ferien = gleicher Wochentag in der
+                            // Woche vom Montag, 24. August 2026 (Trainingsstart nach der Sommerpause).
+                            const erstesTrainingISO = addDaysISO("2026-08-24", (weekday + 6) % 7);
+                            const erstesTraining = new Date(erstesTrainingISO + "T12:00:00").toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
                             const sommerLink = tAnlage === "Britz"
                               ? `${window.location.origin}/britz-sommertraining`
                               : `${window.location.origin}/wedding-sommertraining`;
@@ -7751,7 +7755,7 @@ Wir freuen uns auf dich!`
 
 die Sommerferien stehen vor der Tür! Dein letztes reguläres Training vor den Ferien findet am ${letztesTraining} statt.
 
-In den Sommerferien pausiert das reguläre Training, da viele von euch verreist sind.
+In den Sommerferien pausiert das reguläre Training, da viele von euch verreist sind. Dein erstes reguläres Training nach den Ferien findet am ${erstesTraining} statt.
 
 Aufs Tennis verzichten musst du deshalb aber nicht: Du kannst jederzeit ein Training für dich allein oder zusammen mit weiteren Personen bei einem unserer Trainer buchen – ganz flexibel nach deinen Wünschen.
 
