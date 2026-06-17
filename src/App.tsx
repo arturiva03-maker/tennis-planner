@@ -7764,10 +7764,7 @@ ${sommerLink}
 
 Aktuell sind dort erst einige Termine eingestellt – nach und nach kommen weitere dazu. Schau daher am besten regelmäßig vorbei, um einen passenden Termin zu finden.
 
-Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich danach wieder fit und erholt auf dem Platz zu begrüßen!
-
-Sportliche Grüße
-Tennisschule A bis Z`
+Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich danach wieder fit und erholt auf dem Platz zu begrüßen!`
                             );
                             setTrainingInfoExcluded([]);
                             setShowTrainingInfoEmail(true);
