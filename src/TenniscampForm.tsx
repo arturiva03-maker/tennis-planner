@@ -29,6 +29,9 @@ type TenniscampData = {
   geburtsdatum: string;
   telefon: string;
   email: string;
+  strasse: string;
+  plz: string;
+  ort: string;
   iban: string;
   bemerkungen: string;
   niveau: string;
@@ -152,6 +155,9 @@ export default function TenniscampForm() {
     geburtsdatum: "",
     telefon: "",
     email: "",
+    strasse: "",
+    plz: "",
+    ort: "",
     iban: "",
     bemerkungen: "",
     niveau: "",
@@ -289,6 +295,19 @@ export default function TenniscampForm() {
       return;
     }
 
+    if (!formData.strasse.trim()) {
+      setError("Bitte geben Sie Straße und Hausnummer des Kontoinhabers ein.");
+      return;
+    }
+    if (!formData.plz.trim()) {
+      setError("Bitte geben Sie die Postleitzahl ein.");
+      return;
+    }
+    if (!formData.ort.trim()) {
+      setError("Bitte geben Sie den Ort ein.");
+      return;
+    }
+
     const ibanCheck = checkIBAN(formData.iban);
     if (!ibanCheck.valid) {
       setError(
@@ -339,6 +358,9 @@ export default function TenniscampForm() {
           alter: alterBerechnet,
           telefon: formData.telefon.trim(),
           email: formData.email.trim(),
+          strasse: formData.strasse.trim(),
+          plz: formData.plz.trim(),
+          ort: formData.ort.trim(),
           iban: ibanClean,
           bemerkungen: formData.bemerkungen.trim() || null,
           niveau: formData.niveau || null,
@@ -970,6 +992,25 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               <div className="tc-field">
                 <label className="tc-label">E-Mail <span className="tc-req">*</span></label>
                 <input className="tc-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="ihre@email.de" />
+              </div>
+
+              <div className="tc-field">
+                <label className="tc-label">Straße und Hausnummer <span className="tc-req">*</span></label>
+                <p className="tc-hint" style={{ margin: "0 0 7px" }}>
+                  Anschrift des Kontoinhabers{isKindercamp ? " (Zahlungspflichtige/r)" : ""} – für das SEPA-Lastschriftmandat.
+                </p>
+                <input className="tc-input" type="text" name="strasse" value={formData.strasse} onChange={handleChange} placeholder="z.B. Musterstraße 12" autoComplete="street-address" />
+              </div>
+
+              <div className="tc-grid-2">
+                <div className="tc-field">
+                  <label className="tc-label">PLZ <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="text" name="plz" value={formData.plz} onChange={handleChange} placeholder="z.B. 13351" inputMode="numeric" autoComplete="postal-code" />
+                </div>
+                <div className="tc-field">
+                  <label className="tc-label">Ort <span className="tc-req">*</span></label>
+                  <input className="tc-input" type="text" name="ort" value={formData.ort} onChange={handleChange} placeholder="z.B. Berlin" autoComplete="address-level2" />
+                </div>
               </div>
 
               <div className="tc-field">

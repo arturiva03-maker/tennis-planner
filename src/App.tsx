@@ -184,6 +184,9 @@ type TenniscampAnmeldung = {
   alter: number;
   telefon: string;
   email: string;
+  strasse?: string | null;
+  plz?: string | null;
+  ort?: string | null;
   iban: string;
   bemerkungen: string | null;
   niveau: string | null;
@@ -4147,7 +4150,12 @@ ${txInfo}
     setSpielerZusaetzlicheEmails([]);
     setSpielerNeueEmail("");
     setSpielerTelefon(anmeldung.telefon || "");
-    setSpielerRechnung(""); // Adresse wird im Camp-Formular nicht erfasst
+    // Rechnungsadresse aus der Anmeldung zusammensetzen
+    const adresse = [
+      (anmeldung.strasse || "").trim(),
+      `${(anmeldung.plz || "").trim()} ${(anmeldung.ort || "").trim()}`.trim(),
+    ].filter(Boolean).join(", ");
+    setSpielerRechnung(adresse);
     setSpielerNotizen("");
 
     // SEPA-Mandat aus der Anmeldung übernehmen
@@ -10297,6 +10305,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         <div style={{ gridColumn: "1 / -1" }}>
                                           <div className="muted" style={{ fontSize: 11 }}>Zahlungspflichtiger</div>
                                           <div>{anmeldung.zahlungspflichtiger_vorname} {anmeldung.zahlungspflichtiger_nachname}</div>
+                                        </div>
+                                      )}
+                                      {(anmeldung.strasse || anmeldung.plz || anmeldung.ort) && (
+                                        <div style={{ gridColumn: "1 / -1" }}>
+                                          <div className="muted" style={{ fontSize: 11 }}>Anschrift</div>
+                                          <div>{[anmeldung.strasse, `${anmeldung.plz || ""} ${anmeldung.ort || ""}`.trim()].filter(Boolean).join(", ")}</div>
                                         </div>
                                       )}
                                       {anmeldung.niveau && (
