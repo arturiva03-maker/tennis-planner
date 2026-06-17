@@ -2524,6 +2524,22 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   )}
                 </div>
 
+                <div style={{
+                  background: colors.bgLight,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 8,
+                  padding: "14px 16px",
+                  marginBottom: 24,
+                  fontSize: 13,
+                  color: colors.text,
+                  lineHeight: 1.6,
+                }}>
+                  <strong>Bitte beachten:</strong> In den Sommerferien findet kein reguläres Training statt –
+                  dies ist ein Einzeltermin mit einem unserer Trainer, ausschließlich für Mitglieder. Für die
+                  Teilnahme ist ein SEPA-Lastschriftmandat erforderlich; der Betrag wird per Lastschrift eingezogen.
+                  Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                </div>
+
                 {bookingError && (
                   <div style={{
                     background: "#fee2e2",
