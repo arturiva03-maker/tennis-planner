@@ -507,7 +507,7 @@ export default function TenniscampForm() {
         </table>
 
         <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
-          &copy; 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
+          &copy; ${new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
     </tr>

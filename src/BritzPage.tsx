@@ -512,7 +512,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
 
         <!-- Footer Text -->
         <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
-          © 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
+          © ${new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
     </tr>
@@ -2213,7 +2213,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
           </div>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            <p>&copy; 2025 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
+            <p>&copy; {new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
@@ -2226,7 +2226,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
             <button onClick={() => setShowImpressum(true)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.85)", cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Impressum</button>
             <button onClick={() => setShowDatenschutz(true)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.85)", cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Datenschutz</button>
           </div>
-          <p style={{ opacity: 0.6, margin: 0 }}>&copy; 2025 Tennisschule A bis Z</p>
+          <p style={{ opacity: 0.6, margin: 0 }}>&copy; {new Date().getFullYear()} Tennisschule A bis Z</p>
         </footer>
       )}
 

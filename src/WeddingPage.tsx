@@ -844,7 +844,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
 
         <!-- Footer Text -->
         <p style="margin: 24px 0 0; color: ${colors.textSubtle}; font-size: 12px; text-align: center;">
-          © 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.
+          © ${new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.
         </p>
       </td>
     </tr>
@@ -2667,7 +2667,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
           </div>
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: 24, textAlign: "center", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            <p>&copy; 2026 Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
+            <p>&copy; {new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.</p>
           </div>
         </div>
       </footer>
