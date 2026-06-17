@@ -1469,7 +1469,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                 marginBottom: 8,
                 fontWeight: 600,
               }}>
-                Verfügbare Termine
+                Sommerferien
               </p>
               <h2 style={{
                 fontSize: 24,
@@ -1477,10 +1477,26 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                 color: colors.text,
                 marginBottom: 8,
               }}>
-                Spontane Trainingsstunden
+                Training in den Sommerferien
               </h2>
               <p style={{ fontSize: 14, color: colors.textMuted }}>
                 Wählen Sie einen Tag mit verfügbaren Terminen
+              </p>
+            </div>
+
+            {/* Hinweistext zum Sommerferien-Training */}
+            <div style={{
+              maxWidth: 760,
+              margin: "0 auto 32px",
+              background: colors.bgLight,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 14,
+              padding: "24px 26px",
+            }}>
+              <p style={{ fontSize: 15, color: colors.text, lineHeight: 1.7, margin: 0 }}>
+                In den Sommerferien findet kein reguläres Training statt. Ein Training mit einem unserer
+                Trainer kann gerne hier gebucht werden. Dies ist ausschließlich für Mitglieder. Für die
+                Teilnahme an unserem Tennistraining ist ein SEPA-Lastschriftmandat erforderlich.
               </p>
             </div>
 
