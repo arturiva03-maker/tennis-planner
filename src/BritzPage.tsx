@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import { supabase } from "./supabaseClient";
 import { ImpressumContent, DatenschutzContent } from "./LegalText";
+import { checkIBAN, normalizeIBAN } from "./iban";
+import { MandatNameField, generateSpontanMandatsreferenz, formatIbanGroups } from "./SpontanMandat";
 
 type SpontaneStundeBuchung = {
   name: string;
@@ -82,8 +84,17 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SpontaneStunde | null>(null);
   const [bookingName, setBookingName] = useState("");
+  const [bookingNameMandat, setBookingNameMandat] = useState<boolean | null>(null);
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
+  // Eingebettetes SEPA-Mandat (nur falls für den Bucher noch keines hinterlegt ist)
+  const [bookingIban, setBookingIban] = useState("");
+  const [bookingStrasse, setBookingStrasse] = useState("");
+  const [bookingPlz, setBookingPlz] = useState("");
+  const [bookingOrt, setBookingOrt] = useState("");
+  const [bookingKontoinhaberAbweichend, setBookingKontoinhaberAbweichend] = useState(false);
+  const [bookingKontoinhaberName, setBookingKontoinhaberName] = useState("");
+  const [bookingMandatConsent, setBookingMandatConsent] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -229,12 +240,36 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
   const openBookingModal = (slot: SpontaneStunde) => {
     setSelectedSlot(slot);
     setBookingName("");
+    setBookingNameMandat(null);
     setBookingEmail("");
     setBookingTelefon("");
+    setBookingIban("");
+    setBookingStrasse("");
+    setBookingPlz("");
+    setBookingOrt("");
+    setBookingKontoinhaberAbweichend(false);
+    setBookingKontoinhaberName("");
+    setBookingMandatConsent(false);
     setBookingError(null);
     setBookingSuccess(false);
     setShowBookingModal(true);
   };
+
+  // SEPA-Mandats-Gate (nur Hauptbucher). Fehlt dem Bucher ein Mandat, wird es
+  // direkt im Fenster erteilt – inkl. DB-Prüfung über spontan_hat_mandat.
+  const mandatNeeded = bookingNameMandat === false;
+  const ibanCheckLive = checkIBAN(bookingIban);
+  const mandatFormOk =
+    ibanCheckLive.valid &&
+    bookingStrasse.trim() !== "" &&
+    bookingPlz.trim() !== "" &&
+    bookingOrt.trim() !== "" &&
+    (!bookingKontoinhaberAbweichend || bookingKontoinhaberName.trim() !== "") &&
+    bookingMandatConsent;
+  const alleMandateOk =
+    bookingName.trim() !== "" &&
+    bookingNameMandat !== null &&
+    (bookingNameMandat === true || mandatFormOk);
 
   const submitBooking = async () => {
     if (!selectedSlot) return;
@@ -251,11 +286,53 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
       setBookingError("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
       return;
     }
+    if (bookingNameMandat === null) {
+      setBookingError("Bitte geben Sie Ihren vollständigen Namen ein.");
+      return;
+    }
+    if (mandatNeeded && !mandatFormOk) {
+      setBookingError(
+        !ibanCheckLive.valid
+          ? "Bitte geben Sie eine gültige IBAN für das SEPA-Mandat ein."
+          : "Bitte füllen Sie die Bankdaten aus und bestätigen Sie das SEPA-Lastschriftmandat."
+      );
+      return;
+    }
 
     setBookingSubmitting(true);
     setBookingError(null);
 
     try {
+      // Kein Mandat hinterlegt? Dann wird es direkt hier erteilt (kein Link, keine
+      // Weiterleitung), damit sofort gebucht werden kann.
+      if (mandatNeeded) {
+        const parts = name.split(/\s+/);
+        const vorname = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+        const nachname = parts.length > 1 ? parts[parts.length - 1] : "";
+        const { error: mandatError } = await supabase.from("sepa_mandates").insert({
+          account_id: WEDDING_ACCOUNT_ID,
+          vorname,
+          nachname,
+          ist_kind: bookingKontoinhaberAbweichend,
+          elternteil_name: bookingKontoinhaberAbweichend ? bookingKontoinhaberName.trim() : null,
+          strasse: bookingStrasse.trim(),
+          plz: bookingPlz.trim(),
+          ort: bookingOrt.trim(),
+          iban: normalizeIBAN(bookingIban),
+          email,
+          telefon: telefon || "",
+          mandatsreferenz: generateSpontanMandatsreferenz(),
+          unterschriftsdatum: new Date().toISOString().split("T")[0],
+          anlage: "Britz",
+        });
+        if (mandatError) {
+          console.error("Mandat-Fehler:", mandatError);
+          setBookingError("Das SEPA-Mandat konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.");
+          setBookingSubmitting(false);
+          return;
+        }
+      }
+
       // Bucht den Slot und übernimmt ihn serverseitig direkt in den App-Kalender
       const { data: buchenResult, error } = await supabase.rpc("spontan_buchen", {
         slot_id: selectedSlot.id,
@@ -266,7 +343,12 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
 
       if (error || !buchenResult?.ok) {
         console.error("Booking error:", error, buchenResult);
-        setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
+        if (buchenResult?.fehler === "kein_mandat") {
+          const namen = Array.isArray(buchenResult.ohneMandat) ? buchenResult.ohneMandat.join(", ") : "";
+          setBookingError(`Für folgende Personen ist kein SEPA-Lastschriftmandat hinterlegt: ${namen}. Bitte erteilen Sie zuerst das Mandat.`);
+        } else {
+          setBookingError("Dieser Termin ist leider nicht mehr verfügbar.");
+        }
         return;
       }
 
@@ -386,10 +468,26 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
             </td>
           </tr>
 
+          <!-- Wichtige Hinweise -->
+          <tr>
+            <td style="padding: 0 40px 24px;">
+              <div style="background-color: #f8faf8; border: 1px solid #cfe3cf; border-radius: 8px; padding: 16px;">
+                <p style="margin: 0 0 8px; color: #1b471b; font-size: 13px; font-weight: 700;">Wichtige Hinweise</p>
+                <p style="margin: 0; color: #333333; font-size: 13px; line-height: 1.7;">
+                  • In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.<br>
+                  • Das Training ist ausschließlich für Mitglieder buchbar.<br>
+                  • Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.<br>
+                  • Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.
+                </p>
+              </div>
+            </td>
+          </tr>
+
           <!-- Cancel Link -->
           <tr>
             <td style="padding: 0 40px 24px; text-align: center;">
-              <p style="margin: 0 0 12px; color: #666666; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
+              <p style="margin: 0 0 4px; color: #666666; font-size: 14px;">Können Sie den Termin nicht wahrnehmen?</p>
+              <p style="margin: 0 0 12px; color: #666666; font-size: 13px;">Kostenfrei bis 48 Stunden vor dem Termin – bei späterer Absage wird die Stunde berechnet.</p>
               <a href="${window.location.origin}/absage/${selectedSlot.id}" style="display: inline-block; background: #f5f5f5; color: #1b471b; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid #e5e5e5;">Termin absagen</a>
             </td>
           </tr>
@@ -433,7 +531,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: TC Blau-Weiß Britz, Berlin-Britz${preisText}\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie bitte rechtzeitig ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: TC Blau-Weiß Britz, Berlin-Britz${preisText}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -2427,19 +2525,14 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
                     Name *
                   </label>
-                  <input
-                    type="text"
+                  <MandatNameField
                     value={bookingName}
-                    onChange={(e) => setBookingName(e.target.value)}
+                    hatMandat={bookingNameMandat}
+                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}
                     placeholder="Ihr Name"
+                    accountId={WEDDING_ACCOUNT_ID}
+                    colors={colors}
                     disabled={bookingSubmitting}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 2,
-                      fontSize: 15,
-                    }}
                   />
                 </div>
 
@@ -2483,24 +2576,123 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   />
                 </div>
 
+                {/* Kein Mandat hinterlegt? SEPA-Lastschriftmandat direkt hier erteilen */}
+                {mandatNeeded && (
+                  <div style={{
+                    background: colors.bgLight,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: 8,
+                    padding: 16,
+                    marginBottom: 20,
+                  }}>
+                    <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 14, color: colors.text }}>SEPA-Lastschriftmandat</p>
+                    <p style={{ margin: "0 0 14px", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
+                      Für Sie ist noch kein Mandat hinterlegt. Erteilen Sie es einmalig direkt hier – danach buchen Sie sofort, ganz ohne Umweg.
+                    </p>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>IBAN *</label>
+                      <input
+                        type="text"
+                        value={bookingIban}
+                        onChange={(e) => setBookingIban(formatIbanGroups(e.target.value))}
+                        disabled={bookingSubmitting}
+                        autoComplete="off"
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${bookingIban.trim() && !ibanCheckLive.valid ? "#c2392f" : colors.border}`, borderRadius: 2, fontSize: 15, fontFamily: "monospace", letterSpacing: 0.5, boxSizing: "border-box" }}
+                      />
+                      {bookingIban.trim() && !ibanCheckLive.valid && (
+                        <p style={{ margin: "5px 0 0", fontSize: 12, color: "#c2392f" }}>Bitte geben Sie eine gültige IBAN ein.</p>
+                      )}
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Straße und Hausnummer *</label>
+                      <input
+                        type="text"
+                        value={bookingStrasse}
+                        onChange={(e) => setBookingStrasse(e.target.value)}
+                        disabled={bookingSubmitting}
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                      <div style={{ width: 110, flexShrink: 0 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>PLZ *</label>
+                        <input
+                          type="text"
+                          value={bookingPlz}
+                          onChange={(e) => setBookingPlz(e.target.value)}
+                          inputMode="numeric"
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Ort *</label>
+                        <input
+                          type="text"
+                          value={bookingOrt}
+                          onChange={(e) => setBookingOrt(e.target.value)}
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                    </div>
+
+                    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 12.5, color: colors.text, lineHeight: 1.5, marginBottom: 12 }}>
+                      <input
+                        type="checkbox"
+                        checked={bookingKontoinhaberAbweichend}
+                        onChange={(e) => setBookingKontoinhaberAbweichend(e.target.checked)}
+                        disabled={bookingSubmitting}
+                        style={{ marginTop: 2, flexShrink: 0, width: 18, height: 18 }}
+                      />
+                      <span>Kontoinhaber/in weicht vom Teilnehmer ab (z.B. Elternteil bei Kindern).</span>
+                    </label>
+                    {bookingKontoinhaberAbweichend && (
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: "block", fontWeight: 600, marginBottom: 5, fontSize: 13 }}>Name des Kontoinhabers / der/des Erziehungsberechtigten *</label>
+                        <input
+                          type="text"
+                          value={bookingKontoinhaberName}
+                          onChange={(e) => setBookingKontoinhaberName(e.target.value)}
+                          disabled={bookingSubmitting}
+                          style={{ width: "100%", padding: "10px 12px", border: `1px solid ${colors.border}`, borderRadius: 2, fontSize: 15, boxSizing: "border-box" }}
+                        />
+                      </div>
+                    )}
+                    <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 12.5, color: colors.text, lineHeight: 1.5 }}>
+                      <input
+                        type="checkbox"
+                        checked={bookingMandatConsent}
+                        onChange={(e) => setBookingMandatConsent(e.target.checked)}
+                        disabled={bookingSubmitting}
+                        style={{ marginTop: 2, flexShrink: 0, width: 18, height: 18 }}
+                      />
+                      <span>Ich ermächtige die Tennisschule A bis Z, Zahlungen von meinem Konto mittels SEPA-Lastschrift einzuziehen, und weise mein Kreditinstitut an, die Lastschriften einzulösen.</span>
+                    </label>
+                  </div>
+                )}
+
                 <button
                   onClick={submitBooking}
-                  disabled={bookingSubmitting}
+                  disabled={bookingSubmitting || !alleMandateOk}
                   style={{
                     width: "100%",
-                    background: bookingSubmitting ? colors.textMuted : colors.primary,
+                    background: (bookingSubmitting || !alleMandateOk) ? colors.textMuted : colors.primary,
                     color: "#fff",
                     border: "none",
                     padding: "14px 24px",
                     borderRadius: 2,
                     fontWeight: 700,
                     fontSize: 15,
-                    cursor: bookingSubmitting ? "not-allowed" : "pointer",
+                    cursor: (bookingSubmitting || !alleMandateOk) ? "not-allowed" : "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : "Jetzt buchen"}
+                  {bookingSubmitting ? "Wird gebucht..." : mandatNeeded ? "Mandat erteilen & buchen" : "Jetzt buchen"}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
