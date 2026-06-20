@@ -1594,6 +1594,7 @@ export default function App() {
     email: string;
     telefon: string;
     adresse: string;
+    empfaenger: string;
     anlage: "" | "Wedding" | "Britz";
     issues: string[];
   };
@@ -2893,6 +2894,7 @@ export default function App() {
         email: header.findIndex((h) => h.includes("mail")),
         telefon: header.findIndex((h) => h.includes("telefon") || h.includes("handy") || h.includes("mobil") || h.includes("phone") || h === "tel"),
         adresse: header.findIndex((h) => h.includes("adresse")),
+        empfaenger: header.findIndex((h) => h.includes("empf") || h.includes("rechnung") || h.includes("eltern")),
         anlage: header.findIndex((h) => h.includes("anlage")),
       };
       if (idx.name < 0 || idx.iban < 0) {
@@ -2908,6 +2910,7 @@ export default function App() {
         const rawEmail = idx.email >= 0 ? (cols[idx.email] || "").trim() : "";
         const rawTelefon = idx.telefon >= 0 ? (cols[idx.telefon] || "").trim() : "";
         const rawAdresse = idx.adresse >= 0 ? (cols[idx.adresse] || "").trim() : "";
+        const rawEmpfaenger = idx.empfaenger >= 0 ? (cols[idx.empfaenger] || "").trim() : "";
         const rawAnlage = idx.anlage >= 0 ? (cols[idx.anlage] || "").trim() : "";
 
         const issues: string[] = [];
@@ -2946,6 +2949,7 @@ export default function App() {
 
         const telefon = rawTelefon.replace(/\s+/g, " ").trim();
         const adresse = rawAdresse.replace(/\s+/g, " ").trim();
+        const empfaenger = rawEmpfaenger.replace(/\s+/g, " ").trim();
 
         let anlage: "" | "Wedding" | "Britz" = "";
         if (rawAnlage) {
@@ -2966,6 +2970,7 @@ export default function App() {
           email,
           telefon,
           adresse,
+          empfaenger,
           anlage,
           issues,
         };
@@ -3011,6 +3016,8 @@ export default function App() {
           kontaktEmail: row.email || next[idxFound].kontaktEmail,
           kontaktTelefon: row.telefon || next[idxFound].kontaktTelefon,
           rechnungsAdresse: row.adresse || next[idxFound].rechnungsAdresse,
+          abweichenderEmpfaenger: row.empfaenger ? true : next[idxFound].abweichenderEmpfaenger,
+          empfaengerName: row.empfaenger || next[idxFound].empfaengerName,
           labels: mergedLabels.length > 0 ? mergedLabels : next[idxFound].labels,
           sepaSequenz: next[idxFound].sepaSequenz ?? "RCUR",
           sepaLastschriftart: next[idxFound].sepaLastschriftart ?? "CORE",
@@ -3028,6 +3035,8 @@ export default function App() {
           kontaktEmail: row.email || undefined,
           kontaktTelefon: row.telefon || undefined,
           rechnungsAdresse: row.adresse || undefined,
+          abweichenderEmpfaenger: row.empfaenger ? true : undefined,
+          empfaengerName: row.empfaenger || undefined,
           labels: row.anlage ? [row.anlage] : undefined,
           sepaSequenz: "RCUR",
           sepaLastschriftart: "CORE",
@@ -4189,6 +4198,104 @@ ${txInfo}
     setSpielerError(null);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Aus einem eingegangenen SEPA-Mandat (Formulare → SEPA) die Daten direkt
+  // unter einem Spieler speichern – exakt wie der Kontaktbuch-CSV-Import:
+  // Wird ein vorhandener Spieler über den Namen gefunden, werden dessen
+  // Bank-/Mandatsdaten aktualisiert; sonst wird ein neuer Spieler angelegt.
+  function adoptPlayerFromSepaMandate(mandate: SepaMandate) {
+    const vorname = (mandate.vorname || "").trim();
+    const nachname = (mandate.nachname || "").trim();
+    if (!vorname) {
+      alert("Das Mandat enthält keinen Vornamen.");
+      return;
+    }
+
+    const iban = normalizeIban(mandate.iban || "");
+    const mandatsreferenz = (mandate.mandatsreferenz || "").replace(/[,\s]+$/g, "").trim();
+    const unterschriftsdatum = toIsoDate(mandate.unterschriftsdatum || "");
+    const email = (mandate.email || "").trim();
+    const telefon = (mandate.telefon || "").trim();
+    const adresse = [
+      (mandate.strasse || "").trim(),
+      `${(mandate.plz || "").trim()} ${(mandate.ort || "").trim()}`.trim(),
+    ].filter(Boolean).join(", ");
+    const empfaenger = mandate.ist_kind ? (mandate.elternteil_name || "").trim() : "";
+    const anlageLabel: "" | "Wedding" | "Britz" =
+      mandate.anlage === "Wedding" || mandate.anlage === "Britz" ? mandate.anlage : "";
+
+    const fullLower = `${vorname} ${nachname}`.toLowerCase().trim();
+    const idxFound = spieler.findIndex(
+      (s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower
+    );
+
+    if (idxFound >= 0) {
+      const existing = spieler[idxFound];
+      if (
+        !window.confirm(
+          `Daten in den vorhandenen Spieler „${existing.vorname} ${existing.nachname || ""}" übernehmen?\n\n` +
+            `IBAN, Mandatsreferenz, Unterschriftsdatum, Adresse, E-Mail und Telefon werden aktualisiert.`
+        )
+      ) {
+        return;
+      }
+      const prevLabels = existing.labels ?? [];
+      const mergedLabels =
+        anlageLabel && !prevLabels.includes(anlageLabel)
+          ? [...prevLabels, anlageLabel]
+          : prevLabels;
+      setSpieler((prev) =>
+        prev.map((s) =>
+          s.id === existing.id
+            ? {
+                ...s,
+                iban: iban || s.iban,
+                mandatsreferenz: mandatsreferenz || s.mandatsreferenz,
+                unterschriftsdatum: unterschriftsdatum || s.unterschriftsdatum,
+                kontaktEmail: email || s.kontaktEmail,
+                kontaktTelefon: telefon || s.kontaktTelefon,
+                rechnungsAdresse: adresse || s.rechnungsAdresse,
+                abweichenderEmpfaenger: empfaenger ? true : s.abweichenderEmpfaenger,
+                empfaengerName: empfaenger || s.empfaengerName,
+                labels: mergedLabels.length > 0 ? mergedLabels : s.labels,
+                sepaSequenz: s.sepaSequenz ?? "RCUR",
+                sepaLastschriftart: s.sepaLastschriftart ?? "CORE",
+              }
+            : s
+        )
+      );
+      updateSepaMandateStatus(mandate.id, "zugeordnet");
+      alert(`Daten in „${existing.vorname} ${existing.nachname || ""}" übernommen.`);
+    } else {
+      if (
+        !window.confirm(
+          `Kein vorhandener Spieler mit dem Namen „${vorname} ${nachname}".\n\n` +
+            `Neuen Spieler mit diesen Mandatsdaten anlegen?`
+        )
+      ) {
+        return;
+      }
+      const neu: Spieler = {
+        id: uid(),
+        vorname,
+        nachname: nachname || undefined,
+        iban: iban || undefined,
+        mandatsreferenz: mandatsreferenz || undefined,
+        unterschriftsdatum: unterschriftsdatum || undefined,
+        kontaktEmail: email || undefined,
+        kontaktTelefon: telefon || undefined,
+        rechnungsAdresse: adresse || undefined,
+        abweichenderEmpfaenger: empfaenger ? true : undefined,
+        empfaengerName: empfaenger || undefined,
+        labels: anlageLabel ? [anlageLabel] : undefined,
+        sepaSequenz: "RCUR",
+        sepaLastschriftart: "CORE",
+      };
+      setSpieler((prev) => [...prev, neu]);
+      updateSepaMandateStatus(mandate.id, "zugeordnet");
+      alert(`Neuer Spieler „${vorname} ${nachname}" angelegt.`);
+    }
   }
 
   function adoptMultiplePlayersFromRequests() {
@@ -10105,7 +10212,15 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       <div><strong>Mandatsreferenz:</strong> {mandate.mandatsreferenz}</div>
                                       <div><strong>Unterschrieben:</strong> {new Date(mandate.unterschriftsdatum).toLocaleDateString("de-DE")}</div>
                                     </div>
-                                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                      <button
+                                        className="btn"
+                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        title="Bank- und Mandatsdaten unter einem vorhandenen Spieler speichern (wie der Kontaktbuch-Import) – oder neuen Spieler anlegen"
+                                        onClick={() => adoptPlayerFromSepaMandate(mandate)}
+                                      >
+                                        In Spieler übernehmen
+                                      </button>
                                       <select
                                         value={mandate.status || "neu"}
                                         onChange={(e) => updateSepaMandateStatus(mandate.id, e.target.value)}
@@ -17034,6 +17149,7 @@ Tennisschule A bis Z`)}
                     <th style={{ padding: 8, textAlign: "left" }}>E-Mail</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Telefon</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Adresse</th>
+                    <th style={{ padding: 8, textAlign: "left" }}>Empfänger</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Anlage</th>
                     <th style={{ padding: 8, textAlign: "left" }}>Probleme</th>
                   </tr>
@@ -17072,6 +17188,7 @@ Tennisschule A bis Z`)}
                         <td style={{ padding: 8, fontSize: 11 }}>{r.email || "-"}</td>
                         <td style={{ padding: 8, fontSize: 11 }}>{r.telefon || "-"}</td>
                         <td style={{ padding: 8, fontSize: 11, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.adresse}>{r.adresse || "-"}</td>
+                        <td style={{ padding: 8, fontSize: 11 }}>{r.empfaenger || "-"}</td>
                         <td style={{ padding: 8 }}>{r.anlage || "-"}</td>
                         <td style={{ padding: 8, color: "#92400e", fontSize: 11 }}>
                           {r.issues.join("; ") || ""}
