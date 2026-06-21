@@ -51,18 +51,13 @@ export default function AGBPageBritz() {
           <span className="title">Vertragsschluss über das Webformular</span>
         </div>
         <div className="prose">
-          <p>(1) Die Darstellung des Angebots auf unserer Website ist kein bindendes Angebot, sondern eine Aufforderung zur Abgabe eines Angebots.</p>
           <p>
-            (2) Mit dem vollständigen Ausfüllen und Absenden des Anmeldeformulars gibt der Kunde ein verbindliches Angebot ab. Unmittelbar vor dem Absenden
+            (1) Mit dem vollständigen Ausfüllen und Absenden des Anmeldeformulars gibt der Kunde ein verbindliches Angebot ab. Unmittelbar vor dem Absenden
             werden die wesentlichen Vertragsinformationen (Leistung, Preis bzw. monatlicher Beitrag, Laufzeit) angezeigt (§ 312j Abs. 2 BGB).
           </p>
           <p>
-            (3) Der Vertrag kommt erst mit unserer Annahme zustande – durch Bestätigung in Textform (z. B. E-Mail) oder durch Aufnahme der Trainingsleistung.
+            (2) Der Vertrag kommt erst mit unserer Annahme zustande – durch Bestätigung in Textform (z. B. E-Mail) oder durch Aufnahme der Trainingsleistung.
             Eine automatische Eingangsbestätigung ist noch keine Annahme.
-          </p>
-          <p>
-            (4) Eingabefehler können vor dem Absenden über die üblichen Browserfunktionen korrigiert werden (§ 312i BGB). Der Vertragstext wird nach
-            Vertragsschluss zusammen mit diesen AGB in Textform zur Verfügung gestellt. Vertragssprache ist Deutsch.
           </p>
         </div>
 
