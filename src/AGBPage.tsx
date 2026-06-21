@@ -256,19 +256,12 @@ export default function AGBPage() {
         </div>
         <div className="prose">
           <p>
-            (1) Wir haften <strong>unbeschränkt</strong> für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit, die auf einer
-            fahrlässigen oder vorsätzlichen Pflichtverletzung durch uns, unsere gesetzlichen Vertreter oder Erfüllungsgehilfen (insbesondere die Trainer)
-            beruhen, sowie für sonstige Schäden aus vorsätzlicher oder grob fahrlässiger Pflichtverletzung.
+            (1) Wir haften nur bei Vorsatz und grober Fahrlässigkeit. Unberührt bleiben die Haftung für Schäden aus der Verletzung von Leben, Körper oder
+            Gesundheit, die Haftung bei einfacher Fahrlässigkeit für die Verletzung wesentlicher Vertragspflichten (begrenzt auf den vertragstypischen,
+            vorhersehbaren Schaden) sowie eine zwingende gesetzliche Haftung.
           </p>
           <p>
-            (2) Bei <strong>einfacher Fahrlässigkeit</strong> haften wir – außer in den Fällen des Absatzes 1 – nur bei Verletzung einer wesentlichen
-            Vertragspflicht (Kardinalpflicht) und begrenzt auf den vertragstypischen, vorhersehbaren Schaden.
-          </p>
-          <p>
-            (3) Im Übrigen ist die Haftung ausgeschlossen. Eine zwingende gesetzliche Haftung (z. B. nach dem Produkthaftungsgesetz) bleibt unberührt.
-          </p>
-          <p>
-            (4) <strong>Aufsichtspflicht:</strong> Die Aufsichtspflicht der Trainer besteht nur während der Trainingszeit. Eltern müssen ihre Kinder pünktlich
+            (2) <strong>Aufsichtspflicht:</strong> Die Aufsichtspflicht der Trainer besteht nur während der Trainingszeit. Eltern müssen ihre Kinder pünktlich
             bringen und abholen. Gesundheitliche Einschränkungen sind vor Trainingsbeginn mitzuteilen.
           </p>
         </div>
