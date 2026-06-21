@@ -184,23 +184,30 @@ export default function AGBPage() {
         {/* § 6 */}
         <div className="section-head">
           <span className="num">§ 6</span>
-          <span className="title">Laufzeit, Saisonanmeldung und Kündigung</span>
+          <span className="title">Vertragsgrundlage (SEPA-Mandat), Laufzeit und Kündigung</span>
         </div>
         <div className="prose">
           <p>
-            (1) Der Trainingsvertrag ist auf jeweils eine Saison (Sommer- oder Wintersaison) befristet und endet automatisch mit Ablauf der Saison, <strong>ohne dass
-            es einer Kündigung bedarf</strong>. Eine automatische Verlängerung findet nicht statt.
+            (1) <strong>Das SEPA-Lastschriftmandat ist zugleich die verbindliche Grundlage des Trainingsvertrags.</strong> Mit der Unterzeichnung des
+            SEPA-Lastschriftmandats meldet sich der Kunde verbindlich zum Tennistraining an. Das Mandat gilt fort und muss für Folgesaisons nicht erneut
+            unterzeichnet werden.
           </p>
           <p>
-            (2) Die Anmeldung erfolgt verbindlich für die gesamte Saison. Eine ordentliche Kündigung während der laufenden Saison sowie ein vorzeitiger Ausstieg
+            (2) Der Trainingsvertrag ist auf jeweils eine Saison (Sommer- oder Wintersaison) befristet und endet mit Ablauf der Saison, <strong>ohne dass es einer
+            Kündigung bedarf</strong>. Ohne erneute Anmeldung verlängert sich der Vertrag nicht von selbst.
+          </p>
+          <p>
+            (3) Die Anmeldung erfolgt verbindlich für die gesamte Saison. Eine ordentliche Kündigung während der laufenden Saison sowie ein vorzeitiger Ausstieg
             sind ausgeschlossen; die Beitragspflicht besteht bis zum Saisonende fort.
           </p>
           <p>
-            (3) Für eine Folgesaison ist eine erneute Anmeldung erforderlich; nach einmaliger Anmeldung genügt hierfür das Ausfüllen des Anmeldefragebogens. Ein
-            bereits erteiltes SEPA-Mandat muss nicht erneut unterschrieben werden.
+            (4) <strong>Folgesaison:</strong> Meldet sich der Kunde für eine Folgesaison erneut zum Tennistraining an, gilt der Vertrag als verlängert. Hierfür
+            genügt das Ausfüllen des Anmeldefragebogens; das bereits erteilte SEPA-Lastschriftmandat bleibt gültig und muss nicht erneut unterschrieben werden.
+            Mit der erneuten Anmeldung stimmt der Kunde zugleich den zu diesem Zeitpunkt geltenden Allgemeinen Geschäftsbedingungen und Preisen (in der jeweils
+            aktuellen Fassung) zu.
           </p>
           <p>
-            (4) Das Recht zur außerordentlichen Kündigung aus wichtigem Grund (§ 314 BGB) und nach § 627 BGB bleibt unberührt. Ein wichtiger Grund liegt
+            (5) Das Recht zur außerordentlichen Kündigung aus wichtigem Grund (§ 314 BGB) und nach § 627 BGB bleibt unberührt. Ein wichtiger Grund liegt
             insbesondere bei länger andauernder Krankheit, Schwangerschaft oder Verletzung vor (nicht abschließend). Bei grobem Fehlverhalten oder
             wiederholtem, vom Kunden zu vertretendem Zahlungsverzug bzw. wiederholten Rücklastschriften sind wir nach vorheriger Abmahnung zur außerordentlichen
             Kündigung berechtigt. Bereits gezahlte, aber nicht erbrachte Beiträge werden in diesem Fall anteilig erstattet.
