@@ -184,23 +184,26 @@ export default function AGBPage() {
         {/* § 6 */}
         <div className="section-head">
           <span className="num">§ 6</span>
-          <span className="title">Laufzeit, Verlängerung und Kündigung</span>
+          <span className="title">Laufzeit, Saisonanmeldung und Kündigung</span>
         </div>
         <div className="prose">
-          <p>(1) Die Erstlaufzeit beträgt eine Saison (Sommer- oder Wintersaison).</p>
           <p>
-            (2) <strong>Verlängerung:</strong> Wird nicht zum Saisonende gekündigt, verlängert sich der Vertrag <strong>auf unbestimmte Zeit</strong>
-            und kann dann jederzeit mit einer Frist von höchstens einem Monat gekündigt werden. Auch zum Ende der Erstlaufzeit ist eine Kündigung mit
-            einer Frist von höchstens einem Monat möglich. Eine automatische Verlängerung um eine weitere befristete Saison findet nicht statt.
+            (1) Der Trainingsvertrag ist auf jeweils eine Saison (Sommer- oder Wintersaison) befristet und endet automatisch mit Ablauf der Saison, <strong>ohne dass
+            es einer Kündigung bedarf</strong>. Eine automatische Verlängerung findet nicht statt.
           </p>
           <p>
-            (3) Die Kündigung bedarf der Textform (z. B. E-Mail an tennisabisz@gmail.com). Für online geschlossene Dauerverträge steht zusätzlich ein
-            Kündigungsbutton auf unserer Website bereit (§ 312k BGB).
+            (2) Die Anmeldung erfolgt verbindlich für die gesamte Saison. Eine ordentliche Kündigung während der laufenden Saison sowie ein vorzeitiger Ausstieg
+            sind ausgeschlossen; die Beitragspflicht besteht bis zum Saisonende fort.
+          </p>
+          <p>
+            (3) Für eine Folgesaison ist eine erneute Anmeldung erforderlich; nach einmaliger Anmeldung genügt hierfür das Ausfüllen des Anmeldefragebogens. Ein
+            bereits erteiltes SEPA-Mandat muss nicht erneut unterschrieben werden.
           </p>
           <p>
             (4) Das Recht zur außerordentlichen Kündigung aus wichtigem Grund (§ 314 BGB) und nach § 627 BGB bleibt unberührt. Ein wichtiger Grund liegt
             insbesondere bei länger andauernder Krankheit, Schwangerschaft oder Verletzung vor (nicht abschließend). Bei grobem Fehlverhalten oder
-            wiederholtem, vom Kunden zu vertretendem Zahlungsverzug bzw. wiederholten Rücklastschriften sind wir zur außerordentlichen Kündigung berechtigt.
+            wiederholtem, vom Kunden zu vertretendem Zahlungsverzug bzw. wiederholten Rücklastschriften sind wir nach vorheriger Abmahnung zur außerordentlichen
+            Kündigung berechtigt. Bereits gezahlte, aber nicht erbrachte Beiträge werden in diesem Fall anteilig erstattet.
           </p>
         </div>
 
