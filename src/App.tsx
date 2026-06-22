@@ -15723,6 +15723,8 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
           henri: "0163 9757063",
           leon: "0176 62029303",
           ramon: "0176 56793299",
+          max: "0178 6393814",
+          nico: "0176 21402241",
         };
         const newTrainerName = newTrainer?.name ?? "der Vertretungstrainer";
         const newTrainerTel = newTrainer ? trainerTelMap[newTrainer.name.trim().toLowerCase()] ?? "" : "";
