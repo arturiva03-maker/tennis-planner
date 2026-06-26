@@ -543,6 +543,22 @@ function durationMin(von: string, bis: string) {
   return Math.max(0, b - a);
 }
 
+// Anzahl der Stunden eines Trainings (Doppelstunde = 2). Bei verkürzter
+// Stunde wird die tatsächliche Dauer (actualMinutes) verwendet.
+function trainingStundenAnzahl(t: Training) {
+  const planned = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+  const actual =
+    t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < planned
+      ? t.actualMinutes
+      : planned;
+  return actual / 60;
+}
+
+// Summiert die Stunden einer Trainingsliste (Doppelstunden zählen doppelt).
+function summeStunden(list: Training[]) {
+  return round2(list.reduce((acc, t) => acc + trainingStundenAnzahl(t), 0));
+}
+
 function getFullName(s: Spieler) {
   return s.nachname ? `${s.vorname} ${s.nachname}` : s.vorname;
 }
@@ -12806,7 +12822,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{adminNichtBarTrainings.length}</td>
+                                <td>{summeStunden(adminNichtBarTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setAdminTrainerPaymentView(adminTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -12816,7 +12832,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{adminBarTrainings.length}</td>
+                                <td>{summeStunden(adminBarTrainings)}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -13151,7 +13167,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{nichtBarTrainings.length}</td>
+                                <td>{summeStunden(nichtBarTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -13161,7 +13177,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{barTrainings.length}</td>
+                                <td>{summeStunden(barTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "privat" ? "none" : "privat")}
@@ -13171,7 +13187,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Privat</td>
-                                <td>{privatTrainings.length}</td>
+                                <td>{summeStunden(privatTrainings)}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -13273,26 +13289,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
                                     return tid === r.id;
                                   });
-                                  // Stunden statt Trainings zählen, damit eine
-                                  // Doppelstunde (120 Min) als 2 zählt – nicht als 1.
-                                  const trainingStunden = (t: Training) => {
-                                    const planned = durationMin(t.uhrzeitVon, t.uhrzeitBis);
-                                    const actual =
-                                      t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < planned
-                                        ? t.actualMinutes
-                                        : planned;
-                                    return actual / 60;
-                                  };
-                                  const nichtBarCount = round2(
-                                    saschaTrainings
-                                      .filter((t) => !t.barBezahlt)
-                                      .reduce((acc, t) => acc + trainingStunden(t), 0)
-                                  );
-                                  const barCount = round2(
-                                    saschaTrainings
-                                      .filter((t) => t.barBezahlt)
-                                      .reduce((acc, t) => acc + trainingStunden(t), 0)
-                                  );
+                                  const nichtBarCount = saschaTrainings.filter(
+                                    (t) => !t.barBezahlt
+                                  ).length;
+                                  const barCount = saschaTrainings.filter(
+                                    (t) => t.barBezahlt
+                                  ).length;
                                   
                                   return (
                                     <tr key={r.id}>
