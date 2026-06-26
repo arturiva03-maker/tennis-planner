@@ -13273,12 +13273,26 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
                                     return tid === r.id;
                                   });
-                                  const nichtBarCount = saschaTrainings.filter(
-                                    (t) => !t.barBezahlt
-                                  ).length;
-                                  const barCount = saschaTrainings.filter(
-                                    (t) => t.barBezahlt
-                                  ).length;
+                                  // Stunden statt Trainings zählen, damit eine
+                                  // Doppelstunde (120 Min) als 2 zählt – nicht als 1.
+                                  const trainingStunden = (t: Training) => {
+                                    const planned = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+                                    const actual =
+                                      t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < planned
+                                        ? t.actualMinutes
+                                        : planned;
+                                    return actual / 60;
+                                  };
+                                  const nichtBarCount = round2(
+                                    saschaTrainings
+                                      .filter((t) => !t.barBezahlt)
+                                      .reduce((acc, t) => acc + trainingStunden(t), 0)
+                                  );
+                                  const barCount = round2(
+                                    saschaTrainings
+                                      .filter((t) => t.barBezahlt)
+                                      .reduce((acc, t) => acc + trainingStunden(t), 0)
+                                  );
                                   
                                   return (
                                     <tr key={r.id}>
