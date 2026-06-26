@@ -2354,6 +2354,14 @@ export default function App() {
         : "Alle Trainer"
       : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
 
+  const istSaschaTrainer = (trainerId: string) =>
+    (trainerById.get(trainerId)?.name ?? "").trim().toLowerCase() === "sascha";
+
+  // Stunden-Anzeige in der Übersicht: Doppelstunden zählen doppelt –
+  // außer bei Sascha, der weiterhin nach Trainings (nicht Stunden) gezählt wird.
+  const stundenAnzeige = (list: Training[], trainerId: string) =>
+    istSaschaTrainer(trainerId) ? list.length : summeStunden(list);
+
   const kalenderTrainerFilterLabel =
     kalenderTrainerFilter.length === 0
       ? trainers.length === 1
@@ -12822,7 +12830,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{summeStunden(adminNichtBarTrainings)}</td>
+                                <td>{stundenAnzeige(adminNichtBarTrainings, abrechnungTrainerFilter)}</td>
                               </tr>
                               <tr
                                 onClick={() => setAdminTrainerPaymentView(adminTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -12832,7 +12840,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{summeStunden(adminBarTrainings)}</td>
+                                <td>{stundenAnzeige(adminBarTrainings, abrechnungTrainerFilter)}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -13167,7 +13175,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{summeStunden(nichtBarTrainings)}</td>
+                                <td>{stundenAnzeige(nichtBarTrainings, ownTrainerId)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -13177,7 +13185,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{summeStunden(barTrainings)}</td>
+                                <td>{stundenAnzeige(barTrainings, ownTrainerId)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "privat" ? "none" : "privat")}
@@ -13187,7 +13195,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Privat</td>
-                                <td>{summeStunden(privatTrainings)}</td>
+                                <td>{stundenAnzeige(privatTrainings, ownTrainerId)}</td>
                               </tr>
                             </tbody>
                           </table>
