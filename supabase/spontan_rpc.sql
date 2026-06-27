@@ -90,12 +90,24 @@ begin
   end if;
 
   -- Idempotenz: Bucher (per E-Mail) schon im Training? Dann nichts tun.
+  -- Teilen sich mehrere Spieler dieselbe E-Mail (z.B. eine Person ist zugleich
+  -- Kontakt einer Mannschaft), den passenden PERSONEN-Eintrag bevorzugen:
+  -- 1. exakter Namens-Treffer, 2. E-Mail-Treffer, der KEINE Mannschaft ist.
   v_email := participants->0->>'email';
+  v_name := participants->0->>'name';
   if v_email <> '' then
     select t.value->>'id' into v_booker_spieler_id
     from jsonb_array_elements(spieler_arr) t(value)
     where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+      and lower(trim(coalesce(t.value->>'vorname', '') || ' ' || coalesce(t.value->>'nachname', ''))) = lower(coalesce(v_name, ''))
     limit 1;
+    if v_booker_spieler_id is null then
+      select t.value->>'id' into v_booker_spieler_id
+      from jsonb_array_elements(spieler_arr) t(value)
+      where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+        and not (coalesce(t.value->'labels', '[]'::jsonb) ? 'Mannschaften')
+      limit 1;
+    end if;
   end if;
   if training_existiert and v_booker_spieler_id is not null
      and coalesce(altes_training->'spielerIds', '[]'::jsonb) ? v_booker_spieler_id then
@@ -157,10 +169,21 @@ begin
 
     v_spieler_id := null;
     if v_email <> '' then
+      -- Wie bei der Bucher-Zuordnung oben: Namens-Treffer bevorzugen und
+      -- Mannschafts-Eintraege meiden, damit eine Buchung nie faelschlich
+      -- einem Gruppen-Spieler (gleiche Kontakt-E-Mail) zugeordnet wird.
       select t.value->>'id' into v_spieler_id
       from jsonb_array_elements(spieler_arr) t(value)
       where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+        and lower(trim(coalesce(t.value->>'vorname', '') || ' ' || coalesce(t.value->>'nachname', ''))) = lower(v_name)
       limit 1;
+      if v_spieler_id is null then
+        select t.value->>'id' into v_spieler_id
+        from jsonb_array_elements(spieler_arr) t(value)
+        where lower(coalesce(t.value->>'kontaktEmail', '')) = v_email
+          and not (coalesce(t.value->'labels', '[]'::jsonb) ? 'Mannschaften')
+        limit 1;
+      end if;
     end if;
 
     if v_spieler_id is null then
