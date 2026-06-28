@@ -1368,6 +1368,7 @@ export default function App() {
   const [cancelNotifyBody, setCancelNotifyBody] = useState("");
   const [reverseAdjustmentDialog, setReverseAdjustmentDialog] = useState<{
     training: Training;
+    refundPerPlayer: number;
     onConfirm: (reverseAdjustment: boolean) => void;
   } | null>(null);
   const [editingAdjustment, setEditingAdjustment] = useState<{
@@ -5048,24 +5049,29 @@ Tennisschule A bis Z`;
         existing.status === "abgesagt" &&
         tStatus === "geplant"
       ) {
-        // Prüfen ob es Abzüge für dieses Training gab
-        const monat = existing.datum.substring(0, 7);
-        const hasAdjustments = existing.spielerIds.some((spielerId) => {
-          const key = `${monat}__${spielerId}`;
-          return (monthlyAdjustments[key] ?? 0) !== 0;
-        });
+        // Nur fragen, wenn GENAU DIESES Training selbst eine monatliche Erstattung
+        // verursacht hat. Bei monatlichem Tarif wird die cancelFee zugleich von
+        // monthlyAdjustments abgezogen, daher ist die cancelFee des Trainings das
+        // eindeutige Signal. Andere Absagen im selben Monat (z.B. ein separates
+        // Gruppentraining) dürfen NICHT mitgezählt werden – sonst fragt ein
+        // reaktiviertes Einzeltraining nach der Rücknahme einer fremden Erstattung.
+        const cfg = getPreisConfig(existing, tarifById);
+        const isMonatlich = cfg?.abrechnung === "monatlich";
+        const refundPerPlayer = existing.cancelFee ?? 0;
 
-        if (hasAdjustments) {
+        if (isMonatlich && refundPerPlayer > 0) {
+          const monat = existing.datum.substring(0, 7);
           setReverseAdjustmentDialog({
             training: existing,
+            refundPerPlayer,
             onConfirm: (reverseAdjustment) => {
               if (reverseAdjustment) {
-                // Abzüge rückgängig machen (+15€ pro Spieler)
+                // Erstattung dieses Trainings rückgängig machen (+cancelFee pro Spieler)
                 const newAdjustments = { ...monthlyAdjustments };
                 existing.spielerIds.forEach((spielerId) => {
                   const key = `${monat}__${spielerId}`;
                   const currentValue = newAdjustments[key] ?? 0;
-                  newAdjustments[key] = round2(currentValue + 15);
+                  newAdjustments[key] = round2(currentValue + refundPerPlayer);
                 });
                 setMonthlyAdjustments(newAdjustments);
               }
@@ -16224,6 +16230,7 @@ Tennisschule A bis Z`)}
       {/* Dialog: Abzug rückgängig machen bei Reaktivierung */}
       {reverseAdjustmentDialog && (() => {
         const training = reverseAdjustmentDialog.training;
+        const refundPerPlayer = reverseAdjustmentDialog.refundPerPlayer;
         const [y, m, d] = training.datum.split("-");
         const germanDate = d && m && y ? `${d}.${m}.${y}` : training.datum;
         const spielerNamen = training.spielerIds
@@ -16235,7 +16242,7 @@ Tennisschule A bis Z`)}
             <div className="modalCard" style={{ maxWidth: 500 }}>
               <div className="modalHeader">
                 <div className="modalPill" style={{ background: "#22c55e" }}>Reaktivierung</div>
-                <h3>Abzug rückgängig machen?</h3>
+                <h3>Erstattung rückgängig machen?</h3>
                 <p className="muted">
                   Das Training am {germanDate} um {training.uhrzeitVon} - {training.uhrzeitBis} Uhr wird wieder auf "geplant" gesetzt.
                 </p>
@@ -16243,10 +16250,10 @@ Tennisschule A bis Z`)}
 
               <div style={{ padding: "0 20px", marginBottom: 16 }}>
                 <p style={{ marginBottom: 12 }}>
-                  Bei der Absage wurden <strong>15€ pro Spieler</strong> als Abzug verbucht.
+                  Bei der Absage wurden <strong>{euro(refundPerPlayer)} pro Spieler</strong> erstattet.
                 </p>
                 <p>
-                  Sollen diese Abzüge jetzt wieder rückgängig gemacht werden?
+                  Soll diese Erstattung jetzt wieder rückgängig gemacht werden?
                 </p>
                 <div style={{
                   marginTop: 12,
@@ -16268,7 +16275,7 @@ Tennisschule A bis Z`)}
                     setReverseAdjustmentDialog(null);
                   }}
                 >
-                  Nein, Abzug behalten
+                  Nein, Erstattung behalten
                 </button>
                 <button
                   className="btn"
@@ -16277,7 +16284,7 @@ Tennisschule A bis Z`)}
                     setReverseAdjustmentDialog(null);
                   }}
                 >
-                  Ja, +15€ zurückbuchen
+                  Ja, +{euro(refundPerPlayer)} zurückbuchen
                 </button>
               </div>
             </div>
