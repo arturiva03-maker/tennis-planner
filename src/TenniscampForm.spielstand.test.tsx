@@ -18,7 +18,7 @@ test("Spielstand-Beschreibung erscheint bei Kindercamp + Nicht-Mitglied", () => 
 
   expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
 
-  selectCamp("woche1-kind");
+  selectCamp("woche6-kind");
   clickMitglied("nein");
 
   expect(screen.getByText("Beschreibung des Spielstands")).toBeInTheDocument();

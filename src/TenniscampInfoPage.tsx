@@ -12,6 +12,8 @@ const MUTED = "#71717a";
 const BORDER = "#e4e4e7";
 const SURFACE = "#f6f7f6";
 
+type Week = { label: string; dates: string };
+
 type Camp = {
   key: "kinder" | "erwachsene";
   name: string;
@@ -22,7 +24,11 @@ type Camp = {
   price: string;
   priceNote: string;
   bring: string;
+  weeks: Week[];
 };
+
+const WEEK_1: Week = { label: "1. Ferienwoche", dates: "13. – 17. Juli" };
+const WEEK_LAST: Week = { label: "Letzte Ferienwoche", dates: "17. – 21. August" };
 
 const CAMPS: Camp[] = [
   {
@@ -35,6 +41,7 @@ const CAMPS: Camp[] = [
     price: "270 €",
     priceNote: "inkl. Mittagessen",
     bring: "Sandplatzschuhe (Pflicht) · Wasserflasche · Tennisschläger (Ausleihe möglich)",
+    weeks: [WEEK_LAST],
   },
   {
     key: "erwachsene",
@@ -46,12 +53,8 @@ const CAMPS: Camp[] = [
     price: "140 €",
     priceNote: "pro Woche",
     bring: "Eigener Schläger · Sandplatzschuhe (Pflicht) · Wasserflasche",
+    weeks: [WEEK_1, WEEK_LAST],
   },
-];
-
-const WEEKS = [
-  { label: "1. Ferienwoche", dates: "13. – 17. Juli" },
-  { label: "Letzte Ferienwoche", dates: "17. – 21. August" },
 ];
 
 export default function TenniscampInfoPage() {
@@ -185,7 +188,7 @@ export default function TenniscampInfoPage() {
                         </span>
                       </div>
                       <p style={{ margin: "6px 0 0 0", fontSize: 14, color: MUTED }}>
-                        13. – 17. Juli &amp; 17. – 21. August · {camp.summary}
+                        {camp.weeks.map((w) => w.dates).join(" & ")} · {camp.summary}
                       </p>
                     </div>
                     <span
@@ -211,7 +214,7 @@ export default function TenniscampInfoPage() {
                           marginBottom: 20,
                         }}
                       >
-                        {WEEKS.map((w) => weekBox(w.label, w.dates))}
+                        {camp.weeks.map((w) => weekBox(w.label, w.dates))}
                       </div>
 
                       <div
