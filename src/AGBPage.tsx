@@ -226,6 +226,11 @@ export default function AGBPage() {
             das Training findet dann regulär statt. Eine Absage allein wegen des Trainerwechsels entbindet nicht von der Zahlungspflicht. Kann kein Ersatztrainer
             gestellt werden, erhält der Kunde nach seiner Wahl einen Ersatztermin oder eine Kostenerstattung.
           </p>
+          <p>
+            (4) <strong>Tenniscamps:</strong> Wird die für ein Camp erforderliche Mindestteilnehmerzahl nicht erreicht, können wir das Camp absagen.
+            In diesem Fall bieten wir nach Wahl des Kunden die Teilnahme in einer anderen Camp-Woche an oder erstatten eine bereits gezahlte Campgebühr
+            vollständig zurück. Weitergehende Ansprüche bestehen nicht.
+          </p>
         </div>
 
         {/* § 8 */}
