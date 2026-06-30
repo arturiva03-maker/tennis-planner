@@ -21,7 +21,8 @@
   min-height: 100vh;
   background: #eef1ef;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   padding: 32px 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -283,6 +284,15 @@
 }
 .tc-note-title { display: block; font-weight: 700; color: var(--tc-ink); margin-bottom: 6px; font-size: 14px; }
 
+/* Hervorgehobene Hinweis-Box (z.B. Absage bei zu wenigen Teilnehmern) */
+.tc-note-info {
+  background: var(--tc-green-tint);
+  border-color: var(--tc-green-tint-border);
+  border-left: 4px solid var(--tc-green);
+  color: #3f6b4e;
+}
+.tc-note-info .tc-note-title { color: var(--tc-green); }
+
 /* ---------- Zustimmungs-Karten ---------- */
 .tc-consent {
   display: flex;
@@ -429,14 +439,38 @@ a.tc-btn { display: inline-block; width: auto; text-decoration: none; text-align
 
 /* ---------- Responsive ---------- */
 @media (max-width: 880px) {
+  .tc-page { padding: 20px 14px; }
   .tc-shell { grid-template-columns: 1fr; border-radius: 20px; }
-  .tc-panel-inner { padding: 30px 26px; gap: 16px; }
-  .tc-panel-title { font-size: 30px; }
+  /* Brand-Panel kompakt halten, damit das Formular nicht weit nach unten rutscht */
+  .tc-panel-inner { padding: 26px 24px; gap: 14px; justify-content: flex-start; }
+  .tc-panel-title { font-size: 27px; }
+  .tc-panel-sub { font-size: 14px; max-width: none; }
   .tc-perks, .tc-panel-foot { display: none; }
-  .tc-form { padding: 30px 24px 32px; }
+  .tc-form { padding: 28px 24px 32px; }
   .tc-grid-2 { grid-template-columns: 1fr; }
+  /* iOS zoomt beim Fokus in Felder mit < 16px hinein -> 16px verhindert das */
+  .tc-input, .tc-textarea { font-size: 16px; }
 }
-@media (max-width: 480px) {
+
+@media (max-width: 520px) {
   .tc-page { padding: 0; }
-  .tc-shell { border-radius: 0; }
+  .tc-shell { border-radius: 0; box-shadow: none; }
+  .tc-panel-inner { padding: 22px 18px; gap: 12px; }
+  .tc-panel-title { font-size: 24px; margin-top: 10px; }
+  .tc-summary { padding: 15px 16px; }
+  .tc-summary-price { font-size: 26px; }
+  .tc-form { padding: 24px 18px 28px; }
+  .tc-form-head h2 { font-size: 21px; }
+  .tc-form-head { margin-bottom: 18px; }
+  .tc-section { margin-bottom: 24px; }
+  .tc-infolink { margin-bottom: 20px; }
+  /* Inline-Auswahl (Niveau / Mitglied) als gleich breite, zentrierte Kacheln */
+  .tc-choices.tc-inline { gap: 8px; }
+  .tc-choices.tc-inline .tc-choice-sm {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+  .tc-choice { padding: 13px 14px; gap: 11px; }
+  .tc-choice-title { font-size: 14.5px; }
+  .tc-choice-price { font-size: 16px; }
 }
