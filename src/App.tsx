@@ -5215,11 +5215,12 @@ Tennisschule A bis Z`;
         );
       }
 
-      // Vertretung löschen wenn Datum, Trainer oder Uhrzeit geändert wurde
+      // Vertretung löschen wenn Datum oder Trainer geändert wurde.
+      // Eine reine Uhrzeit-Änderung (gleicher Tag, gleicher Vertretungstrainer)
+      // hebt die Vertretung NICHT auf – sonst würde fälschlich der Originaltrainer wieder gesetzt.
       const datumChanged = existing.datum !== tDatum;
-      const uhrzeitChanged = existing.uhrzeitVon !== tVon || existing.uhrzeitBis !== tBis;
 
-      if (datumChanged || hasTrainerChanged || uhrzeitChanged) {
+      if (datumChanged || hasTrainerChanged) {
         if (existing.serieId && applySerieScope === "abHeute") {
           // Bei Serienänderung alle betroffenen Trainings
           const serieTrainingIds = trainings
