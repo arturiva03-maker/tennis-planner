@@ -284,14 +284,14 @@
 }
 .tc-note-title { display: block; font-weight: 700; color: var(--tc-ink); margin-bottom: 6px; font-size: 14px; }
 
-/* Hervorgehobene Hinweis-Box (z.B. Absage bei zu wenigen Teilnehmern) */
-.tc-note-info {
-  background: var(--tc-green-tint);
-  border-color: var(--tc-green-tint-border);
-  border-left: 4px solid var(--tc-green);
-  color: #3f6b4e;
+/* Warnhinweis-Box in Rot (Absage bei zu wenigen Teilnehmern) */
+.tc-note-warn {
+  background: #fef2f2;
+  border-color: #fecaca;
+  border-left: 4px solid #dc2626;
+  color: #b91c1c;
 }
-.tc-note-info .tc-note-title { color: var(--tc-green); }
+.tc-note-warn .tc-note-title { color: #b91c1c; }
 
 /* ---------- Zustimmungs-Karten ---------- */
 .tc-consent {

@@ -850,7 +850,7 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               </div>
 
               {selectedCamp && (
-                <div className="tc-note tc-note-info" style={{ marginTop: 12 }}>
+                <div className="tc-note tc-note-warn" style={{ marginTop: 12 }}>
                   <span className="tc-note-title">Absage bei zu wenigen Teilnehmern</span>
                   Bei nicht ausreichender Teilnehmerzahl kann das Camp vom Trainerteam abgesagt werden.
                   In diesem Fall bieten wir die Teilnahme in einer anderen Woche an oder erstatten die
