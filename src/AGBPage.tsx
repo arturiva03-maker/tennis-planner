@@ -380,12 +380,6 @@ export default function AGBPage() {
             Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).
           </p>
         </div>
-
-        <div className="prose" style={{ marginTop: 32 }}>
-          <p className="muted-note">
-            Stand: Juni 2026. Diese Bedingungen sollten vor der Veröffentlichung anwaltlich geprüft werden, insbesondere zur Haftung.
-          </p>
-        </div>
       </div>
       <LegalFooter anlage="Wedding" />
     </div>
