@@ -122,9 +122,9 @@ export default function AbsagePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             to: [SCHULE_EMAIL],
-            subject: `Absage: Kurzfristiges Training ${datumFormatted}`,
-            body: `Eine kurzfristige Trainingsstunde wurde abgesagt.\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo?.anlage ?? ""}\n\nDas verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.`,
-            html: `<p>Eine kurzfristige Trainingsstunde wurde abgesagt.</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo?.anlage ?? ""}</p><p>Das verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.</p>`,
+            subject: `Absage: Kurzfristiges Training ${datumFormatted}${slotInfo?.buchungName ? ` (${slotInfo.buchungName})` : ""}`,
+            body: `Eine kurzfristige Trainingsstunde wurde abgesagt.\n\nName: ${slotInfo?.buchungName ?? "—"}\nE-Mail: ${slotInfo?.buchungEmail ?? "—"}\n\nTermin: ${datumFormatted}\nUhrzeit: ${zeitInfo}\nAnlage: ${slotInfo?.anlage ?? ""}\n\nDas verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.`,
+            html: `<p>Eine kurzfristige Trainingsstunde wurde abgesagt.</p><p><strong>Name:</strong> ${slotInfo?.buchungName ?? "—"}<br><strong>E-Mail:</strong> ${slotInfo?.buchungEmail ? `<a href="mailto:${slotInfo.buchungEmail}">${slotInfo.buchungEmail}</a>` : "—"}</p><p><strong>Termin:</strong> ${datumFormatted}<br><strong>Uhrzeit:</strong> ${zeitInfo}<br><strong>Anlage:</strong> ${slotInfo?.anlage ?? ""}</p><p>Das verknüpfte Training wurde aus dem Kalender entfernt. Die Stunde ist jetzt wieder online buchbar.</p>`,
             fromName: "Tennisschule A bis Z",
           }),
         });
