@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
@@ -439,6 +439,12 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   const [popupCountdown, setPopupCountdown] = useState(5);
   const [showVerfuegbarkeitHinweis, setShowVerfuegbarkeitHinweis] = useState(true);
 
+  // Namens-Autocomplete für die trainierende Person (Vorschläge aus der DB).
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+  const [nameSuggestOpen, setNameSuggestOpen] = useState(false);
+  const suggestReqRef = useRef(0);
+  const pickedRef = useRef(false);
+
   const alterNum = computeAge(formData.geburtsdatum);
   const istMinderjaehrig = alterNum !== null && alterNum >= 0 && alterNum < 18;
 
@@ -447,6 +453,46 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       setFormData((prev) => ({ ...prev, abweichende_kontaktperson: true }));
     }
   }, [istMinderjaehrig, formData.abweichende_kontaktperson]);
+
+  // Namensvorschläge: sobald ein Nachname angetippt wird, passende volle Namen
+  // aus der DB (spontan_spieler_suche) anbieten – kombiniert mit dem Vornamen.
+  useEffect(() => {
+    const q = `${formData.trainee_vorname.trim()} ${formData.trainee_nachname.trim()}`.trim();
+    if (formData.trainee_nachname.trim().length < 1 || q.length < 2) {
+      setNameSuggestions([]);
+      setNameSuggestOpen(false);
+      return;
+    }
+    if (pickedRef.current) {
+      pickedRef.current = false;
+      return;
+    }
+    const my = ++suggestReqRef.current;
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await supabase.rpc("spontan_spieler_suche", { p_account_id: accountId, q });
+        if (my !== suggestReqRef.current) return;
+        const list = (Array.isArray(data) ? data : []) as string[];
+        setNameSuggestions(list);
+        setNameSuggestOpen(list.length > 0);
+      } catch {
+        if (my === suggestReqRef.current) setNameSuggestions([]);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.trainee_vorname, formData.trainee_nachname, accountId]);
+
+  // Vollen Namen aus einem Vorschlag übernehmen: letztes Wort = Nachname, Rest = Vorname.
+  function pickTraineeName(full: string) {
+    pickedRef.current = true;
+    const parts = full.trim().split(/\s+/);
+    const nach = parts.length > 1 ? parts[parts.length - 1] : "";
+    const vor = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    setNameSuggestOpen(false);
+    setNameSuggestions([]);
+    setFormData((prev) => ({ ...prev, trainee_vorname: vor, trainee_nachname: nach }));
+  }
 
   useEffect(() => {
     if (showMinDaysPopup) {
@@ -809,13 +855,55 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
             <div className="field-num">02</div>
             <div className="field-body">
               <label>Nachname Spieler/in<span className="req">●</span></label>
-              <input
-                type="text"
-                name="trainee_nachname"
-                value={formData.trainee_nachname}
-                onChange={handleChange}
-                autoComplete="off"
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  name="trainee_nachname"
+                  value={formData.trainee_nachname}
+                  onChange={handleChange}
+                  onFocus={() => { if (nameSuggestions.length > 0) setNameSuggestOpen(true); }}
+                  onBlur={() => setTimeout(() => setNameSuggestOpen(false), 180)}
+                  autoComplete="off"
+                />
+                {nameSuggestOpen && nameSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 30,
+                      background: "#ffffff",
+                      border: "1px solid #cdd6e4",
+                      maxHeight: 220,
+                      overflowY: "auto",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+                    }}
+                  >
+                    {nameSuggestions.map((n, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); pickTraineeName(n); }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "9px 12px",
+                          background: "none",
+                          border: "none",
+                          borderBottom: "1px solid #eef1f6",
+                          cursor: "pointer",
+                          fontSize: 14,
+                          color: "#1a2233",
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
