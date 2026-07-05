@@ -21,7 +21,7 @@ type RegistrationData = {
   trainingsart: string;
   trainings_pro_woche: string;
   erfahrungslevel: string;
-  alter_jahre: string;
+  geburtsdatum: string;
   nachricht: string;
   gruppenwuensche: string;
   ist_vereinsmitglied: string;
@@ -51,6 +51,28 @@ const UHRZEITEN = [
   "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00"
 ];
 
+// Alter aus ISO-Geburtsdatum (YYYY-MM-DD) berechnen
+function computeAge(iso: string): number | null {
+  if (!iso) return null;
+  const b = new Date(iso);
+  if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+
+// ISO-Datum (YYYY-MM-DD) als TT.MM.JJJJ formatieren
+function formatGebDatum(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}.${m}.${y}`;
+}
+
+const HEUTE_ISO = new Date().toISOString().split("T")[0];
+
 export type RegistrationPayload = {
   accountId: string;
   anlage: "Wedding" | "Britz";
@@ -70,6 +92,7 @@ export type RegistrationPayload = {
   trainings_pro_woche: string;
   erfahrungslevel: string;
   alter_jahre: string;
+  geburtsdatum: string;
   nachricht: string;
   gruppenwuensche: string;
   ist_vereinsmitglied: string;
@@ -170,7 +193,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
         <div class="section-title">Trainierende Person</div>
         <table>
           <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${traineeName}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Geburtsdatum</td><td style="padding: 8px 0; font-weight: 500;">${formatGebDatum(payload.geburtsdatum)}${payload.alter_jahre ? ` (${payload.alter_jahre} Jahre)` : ""}</td></tr>
         </table>
       </div>
 
@@ -220,7 +243,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
 </body>
 </html>`;
 
-  const textVersion = `Trainingsanmeldung ${payload.anlage}\n\nTrainierende Person: ${traineeName} (${payload.alter_jahre} Jahre)\n\nKontaktperson${payload.abweichende_kontaktperson ? "" : " (identisch mit Spieler/in)"}:\nName: ${kontaktName}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nAdresse: ${adresseStr}\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${payload.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${payload.verfuegbarkeit[key]}`).join("\n")}${payload.nachricht ? `\n\nNachricht:\n${payload.nachricht}` : ""}${payload.gruppenwuensche ? `\n\nGruppenwünsche:\n${payload.gruppenwuensche}` : ""}`;
+  const textVersion = `Trainingsanmeldung ${payload.anlage}\n\nTrainierende Person: ${traineeName} (geb. ${formatGebDatum(payload.geburtsdatum)}, ${payload.alter_jahre} Jahre)\n\nKontaktperson${payload.abweichende_kontaktperson ? "" : " (identisch mit Spieler/in)"}:\nName: ${kontaktName}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nAdresse: ${adresseStr}\n\nTrainingsart: ${trainingsartText}\nPro Woche: ${payload.trainings_pro_woche}x\nErfahrung: ${erfahrungText}\n\nVerfügbarkeit:\n${WOCHENTAGE.map(({ key, label }) => `${label}: ${payload.verfuegbarkeit[key]}`).join("\n")}${payload.nachricht ? `\n\nNachricht:\n${payload.nachricht}` : ""}${payload.gruppenwuensche ? `\n\nGruppenwünsche:\n${payload.gruppenwuensche}` : ""}`;
 
   const bestatigungHtml = `
 <!DOCTYPE html>
@@ -253,7 +276,7 @@ export async function persistRegistration(payload: RegistrationPayload): Promise
         <div class="section-title">Trainierende Person</div>
         <table>
           <tr><td style="padding: 8px 0; color: #6b7280; width: 140px;">Name</td><td style="padding: 8px 0; font-weight: 500;">${traineeName}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${payload.alter_jahre} Jahre</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Geburtsdatum</td><td style="padding: 8px 0; font-weight: 500;">${formatGebDatum(payload.geburtsdatum)}${payload.alter_jahre ? ` (${payload.alter_jahre} Jahre)` : ""}</td></tr>
         </table>
       </div>
 
@@ -387,7 +410,7 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
     trainingsart: "",
     trainings_pro_woche: "",
     erfahrungslevel: "",
-    alter_jahre: "",
+    geburtsdatum: "",
     nachricht: "",
     gruppenwuensche: "",
     ist_vereinsmitglied: "",
@@ -416,8 +439,8 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   const [popupCountdown, setPopupCountdown] = useState(5);
   const [showVerfuegbarkeitHinweis, setShowVerfuegbarkeitHinweis] = useState(true);
 
-  const alterNum = parseInt(formData.alter_jahre, 10);
-  const istMinderjaehrig = !isNaN(alterNum) && alterNum > 0 && alterNum < 18;
+  const alterNum = computeAge(formData.geburtsdatum);
+  const istMinderjaehrig = alterNum !== null && alterNum >= 0 && alterNum < 18;
 
   useEffect(() => {
     if (istMinderjaehrig && !formData.abweichende_kontaktperson) {
@@ -512,8 +535,12 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       setError("Bitte geben Sie den Nachnamen der trainierenden Person ein.");
       return;
     }
-    if (!formData.alter_jahre) {
-      setError("Bitte geben Sie das Alter der trainierenden Person ein.");
+    if (!formData.geburtsdatum) {
+      setError("Bitte geben Sie das Geburtsdatum der trainierenden Person ein.");
+      return;
+    }
+    if (alterNum === null || alterNum < 0 || alterNum > 100) {
+      setError("Bitte geben Sie ein gültiges Geburtsdatum ein.");
       return;
     }
     if (formData.abweichende_kontaktperson) {
@@ -621,7 +648,8 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
       trainingsart: formData.trainingsart,
       trainings_pro_woche: formData.trainings_pro_woche,
       erfahrungslevel: formData.erfahrungslevel,
-      alter_jahre: formData.alter_jahre,
+      alter_jahre: alterNum !== null ? String(alterNum) : "",
+      geburtsdatum: formData.geburtsdatum,
       nachricht: formData.nachricht.trim(),
       gruppenwuensche: formData.gruppenwuensche.trim(),
       ist_vereinsmitglied: formData.ist_vereinsmitglied,
@@ -794,15 +822,19 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           <div className="field-row">
             <div className="field-num">03</div>
             <div className="field-body">
-              <label>Alter Spieler/in<span className="req">●</span></label>
+              <label>Geburtsdatum Spieler/in<span className="req">●</span></label>
               <input
-                type="number"
-                name="alter_jahre"
-                value={formData.alter_jahre}
+                type="date"
+                name="geburtsdatum"
+                value={formData.geburtsdatum}
                 onChange={handleChange}
-                min="1"
-                max="120"
+                max={HEUTE_ISO}
               />
+              {alterNum !== null && alterNum >= 0 && alterNum <= 100 && (
+                <p className="section-note" style={{ marginTop: 6 }}>
+                  Alter: {alterNum} {alterNum === 1 ? "Jahr" : "Jahre"}
+                </p>
+              )}
             </div>
           </div>
 

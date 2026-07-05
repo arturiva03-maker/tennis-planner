@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import { BallotStyles, getBallotThemeStyle } from "./ballotStyles";
@@ -9,7 +9,7 @@ import { LegalFooter } from "./LegalText";
 type SepaFormData = {
   vorname: string;
   nachname: string;
-  istKind: boolean;
+  geburtsdatum: string;
   elternteilName: string;
   strasse: string;
   plz: string;
@@ -19,6 +19,36 @@ type SepaFormData = {
   telefon: string;
   einwilligung: boolean;
 };
+
+// Ergebnis der DB-Mandatsprüfung (RPC sepa_mandat_lookup). Enthält bewusst
+// KEINE IBAN – nur nicht-sensible Felder zum Vorausfüllen.
+type MandatLookup = {
+  hatMandat?: boolean;
+  vorname?: string | null;
+  nachname?: string | null;
+  strasse?: string | null;
+  plz?: string | null;
+  ort?: string | null;
+  email?: string | null;
+  telefon?: string | null;
+  istKind?: boolean | null;
+  elternteilName?: string | null;
+};
+
+// Alter aus ISO-Geburtsdatum (YYYY-MM-DD) berechnen
+function computeAge(iso: string): number | null {
+  if (!iso) return null;
+  const b = new Date(iso);
+  if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+
+const HEUTE_ISO = new Date().toISOString().split("T")[0];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatIban(value: string): string {
   const cleaned = value.replace(/\s/g, "").toUpperCase();
@@ -50,7 +80,7 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
   const [formData, setFormData] = useState<SepaFormData>({
     vorname: registrationPayload?.trainee_vorname ?? "",
     nachname: registrationPayload?.trainee_nachname ?? "",
-    istKind: registrationPayload?.abweichende_kontaktperson ?? false,
+    geburtsdatum: registrationPayload?.geburtsdatum ?? "",
     elternteilName: registrationPayload?.abweichende_kontaktperson
       ? `${registrationPayload.kontakt_vorname} ${registrationPayload.kontakt_nachname}`.trim()
       : "",
@@ -66,6 +96,71 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // DB-Mandatsprüfung: null = noch nicht geprüft, true/false = Ergebnis.
+  const [mandatVorhanden, setMandatVorhanden] = useState<boolean | null>(null);
+  // Merkt, ob beim Absenden ein bestehendes Mandat genutzt wurde (für den Erfolgs-Screen).
+  const [mandatWarVorhanden, setMandatWarVorhanden] = useState(false);
+  const lookupReqRef = useRef(0);
+
+  // Alter/Minderjährigkeit aus dem Geburtsdatum ableiten (ersetzt die frühere
+  // "ist mein Kind"-Checkbox). Unter 18 ⇒ Rechnungsempfänger/Kontoinhaber nötig.
+  const alterSepa = computeAge(formData.geburtsdatum);
+  const istKind = alterSepa !== null && alterSepa >= 0 && alterSepa < 18;
+
+  // Prüft per Name/E-Mail in der DB, ob bereits ein SEPA-Mandat vorliegt, und
+  // füllt gespeicherte (nicht-sensible) Felder voraus. Fällt bei fehlender
+  // sepa_mandat_lookup-RPC auf die vorhandene spontan_hat_mandat zurück.
+  useEffect(() => {
+    const vn = formData.vorname.trim();
+    const nn = formData.nachname.trim();
+    const em = formData.email.trim();
+    const name = `${vn} ${nn}`.trim();
+    const emailValid = EMAIL_REGEX.test(em);
+    const canLookup = (vn.length >= 2 && nn.length >= 2) || emailValid;
+    if (!canLookup) {
+      setMandatVorhanden(null);
+      return;
+    }
+    const my = ++lookupReqRef.current;
+    const t = setTimeout(async () => {
+      try {
+        const { data, error: rpcError } = await supabase.rpc("sepa_mandat_lookup", {
+          p_account_id: accountId,
+          p_name: name || null,
+          p_email: emailValid ? em : null,
+        });
+        if (my !== lookupReqRef.current) return;
+        if (rpcError) throw rpcError;
+        const res = (data || {}) as MandatLookup;
+        setMandatVorhanden(Boolean(res.hatMandat));
+        // Nur leere Felder vorausfüllen (nie IBAN, nie vom Nutzer Getipptes überschreiben).
+        setFormData((prev) => ({
+          ...prev,
+          strasse: prev.strasse || res.strasse || "",
+          plz: prev.plz || res.plz || "",
+          ort: prev.ort || res.ort || "",
+          telefon: prev.telefon || res.telefon || "",
+          elternteilName: prev.elternteilName || res.elternteilName || "",
+        }));
+      } catch {
+        // Fallback: nur Boolean über die bestehende RPC (Prefill dann nicht möglich).
+        try {
+          const { data } = await supabase.rpc("spontan_hat_mandat", {
+            p_account_id: accountId,
+            p_name: name || null,
+            p_email: emailValid ? em : null,
+          });
+          if (my !== lookupReqRef.current) return;
+          setMandatVorhanden(Boolean(data));
+        } catch {
+          if (my === lookupReqRef.current) setMandatVorhanden(null);
+        }
+      }
+    }, 400);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.vorname, formData.nachname, formData.email, accountId]);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement>
@@ -92,7 +187,41 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
       setError("Bitte geben Sie den Nachnamen ein.");
       return;
     }
-    if (formData.istKind && !formData.elternteilName.trim()) {
+    if (!formData.geburtsdatum) {
+      setError("Bitte geben Sie das Geburtsdatum des Spielers ein.");
+      return;
+    }
+    if (alterSepa === null || alterSepa < 0 || alterSepa > 100) {
+      setError("Bitte geben Sie ein gültiges Geburtsdatum ein.");
+      return;
+    }
+
+    // Liegt für diese Person bereits ein SEPA-Mandat vor? Dann kein neues Mandat
+    // anlegen – nur (falls über die Anmeldung gekommen) die Anmeldung abschließen.
+    if (mandatVorhanden === true) {
+      setLoading(true);
+      try {
+        if (registrationPayload) {
+          const { error: regError } = await persistRegistration(registrationPayload);
+          if (regError) {
+            setError(regError);
+            return;
+          }
+        }
+        setMandatWarVorhanden(true);
+        setSuccess(true);
+      } catch (err) {
+        console.error("Submit error:", err);
+        setError(
+          "Beim Absenden ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut."
+        );
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (istKind && !formData.elternteilName.trim()) {
       setError("Bitte geben Sie den Namen des Elternteils/Erziehungsberechtigten ein.");
       return;
     }
@@ -147,8 +276,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           account_id: accountId,
           vorname: formData.vorname.trim(),
           nachname: formData.nachname.trim(),
-          ist_kind: formData.istKind,
-          elternteil_name: formData.istKind ? formData.elternteilName.trim() : null,
+          ist_kind: istKind,
+          elternteil_name: istKind ? formData.elternteilName.trim() : null,
           strasse: formData.strasse.trim(),
           plz: formData.plz.trim(),
           ort: formData.ort.trim(),
@@ -191,18 +320,49 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
 
   if (success) {
     const kam_ueber_anmeldung = Boolean(registrationPayload);
+    const metaText = mandatWarVorhanden
+      ? kam_ueber_anmeldung
+        ? "Anmeldung eingegangen"
+        : "Mandat liegt bereits vor"
+      : kam_ueber_anmeldung
+      ? "Anmeldung & Mandat eingegangen"
+      : "Mandat erteilt";
+    const stampText = mandatWarVorhanden
+      ? kam_ueber_anmeldung
+        ? "✓ Eingegangen"
+        : "✓ Mandat liegt vor"
+      : kam_ueber_anmeldung
+      ? "✓ Eingegangen"
+      : "✓ Mandat erteilt";
     return (
       <div className="ballotForm" style={themeStyle}>
         <BallotStyles />
         <div className="sheet">
           <div className="meta">
-            <span>{kam_ueber_anmeldung ? "Anmeldung & Mandat eingegangen" : "Mandat erteilt"}</span>
+            <span>{metaText}</span>
           </div>
-          <div className="success-stamp">
-            {kam_ueber_anmeldung ? "✓ Eingegangen" : "✓ Mandat erteilt"}
-          </div>
+          <div className="success-stamp">{stampText}</div>
           <h1 className="display">Vielen <em>Dank</em>.</h1>
-          {kam_ueber_anmeldung ? (
+          {mandatWarVorhanden ? (
+            kam_ueber_anmeldung ? (
+              <>
+                <p className="intro">
+                  Ihre Trainingsanmeldung wurde erfolgreich übermittelt. Für Sie liegt
+                  bereits ein SEPA-Lastschriftmandat vor – Sie mussten kein neues
+                  erteilen. Eine Bestätigung ist an Ihre E-Mail-Adresse unterwegs.
+                </p>
+                <p className="intro">
+                  Wir prüfen Ihre Angaben und melden uns in Kürze mit einem
+                  Trainingsvorschlag.
+                </p>
+              </>
+            ) : (
+              <p className="intro">
+                Für Sie liegt bereits ein SEPA-Lastschriftmandat vor – es ist kein
+                neues Mandat nötig. Ihr bestehendes Mandat gilt weiter.
+              </p>
+            )
+          ) : kam_ueber_anmeldung ? (
             <>
               <p className="intro">
                 Ihre Trainingsanmeldung und Ihr SEPA-Lastschriftmandat wurden
@@ -287,20 +447,38 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           <div className="field-row">
             <div className="field-num">03</div>
             <div className="field-body">
-              <label className="checkbox block" style={{ marginTop: 6 }}>
-                <input
-                  type="checkbox"
-                  name="istKind"
-                  checked={formData.istKind}
-                  onChange={handleChange}
-                />
-                Der Spieler ist mein Kind (unter 18) — ich übernehme als Elternteil/
-                Erziehungsberechtigter den Rechnungsbetrag
-              </label>
+              <label>Geburtsdatum des Spielers<span className="req">●</span></label>
+              <input
+                type="date"
+                name="geburtsdatum"
+                value={formData.geburtsdatum}
+                onChange={handleChange}
+                max={HEUTE_ISO}
+              />
+              {alterSepa !== null && alterSepa >= 0 && alterSepa <= 100 && (
+                <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
+                  Alter: {alterSepa} {alterSepa === 1 ? "Jahr" : "Jahre"}
+                  {istKind ? " — der Rechnungsbetrag wird vom Elternteil / Erziehungsberechtigten übernommen." : ""}
+                </p>
+              )}
             </div>
           </div>
 
-          {formData.istKind && (
+          {mandatVorhanden === true && (
+            <div className="notice" style={{ marginTop: 16, borderColor: "#1a7a3a" }}>
+              <div className="label" style={{ color: "#1a7a3a" }}>SEPA-Mandat</div>
+              <div className="body">
+                <p style={{ margin: 0 }}>
+                  ✓ Für Sie liegt bereits ein SEPA-Lastschriftmandat vor. Sie müssen
+                  kein neues erteilen{registrationPayload ? " – schließen Sie einfach Ihre Anmeldung ab." : "."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!mandatVorhanden && (
+          <>
+          {istKind && (
             <>
               <div className="section-head" style={{ marginTop: 16 }}>
                 <span className="num">2</span>
@@ -329,8 +507,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           )}
 
           <div className="section-head">
-            <span className="num">{formData.istKind ? 3 : 2}</span>
-            <span className="title">Anschrift {formData.istKind ? "(des Rechnungsempfängers)" : ""}</span>
+            <span className="num">{istKind ? 3 : 2}</span>
+            <span className="title">Anschrift {istKind ? "(des Rechnungsempfängers)" : ""}</span>
           </div>
 
           <div className="field-row">
@@ -377,8 +555,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           </div>
 
           <div className="section-head">
-            <span className="num">{formData.istKind ? 4 : 3}</span>
-            <span className="title">Bankverbindung {formData.istKind ? "(des Rechnungsempfängers)" : ""}</span>
+            <span className="num">{istKind ? 4 : 3}</span>
+            <span className="title">Bankverbindung {istKind ? "(des Rechnungsempfängers)" : ""}</span>
           </div>
 
           <div className="field-row">
@@ -468,6 +646,8 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
               <span className="req" style={{ marginLeft: 4 }}>●</span>
             </span>
           </label>
+          </>
+          )}
 
           {error && (
             <div className="error-line">
@@ -477,24 +657,53 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
           )}
 
           <div className="submit-area">
-            <p className="agb">
-              Mit der Erteilung akzeptieren Sie unsere{" "}
-              <a
-                href={anlage === "Britz" ? "/agb-britz" : "/agb"}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Trainingsbedingungen und Preise
-              </a>
-              . Ihre Daten werden verschlüsselt gespeichert, nur zur Abwicklung
-              der Trainingsbeiträge verwendet und nach Ende des Trainings­verhältnisses
-              gelöscht, soweit keine gesetzlichen (insbesondere steuerlichen)
-              Aufbewahrungspflichten entgegenstehen. Auskunft &amp; Löschung:{" "}
-              <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
-            </p>
-            <button className="primary" type="submit" disabled={loading}>
-              {loading ? "Wird gesendet …" : "Mandat erteilen"}
-            </button>
+            {mandatVorhanden === true ? (
+              registrationPayload ? (
+                <>
+                  <p className="agb">
+                    Es wird kein neues SEPA-Mandat erstellt – Ihr bestehendes Mandat
+                    gilt weiter. Mit dem Abschluss akzeptieren Sie unsere{" "}
+                    <a
+                      href={anlage === "Britz" ? "/agb-britz" : "/agb"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Trainingsbedingungen und Preise
+                    </a>
+                    .
+                  </p>
+                  <button className="primary" type="submit" disabled={loading}>
+                    {loading ? "Wird gesendet …" : "Anmeldung abschließen"}
+                  </button>
+                </>
+              ) : (
+                <p className="agb">
+                  Für Sie liegt bereits ein SEPA-Lastschriftmandat vor – es ist nichts
+                  weiter zu tun.
+                </p>
+              )
+            ) : (
+              <>
+                <p className="agb">
+                  Mit der Erteilung akzeptieren Sie unsere{" "}
+                  <a
+                    href={anlage === "Britz" ? "/agb-britz" : "/agb"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Trainingsbedingungen und Preise
+                  </a>
+                  . Ihre Daten werden verschlüsselt gespeichert, nur zur Abwicklung
+                  der Trainingsbeiträge verwendet und nach Ende des Trainings­verhältnisses
+                  gelöscht, soweit keine gesetzlichen (insbesondere steuerlichen)
+                  Aufbewahrungspflichten entgegenstehen. Auskunft &amp; Löschung:{" "}
+                  <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
+                </p>
+                <button className="primary" type="submit" disabled={loading}>
+                  {loading ? "Wird gesendet …" : "Mandat erteilen"}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>
