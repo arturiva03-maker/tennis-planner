@@ -103,6 +103,12 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
   const [mandatWarVorhanden, setMandatWarVorhanden] = useState(false);
   const lookupReqRef = useRef(0);
 
+  // Namens-Autocomplete (Vorschläge aus Spieler-/Mandatsdatenbank).
+  const [nameSuggestions, setNameSuggestions] = useState<string[]>([]);
+  const [nameSuggestOpen, setNameSuggestOpen] = useState(false);
+  const suggestReqRef = useRef(0);
+  const pickedRef = useRef(false);
+
   // Alter/Minderjährigkeit aus dem Geburtsdatum ableiten (ersetzt die frühere
   // "ist mein Kind"-Checkbox). Unter 18 ⇒ Rechnungsempfänger/Kontoinhaber nötig.
   const alterSepa = computeAge(formData.geburtsdatum);
@@ -161,6 +167,46 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.vorname, formData.nachname, formData.email, accountId]);
+
+  // Namensvorschläge: sobald ein Nachname angetippt wird, passende volle Namen
+  // aus der DB (spontan_spieler_suche) anbieten – kombiniert mit dem Vornamen.
+  useEffect(() => {
+    const q = `${formData.vorname.trim()} ${formData.nachname.trim()}`.trim();
+    if (formData.nachname.trim().length < 1 || q.length < 2) {
+      setNameSuggestions([]);
+      setNameSuggestOpen(false);
+      return;
+    }
+    if (pickedRef.current) {
+      pickedRef.current = false;
+      return;
+    }
+    const my = ++suggestReqRef.current;
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await supabase.rpc("spontan_spieler_suche", { p_account_id: accountId, q });
+        if (my !== suggestReqRef.current) return;
+        const list = (Array.isArray(data) ? data : []) as string[];
+        setNameSuggestions(list);
+        setNameSuggestOpen(list.length > 0);
+      } catch {
+        if (my === suggestReqRef.current) setNameSuggestions([]);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.vorname, formData.nachname, accountId]);
+
+  // Vollen Namen aus einem Vorschlag übernehmen: letztes Wort = Nachname, Rest = Vorname.
+  function pickName(full: string) {
+    pickedRef.current = true;
+    const parts = full.trim().split(/\s+/);
+    const nach = parts.length > 1 ? parts[parts.length - 1] : "";
+    const vor = parts.length > 1 ? parts.slice(0, -1).join(" ") : parts[0];
+    setNameSuggestOpen(false);
+    setNameSuggestions([]);
+    setFormData((prev) => ({ ...prev, vorname: vor, nachname: nach }));
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement>
@@ -434,13 +480,56 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
             <div className="field-num">02</div>
             <div className="field-body">
               <label>Nachname des Spielers<span className="req">●</span></label>
-              <input
-                type="text"
-                name="nachname"
-                value={formData.nachname}
-                onChange={handleChange}
-                autoComplete="off"
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  name="nachname"
+                  value={formData.nachname}
+                  onChange={handleChange}
+                  onFocus={() => { if (nameSuggestions.length > 0) setNameSuggestOpen(true); }}
+                  onBlur={() => setTimeout(() => setNameSuggestOpen(false), 180)}
+                  autoComplete="off"
+                />
+                {nameSuggestOpen && nameSuggestions.length > 0 && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 30,
+                      background: "#ffffff",
+                      border: "1px solid #cdd6e4",
+                      borderTop: "none",
+                      maxHeight: 220,
+                      overflowY: "auto",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+                    }}
+                  >
+                    {nameSuggestions.map((n, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); pickName(n); }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "9px 12px",
+                          background: "none",
+                          border: "none",
+                          borderBottom: "1px solid #eef1f6",
+                          cursor: "pointer",
+                          fontSize: 14,
+                          color: "#1a2233",
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
