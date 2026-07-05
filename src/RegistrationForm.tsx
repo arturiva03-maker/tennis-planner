@@ -484,7 +484,9 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   }, [formData.trainee_vorname, formData.trainee_nachname, accountId]);
 
   // Vollen Namen aus einem Vorschlag übernehmen: letztes Wort = Nachname, Rest = Vorname.
-  function pickTraineeName(full: string) {
+  // Anschließend gespeicherte Personendaten (Kontakt, E-Mail, Telefon, Adresse,
+  // ggf. Rechnungsempfänger) vorausfüllen – NICHT die Trainingswünsche/Verfügbarkeit.
+  async function pickTraineeName(full: string) {
     pickedRef.current = true;
     const parts = full.trim().split(/\s+/);
     const nach = parts.length > 1 ? parts[parts.length - 1] : "";
@@ -492,6 +494,40 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
     setNameSuggestOpen(false);
     setNameSuggestions([]);
     setFormData((prev) => ({ ...prev, trainee_vorname: vor, trainee_nachname: nach }));
+
+    try {
+      const { data } = await supabase.rpc("sepa_mandat_lookup", {
+        p_account_id: accountId,
+        p_name: full.trim(),
+        p_email: null,
+      });
+      const res = (data || {}) as {
+        strasse?: string | null;
+        plz?: string | null;
+        ort?: string | null;
+        email?: string | null;
+        telefon?: string | null;
+        istKind?: boolean | null;
+        elternteilName?: string | null;
+      };
+      setFormData((prev) => {
+        const next = { ...prev };
+        if (!next.email && res.email) next.email = res.email;
+        if (!next.telefon && res.telefon) next.telefon = res.telefon;
+        if (!next.kontakt_strasse && res.strasse) next.kontakt_strasse = res.strasse;
+        if (!next.kontakt_plz && res.plz) next.kontakt_plz = res.plz;
+        if (!next.kontakt_ort && res.ort) next.kontakt_ort = res.ort;
+        if (res.istKind && res.elternteilName && !next.kontakt_vorname && !next.kontakt_nachname) {
+          next.abweichende_kontaktperson = true;
+          const kp = res.elternteilName.trim().split(/\s+/);
+          next.kontakt_nachname = kp.length > 1 ? kp[kp.length - 1] : "";
+          next.kontakt_vorname = kp.length > 1 ? kp.slice(0, -1).join(" ") : kp[0];
+        }
+        return next;
+      });
+    } catch {
+      // Lookup fehlgeschlagen (z.B. RPC-Version alt) – dann bleibt nur der Name übernommen.
+    }
   }
 
   useEffect(() => {
