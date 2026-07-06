@@ -54,7 +54,6 @@ export default function AGBPage() {
         <div className="prose">
           <p>
             (1) Mit dem vollständigen Ausfüllen und Absenden des Anmeldeformulars gibt der Kunde ein verbindliches Angebot ab.
-            Unmittelbar vor dem Absenden werden die wesentlichen Vertragsinformationen (Leistung, Preis bzw. monatlicher Beitrag, Laufzeit) angezeigt (§ 312j Abs. 2 BGB).
           </p>
           <p>
             (2) Der Vertrag kommt erst mit unserer Annahme zustande – durch Bestätigung in Textform (z. B. E-Mail) oder durch Aufnahme der Trainingsleistung.
@@ -144,10 +143,6 @@ export default function AGBPage() {
           <p>
             Bei unter-saisonalem Beitritt wird die Gebühr anteilig berechnet. Der monatliche Trainingsbeitrag ist zum Monatsende fällig,
             Campbeiträge zwei Wochen vor Campbeginn.
-          </p>
-          <p>
-            <strong>Preisänderungen</strong> für künftige Saisons teilen wir in Textform mit angemessener Frist (mindestens sechs Wochen vorab) mit;
-            der Kunde kann den Vertrag zum Zeitpunkt des Wirksamwerdens kündigen. Pauschale Preisänderungsvorbehalte ohne Ankündigung und Kündigungsrecht bestehen nicht.
           </p>
         </div>
 
