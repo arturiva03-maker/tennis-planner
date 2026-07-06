@@ -5634,7 +5634,6 @@ Tennisschule A bis Z`;
 
     return { total, spielerRows, barTotal, totalMitBar };
   }, [
-    trainings,
     trainingsForAbrechnung,
     spieler,
     priceFuerSpieler,
