@@ -139,23 +139,33 @@ export default function SepaForm({ anlage = "Wedding", initialData, registration
         if (my !== lookupReqRef.current) return;
         if (rpcError) throw rpcError;
         const res = (data || {}) as MandatLookup;
-        setMandatVorhanden(Boolean(res.hatMandat));
-        // Nur leere Felder vorausfüllen (nie IBAN, nie vom Nutzer Getipptes überschreiben).
-        setFormData((prev) => ({
-          ...prev,
-          strasse: prev.strasse || res.strasse || "",
-          plz: prev.plz || res.plz || "",
-          ort: prev.ort || res.ort || "",
-          telefon: prev.telefon || res.telefon || "",
-          elternteilName: prev.elternteilName || res.elternteilName || "",
-        }));
+        // Treffer nur anerkennen, wenn er auch NAMENTLICH zur eingegebenen Person
+        // passt. Die RPC matcht "Name ODER E-Mail" – meldet man ein Kind mit der
+        // E-Mail eines Elternteils an, würde sonst dessen fremdes Mandat gemeldet
+        // und die Mandatserfassung fälschlich übersprungen (Person ohne Mandat).
+        const resName = `${(res.vorname || "").trim()} ${(res.nachname || "").trim()}`.trim().toLowerCase();
+        const nameMatches = resName !== "" && resName === name.toLowerCase();
+        setMandatVorhanden(Boolean(res.hatMandat) && nameMatches);
+        // Nur leere Felder vorausfüllen (nie IBAN, nie vom Nutzer Getipptes
+        // überschreiben) – und nur, wenn der Treffer wirklich diese Person ist.
+        if (nameMatches) {
+          setFormData((prev) => ({
+            ...prev,
+            strasse: prev.strasse || res.strasse || "",
+            plz: prev.plz || res.plz || "",
+            ort: prev.ort || res.ort || "",
+            telefon: prev.telefon || res.telefon || "",
+            elternteilName: prev.elternteilName || res.elternteilName || "",
+          }));
+        }
       } catch {
-        // Fallback: nur Boolean über die bestehende RPC (Prefill dann nicht möglich).
+        // Fallback: nur Boolean über die bestehende RPC – bewusst NUR per Name
+        // (keine E-Mail), damit auch hier kein fremdes Mandat matchen kann.
         try {
           const { data } = await supabase.rpc("spontan_hat_mandat", {
             p_account_id: accountId,
             p_name: name || null,
-            p_email: emailValid ? em : null,
+            p_email: null,
           });
           if (my !== lookupReqRef.current) return;
           setMandatVorhanden(Boolean(data));

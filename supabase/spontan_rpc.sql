@@ -458,15 +458,19 @@ begin
 
   select data into state from account_state where account_id = p_account_id::uuid;
 
-  -- App-Spieler mit hinterlegtem Mandat (Match per Name oder E-Mail)
+  -- Name hat Vorrang: ist ein Name angegeben, MUSS er passen; die E-Mail ist nur
+  -- Fallback ohne Namen. Sonst würde ein Kind mit der E-Mail eines Elternteils
+  -- (das ein Mandat hat) fälschlich als "hat Mandat" gemeldet.
+
+  -- App-Spieler mit hinterlegtem Mandat
   if state is not null and exists (
     select 1
     from jsonb_array_elements(coalesce(state->'spieler', '[]'::jsonb)) t(sp)
     where (coalesce(trim(sp->>'mandatsreferenz'), '') <> '' or coalesce(trim(sp->>'iban'), '') <> '')
-      and (
-        (v_name <> '' and lower(trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', ''))) = v_name)
-        or (v_email <> '' and lower(coalesce(sp->>'kontaktEmail', '')) = v_email)
-      )
+      and case
+        when v_name <> '' then lower(trim(coalesce(sp->>'vorname', '') || ' ' || coalesce(sp->>'nachname', ''))) = v_name
+        else (v_email <> '' and lower(coalesce(sp->>'kontaktEmail', '')) = v_email)
+      end
   ) then
     return true;
   end if;
@@ -475,10 +479,10 @@ begin
   if exists (
     select 1 from sepa_mandates m
     where m.account_id = p_account_id
-      and (
-        (v_name <> '' and lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = v_name)
-        or (v_email <> '' and lower(coalesce(m.email, '')) = v_email)
-      )
+      and case
+        when v_name <> '' then lower(trim(coalesce(m.vorname, '') || ' ' || coalesce(m.nachname, ''))) = v_name
+        else (v_email <> '' and lower(coalesce(m.email, '')) = v_email)
+      end
   ) then
     return true;
   end if;

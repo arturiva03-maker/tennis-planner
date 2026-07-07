@@ -45,13 +45,16 @@ begin
   end if;
 
   -- 1) Neuestes passendes Mandat aus dem öffentlichen SEPA-Formular (saubere Felder).
+  -- Name hat Vorrang: ist ein Name angegeben, MUSS er passen. Die E-Mail dient nur
+  -- als Fallback, wenn kein Name vorliegt. Sonst würde bei Anmeldung eines Kindes
+  -- mit der E-Mail eines Elternteils dessen fremdes Mandat gemeldet.
   select * into m
   from sepa_mandates s
   where s.account_id = p_account_id
-    and (
-      (v_name <> '' and lower(trim(coalesce(s.vorname, '') || ' ' || coalesce(s.nachname, ''))) = v_name)
-      or (v_email <> '' and lower(coalesce(s.email, '')) = v_email)
-    )
+    and case
+      when v_name <> '' then lower(trim(coalesce(s.vorname, '') || ' ' || coalesce(s.nachname, ''))) = v_name
+      else (v_email <> '' and lower(coalesce(s.email, '')) = v_email)
+    end
   order by s.created_at desc nulls last
   limit 1;
 
@@ -75,8 +78,10 @@ begin
   if state is not null then
     select t.elem into sp
     from jsonb_array_elements(coalesce(state->'spieler', '[]'::jsonb)) t(elem)
-    where (v_name <> '' and lower(trim(coalesce(t.elem->>'vorname', '') || ' ' || coalesce(t.elem->>'nachname', ''))) = v_name)
-       or (v_email <> '' and lower(coalesce(t.elem->>'kontaktEmail', '')) = v_email)
+    where case
+      when v_name <> '' then lower(trim(coalesce(t.elem->>'vorname', '') || ' ' || coalesce(t.elem->>'nachname', ''))) = v_name
+      else (v_email <> '' and lower(coalesce(t.elem->>'kontaktEmail', '')) = v_email)
+    end
     limit 1;
 
     if sp is not null then
