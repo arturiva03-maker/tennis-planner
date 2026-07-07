@@ -73,6 +73,10 @@ function formatGebDatum(iso: string): string {
 
 const HEUTE_ISO = new Date().toISOString().split("T")[0];
 
+// Solange keine Trainingsplätze frei sind: Formular ausblenden und Hinweis zeigen.
+// Zum Wieder-Öffnen der Anmeldung einfach auf false setzen.
+const KEINE_TRAININGSPLAETZE_FREI = true;
+
 export type RegistrationPayload = {
   accountId: string;
   anlage: "Wedding" | "Britz";
@@ -761,6 +765,32 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
   }
 
   const themeStyle = getBallotThemeStyle(anlage);
+
+  if (KEINE_TRAININGSPLAETZE_FREI) {
+    return (
+      <div className="ballotForm" style={themeStyle}>
+        <BallotStyles />
+        <div className="sheet">
+          <div className="meta">
+            <span>Anmeldung {anlage}</span>
+          </div>
+          <h1 className="display">
+            Aktuell keine <em>Trainingsplätze</em> frei.
+          </h1>
+          <p className="intro">
+            Für die Anlage {anlage} sind derzeit alle Trainingsplätze belegt.
+            Eine Anmeldung ist momentan leider nicht möglich. Sobald wieder
+            Plätze frei werden, öffnen wir die Anmeldung an dieser Stelle erneut.
+          </p>
+          <p className="intro">
+            Bei Fragen erreichen Sie uns unter{" "}
+            <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a>.
+          </p>
+        </div>
+        <LegalFooter anlage={anlage} />
+      </div>
+    );
+  }
 
   if (success) {
     if (redirectUrl && isValidRedirectUrl(redirectUrl)) {
