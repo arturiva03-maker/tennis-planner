@@ -4150,25 +4150,92 @@ ${txInfo}
       }
     }
 
+    // Aus der Anmeldung ableitbare Profildaten (KEINE Bank-/Mandatsdaten – die
+    // kommen separat über Formulare → SEPA).
+    const email = (req.email || "").trim();
+    const telefon = (req.telefon || "").trim();
+    const adresse = getRegistrationKontaktAdresse(req);
+    const kontaktName = isRegistrationAbweichend(req) ? getRegistrationKontaktName(req) : "";
+    const anlageLabel: "" | "Wedding" | "Britz" =
+      req.anlage === "Wedding" || req.anlage === "Britz" ? req.anlage : "";
+
+    // Existiert bereits ein Spieler mit exakt diesem Namen? Dann die Anmeldedaten
+    // mit dem vorhandenen Profil abgleichen und dieses vervollständigen, statt eine
+    // Dublette anzulegen. Anmeldedaten haben dabei Vorrang; leere Felder werden
+    // ergänzt, vorhandene Werte werden nur überschrieben, wenn die Anmeldung einen
+    // Wert liefert.
+    const fullLower = `${vorname} ${nachname}`.toLowerCase().trim();
+    const existing = fullLower
+      ? spieler.find((s) => `${s.vorname} ${s.nachname || ""}`.toLowerCase().trim() === fullLower)
+      : undefined;
+
+    if (existing) {
+      if (
+        !window.confirm(
+          `Es gibt bereits einen Spieler „${existing.vorname} ${existing.nachname || ""}".\n\n` +
+            `Die Anmeldedaten (E-Mail, Telefon, Adresse, Kontaktperson, Anlage) mit dem ` +
+            `vorhandenen Profil abgleichen und dieses vervollständigen?\n\n` +
+            `Vorhandene Werte werden durch die Anmeldedaten ersetzt, leere Felder ergänzt. ` +
+            `Bank-/Mandatsdaten bleiben unberührt.`
+        )
+      ) {
+        return;
+      }
+      const prevLabels = existing.labels ?? [];
+      const mergedLabels =
+        anlageLabel && !prevLabels.includes(anlageLabel)
+          ? [...prevLabels, anlageLabel]
+          : prevLabels;
+      setSpieler((prev) =>
+        prev.map((s) =>
+          s.id === existing.id
+            ? {
+                ...s,
+                kontaktEmail: email || s.kontaktEmail,
+                kontaktTelefon: telefon || s.kontaktTelefon,
+                rechnungsAdresse: adresse || s.rechnungsAdresse,
+                abweichenderEmpfaenger: kontaktName ? true : s.abweichenderEmpfaenger,
+                empfaengerName: kontaktName || s.empfaengerName,
+                labels: mergedLabels.length > 0 ? mergedLabels : s.labels,
+              }
+            : s
+        )
+      );
+      updateRequestStatus(req.id, "erledigt");
+      alert(
+        `Anmeldedaten in „${existing.vorname} ${existing.nachname || ""}" übernommen und das Profil vervollständigt.`
+      );
+      return;
+    }
+
+    // Kein vorhandener Spieler: wie bisher ein neues Spieler-Formular vorbefüllen.
     setSpielerVorname(vorname);
     setSpielerNachname(nachname);
     setSpielerEmail(req.email);
     setSpielerTelefon(req.telefon || "");
+    setSpielerRechnung(adresse);
+    if (kontaktName) {
+      setSpielerAbweichenderEmpfaenger(true);
+      setSpielerEmpfaengerName(kontaktName);
+    } else {
+      setSpielerAbweichenderEmpfaenger(false);
+      setSpielerEmpfaengerName("");
+    }
     setSpielerNotizen(""); // Nachricht wird nicht als Notiz übernommen
-    
+
     // Labels vorbereiten
     const newLabels: string[] = [];
-    if (req.anlage) {
-      newLabels.push(req.anlage); // "Wedding" oder "Britz"
+    if (anlageLabel) {
+      newLabels.push(anlageLabel); // "Wedding" oder "Britz"
     }
     setSpielerLabels(newLabels);
-    
+
     // UI-State setzen
     setVerwaltungTab("spieler");
     setShowSpielerForm(true);
     setEditingSpielerId(null);
     setSpielerError(null);
-    
+
     // Nach oben scrollen
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -9887,6 +9954,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         className="btn micro"
                                         style={{ backgroundColor: "#059669", borderColor: "#059669" }}
                                         onClick={() => adoptPlayerFromRequest(req)}
+                                        title="Gibt es bereits einen Spieler mit diesem Namen, werden die Anmeldedaten mit dem vorhandenen Profil abgeglichen und dieses vervollständigt. Sonst wird ein neuer Spieler angelegt."
                                       >
                                         Als Spieler übernehmen
                                       </button>
