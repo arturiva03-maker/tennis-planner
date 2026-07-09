@@ -61,6 +61,9 @@ type Spieler = {
   empfaengerName?: string;
   // Labels für Newsletter-Filterung
   labels?: string[];
+  // Archiviert: Spieler nicht mehr aktiv, bleibt in den Daten erhalten
+  // (alte Trainings/Abrechnungen unverändert), wird aber aus aktiven Listen ausgeblendet
+  archiviert?: boolean;
 };
 
 const GLAEUBIGER_ID = "DE58ZZZ00002765947";
@@ -1347,7 +1350,8 @@ export default function App() {
       recipientMap.delete(id);
     });
 
-    return Array.from(recipientMap.values());
+    // Archivierte Spieler nie anschreiben
+    return Array.from(recipientMap.values()).filter(s => !s.archiviert);
   }, [spieler, trainings, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
 
   // Undo nach 60 Sekunden automatisch entfernen
@@ -1630,6 +1634,8 @@ export default function App() {
 
   // State für Spieler-Label-Filter in Verwaltung
   const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
+  // Archivierte Spieler in der Verwaltungsliste anzeigen (statt aktive)
+  const [verwaltungZeigeArchiv, setVerwaltungZeigeArchiv] = useState(false);
 
   // States für Notizen (Weiteres)
   const [showNotizForm, setShowNotizForm] = useState(false);
@@ -2568,9 +2574,11 @@ export default function App() {
   }, [trainings, offeneSpontanTrainingIds, kalenderTrainerFilter, kalenderAnlageFilter, defaultTrainerId, vertretungen]);
 
   const filteredSpielerForPick = useMemo(() => {
+    // Archivierte Spieler können keinen neuen Trainings mehr zugeordnet werden
+    const aktive = spieler.filter((s) => !s.archiviert);
     const q = spielerSuche.trim().toLowerCase();
-    if (!q) return spieler;
-    return spieler.filter(
+    if (!q) return aktive;
+    return aktive.filter(
       (s) =>
         s.vorname.toLowerCase().includes(q) ||
         (s.nachname ?? "").toLowerCase().includes(q) ||
@@ -2715,6 +2723,24 @@ export default function App() {
       setSpielerAbweichenderEmpfaenger(false);
       setSpielerEmpfaengerName("");
     }
+  }
+
+  function archiveSpieler(id: string) {
+    const s = spieler.find((sp) => sp.id === id);
+    const name = s ? getFullName(s) : "Spieler";
+    saveUndoSnapshot(`Spieler "${name}" archiviert`);
+    setSpieler((prev) =>
+      prev.map((sp) => (sp.id === id ? { ...sp, archiviert: true } : sp))
+    );
+  }
+
+  function unarchiveSpieler(id: string) {
+    const s = spieler.find((sp) => sp.id === id);
+    const name = s ? getFullName(s) : "Spieler";
+    saveUndoSnapshot(`Spieler "${name}" reaktiviert`);
+    setSpieler((prev) =>
+      prev.map((sp) => (sp.id === id ? { ...sp, archiviert: false } : sp))
+    );
   }
 
   function deleteTarif(id: string) {
@@ -8489,8 +8515,22 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         </select>
                       </div>
                       <span className="pill" style={{ alignSelf: "flex-end", marginBottom: 4 }}>
-                        Gesamt: <strong>{spieler.length}</strong>
+                        {verwaltungZeigeArchiv ? "Archiviert" : "Aktiv"}:{" "}
+                        <strong>
+                          {verwaltungZeigeArchiv
+                            ? spieler.filter((s) => s.archiviert).length
+                            : spieler.filter((s) => !s.archiviert).length}
+                        </strong>
                       </span>
+                      <button
+                        className={verwaltungZeigeArchiv ? "btn" : "btn btnGhost"}
+                        style={{ alignSelf: "flex-end", marginBottom: 4 }}
+                        onClick={() => setVerwaltungZeigeArchiv((v) => !v)}
+                      >
+                        {verwaltungZeigeArchiv
+                          ? "← Aktive Spieler"
+                          : `Archiv (${spieler.filter((s) => s.archiviert).length})`}
+                      </button>
                       {!showSpielerForm && !editingSpielerId && (
                         <>
                           <button
@@ -8507,8 +8547,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             onClick={async () => {
                               const XLSX = await import('xlsx');
 
-                              // Filter Spieler basierend auf aktuellem Label-Filter
+                              // Filter Spieler basierend auf aktuellem Label-Filter (ohne archivierte)
                               const filteredSpieler = spieler.filter(s => {
+                                if (s.archiviert) return false;
                                 if (verwaltungLabelFilter === "alle") return true;
                                 if (verwaltungLabelFilter === "ohne") return !s.labels || s.labels.length === 0;
                                 return s.labels?.includes(verwaltungLabelFilter);
@@ -9018,6 +9059,8 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       {spieler
                         .slice()
                         .filter((s) => {
+                          // Archiv-Umschalter: entweder aktive oder archivierte Spieler
+                          if (verwaltungZeigeArchiv ? !s.archiviert : !!s.archiviert) return false;
                           // Label-Filter
                           if (verwaltungLabelFilter === "ohne") {
                             if (s.labels && s.labels.length > 0) return false;
@@ -9036,9 +9079,23 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         })
                         .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                         .map((s) => (
-                        <li key={s.id} className="listItem">
+                        <li key={s.id} className="listItem" style={s.archiviert ? { opacity: 0.6 } : undefined}>
                           <div>
                             <strong>{getFullName(s)}</strong>
+                            {s.archiviert && (
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  background: "var(--bg-inset)",
+                                  color: "var(--text-muted)",
+                                  padding: "2px 8px",
+                                  borderRadius: 10,
+                                  fontSize: 11,
+                                }}
+                              >
+                                Archiviert
+                              </span>
+                            )}
                             <div className="muted">
                               {s.kontaktEmail ?? ""}
                               {s.kontaktTelefon
@@ -9073,22 +9130,47 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             )}
                           </div>
                           <div className="smallActions">
-                            <button
-                              className="btn micro btnGhost"
-                              onClick={() => {
-                                startEditSpieler(s);
-                                setSpielerError(null);
-                                setShowSpielerForm(true);
-                              }}
-                            >
-                              Bearbeiten
-                            </button>
-                            <button
-                              className="btn micro btnWarn"
-                              onClick={() => deleteSpieler(s.id)}
-                            >
-                              Löschen
-                            </button>
+                            {s.archiviert ? (
+                              <>
+                                <button
+                                  className="btn micro"
+                                  onClick={() => unarchiveSpieler(s.id)}
+                                >
+                                  Reaktivieren
+                                </button>
+                                <button
+                                  className="btn micro btnWarn"
+                                  onClick={() => deleteSpieler(s.id)}
+                                >
+                                  Endgültig löschen
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => {
+                                    startEditSpieler(s);
+                                    setSpielerError(null);
+                                    setShowSpielerForm(true);
+                                  }}
+                                >
+                                  Bearbeiten
+                                </button>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => archiveSpieler(s.id)}
+                                >
+                                  Archivieren
+                                </button>
+                                <button
+                                  className="btn micro btnWarn"
+                                  onClick={() => deleteSpieler(s.id)}
+                                >
+                                  Löschen
+                                </button>
+                              </>
+                            )}
                           </div>
                         </li>
                       ))}
@@ -11450,6 +11532,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             {spieler
                               .filter(s =>
                                 s.kontaktEmail &&
+                                !s.archiviert &&
                                 (s.vorname.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) ||
                                   (s.nachname ?? "").toLowerCase().includes(newsletterPlayerSearch.toLowerCase())) &&
                                 !newsletterSelectedPlayers.includes(s.id)
@@ -11482,6 +11565,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                               ))}
                             {spieler.filter(s =>
                               s.kontaktEmail &&
+                              !s.archiviert &&
                               (s.vorname.toLowerCase().includes(newsletterPlayerSearch.toLowerCase()) ||
                                 (s.nachname ?? "").toLowerCase().includes(newsletterPlayerSearch.toLowerCase())) &&
                               !newsletterSelectedPlayers.includes(s.id)
@@ -16993,7 +17077,7 @@ Tennisschule A bis Z`)}
               return true;
             });
           }
-          return baseFiltered;
+          return baseFiltered.filter((s) => !s.archiviert);
         })()
           .filter((s) => !pdfExportExcluded.has(s.id))
           .sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
