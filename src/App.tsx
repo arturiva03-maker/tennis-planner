@@ -2373,6 +2373,19 @@ export default function App() {
     trainers[0]?.id ||
     "";
   const defaultTrainerId = trainers[0]?.id ?? "";
+
+  // Ordnet ein Training einem Trainer zu. Beim Tenniscamp mit mehreren Trainern
+  // gehört das Training zu JEDEM beteiligten Trainer (nicht nur zum primären),
+  // damit es bei allen Camp-Trainern als Training/Honorar erscheint.
+  const trainingGehoertZuTrainer = useCallback((t: Training, trainerId: string): boolean => {
+    if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
+      return t.trainerIds.includes(trainerId);
+    }
+    const vertretung = vertretungen.find((v) => v.trainingId === t.id);
+    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+    return tid === trainerId;
+  }, [vertretungen, defaultTrainerId]);
+
   const selectedTrainerName =
     trainerById.get(tTrainerId)?.name ??
     trainerById.get(defaultTrainerId)?.name ??
@@ -2534,7 +2547,10 @@ export default function App() {
           // Nur beim Vertretungstrainer anzeigen
           return kalenderTrainerFilter.includes(vertretung.vertretungTrainerId);
         }
-        // Keine Vertretung: normaler Trainer
+        // Keine Vertretung: normaler Trainer (Camp: jeder beteiligte Trainer)
+        if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
+          return t.trainerIds.some((id) => kalenderTrainerFilter.includes(id));
+        }
         return kalenderTrainerFilter.includes(tid);
       })
       .sort((a, b) =>
@@ -2590,6 +2606,9 @@ export default function App() {
         if (vertretung) {
           if (!vertretung.vertretungTrainerId) return false;
           return kalenderTrainerFilter.includes(vertretung.vertretungTrainerId);
+        }
+        if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
+          return t.trainerIds.some((id) => kalenderTrainerFilter.includes(id));
         }
         return kalenderTrainerFilter.includes(tid);
       })
@@ -5567,15 +5586,14 @@ Tennisschule A bis Z`;
         .filter((t) => !t.isPrivat)
         .filter((t) => {
           if (abrechnungTrainerFilter === "alle") return true;
-          // Vertretungstrainer berücksichtigen
-          const vertretung = vertretungen.find(v => v.trainingId === t.id);
-          const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-          return tid === abrechnungTrainerFilter;
+          // Tenniscamp mit mehreren Trainern zählt für jeden beteiligten Trainer;
+          // sonst Vertretungstrainer berücksichtigen.
+          return trainingGehoertZuTrainer(t, abrechnungTrainerFilter);
         })
         .sort((a, b) =>
           (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
         ),
-    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId, vertretungen]
+    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId, vertretungen, trainingGehoertZuTrainer]
   );
 
   // Berechne für jeden Spieler, an welchen Wochentagen er wiederkehrende Trainings hat
@@ -5893,7 +5911,12 @@ Tennisschule A bis Z`;
       // Stundenlohn für die Camp-Stunden. Keine Spieler-Abrechnung (sum bleibt 0).
       if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
         const campPaid = t.barBezahlt || !!trainerPayments[t.id];
-        t.trainerIds.forEach((campTid) => {
+        // Bei aktivem Trainerfilter nur den gefilterten Trainer gutschreiben,
+        // sonst tauchen die anderen Camp-Trainer als Teil-Zeilen auf.
+        const campTrainerIdsToPay = abrechnungTrainerFilter === "alle"
+          ? t.trainerIds
+          : t.trainerIds.filter((id) => id === abrechnungTrainerFilter);
+        campTrainerIdsToPay.forEach((campTid) => {
           const campHonorar = trainerHonorarFuerTraining(t, campTid);
           const campEntry =
             perTrainer.get(campTid) ?? {
@@ -6184,12 +6207,10 @@ Tennisschule A bis Z`;
   // Bar/Nicht-Bar Trainings für Admin-Ansicht (wenn ein Trainer gefiltert ist)
   const adminTrainerTrainings = useMemo(() => {
     if (abrechnungTrainerFilter === "alle") return [];
-    return trainingsForAbrechnung.filter((t) => {
-      const vertretung = vertretungen.find(v => v.trainingId === t.id);
-      const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-      return tid === abrechnungTrainerFilter;
-    });
-  }, [trainingsForAbrechnung, abrechnungTrainerFilter, vertretungen, defaultTrainerId]);
+    return trainingsForAbrechnung.filter((t) =>
+      trainingGehoertZuTrainer(t, abrechnungTrainerFilter)
+    );
+  }, [trainingsForAbrechnung, abrechnungTrainerFilter, vertretungen, defaultTrainerId, trainingGehoertZuTrainer]);
 
   const adminBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => t.barBezahlt), [adminTrainerTrainings]);
   const adminNichtBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => !t.barBezahlt), [adminTrainerTrainings]);
@@ -6345,10 +6366,9 @@ Tennisschule A bis Z`;
   const eigeneTrainingsImMonat = trainings.filter((t) => {
     if (t.status !== "durchgefuehrt") return false;
     if (!t.datum.startsWith(abrechnungMonat)) return false;
-    // Vertretungstrainer berücksichtigen
-    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-    return tid === ownTrainerId;
+    // Tenniscamp mit mehreren Trainern zählt für jeden beteiligten Trainer;
+    // sonst Vertretungstrainer berücksichtigen.
+    return trainingGehoertZuTrainer(t, ownTrainerId);
   });
 
   // Privatstunden werden als eigene Kategorie geführt und NICHT in Bar/Nicht-bar mitgezählt
@@ -13332,11 +13352,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                   // dieselben Nicht-Bar-Stunden wieder auf "offen" setzen,
                                   // damit exakt der Stand von vor der Abrechnung
                                   // wiederhergestellt wird (sonst bleiben sie "bezahlt").
-                                  const trainerTrainings = trainingsInMonth.filter((t) => {
-                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-                                    return tid === abrechnungTrainerFilter && !t.barBezahlt;
-                                  });
+                                  const trainerTrainings = trainingsInMonth.filter(
+                                    (t) => trainingGehoertZuTrainer(t, abrechnungTrainerFilter) && !t.barBezahlt
+                                  );
                                   if (trainerTrainings.length > 0) {
                                     setTrainerPayments((prev) => {
                                       const next = { ...prev };
@@ -13363,11 +13381,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                   const key = trainerMonthSettledKey(abrechnungMonat, abrechnungTrainerFilter);
                                   setTrainerMonthSettled((prev) => ({ ...prev, [key]: true }));
                                   // Alle nicht-bar Trainings dieses Trainers als abgerechnet markieren
-                                  const trainerTrainings = trainingsInMonth.filter((t) => {
-                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-                                    return tid === abrechnungTrainerFilter && !t.barBezahlt;
-                                  });
+                                  const trainerTrainings = trainingsInMonth.filter(
+                                    (t) => trainingGehoertZuTrainer(t, abrechnungTrainerFilter) && !t.barBezahlt
+                                  );
                                   if (trainerTrainings.length > 0) {
                                     setTrainerPayments((prev) => {
                                       const next = { ...prev };
@@ -13704,12 +13720,10 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 const isSascha = r.name.trim().toLowerCase() === "sascha";
 
                                 if (isSascha) {
-                                  // Für Sascha: Bar/Nicht-Bar Stunden zählen (Vertretung berücksichtigen)
-                                  const saschaTrainings = trainingsForAbrechnung.filter((t) => {
-                                    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-                                    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-                                    return tid === r.id;
-                                  });
+                                  // Für Sascha: Bar/Nicht-Bar Stunden zählen (Vertretung/Camp berücksichtigen)
+                                  const saschaTrainings = trainingsForAbrechnung.filter((t) =>
+                                    trainingGehoertZuTrainer(t, r.id)
+                                  );
                                   const nichtBarCount = saschaTrainings.filter(
                                     (t) => !t.barBezahlt
                                   ).length;
