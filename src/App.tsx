@@ -252,6 +252,9 @@ type KennlerntennisAnfrage = {
 type Training = {
   id: string;
   trainerId?: string;
+  // Tenniscamp: mehrere Trainer führen das Camp durch; jeder bekommt seinen
+  // normalen Stundenlohn für die Camp-Stunden. trainerId bleibt der erste/primäre.
+  trainerIds?: string[];
   datum: string;
   uhrzeitVon: string;
   uhrzeitBis: string;
@@ -1578,6 +1581,8 @@ export default function App() {
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
   // Tenniscamp: fester Teilnehmer-Beitrag fürs ganze Camp (für SEPA-XML)
   const [tCampGebuehr, setTCampGebuehr] = useState<number | "">("");
+  // Tenniscamp: mehrere Trainer, die das Camp durchführen (jeder bekommt Stundenlohn)
+  const [tCampTrainerIds, setTCampTrainerIds] = useState<string[]>([]);
 
   const [repeatWeekly, setRepeatWeekly] = useState(true);
   const [repeatUntil, setRepeatUntil] = useState("2026-07-12");
@@ -4595,21 +4600,38 @@ ${txInfo}
     return basis / n;
   }, [tarifById]);
 
-  const trainerHonorarFuerTraining = useCallback((t: Training) => {
+  // Honorar für ein Training. Mit overrideTrainerId wird gezielt das Honorar für
+  // einen bestimmten Trainer berechnet (z.B. je Trainer beim Tenniscamp) – ohne
+  // Vertretungs-/Manuell-Anpassungs-Logik, die auf den einzelnen Trainer zielt.
+  const trainerHonorarFuerTraining = useCallback((t: Training, overrideTrainerId?: string) => {
     if (t.isPrivat) return 0;
     if (t.status === "abgesagt") return 0;
-    if (typeof trainerHonorarAnpassungen[t.id] === "number") {
+    if (!overrideTrainerId && typeof trainerHonorarAnpassungen[t.id] === "number") {
       return trainerHonorarAnpassungen[t.id];
     }
     // Wenn eine Vertretung existiert, den Vertretungstrainer für Honorar verwenden
-    const vertretung = vertretungen.find(v => v.trainingId === t.id);
-    const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
+    const vertretung = overrideTrainerId ? undefined : vertretungen.find(v => v.trainingId === t.id);
+    const tid = overrideTrainerId || vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
     const trainer = trainerById.get(tid);
     const rate = trainer?.stundensatz ?? 0;
     const plannedMins = durationMin(t.uhrzeitVon, t.uhrzeitBis);
     const actualMins = (t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < plannedMins) ? t.actualMinutes : plannedMins;
     return round2(rate * (actualMins / 60));
   }, [vertretungen, trainerById, defaultTrainerId, trainerHonorarAnpassungen]);
+
+  // Effektive Trainer eines Trainings: beim Camp mit mehreren Trainern alle,
+  // sonst der (Einzel-)Trainer. Basis für Honorar-Anzeige und -Berechnung.
+  const campTrainerIdsOf = useCallback((t: Training): string[] => {
+    if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 0) return t.trainerIds;
+    return t.trainerId ? [t.trainerId] : [];
+  }, []);
+
+  // Gesamt-Honorar eines Trainings über alle beteiligten Trainer (Camp = Summe).
+  const trainerHonorarGesamtFuerTraining = useCallback((t: Training): number => {
+    const ids = campTrainerIdsOf(t);
+    if (ids.length <= 1) return trainerHonorarFuerTraining(t);
+    return round2(ids.reduce((s, id) => s + trainerHonorarFuerTraining(t, id), 0));
+  }, [campTrainerIdsOf, trainerHonorarFuerTraining]);
 
   function fillTrainingFromSelected(t: Training) {
     if (isTrainer) return;
@@ -4636,6 +4658,11 @@ ${txInfo}
     setTIsPrivat(t.isPrivat ?? false);
     setTIsTenniscamp(t.isTenniscamp ?? false);
     setTCampGebuehr(typeof t.campGebuehr === "number" ? t.campGebuehr : "");
+    setTCampTrainerIds(
+      t.trainerIds && t.trainerIds.length > 0
+        ? t.trainerIds
+        : (t.trainerId ? [t.trainerId] : [])
+    );
     setTCampBisDatum(t.datum);
     setTab("training");
   }
@@ -4663,6 +4690,7 @@ ${txInfo}
     setTIsKurzfristig(false);
     setTIsTenniscamp(false);
     setTCampGebuehr("");
+    setTCampTrainerIds([]);
     setTCampBisDatum(todayISO());
   }
 
@@ -5156,6 +5184,8 @@ Tennisschule A bis Z`;
       const bis = tCampBisDatum && tCampBisDatum >= tDatum ? tCampBisDatum : tDatum;
       const serieId = uid();
       const created: Training[] = [];
+      // Alle Camp-Trainer (jeder bekommt seinen Stundenlohn); erster ist der primäre Trainer.
+      const campTrainerIds = tCampTrainerIds.length > 0 ? tCampTrainerIds : [trainerIdForSave];
       let d = tDatum;
       while (d <= bis) {
         created.push({
@@ -5163,7 +5193,8 @@ Tennisschule A bis Z`;
           datum: d,
           uhrzeitVon: tVon,
           uhrzeitBis: tBis,
-          trainerId: trainerIdForSave,
+          trainerId: campTrainerIds[0],
+          trainerIds: campTrainerIds,
           spielerIds: tSpielerIds,
           status: tStatus,
           notiz: tNotiz.trim() || undefined,
@@ -5324,6 +5355,7 @@ Tennisschule A bis Z`;
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
         isTenniscamp: tIsTenniscamp || undefined,
+        trainerIds: tIsTenniscamp && tCampTrainerIds.length > 0 ? tCampTrainerIds : undefined,
         campGebuehr: tIsTenniscamp && typeof tCampGebuehr === "number" && tCampGebuehr > 0 ? tCampGebuehr : undefined,
         actualMinutes: tStatus === "durchgefuehrt" && tActualMinutes !== "" ? (parseInt(tActualMinutes) || undefined) : undefined,
         cancelFee: tStatus === "abgesagt" ? (pendingCancelFee ?? existing.cancelFee) : undefined,
@@ -5364,15 +5396,22 @@ Tennisschule A bis Z`;
         );
       }
 
-      // Tenniscamp: Teilnehmer + Camp-Gebühr gelten fürs ganze Camp – auf alle
-      // Tage der Serie spiegeln (unabhängig vom Serien-Scope).
+      // Tenniscamp: Teilnehmer + Camp-Gebühr + Trainer gelten fürs ganze Camp –
+      // auf alle Tage der Serie spiegeln (unabhängig vom Serien-Scope).
       if (existing.isTenniscamp && existing.serieId) {
         const campSid = existing.serieId;
         const campG = typeof tCampGebuehr === "number" && tCampGebuehr > 0 ? tCampGebuehr : undefined;
+        const campTrainers = tCampTrainerIds.length > 0 ? tCampTrainerIds : (existing.trainerId ? [existing.trainerId] : []);
         setTrainings((prev) =>
           prev.map((x) =>
             x.serieId === campSid
-              ? { ...x, spielerIds: tSpielerIds, campGebuehr: campG }
+              ? {
+                  ...x,
+                  spielerIds: tSpielerIds,
+                  campGebuehr: campG,
+                  trainerIds: campTrainers.length > 0 ? campTrainers : undefined,
+                  trainerId: campTrainers[0] ?? x.trainerId,
+                }
               : x
           )
         );
@@ -5849,6 +5888,33 @@ Tennisschule A bis Z`;
       const cfg = getPreisConfig(t, tarifById);
       // Tenniscamp hat keinen Tarif (cfg === null), der Trainer wird trotzdem vergütet.
       if (!cfg && !t.isTenniscamp) return;
+
+      // Tenniscamp mit mehreren Trainern: jeder Trainer bekommt seinen eigenen
+      // Stundenlohn für die Camp-Stunden. Keine Spieler-Abrechnung (sum bleibt 0).
+      if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
+        const campPaid = t.barBezahlt || !!trainerPayments[t.id];
+        t.trainerIds.forEach((campTid) => {
+          const campHonorar = trainerHonorarFuerTraining(t, campTid);
+          const campEntry =
+            perTrainer.get(campTid) ?? {
+              name: trainerById.get(campTid)?.name ?? "Trainer",
+              sum: 0,
+              trainings: 0,
+              honorar: 0,
+              honorarBezahlt: 0,
+              honorarOffen: 0,
+            };
+          campEntry.trainings += 1;
+          campEntry.honorar = round2(campEntry.honorar + campHonorar);
+          if (campPaid) {
+            campEntry.honorarBezahlt = round2(campEntry.honorarBezahlt + campHonorar);
+          } else {
+            campEntry.honorarOffen = round2(campEntry.honorarOffen + campHonorar);
+          }
+          perTrainer.set(campTid, campEntry);
+        });
+        return;
+      }
 
       const honorar = trainerHonorarFuerTraining(t);
       let entry =
@@ -7541,6 +7607,8 @@ Tennisschule A bis Z`;
                               setTCustomPreisProStunde("");
                               setTSpielerIds([]);
                               setTCampGebuehr("");
+                              // Camp mit dem aktuell gewählten Trainer vorbelegen
+                              setTCampTrainerIds(tTrainerId ? [tTrainerId] : []);
                               setRepeatWeekly(false);
                               setRepeatPeriods([]);
                               if (!tCampBisDatum || tCampBisDatum < tDatum) setTCampBisDatum(tDatum);
@@ -7679,8 +7747,11 @@ Tennisschule A bis Z`;
                         ? Math.floor((Date.parse(tCampBisDatum) - Date.parse(tDatum)) / 86400000) + 1
                         : 0;
                       const hoursPerDay = durationMin(tVon, tBis) / 60;
-                      const rate = trainerById.get(tTrainerId || defaultTrainerId)?.stundensatz ?? 0;
-                      const honorar = round2(dayCount * hoursPerDay * rate);
+                      const campTrainers = tCampTrainerIds.length > 0 ? tCampTrainerIds : [tTrainerId || defaultTrainerId];
+                      const honorar = round2(
+                        campTrainers.reduce((s, id) => s + (trainerById.get(id)?.stundensatz ?? 0) * dayCount * hoursPerDay, 0)
+                      );
+                      const trainerNamen = campTrainers.map((id) => trainerById.get(id)?.name ?? "Trainer").join(", ");
                       const ersterTagLabel = (() => {
                         const [yy, mm, dd] = tDatum.split("-");
                         return dd && mm && yy ? `${dd}.${mm}.${yy}` : tDatum;
@@ -7711,7 +7782,7 @@ Tennisschule A bis Z`;
                           </div>
                           <div className="muted" style={{ marginTop: 6 }}>
                             {bisOk
-                              ? `Es werden ${dayCount} Trainingstag${dayCount === 1 ? "" : "e"} (${ersterTagLabel} – ${(() => { const [yy, mm, dd] = tCampBisDatum.split("-"); return dd && mm && yy ? `${dd}.${mm}.${yy}` : tCampBisDatum; })()}, ${tVon}–${tBis}, ${hoursPerDay.toLocaleString("de-DE")} Std./Tag) für ${selectedTrainerName} angelegt. Spieler werden nicht abgerechnet – Trainer-Honorar gesamt ≈ ${euro(honorar)} (${euro(rate)}/Std.).`
+                              ? `Es werden ${dayCount} Trainingstag${dayCount === 1 ? "" : "e"} (${ersterTagLabel} – ${(() => { const [yy, mm, dd] = tCampBisDatum.split("-"); return dd && mm && yy ? `${dd}.${mm}.${yy}` : tCampBisDatum; })()}, ${tVon}–${tBis}, ${hoursPerDay.toLocaleString("de-DE")} Std./Tag) für ${trainerNamen} angelegt. Spieler werden nicht abgerechnet – Trainer-Honorar gesamt ≈ ${euro(honorar)} (${campTrainers.length} Trainer, je normaler Stundenlohn).`
                               : "Bitte einen gültigen Zeitraum wählen (Letzter Tag darf nicht vor dem Ersten Tag liegen)."}
                           </div>
                         </div>
@@ -8308,6 +8379,55 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       </div>
                     )}
                   </div>
+
+                  {tIsTenniscamp && (
+                    <div className="card">
+                      <h2>Trainer im Camp</h2>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 8 }}>
+                        Alle ausgewählten Trainer führen das Camp durch und bekommen ihren
+                        normalen Stundenlohn für die Camp-Stunden.
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {trainers.map((tr) => {
+                          const checked = tCampTrainerIds.includes(tr.id);
+                          return (
+                            <label
+                              key={tr.id}
+                              className="pill"
+                              style={{
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                background: checked ? "rgba(20, 184, 166, 0.15)" : undefined,
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() =>
+                                  setTCampTrainerIds((prev) =>
+                                    prev.includes(tr.id)
+                                      ? prev.filter((x) => x !== tr.id)
+                                      : [...prev, tr.id]
+                                  )
+                                }
+                              />
+                              {tr.name}
+                              <span className="muted" style={{ fontSize: 12 }}>
+                                {euro(tr.stundensatz ?? 0)}/Std.
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {tCampTrainerIds.length === 0 && (
+                        <div className="muted" style={{ marginTop: 8, fontSize: 13, color: "#dc2626" }}>
+                          Kein Trainer ausgewählt – es wird der oben im Formular gewählte Trainer verwendet.
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {tIsTenniscamp && (() => {
                     const gebuehr = typeof tCampGebuehr === "number" ? tCampGebuehr : 0;
@@ -13667,10 +13787,14 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                           // Vertretungstrainer berücksichtigen
                           const vertretung = vertretungen.find(v => v.trainingId === t.id);
                           const effectiveTrainerId = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
-                          const trainerName = trainerById.get(effectiveTrainerId)?.name ?? "Trainer";
+                          // Tenniscamp mit mehreren Trainern: alle Namen + Gesamt-Honorar zeigen
+                          const istCampMulti = !!(t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1);
+                          const trainerName = istCampMulti
+                            ? t.trainerIds!.map((id) => trainerById.get(id)?.name ?? "Trainer").join(", ")
+                            : trainerById.get(effectiveTrainerId)?.name ?? "Trainer";
                           const priceNum = round2(trainingPreisGesamt(t));
 
-                          const honorarNum = trainerHonorarFuerTraining(t);
+                          const honorarNum = trainerHonorarGesamtFuerTraining(t);
                           const honorarBadge = euro(honorarNum);
                           const trainerPaid =
                             t.barBezahlt || !!trainerPayments[t.id];
