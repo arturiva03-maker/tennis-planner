@@ -41,6 +41,19 @@ type Trainer = {
 type SepaSequenz = "FRST" | "RCUR" | "OOFF" | "FNAL";
 type SepaLastschriftart = "CORE" | "B2B";
 
+// Eine Zeile im Camp-SEPA-Export (Betrag pro Teilnehmer individuell anpassbar)
+type CampSepaRow = {
+  spielerId: string;
+  name: string;        // Kontoinhaber (ggf. abweichender Empfänger)
+  spielerName: string; // Name des Teilnehmers
+  iban: string;
+  mandatsreferenz: string;
+  unterschriftsdatum: string;
+  sequenz: SepaSequenz;
+  lastschriftart: SepaLastschriftart;
+  betrag: number;
+};
+
 type Spieler = {
   id: string;
   vorname: string;
@@ -254,6 +267,7 @@ type Training = {
   isSpontanBuchung?: boolean;
   isPrivat?: boolean;
   isTenniscamp?: boolean; // Tenniscamp über einen Zeitraum: keine Spieler-Abrechnung, Trainer wird normal vergütet
+  campGebuehr?: number; // Tenniscamp: fester Teilnehmer-Beitrag fürs ganze Camp (nur für SEPA-XML, keine Monatsabrechnung); wird auf allen Tagen der Serie gespiegelt
   cancelFee?: number; // pro-Spieler-Betrag bei Absage mit Teilgebühr (nur proTraining/proSpieler)
   actualMinutes?: number; // tatsächliche Dauer in Minuten (wenn Training nur teilweise durchgeführt)
 };
@@ -1562,6 +1576,8 @@ export default function App() {
 
   const [spielerSuche, setSpielerSuche] = useState("");
   const [tSpielerIds, setTSpielerIds] = useState<string[]>([]);
+  // Tenniscamp: fester Teilnehmer-Beitrag fürs ganze Camp (für SEPA-XML)
+  const [tCampGebuehr, setTCampGebuehr] = useState<number | "">("");
 
   const [repeatWeekly, setRepeatWeekly] = useState(true);
   const [repeatUntil, setRepeatUntil] = useState("2026-07-12");
@@ -1626,6 +1642,8 @@ export default function App() {
   // States für SEPA-XML-Export
   const [sepaExportSelection, setSepaExportSelection] = useState<Set<string>>(new Set());
   const [showSepaExportModal, setShowSepaExportModal] = useState(false);
+  // Tenniscamp-SEPA-Export (Teilnehmer + individuelle Beträge)
+  const [campSepaModal, setCampSepaModal] = useState<{ titel: string; rows: CampSepaRow[] } | null>(null);
   const [showBankImportModal, setShowBankImportModal] = useState(false);
 
   // States für Wochenplan PDF-Export
@@ -3232,6 +3250,38 @@ ${txInfo}
 `;
   }
 
+  // Tenniscamp: SEPA-Export-Dialog für die Teilnehmer öffnen.
+  // Betrag wird pro Teilnehmer mit der Camp-Gebühr vorbelegt und ist im Dialog anpassbar.
+  function openCampSepaModal(spielerIds: string[], gebuehr: number, titel: string) {
+    const rows: CampSepaRow[] = spielerIds
+      .map((id) => {
+        const sp = spielerById.get(id);
+        if (!sp) return null;
+        // Bei abweichendem Rechnungsempfänger (z.B. Eltern bei Kindern) muss der
+        // Kontoinhaber als Dbtr im SEPA-XML stehen, sonst weist die Bank die LS zurück.
+        const kontoinhaber = sp.abweichenderEmpfaenger && sp.empfaengerName?.trim()
+          ? sp.empfaengerName.trim()
+          : getFullName(sp);
+        return {
+          spielerId: id,
+          name: kontoinhaber,
+          spielerName: getFullName(sp),
+          iban: sp.iban || "",
+          mandatsreferenz: sp.mandatsreferenz || "",
+          unterschriftsdatum: sp.unterschriftsdatum || "",
+          sequenz: (sp.sepaSequenz ?? "RCUR") as SepaSequenz,
+          lastschriftart: (sp.sepaLastschriftart ?? "CORE") as SepaLastschriftart,
+          betrag: gebuehr > 0 ? gebuehr : 0,
+        };
+      })
+      .filter((x): x is CampSepaRow => x !== null);
+    if (rows.length === 0) {
+      window.alert("Keine Teilnehmer ausgewählt.");
+      return;
+    }
+    setCampSepaModal({ titel, rows });
+  }
+
   function addTarif() {
     const name = tarifName.trim();
     if (!name) return;
@@ -4500,7 +4550,9 @@ ${txInfo}
   function toggleSpielerPick(id: string) {
     setTSpielerIds((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      autoSelectTarif(next.length);
+      // Beim Tenniscamp keinen Tarif automatisch wählen – Camp-Teilnehmer werden
+      // nicht über die Monatsabrechnung, sondern nur per Camp-SEPA abgerechnet.
+      if (!tIsTenniscamp) autoSelectTarif(next.length);
       return next;
     });
   }
@@ -4583,6 +4635,7 @@ ${txInfo}
     setTAnlage(t.anlage ?? "Wedding");
     setTIsPrivat(t.isPrivat ?? false);
     setTIsTenniscamp(t.isTenniscamp ?? false);
+    setTCampGebuehr(typeof t.campGebuehr === "number" ? t.campGebuehr : "");
     setTCampBisDatum(t.datum);
     setTab("training");
   }
@@ -4609,6 +4662,7 @@ ${txInfo}
     setTIsPrivat(false);
     setTIsKurzfristig(false);
     setTIsTenniscamp(false);
+    setTCampGebuehr("");
     setTCampBisDatum(todayISO());
   }
 
@@ -5110,12 +5164,13 @@ Tennisschule A bis Z`;
           uhrzeitVon: tVon,
           uhrzeitBis: tBis,
           trainerId: trainerIdForSave,
-          spielerIds: [],
+          spielerIds: tSpielerIds,
           status: tStatus,
           notiz: tNotiz.trim() || undefined,
           serieId,
           anlage: tAnlage,
           isTenniscamp: true,
+          campGebuehr: typeof tCampGebuehr === "number" && tCampGebuehr > 0 ? tCampGebuehr : undefined,
         });
         d = addDaysISO(d, 1);
       }
@@ -5269,6 +5324,7 @@ Tennisschule A bis Z`;
         anlage: tAnlage,
         isPrivat: tIsPrivat || undefined,
         isTenniscamp: tIsTenniscamp || undefined,
+        campGebuehr: tIsTenniscamp && typeof tCampGebuehr === "number" && tCampGebuehr > 0 ? tCampGebuehr : undefined,
         actualMinutes: tStatus === "durchgefuehrt" && tActualMinutes !== "" ? (parseInt(tActualMinutes) || undefined) : undefined,
         cancelFee: tStatus === "abgesagt" ? (pendingCancelFee ?? existing.cancelFee) : undefined,
       };
@@ -5305,6 +5361,20 @@ Tennisschule A bis Z`;
       } else {
         setTrainings((prev) =>
           prev.map((x) => (x.id === selectedTrainingId ? payload : x))
+        );
+      }
+
+      // Tenniscamp: Teilnehmer + Camp-Gebühr gelten fürs ganze Camp – auf alle
+      // Tage der Serie spiegeln (unabhängig vom Serien-Scope).
+      if (existing.isTenniscamp && existing.serieId) {
+        const campSid = existing.serieId;
+        const campG = typeof tCampGebuehr === "number" && tCampGebuehr > 0 ? tCampGebuehr : undefined;
+        setTrainings((prev) =>
+          prev.map((x) =>
+            x.serieId === campSid
+              ? { ...x, spielerIds: tSpielerIds, campGebuehr: campG }
+              : x
+          )
         );
       }
 
@@ -7470,6 +7540,7 @@ Tennisschule A bis Z`;
                               setTTarifId("");
                               setTCustomPreisProStunde("");
                               setTSpielerIds([]);
+                              setTCampGebuehr("");
                               setRepeatWeekly(false);
                               setRepeatPeriods([]);
                               if (!tCampBisDatum || tCampBisDatum < tDatum) setTCampBisDatum(tDatum);
@@ -8100,12 +8171,11 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                     </div>
                   </div>
 
-                  {!tIsTenniscamp && (
                   <div className="card">
-                    <h2>Spieler auswählen</h2>
+                    <h2>{tIsTenniscamp ? "Teilnehmer" : "Spieler auswählen"}</h2>
                     <div className="row">
                       <div className="field" style={{ flex: 1 }}>
-                        <label>Spieler hinzufügen</label>
+                        <label>{tIsTenniscamp ? "Teilnehmer hinzufügen" : "Spieler hinzufügen"}</label>
                         <input
                           value={spielerSuche}
                           onChange={(e) => setSpielerSuche(e.target.value)}
@@ -8181,9 +8251,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                           }}
                           style={{ width: "100%" }}
                         >
-                          <option value="">Spieler auswählen...</option>
+                          <option value="">{tIsTenniscamp ? "Teilnehmer auswählen..." : "Spieler auswählen..."}</option>
                           {spieler
-                            .filter((s) => !tSpielerIds.includes(s.id))
+                            .filter((s) => !tSpielerIds.includes(s.id) && !s.archiviert)
                             .slice()
                             .sort((a, b) => getFullName(a).localeCompare(getFullName(b)))
                             .map((s) => (
@@ -8238,7 +8308,66 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       </div>
                     )}
                   </div>
-                  )}
+
+                  {tIsTenniscamp && (() => {
+                    const gebuehr = typeof tCampGebuehr === "number" ? tCampGebuehr : 0;
+                    const teilnehmer = tSpielerIds.length;
+                    const bereit = tSpielerIds.filter((id) => {
+                      const sp = spielerById.get(id);
+                      return !!(sp?.iban && sp?.mandatsreferenz && sp?.unterschriftsdatum);
+                    }).length;
+                    const summe = round2(teilnehmer * gebuehr);
+                    const campTitel = tNotiz.trim() || (() => {
+                      const [yy, mm, dd] = tDatum.split("-");
+                      return dd && mm && yy ? `${dd}.${mm}.${yy}` : tDatum;
+                    })();
+                    return (
+                      <div className="card">
+                        <h2>Camp-Gebühr &amp; SEPA-Lastschrift</h2>
+                        <div className="row" style={{ alignItems: "end" }}>
+                          <div className="field" style={{ minWidth: 220 }}>
+                            <label>Camp-Preis pro Teilnehmer (EUR)</label>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={tCampGebuehr === "" ? "" : tCampGebuehr}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === "") { setTCampGebuehr(""); return; }
+                                const n = Number(v);
+                                setTCampGebuehr(Number.isFinite(n) ? n : "");
+                              }}
+                              placeholder="z.B. 120"
+                            />
+                          </div>
+                          <span className="pill">Teilnehmer: <strong>{teilnehmer}</strong></span>
+                          <span className="pill">Summe: <strong>{euro(summe)}</strong></span>
+                        </div>
+                        <div className="muted" style={{ marginTop: 6, fontSize: 13 }}>
+                          Fester Beitrag fürs ganze Camp – <strong>nicht</strong> Teil der Monatsabrechnung.
+                          Für die Lastschrift braucht jeder Teilnehmer IBAN, Mandatsreferenz und
+                          Unterschriftsdatum ({bereit}/{teilnehmer} vollständig). Beträge sind im
+                          nächsten Schritt pro Teilnehmer anpassbar.
+                        </div>
+                        <div className="row" style={{ marginTop: 12 }}>
+                          <button
+                            type="button"
+                            className="btn"
+                            disabled={teilnehmer === 0}
+                            onClick={() => openCampSepaModal(tSpielerIds, gebuehr, campTitel)}
+                          >
+                            SEPA-XML erstellen
+                          </button>
+                          {teilnehmer === 0 && (
+                            <span className="muted" style={{ alignSelf: "center", fontSize: 13 }}>
+                              Zuerst oben Teilnehmer hinzufügen.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
 
@@ -17561,6 +17690,138 @@ Tennisschule A bis Z`)}
                   }}
                 >
                   XML herunterladen ({validItems.length} Posten / {euro(totalAmount)})
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Tenniscamp: SEPA-XML für Teilnehmer */}
+      {campSepaModal && (() => {
+        const rows = campSepaModal.rows;
+        const verwendungszweck = `Tenniscamp ${campSepaModal.titel}`.trim();
+        const isReady = (r: CampSepaRow) =>
+          !!(r.iban && r.mandatsreferenz && r.unterschriftsdatum) && r.betrag > 0;
+        const validRows = rows.filter(isReady);
+        const totalAmount = validRows.reduce((acc, r) => acc + r.betrag, 0);
+        return (
+          <div className="modalOverlay" onClick={() => setCampSepaModal(null)}>
+            <div
+              className="modalCard"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 1000, maxHeight: "90vh", overflow: "auto" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h2 style={{ margin: 0 }}>SEPA-XML – Tenniscamp</h2>
+                <button
+                  onClick={() => setCampSepaModal(null)}
+                  style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+                <span className="pill">Teilnehmer: <strong>{validRows.length}</strong> / {rows.length}</span>
+                <span className="pill">Summe: <strong>{euro(totalAmount)}</strong></span>
+                <span className="pill">Gläubiger-ID: <strong>{GLAEUBIGER_ID}</strong></span>
+              </div>
+
+              <div className="muted" style={{ marginBottom: 12, fontSize: 13 }}>
+                Verwendungszweck: <em>„{verwendungszweck}"</em>
+              </div>
+
+              <div style={{ border: "1px solid #ddd", borderRadius: 8, maxHeight: 480, overflow: "auto", marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0 }}>
+                      <th style={{ padding: 8, textAlign: "left" }}>Name</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>IBAN</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Mandat</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Datum</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Seq</th>
+                      <th style={{ padding: 8, textAlign: "right" }}>Betrag</th>
+                      <th style={{ padding: 8, textAlign: "left" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, idx) => (
+                      <tr key={r.spielerId} style={{ borderTop: "1px solid #eee", background: isReady(r) ? undefined : "#fef3c7" }}>
+                        <td style={{ padding: 8 }}>
+                          {r.name}
+                          {r.name !== r.spielerName && (
+                            <div className="muted" style={{ fontSize: 11 }}>für {r.spielerName}</div>
+                          )}
+                        </td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.iban || "—"}</td>
+                        <td style={{ padding: 8, fontFamily: "monospace", fontSize: 11 }}>{r.mandatsreferenz || "—"}</td>
+                        <td style={{ padding: 8 }}>{r.unterschriftsdatum || "—"}</td>
+                        <td style={{ padding: 8 }}>{r.sequenz}</td>
+                        <td style={{ padding: 8, textAlign: "right" }}>
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={r.betrag}
+                            onChange={(e) => {
+                              const n = Number(e.target.value);
+                              const betrag = Number.isFinite(n) && n >= 0 ? n : 0;
+                              setCampSepaModal((m) =>
+                                m ? { ...m, rows: m.rows.map((rr, i) => (i === idx ? { ...rr, betrag } : rr)) } : m
+                              );
+                            }}
+                            style={{ width: 90, textAlign: "right" }}
+                          />
+                        </td>
+                        <td style={{ padding: 8 }}>
+                          {isReady(r) ? (
+                            <span style={{ color: "#16a34a" }}>✓ ok</span>
+                          ) : (
+                            <span style={{ color: "#dc2626" }}>
+                              {!r.iban ? "IBAN fehlt" : !r.mandatsreferenz ? "Mandat fehlt" : !r.unterschriftsdatum ? "Datum fehlt" : r.betrag <= 0 ? "Betrag 0" : "?"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="modalActions">
+                <button className="btn btnGhost" onClick={() => setCampSepaModal(null)}>
+                  Abbrechen
+                </button>
+                <button
+                  className="btn"
+                  disabled={validRows.length === 0}
+                  onClick={() => {
+                    const items = validRows.map((r) => ({
+                      spielerId: r.spielerId,
+                      name: r.name,
+                      iban: r.iban,
+                      mandatsreferenz: r.mandatsreferenz,
+                      unterschriftsdatum: r.unterschriftsdatum,
+                      sequenz: r.sequenz,
+                      lastschriftart: r.lastschriftart,
+                      betrag: r.betrag,
+                      verwendungszweck,
+                    }));
+                    const xml = generateSepaXml(items);
+                    const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `SEPA_Tenniscamp_${todayISO()}.xml`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    setCampSepaModal(null);
+                  }}
+                >
+                  XML herunterladen ({validRows.length} Posten / {euro(totalAmount)})
                 </button>
               </div>
             </div>
