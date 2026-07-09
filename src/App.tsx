@@ -7186,9 +7186,13 @@ Tennisschule A bis Z`;
                                 )
                                 .join(", ");
                               const trainerName =
-                                trainerById.get(
-                                  t.trainerId ?? defaultTrainerId
-                                )?.name ?? "Trainer";
+                                t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1
+                                  ? t.trainerIds
+                                      .map((id) => trainerById.get(id)?.name ?? "Trainer")
+                                      .join(", ")
+                                  : trainerById.get(
+                                      t.trainerId ?? defaultTrainerId
+                                    )?.name ?? "Trainer";
 
                               // Vertretung prüfen
                               const trainingVertretung = vertretungen.find((v) => v.trainingId === t.id);
