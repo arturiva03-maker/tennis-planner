@@ -9638,7 +9638,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
 
                     <div className="row" style={{ margin: "0 0 12px", alignItems: "center", gap: 8 }}>
                       <button
-                        className="btn btnGhost micro"
+                        className="btn micro btnGhost"
                         onClick={() => setFormZeigeArchiv((v) => !v)}
                       >
                         {formZeigeArchiv ? "← Aktive Anfragen" : "Archiv anzeigen"}
@@ -10621,8 +10621,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     </div>
                                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                       <button
-                                        className="btn"
-                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        className="btn micro"
                                         title="Bank- und Mandatsdaten unter einem vorhandenen Spieler speichern (wie der Kontaktbuch-Import) – oder neuen Spieler anlegen"
                                         onClick={() => adoptPlayerFromSepaMandate(mandate)}
                                       >
@@ -10638,15 +10637,13 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         <option value="erledigt">Erledigt</option>
                                       </select>
                                       <button
-                                        className="btn btnGhost"
-                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        className="btn micro btnGhost"
                                         onClick={() => setAnfrageArchiviert("sepa_mandates", mandate.id, !mandate.archiviert, fetchSepaMandates)}
                                       >
                                         {mandate.archiviert ? "Reaktivieren" : "Archivieren"}
                                       </button>
                                       <button
-                                        className="btn danger"
-                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        className="btn micro btnWarn"
                                         onClick={() => deleteSepaMandate(mandate.id)}
                                       >
                                         Löschen
@@ -10921,15 +10918,13 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         E-Mail senden
                                       </button>
                                       <button
-                                        className="btn btnGhost"
-                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        className="btn micro btnGhost"
                                         onClick={() => setAnfrageArchiviert("tenniscamp_anmeldungen", anmeldung.id, !anmeldung.archiviert, fetchTenniscampAnmeldungen)}
                                       >
                                         {anmeldung.archiviert ? "Reaktivieren" : "Archivieren"}
                                       </button>
                                       <button
-                                        className="btn danger"
-                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        className="btn micro btnWarn"
                                         onClick={() => deleteTenniscampAnmeldung(anmeldung.id)}
                                       >
                                         Löschen
@@ -11025,7 +11020,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             });
                             const allSelected = filtered.length > 0 && filtered.every(a => selectedProbetrainingIds.has(a.id));
                             return (
-                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                              <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "8px 12px", background: "var(--bg-inset)", borderRadius: 8 }}>
                                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
                                   <input
                                     type="checkbox"
@@ -11038,13 +11033,14 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       }
                                     }}
                                   />
-                                  Alle auswählen ({filtered.length})
+                                  <span style={{ fontSize: 13 }}>Alle auswählen</span>
                                 </label>
                                 {selectedProbetrainingIds.size > 0 && (
                                   <>
                                   <span className="muted" style={{ fontSize: 13 }}>
                                     {selectedProbetrainingIds.size} ausgewählt
                                   </span>
+                                  <ActionMenu label="Aktionen" buttonClassName="btn micro" menuWidth={240}>
                                   <button
                                     className="btn micro"
                                     style={{ background: "var(--primary)", color: "#fff" }}
@@ -11167,6 +11163,13 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                   >
                                     Ausgewählte drucken
                                   </button>
+                                  <button
+                                    className="btn micro btnGhost"
+                                    onClick={() => setSelectedProbetrainingIds(new Set())}
+                                  >
+                                    Auswahl aufheben
+                                  </button>
+                                  </ActionMenu>
                                   </>
                                 )}
                               </div>
@@ -11417,8 +11420,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         {anfrage.archiviert ? "Reaktivieren" : "Archivieren"}
                                       </button>
                                       <button
-                                        className="btn micro btnGhost"
-                                        style={{ color: "var(--danger)" }}
+                                        className="btn micro btnWarn"
                                         onClick={() => deleteProbetrainingAnfrage(anfrage.id)}
                                       >
                                         Löschen
@@ -11690,8 +11692,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                             {anfrage.archiviert ? "Reaktivieren" : "Archivieren"}
                                           </button>
                                           <button
-                                            className="btn micro btnGhost"
-                                            style={{ color: "var(--danger)" }}
+                                            className="btn micro btnWarn"
                                             onClick={() => deleteKennlerntennisAnfrage(anfrage.id)}
                                           >
                                             Löschen
