@@ -90,6 +90,8 @@ type Tarif = {
   preisProStunde: number;
   abrechnung: "proTraining" | "proSpieler" | "monatlich";
   beschreibung?: string;
+  // Archiviert: Tarif nicht mehr wählbar, bleibt aber für bestehende Trainings/Abrechnungen erhalten
+  archiviert?: boolean;
 };
 
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
@@ -1659,6 +1661,8 @@ export default function App() {
   const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
   // Archivierte Spieler in der Verwaltungsliste anzeigen (statt aktive)
   const [verwaltungZeigeArchiv, setVerwaltungZeigeArchiv] = useState(false);
+  // Archivierte Tarife in der Tarif-Verwaltung anzeigen (statt aktive)
+  const [tarifZeigeArchiv, setTarifZeigeArchiv] = useState(false);
 
 
   // States für Trainingsinfo-E-Mail
@@ -2800,6 +2804,22 @@ export default function App() {
     if (tTarifId === id) {
       setTTarifId("");
     }
+  }
+
+  function archiveTarif(id: string) {
+    const name = tarifById.get(id)?.name ?? "Tarif";
+    saveUndoSnapshot(`Tarif "${name}" archiviert`);
+    setTarife((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, archiviert: true } : t))
+    );
+  }
+
+  function unarchiveTarif(id: string) {
+    const name = tarifById.get(id)?.name ?? "Tarif";
+    saveUndoSnapshot(`Tarif "${name}" reaktiviert`);
+    setTarife((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, archiviert: false } : t))
+    );
   }
 
   function addSpieler() {
@@ -7572,7 +7592,7 @@ Tennisschule A bis Z`;
                           <option value="">
                             Kein Tarif ausgewählt
                           </option>
-                          {tarife.map((t) => {
+                          {tarife.filter((t) => !t.archiviert || t.id === tTarifId).map((t) => {
                             const beschreibung =
                               t.abrechnung === "monatlich"
                                 ? `${t.preisProStunde} EUR monatlich`
@@ -9372,11 +9392,35 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                   <div className="card">
                     <h2>Tarife verwalten</h2>
 
+                    <div className="row" style={{ marginBottom: 12, alignItems: "center", gap: 8 }}>
+                      <span className="pill">
+                        {tarifZeigeArchiv ? "Archiviert" : "Aktiv"}:{" "}
+                        <strong>
+                          {tarife.filter((t) => (tarifZeigeArchiv ? t.archiviert : !t.archiviert)).length}
+                        </strong>
+                      </span>
+                      <button
+                        className="btn btnGhost micro"
+                        onClick={() => setTarifZeigeArchiv((v) => !v)}
+                      >
+                        {tarifZeigeArchiv
+                          ? "← Aktive Tarife"
+                          : `Archiv (${tarife.filter((t) => t.archiviert).length})`}
+                      </button>
+                    </div>
+
                     <ul className="list">
-                      {tarife.map((t) => (
-                        <li key={t.id} className="listItem">
+                      {tarife
+                        .filter((t) => (tarifZeigeArchiv ? t.archiviert : !t.archiviert))
+                        .map((t) => (
+                        <li key={t.id} className="listItem" style={t.archiviert ? { opacity: 0.6 } : undefined}>
                           <div>
                             <strong>{t.name}</strong>
+                            {t.archiviert && (
+                              <span style={{ marginLeft: 8, background: "var(--bg-inset)", color: "var(--text-muted)", padding: "2px 8px", borderRadius: 10, fontSize: 11 }}>
+                                Archiviert
+                              </span>
+                            )}
                             <div className="muted">
                               {t.abrechnung === "monatlich"
                                 ? `${t.preisProStunde} EUR monatlich`
@@ -9391,21 +9435,46 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             )}
                           </div>
                           <div className="smallActions">
-                            <button
-                              className="btn micro btnGhost"
-                              onClick={() => {
-                                startEditTarif(t);
-                                setShowTarifForm(true);
-                              }}
-                            >
-                              Bearbeiten
-                            </button>
-                            <button
-                              className="btn micro btnWarn"
-                              onClick={() => deleteTarif(t.id)}
-                            >
-                              Löschen
-                            </button>
+                            {t.archiviert ? (
+                              <>
+                                <button
+                                  className="btn micro"
+                                  onClick={() => unarchiveTarif(t.id)}
+                                >
+                                  Reaktivieren
+                                </button>
+                                <button
+                                  className="btn micro btnWarn"
+                                  onClick={() => deleteTarif(t.id)}
+                                >
+                                  Endgültig löschen
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => {
+                                    startEditTarif(t);
+                                    setShowTarifForm(true);
+                                  }}
+                                >
+                                  Bearbeiten
+                                </button>
+                                <button
+                                  className="btn micro btnGhost"
+                                  onClick={() => archiveTarif(t.id)}
+                                >
+                                  Archivieren
+                                </button>
+                                <button
+                                  className="btn micro btnWarn"
+                                  onClick={() => deleteTarif(t.id)}
+                                >
+                                  Löschen
+                                </button>
+                              </>
+                            )}
                           </div>
                         </li>
                       ))}
@@ -14777,7 +14846,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                           onChange={(e) => setSpontanTarifId(e.target.value)}
                         >
                           <option value="">Kein Tarif / Individuell</option>
-                          {tarife.map((t) => (
+                          {tarife.filter((t) => !t.archiviert || t.id === spontanTarifId).map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.name} ({euro(t.preisProStunde)}/h)
                             </option>
