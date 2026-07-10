@@ -7196,10 +7196,10 @@ Tennisschule A bis Z`;
                                 : trainers.length > 1
                                 ? trainingVertretung
                                   ? isVertretungOffen
-                                    ? `${ta} | (V offen)`
-                                    : `${ta} | ${vertretungTrainerObj?.name ?? "Vertretung"} (V)`
-                                  : `${ta} | ${trainerName}`
-                                : ta;
+                                    ? "Vertretung offen"
+                                    : `${vertretungTrainerObj?.name ?? "Vertretung"} (V)`
+                                  : trainerName
+                                : "";
 
                               const isDone = t.status === "durchgefuehrt";
                               const isCancel = t.status === "abgesagt";
@@ -7363,7 +7363,7 @@ Tennisschule A bis Z`;
                                         opacity: istOffenerSpontanSlot ? 0.75 : 0.7,
                                       }}
                                     >
-                                      {t.uhrzeitVon}–{t.uhrzeitBis} · {istOffenerSpontanSlot ? (t.anlage ?? "Wedding") : taLine}
+                                      {t.uhrzeitVon}–{t.uhrzeitBis}{istOffenerSpontanSlot ? ` · ${t.anlage ?? "Wedding"}` : (taLine ? ` · ${taLine}` : "")}
                                     </div>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "0 0 auto" }}>
@@ -7381,26 +7381,12 @@ Tennisschule A bis Z`;
                                         {(t.anlage ?? "Wedding") === "Britz" ? "B" : "W"}
                                       </span>
                                     )}
-                                    {t.isPrivat && (
-                                      <span
-                                        style={{
-                                          fontSize: 8,
-                                          fontWeight: 700,
-                                          background: "#eab308",
-                                          color: "white",
-                                          padding: "1px 3px",
-                                          borderRadius: 2,
-                                        }}
-                                      >
-                                        P
-                                      </span>
-                                    )}
                                     {t.isTenniscamp && (
                                       <span
                                         style={{
                                           fontSize: 8,
                                           fontWeight: 700,
-                                          background: "#14b8a6",
+                                          background: "#d97706",
                                           color: "white",
                                           padding: "1px 3px",
                                           borderRadius: 2,
