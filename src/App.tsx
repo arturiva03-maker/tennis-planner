@@ -7091,7 +7091,6 @@ Tennisschule A bis Z`;
                                           color: "#854d0e",
                                         }}
                                       >
-                                        <span style={{ fontSize: 12 }}>🎾</span>
                                         <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>Spontan · frei</span>
                                       </div>
                                       <div
@@ -7302,7 +7301,7 @@ Tennisschule A bis Z`;
                                       : ""
                                   }\nStatus: ${statusLabel(
                                     t.status
-                                  )}${t.isPrivat ? "\n⚡ Privat (keine Abrechnung)" : ""}${t.isTenniscamp ? "\nTenniscamp – keine Spieler-Abrechnung, Trainer normal vergütet" : ""}`}
+                                  )}${t.isPrivat ? "\nPrivat (keine Abrechnung)" : ""}${t.isTenniscamp ? "\nTenniscamp – keine Spieler-Abrechnung, Trainer normal vergütet" : ""}`}
                                 >
                                   <div
                                     style={{
@@ -7337,7 +7336,7 @@ Tennisschule A bis Z`;
                                           {t.spielerIds.length}
                                         </span>
                                       )}
-                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "🎾 Spontan · frei" : (sp || (t.isTenniscamp ? "Tenniscamp" : "Privat"))}</span>
+                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "Spontan · frei" : (sp || (t.isTenniscamp ? "Tenniscamp" : "Privat"))}</span>
                                     </div>
                                     <div
                                       style={{
@@ -8842,7 +8841,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    width: 36,
+                                    padding: "0 12px",
                                     height: 36,
                                     borderRadius: "var(--radius-md)",
                                     background: "var(--primary)",
@@ -8850,9 +8849,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     border: "none",
                                     cursor: "pointer",
                                     flexShrink: 0,
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    whiteSpace: "nowrap",
                                   }}
                                 >
-                                  ✉
+                                  Mail
                                 </button>
                               )}
                             </div>
@@ -10121,17 +10123,19 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                             display: "inline-flex",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            width: 22,
+                                            padding: "2px 8px",
                                             height: 22,
                                             borderRadius: 4,
                                             background: "var(--primary)",
                                             color: "#fff",
                                             border: "none",
                                             cursor: "pointer",
-                                            fontSize: 12,
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            whiteSpace: "nowrap",
                                           }}
                                         >
-                                          ✉
+                                          Mail
                                         </button>
                                       </div>
                                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -10524,7 +10528,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             padding: "40px 20px",
                             color: "var(--text-muted)"
                           }}>
-                            <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
                             <div>Noch keine SEPA-Mandate eingegangen.</div>
                           </div>
                         ) : (
@@ -11280,17 +11283,19 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                               display: "inline-flex",
                                               alignItems: "center",
                                               justifyContent: "center",
-                                              width: 22,
+                                              padding: "2px 8px",
                                               height: 22,
                                               borderRadius: 4,
                                               background: "var(--primary)",
                                               color: "#fff",
                                               border: "none",
                                               cursor: "pointer",
-                                              fontSize: 12,
+                                              fontSize: 11,
+                                              fontWeight: 600,
+                                              whiteSpace: "nowrap",
                                             }}
                                           >
-                                            ✉
+                                            Mail
                                           </button>
                                         )}
                                       </div>
@@ -14121,7 +14126,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                               fontWeight: 600,
                                               fontSize: 14
                                             }}>
-                                              <span style={{ fontSize: 16 }}>📅</span>
                                               {formattedDate}
                                               <span style={{
                                                 marginLeft: "auto",
@@ -14251,7 +14255,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         borderRadius: "var(--radius-md)",
                         marginBottom: 20
                       }}>
-                        <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
                         <div style={{ color: "var(--text-muted)" }}>Keine Vertretungen eingetragen</div>
                       </div>
                     )}
@@ -15019,7 +15022,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                                 {s.buchung.telefon && <> · Tel: {s.buchung.telefon}</>}
                                                 <span className="muted"> · gebucht am {new Date(s.buchung.gebuchtAm).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}</span>
                                                 {s.buchung.hinweis && (
-                                                  <div style={{ marginTop: 3 }}>📝 {s.buchung.hinweis}</div>
+                                                  <div style={{ marginTop: 3 }}>{s.buchung.hinweis}</div>
                                                 )}
                                               </div>
                                             )}

@@ -928,11 +928,11 @@ export default function BankImportModal({
               <div>
                 <strong>Erkannte Spalten:</strong>
                 <ul style={{ margin: "4px 0 0 16px" }}>
-                  <li>Buchungstag: {diag.detected.date >= 0 ? `Spalte ${diag.detected.date} (${diag.headers[diag.detected.date]})` : "❌ nicht erkannt"}</li>
-                  <li>Betrag: {diag.detected.betrag >= 0 ? `Spalte ${diag.detected.betrag} (${diag.headers[diag.detected.betrag]})` : "❌ nicht erkannt"}</li>
-                  <li>IBAN-Gegenkonto: {diag.detected.iban >= 0 ? `Spalte ${diag.detected.iban} (${diag.headers[diag.detected.iban]})` : "❌ nicht erkannt"}</li>
-                  <li>Verwendungszweck: {diag.detected.vz >= 0 ? `Spalte ${diag.detected.vz} (${diag.headers[diag.detected.vz]})` : "❌ nicht erkannt"}</li>
-                  <li>Auftraggeber/Name: {diag.detected.name >= 0 ? `Spalte ${diag.detected.name} (${diag.headers[diag.detected.name]})` : "❌ nicht erkannt"}</li>
+                  <li>Buchungstag: {diag.detected.date >= 0 ? `Spalte ${diag.detected.date} (${diag.headers[diag.detected.date]})` : "✗ nicht erkannt"}</li>
+                  <li>Betrag: {diag.detected.betrag >= 0 ? `Spalte ${diag.detected.betrag} (${diag.headers[diag.detected.betrag]})` : "✗ nicht erkannt"}</li>
+                  <li>IBAN-Gegenkonto: {diag.detected.iban >= 0 ? `Spalte ${diag.detected.iban} (${diag.headers[diag.detected.iban]})` : "✗ nicht erkannt"}</li>
+                  <li>Verwendungszweck: {diag.detected.vz >= 0 ? `Spalte ${diag.detected.vz} (${diag.headers[diag.detected.vz]})` : "✗ nicht erkannt"}</li>
+                  <li>Auftraggeber/Name: {diag.detected.name >= 0 ? `Spalte ${diag.detected.name} (${diag.headers[diag.detected.name]})` : "✗ nicht erkannt"}</li>
                 </ul>
               </div>
               <div style={{ marginTop: 8 }}>

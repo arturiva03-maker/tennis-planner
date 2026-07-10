@@ -413,7 +413,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">📅</td>
                               <td style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
                             </tr>
                           </table>
@@ -423,7 +422,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">🕐</td>
                               <td style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
                             </tr>
                           </table>
@@ -433,7 +431,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">🎾</td>
                               <td style="color: #333333; font-size: 15px;">Trainer: ${trainerName}</td>
                             </tr>
                           </table>
@@ -443,7 +440,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">📍</td>
                               <td style="color: #333333; font-size: 15px;">TC Blau-Weiß Britz, Berlin-Britz</td>
                             </tr>
                           </table>
@@ -454,7 +450,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">💰</td>
                               <td style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</td>
                             </tr>
                           </table>
@@ -556,7 +551,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 24px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🎾 Neue Spontanbuchung</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">Neue Spontanbuchung</h1>
             </td>
           </tr>
 
@@ -605,26 +600,22 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">📅</span>
                           <span style="color: #333333; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">🕐</span>
                           <span style="color: #333333; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">📍</span>
                           <span style="color: #333333; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
                       ${selectedSlot.customPreisProStunde ? `
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">💰</span>
                           <span style="color: #1b471b; font-size: 16px; font-weight: 700;">${selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR</span>
                         </td>
                       </tr>
@@ -639,7 +630,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
           <!-- Action Note -->
           <tr>
             <td style="background-color: #f8faf8; padding: 20px 40px; border-top: 1px solid #e5e7eb; text-align: center;">
-              <p style="margin: 0; color: #666666; font-size: 13px;">${autoUebernommen ? "✅ Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : '⚡ Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
+              <p style="margin: 0; color: #666666; font-size: 13px;">${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : 'Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
             </td>
           </tr>
         </table>
@@ -2040,19 +2031,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
               borderRadius: 12,
               padding: 28,
             }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: colors.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-                fontSize: 20,
-              }}>
-                📍
-              </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Adresse</h3>
               <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12 }}>
                 TC Blau-Weiß Britz 1950 e.V.<br />
@@ -2083,19 +2061,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
               borderRadius: 12,
               padding: 28,
             }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: colors.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-                fontSize: 20,
-              }}>
-                📞
-              </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Telefon</h3>
               <a
                 href="tel:+4915563294862"
@@ -2121,19 +2086,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
               borderRadius: 12,
               padding: 28,
             }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: colors.primary,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-                fontSize: 20,
-              }}>
-                ✉️
-              </div>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8 }}>E-Mail</h3>
               <a
                 href="mailto:tennisabisz@gmail.com"
@@ -2422,7 +2374,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                     Ihre Termindetails
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <span style={{ fontSize: 18 }}>📅</span>
                     <span style={{ fontWeight: 600, color: colors.text }}>
                       {new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
                         weekday: "long",
@@ -2433,13 +2384,11 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <span style={{ fontSize: 18 }}>🕐</span>
                     <span style={{ color: colors.text }}>
                       {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>TC Blau-Weiß Britz, Berlin-Britz</span>
                   </div>
                   {selectedSlot.customPreisProStunde && (
@@ -2451,7 +2400,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                       alignItems: "center",
                       gap: 12,
                     }}>
-                      <span style={{ fontSize: 18 }}>💰</span>
                       <span style={{ fontWeight: 700, color: colors.primary, fontSize: 16 }}>
                         {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
                       </span>

@@ -734,7 +734,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">📅</td>
                               <td style="color: ${colors.primary}; font-size: 15px; font-weight: 600;">${datumFormatted}</td>
                             </tr>
                           </table>
@@ -744,7 +743,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">🕐</td>
                               <td style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</td>
                             </tr>
                           </table>
@@ -754,7 +752,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">🎾</td>
                               <td style="color: ${colors.primary}; font-size: 15px;">Trainer: ${trainerName}</td>
                             </tr>
                           </table>
@@ -764,7 +761,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px;">📍</td>
                               <td style="color: ${colors.primary}; font-size: 15px;">BSC Rehberge, Wedding</td>
                             </tr>
                           </table>
@@ -774,7 +770,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0;${hinweis ? ` border-bottom: 1px solid ${colors.border};` : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px; vertical-align: top;">💰</td>
                               <td style="color: ${colors.primary}; font-size: 14px; font-weight: 600; line-height: 1.65;">
                                 ${preisUebersichtHtml}
                                 <span style="display: block; font-weight: 400; font-size: 12px; color: ${colors.textMuted}; margin-top: 4px;">Preis je nach Gruppengröße · Einzug per SEPA-Lastschrift</span>
@@ -787,7 +782,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0;">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="width: 32px; font-size: 18px; vertical-align: top;">📝</td>
                               <td style="color: ${colors.primary}; font-size: 15px; line-height: 1.6;">${hinweisHtml}</td>
                             </tr>
                           </table>
@@ -886,7 +880,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%); padding: 24px 40px; text-align: center;">
-              <h1 style="margin: 0; color: ${colors.white}; font-size: 20px; font-weight: 700;">🎾 Neue Buchung – Sommerferien-Training</h1>
+              <h1 style="margin: 0; color: ${colors.white}; font-size: 20px; font-weight: 700;">Neue Buchung – Sommerferien-Training</h1>
             </td>
           </tr>
 
@@ -943,31 +937,26 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">📅</span>
                           <span style="color: ${colors.primary}; font-size: 15px; font-weight: 600;">${datumFormatted}</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">🕐</span>
                           <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.uhrzeitVon.slice(0, 5)} – ${selectedSlot.uhrzeitBis.slice(0, 5)} Uhr</span>
                         </td>
                       </tr>
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">📍</span>
                           <span style="color: ${colors.primary}; font-size: 15px;">${selectedSlot.anlage}</span>
                         </td>
                       </tr>
                       ${trainerName ? `<tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px;">🎾</span>
                           <span style="color: ${colors.primary}; font-size: 15px;">Trainer: ${trainerName}</span>
                         </td>
                       </tr>` : ""}
                       <tr>
                         <td style="padding: 6px 0;">
-                          <span style="font-size: 16px; margin-right: 8px; vertical-align: top;">💰</span>
                           <span style="color: ${colors.primary}; font-size: 13.5px; font-weight: 600; line-height: 1.6;">${preisUebersichtHtml}</span>
                         </td>
                       </tr>
@@ -981,7 +970,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
           <!-- Action Note -->
           <tr>
             <td style="background-color: ${colors.bgLight}; padding: 20px 40px; border-top: 1px solid ${colors.border}; text-align: center;">
-              <p style="margin: 0; color: ${colors.textMuted}; font-size: 13px;">${autoUebernommen ? "✅ Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : '⚡ Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
+              <p style="margin: 0; color: ${colors.textMuted}; font-size: 13px;">${autoUebernommen ? "Die Buchung wurde automatisch in den Kalender übernommen und erscheint beim Trainer." : 'Automatische Übernahme fehlgeschlagen – bitte in der App unter "Weiteres → Spontan" in den Kalender übernehmen'}</p>
             </td>
           </tr>
         </table>
@@ -2848,7 +2837,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     Ihre Termindetails
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <span style={{ fontSize: 18 }}>📅</span>
                     <span style={{ fontWeight: 600, color: colors.text }}>
                       {new Date(selectedSlot.datum + "T12:00:00").toLocaleDateString("de-DE", {
                         weekday: "long",
@@ -2859,18 +2847,15 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <span style={{ fontSize: 18 }}>🕐</span>
                     <span style={{ color: colors.text }}>
                       {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 18 }}>📍</span>
                     <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
                   </div>
                   {bookingHinweis.trim() && (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
-                      <span style={{ fontSize: 18 }}>📝</span>
                       <span style={{ color: colors.text }}>{bookingHinweis.trim()}</span>
                     </div>
                   )}
@@ -2882,7 +2867,6 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     alignItems: "center",
                     gap: 12,
                   }}>
-                    <span style={{ fontSize: 18 }}>💰</span>
                     <span style={{ fontWeight: 500, color: colors.textMuted, fontSize: 13 }}>
                       Einzug per SEPA-Lastschrift
                     </span>
