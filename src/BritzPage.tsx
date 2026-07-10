@@ -440,7 +440,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                         <td style="padding: 8px 0;${selectedSlot.customPreisProStunde ? ' border-bottom: 1px solid #e5e7eb;' : ''}">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="color: #333333; font-size: 15px;">TC Blau-Weiß Britz, Berlin-Britz</td>
+                              <td style="color: #333333; font-size: 15px;">TC Blau-Weiß Britz</td>
                             </tr>
                           </table>
                         </td>
@@ -526,7 +526,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: TC Blau-Weiß Britz, Berlin-Britz${preisText}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhre spontane Trainingsstunde wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: TC Blau-Weiß Britz${preisText}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -2389,7 +2389,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ color: colors.text }}>TC Blau-Weiß Britz, Berlin-Britz</span>
+                    <span style={{ color: colors.text }}>TC Blau-Weiß Britz</span>
                   </div>
                   {selectedSlot.customPreisProStunde && (
                     <div style={{
@@ -2508,9 +2508,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <MandatNameField
                     value={bookingName}
                     hatMandat={bookingNameMandat}
-                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}
-                    placeholder="Ihr Name"
-                    accountId={WEDDING_ACCOUNT_ID}
+                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}                    accountId={WEDDING_ACCOUNT_ID}
                     colors={colors}
                     disabled={bookingSubmitting}
                   />
@@ -2523,9 +2521,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <input
                     type="email"
                     value={bookingEmail}
-                    onChange={(e) => setBookingEmail(e.target.value)}
-                    placeholder="ihre@email.de"
-                    disabled={bookingSubmitting}
+                    onChange={(e) => setBookingEmail(e.target.value)}                    disabled={bookingSubmitting}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -2543,9 +2539,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <input
                     type="tel"
                     value={bookingTelefon}
-                    onChange={(e) => setBookingTelefon(e.target.value)}
-                    placeholder="Ihre Telefonnummer"
-                    disabled={bookingSubmitting}
+                    onChange={(e) => setBookingTelefon(e.target.value)}                    disabled={bookingSubmitting}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -2676,7 +2670,14 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
-                  Mit der Buchung akzeptieren Sie unsere Datenschutzerklärung.
+                  Mit der Buchung akzeptieren Sie unsere{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowDatenschutz(true)}
+                    style={{ background: "none", border: "none", padding: 0, color: colors.primary, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}
+                  >
+                    Datenschutzerklärung
+                  </button>.
                 </p>
               </>
             )}

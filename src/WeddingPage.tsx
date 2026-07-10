@@ -3161,7 +3161,14 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
-                  Mit der Buchung akzeptieren Sie unsere Datenschutzerklärung.
+                  Mit der Buchung akzeptieren Sie unsere{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowDatenschutz(true)}
+                    style={{ background: "none", border: "none", padding: 0, color: colors.primary, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}
+                  >
+                    Datenschutzerklärung
+                  </button>.
                 </p>
               </>
             )}

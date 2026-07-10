@@ -46,8 +46,8 @@ export default function AbsagePage() {
       } else {
         setSlotInfo({
           datum: data.datum,
-          von: data.uhrzeit_von,
-          bis: data.uhrzeit_bis,
+          von: data.uhrzeit_von?.slice(0, 5) ?? data.uhrzeit_von,
+          bis: data.uhrzeit_bis?.slice(0, 5) ?? data.uhrzeit_bis,
           anlage: data.anlage,
           buchungEmail: data.buchung?.email ?? undefined,
           buchungName: data.buchung?.name ?? undefined,
