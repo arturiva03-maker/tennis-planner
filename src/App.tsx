@@ -7291,7 +7291,7 @@ Tennisschule A bis Z`;
                                   onTouchStart={() => handleCalendarEventTouchStart(t)}
                                   onTouchEnd={handleCalendarEventTouchEnd}
                                   onTouchMove={handleCalendarEventTouchMove}
-                                  title={`Spieler: ${sp}\nZeit: ${t.uhrzeitVon} bis ${
+                                  title={`${t.isTenniscamp ? "Tenniscamp" : `Spieler: ${sp}`}\nZeit: ${t.uhrzeitVon} bis ${
                                     t.uhrzeitBis
                                   }${
                                     isTrainer ? "" : `\nTarif: ${ta}`
@@ -7322,7 +7322,7 @@ Tennisschule A bis Z`;
                                         color: istOffenerSpontanSlot ? "#854d0e" : undefined,
                                       }}
                                     >
-                                      {t.spielerIds.length > 0 && !istOffenerSpontanSlot && (
+                                      {t.spielerIds.length > 0 && !istOffenerSpontanSlot && !t.isTenniscamp && (
                                         <span style={{
                                           fontSize: 9,
                                           fontWeight: 700,
@@ -7336,7 +7336,7 @@ Tennisschule A bis Z`;
                                           {t.spielerIds.length}
                                         </span>
                                       )}
-                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "Spontan · frei" : (sp || (t.isTenniscamp ? "Tenniscamp" : "Privat"))}</span>
+                                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{istOffenerSpontanSlot ? "Spontan · frei" : (t.isTenniscamp ? "Tenniscamp" : (sp || "Privat"))}</span>
                                     </div>
                                     <div
                                       style={{
