@@ -5593,7 +5593,7 @@ Tennisschule A bis Z`;
         .sort((a, b) =>
           (a.datum + a.uhrzeitVon).localeCompare(b.datum + b.uhrzeitVon)
         ),
-    [trainings, abrechnungMonat, abrechnungTrainerFilter, defaultTrainerId, vertretungen, trainingGehoertZuTrainer]
+    [trainings, abrechnungMonat, abrechnungTrainerFilter, trainingGehoertZuTrainer]
   );
 
   // Berechne für jeden Spieler, an welchen Wochentagen er wiederkehrende Trainings hat
@@ -6210,7 +6210,7 @@ Tennisschule A bis Z`;
     return trainingsForAbrechnung.filter((t) =>
       trainingGehoertZuTrainer(t, abrechnungTrainerFilter)
     );
-  }, [trainingsForAbrechnung, abrechnungTrainerFilter, vertretungen, defaultTrainerId, trainingGehoertZuTrainer]);
+  }, [trainingsForAbrechnung, abrechnungTrainerFilter, trainingGehoertZuTrainer]);
 
   const adminBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => t.barBezahlt), [adminTrainerTrainings]);
   const adminNichtBarTrainings = useMemo(() => adminTrainerTrainings.filter((t) => !t.barBezahlt), [adminTrainerTrainings]);
