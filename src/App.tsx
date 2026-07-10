@@ -135,6 +135,7 @@ type RegistrationRequest = {
   kontakt_ort?: string | null;
   abweichende_kontaktperson?: boolean | null;
   gruppenwuensche?: string | null;
+  archiviert?: boolean | null;
 };
 
 function getRegistrationTraineeName(req: RegistrationRequest): string {
@@ -186,6 +187,7 @@ type SepaMandate = {
   created_at: string;
   status?: string;
   anlage?: string;
+  archiviert?: boolean | null;
 };
 
 type TenniscampAnmeldung = {
@@ -214,6 +216,7 @@ type TenniscampAnmeldung = {
   sepa_zustimmung: boolean;
   status: string;
   created_at: string;
+  archiviert?: boolean | null;
 };
 
 type ProbetrainingAnfrage = {
@@ -233,6 +236,7 @@ type ProbetrainingAnfrage = {
   verfuegbarkeit: Record<string, string>;
   status: string;
   created_at: string;
+  archiviert?: boolean | null;
 };
 
 type KennlerntennisAnfrage = {
@@ -249,6 +253,7 @@ type KennlerntennisAnfrage = {
   interesse_weiterfuehrend: boolean;
   status: string;
   created_at: string;
+  archiviert?: boolean | null;
 };
 
 type Training = {
@@ -1197,6 +1202,8 @@ export default function App() {
     useState<VerwaltungTab>("trainer");
   const [formulareTab, setFormulareTab] =
     useState<FormulareTab>("anmeldung");
+  // Archivierte Formular-Anfragen anzeigen (geteilt über alle Formular-Tabs)
+  const [formZeigeArchiv, setFormZeigeArchiv] = useState(false);
   const [anmeldungAnlageFilter, setAnmeldungAnlageFilter] =
     useState<"alle" | "Wedding" | "Britz">("alle");
   const [anmeldungNameSuche, setAnmeldungNameSuche] = useState("");
@@ -2345,6 +2352,7 @@ export default function App() {
   const filteredTenniscampAnmeldungen = useMemo(() => {
     const suche = tenniscampNameSuche.trim().toLowerCase();
     return tenniscampAnmeldungen.filter((a) => {
+      if (formZeigeArchiv ? !a.archiviert : !!a.archiviert) return false;
       if (tenniscampStatusFilter === "offen" && a.status === "storniert") return false;
       if (tenniscampStatusFilter === "storniert" && a.status !== "storniert") return false;
       if (tenniscampTypFilter !== "alle" && a.camp_type !== tenniscampTypFilter) return false;
@@ -2362,6 +2370,7 @@ export default function App() {
     tenniscampTypFilter,
     tenniscampCampFilter,
     tenniscampNameSuche,
+    formZeigeArchiv,
   ]);
 
   const isTrainer = authUser?.role === "trainer";
@@ -3672,6 +3681,25 @@ ${txInfo}
       setRegistrationRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (err) {
       console.error("Error deleting request:", err);
+    }
+  }
+
+  // Generisches Soft-Archiv für Formular-Anfragen (Supabase-Tabellen mit Spalte "archiviert")
+  async function setAnfrageArchiviert(
+    table: string,
+    id: string,
+    archiviert: boolean,
+    refetch: () => void
+  ) {
+    try {
+      const { error } = await supabase.from(table).update({ archiviert }).eq("id", id);
+      if (error) {
+        console.error("Fehler beim Archivieren:", error);
+        return;
+      }
+      refetch();
+    } catch (err) {
+      console.error("Fehler beim Archivieren:", err);
     }
   }
 
@@ -6391,7 +6419,7 @@ Tennisschule A bis Z`;
                 {t === "formulare" && (
                   <>
                     Formulare
-                    {(registrationRequests.filter(r => r.status !== "erledigt").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length) > 0 && (
+                    {(registrationRequests.filter(r => r.status !== "erledigt" && !r.archiviert).length + sepaMandates.filter(m => (m.status || "neu") === "neu" && !m.archiviert).length) > 0 && (
                       <span style={{
                         marginLeft: 6,
                         background: "var(--danger)",
@@ -6405,7 +6433,7 @@ Tennisschule A bis Z`;
                         fontSize: 11,
                         fontWeight: 700
                       }}>
-                        {registrationRequests.filter(r => r.status !== "erledigt").length + sepaMandates.filter(m => (m.status || "neu") === "neu").length}
+                        {registrationRequests.filter(r => r.status !== "erledigt" && !r.archiviert).length + sepaMandates.filter(m => (m.status || "neu") === "neu" && !m.archiviert).length}
                       </span>
                     )}
                   </>
@@ -9598,7 +9626,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         onClick={() => setFormulareTab("anmeldung")}
                       >
                         Anmeldung
-                        {registrationRequests.filter(r => r.status !== "erledigt").length > 0 && (
+                        {registrationRequests.filter(r => r.status !== "erledigt" && !r.archiviert).length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "var(--danger)",
@@ -9611,7 +9639,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             justifyContent: "center",
                             fontSize: 11
                           }}>
-                            {registrationRequests.filter(r => r.status !== "erledigt").length}
+                            {registrationRequests.filter(r => r.status !== "erledigt" && !r.archiviert).length}
                           </span>
                         )}
                       </button>
@@ -9620,7 +9648,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         onClick={() => setFormulareTab("sepa")}
                       >
                         SEPA-Mandat
-                        {sepaMandates.filter(m => (m.status || "neu") === "neu").length > 0 && (
+                        {sepaMandates.filter(m => (m.status || "neu") === "neu" && !m.archiviert).length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "var(--primary)",
@@ -9630,7 +9658,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             fontSize: 11,
                             fontWeight: 600
                           }}>
-                            {sepaMandates.filter(m => (m.status || "neu") === "neu").length}
+                            {sepaMandates.filter(m => (m.status || "neu") === "neu" && !m.archiviert).length}
                           </span>
                         )}
                       </button>
@@ -9658,7 +9686,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         onClick={() => setFormulareTab("probetraining")}
                       >
                         Probetraining
-                        {probetrainingAnfragen.filter(a => a.status === "offen").length > 0 && (
+                        {probetrainingAnfragen.filter(a => a.status === "offen" && !a.archiviert).length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "#f59e0b",
@@ -9668,7 +9696,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             fontSize: 11,
                             fontWeight: 600
                           }}>
-                            {probetrainingAnfragen.filter(a => a.status === "offen").length}
+                            {probetrainingAnfragen.filter(a => a.status === "offen" && !a.archiviert).length}
                           </span>
                         )}
                       </button>
@@ -9677,7 +9705,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         onClick={() => setFormulareTab("kennlerntennis")}
                       >
                         Kennlerntennis
-                        {kennlerntennisAnfragen.filter(a => a.status === "offen").length > 0 && (
+                        {kennlerntennisAnfragen.filter(a => a.status === "offen" && !a.archiviert).length > 0 && (
                           <span style={{
                             marginLeft: 6,
                             background: "#3b82f6",
@@ -9687,10 +9715,24 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             fontSize: 11,
                             fontWeight: 600
                           }}>
-                            {kennlerntennisAnfragen.filter(a => a.status === "offen").length}
+                            {kennlerntennisAnfragen.filter(a => a.status === "offen" && !a.archiviert).length}
                           </span>
                         )}
                       </button>
+                    </div>
+
+                    <div className="row" style={{ margin: "0 0 12px", alignItems: "center", gap: 8 }}>
+                      <button
+                        className="btn btnGhost micro"
+                        onClick={() => setFormZeigeArchiv((v) => !v)}
+                      >
+                        {formZeigeArchiv ? "← Aktive Anfragen" : "Archiv anzeigen"}
+                      </button>
+                      {formZeigeArchiv && (
+                        <span className="pill" style={{ background: "var(--bg-inset)", color: "var(--text-muted)" }}>
+                          Archiv-Ansicht — archivierte Anfragen
+                        </span>
+                      )}
                     </div>
 
                     {/* Anmeldung Tab */}
@@ -10035,6 +10077,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         {loadingRequests ? (
                           <p className="muted">Laden...</p>
                         ) : registrationRequests.filter(r => {
+                          if (formZeigeArchiv ? !r.archiviert : !!r.archiviert) return false;
                           // Anlage Filter
                           if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
                           // Name Suche
@@ -10053,6 +10096,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         ) : (
                           <ul className="list">
                             {registrationRequests.filter(r => {
+                              if (formZeigeArchiv ? !r.archiviert : !!r.archiviert) return false;
                               if (anmeldungAnlageFilter !== "alle" && r.anlage !== anmeldungAnlageFilter) return false;
                               if (anmeldungNameSuche && !r.name.toLowerCase().includes(anmeldungNameSuche.toLowerCase())) return false;
                               if (anmeldungTagFilter !== "alle" && r.verfuegbarkeit) {
@@ -10464,6 +10508,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         Drucken
                                       </button>
                                       <button
+                                        className="btn micro btnGhost"
+                                        onClick={() => setAnfrageArchiviert("registration_requests", req.id, !req.archiviert, fetchRegistrationRequests)}
+                                      >
+                                        {req.archiviert ? "Reaktivieren" : "Archivieren"}
+                                      </button>
+                                      <button
                                         className="btn micro btnWarn"
                                         onClick={() => {
                                           if (window.confirm("Anmeldung wirklich löschen?")) {
@@ -10565,6 +10615,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         ) : (
                           <ul className="simpleList">
                             {sepaMandates.filter((m) => {
+                              if (formZeigeArchiv ? !m.archiviert : !!m.archiviert) return false;
                               if (!sepaMandateSearch.trim()) return true;
                               const q = sepaMandateSearch.toLowerCase();
                               return (
@@ -10671,6 +10722,13 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         <option value="zugeordnet">Zugeordnet</option>
                                         <option value="erledigt">Erledigt</option>
                                       </select>
+                                      <button
+                                        className="btn btnGhost"
+                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        onClick={() => setAnfrageArchiviert("sepa_mandates", mandate.id, !mandate.archiviert, fetchSepaMandates)}
+                                      >
+                                        {mandate.archiviert ? "Reaktivieren" : "Archivieren"}
+                                      </button>
                                       <button
                                         className="btn danger"
                                         style={{ fontSize: 13, padding: "4px 12px" }}
@@ -10948,6 +11006,13 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         E-Mail senden
                                       </button>
                                       <button
+                                        className="btn btnGhost"
+                                        style={{ fontSize: 13, padding: "4px 12px" }}
+                                        onClick={() => setAnfrageArchiviert("tenniscamp_anmeldungen", anmeldung.id, !anmeldung.archiviert, fetchTenniscampAnmeldungen)}
+                                      >
+                                        {anmeldung.archiviert ? "Reaktivieren" : "Archivieren"}
+                                      </button>
+                                      <button
                                         className="btn danger"
                                         style={{ fontSize: 13, padding: "4px 12px" }}
                                         onClick={() => deleteTenniscampAnmeldung(anmeldung.id)}
@@ -11194,6 +11259,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                           })()}
                           <ul className="list">
                             {probetrainingAnfragen.filter(a => {
+                              if (formZeigeArchiv ? !a.archiviert : !!a.archiviert) return false;
                               if (probetrainingAnlageFilter !== "alle" && a.anlage !== probetrainingAnlageFilter) return false;
                               if (probetrainingNameSuche && !`${a.vorname} ${a.nachname}`.toLowerCase().includes(probetrainingNameSuche.toLowerCase())) return false;
                               if (probetrainingTagFilter !== "alle" && a.verfuegbarkeit) {
@@ -11205,6 +11271,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             }).length === 0 ? (
                               <p className="muted">Keine Anfragen für diesen Filter.</p>
                             ) : probetrainingAnfragen.filter(a => {
+                              if (formZeigeArchiv ? !a.archiviert : !!a.archiviert) return false;
                               if (probetrainingAnlageFilter !== "alle" && a.anlage !== probetrainingAnlageFilter) return false;
                               if (probetrainingNameSuche && !`${a.vorname} ${a.nachname}`.toLowerCase().includes(probetrainingNameSuche.toLowerCase())) return false;
                               if (probetrainingTagFilter !== "alle" && a.verfuegbarkeit) {
@@ -11430,6 +11497,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       </button>
                                       <button
                                         className="btn micro btnGhost"
+                                        onClick={() => setAnfrageArchiviert("probetraining_anfragen", anfrage.id, !anfrage.archiviert, fetchProbetrainingAnfragen)}
+                                      >
+                                        {anfrage.archiviert ? "Reaktivieren" : "Archivieren"}
+                                      </button>
+                                      <button
+                                        className="btn micro btnGhost"
                                         style={{ color: "var(--danger)" }}
                                         onClick={() => deleteProbetrainingAnfrage(anfrage.id)}
                                       >
@@ -11603,6 +11676,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                           <ul className="list">
                             {kennlerntennisAnfragen
                               .filter(a => {
+                                if (formZeigeArchiv ? !a.archiviert : !!a.archiviert) return false;
                                 if (kennlerntennisStatusFilter === "offen" && a.status === "erledigt") return false;
                                 if (kennlerntennisStatusFilter === "erledigt" && a.status !== "erledigt") return false;
                                 return true;
@@ -11695,7 +11769,14 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                           )}
                                           <button
                                             className="btn micro btnGhost"
-                                            style={{ color: "var(--danger)", marginLeft: "auto" }}
+                                            style={{ marginLeft: "auto" }}
+                                            onClick={() => setAnfrageArchiviert("kennlerntennis_anfragen", anfrage.id, !anfrage.archiviert, fetchKennlerntennisAnfragen)}
+                                          >
+                                            {anfrage.archiviert ? "Reaktivieren" : "Archivieren"}
+                                          </button>
+                                          <button
+                                            className="btn micro btnGhost"
+                                            style={{ color: "var(--danger)" }}
                                             onClick={() => deleteKennlerntennisAnfrage(anfrage.id)}
                                           >
                                             Löschen
