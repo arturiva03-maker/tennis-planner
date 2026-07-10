@@ -317,7 +317,7 @@ type Vertretung = {
   vertretungTrainerId?: string; // Optional - wenn leer, dann "Vertretung offen"
 };
 
-type WeiteresTabs = "notizen" | "vertretung" | "spontan" | "rechner";
+type WeiteresTabs = "vertretung" | "spontan" | "rechner";
 
 type TrainerZuschlag = {
   id: string;
@@ -1255,7 +1255,7 @@ export default function App() {
   );
   const [spontaneStunden, setSpontaneStunden] = useState<SpontaneStunde[]>([]);
   const [loadingSpontaneStunden, setLoadingSpontaneStunden] = useState(false);
-  const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("notizen");
+  const [weiteresTabs, setWeiteresTabs] = useState<WeiteresTabs>("vertretung");
   const [vertretungTrainerId, setVertretungTrainerId] = useState<string>("");
   const [vertretungDaten, setVertretungDaten] = useState<string[]>([]);
   const [expandedVertretungTrainer, setExpandedVertretungTrainer] = useState<string[]>([]);
@@ -1660,11 +1660,6 @@ export default function App() {
   // Archivierte Spieler in der Verwaltungsliste anzeigen (statt aktive)
   const [verwaltungZeigeArchiv, setVerwaltungZeigeArchiv] = useState(false);
 
-  // States für Notizen (Weiteres)
-  const [showNotizForm, setShowNotizForm] = useState(false);
-  const [editingNotizId, setEditingNotizId] = useState<string | null>(null);
-  const [notizTitel, setNotizTitel] = useState("");
-  const [notizInhalt, setNotizInhalt] = useState("");
 
   // States für Trainingsinfo-E-Mail
   const [showTrainingInfoEmail, setShowTrainingInfoEmail] = useState(false);
@@ -6087,68 +6082,6 @@ Tennisschule A bis Z`;
     // Kein automatisches Setzen von payments - der Status wird über das Dropdown gesteuert
   }
 
-  /* ::::: Notiz-Funktionen ::::: */
-
-  function addNotiz() {
-    const titel = notizTitel.trim();
-    if (!titel) return;
-
-    const now = new Date().toISOString();
-    const neu: Notiz = {
-      id: uid(),
-      titel,
-      inhalt: notizInhalt.trim(),
-      erstelltAm: now,
-      aktualisiertAm: now,
-    };
-
-    setNotizen((prev) => [neu, ...prev]);
-    setNotizTitel("");
-    setNotizInhalt("");
-    setShowNotizForm(false);
-  }
-
-  function startEditNotiz(n: Notiz) {
-    setEditingNotizId(n.id);
-    setNotizTitel(n.titel);
-    setNotizInhalt(n.inhalt);
-    setShowNotizForm(true);
-  }
-
-  function saveNotiz() {
-    if (!editingNotizId) return;
-    const titel = notizTitel.trim();
-    if (!titel) return;
-
-    setNotizen((prev) =>
-      prev.map((n) =>
-        n.id === editingNotizId
-          ? {
-              ...n,
-              titel,
-              inhalt: notizInhalt.trim(),
-              aktualisiertAm: new Date().toISOString(),
-            }
-          : n
-      )
-    );
-
-    setEditingNotizId(null);
-    setNotizTitel("");
-    setNotizInhalt("");
-    setShowNotizForm(false);
-  }
-
-  function deleteNotiz(id: string) {
-    setNotizen((prev) => prev.filter((n) => n.id !== id));
-    if (editingNotizId === id) {
-      setEditingNotizId(null);
-      setNotizTitel("");
-      setNotizInhalt("");
-      setShowNotizForm(false);
-    }
-  }
-
   async function handleLogout() {
     await supabase.auth.signOut();
     setAuthUser(null);
@@ -6405,11 +6338,6 @@ Tennisschule A bis Z`;
         <aside className={`sideNav ${isSideNavOpen ? "sideNavOpen" : ""}`}>
           <div className="sideNavHeader">
             <div className="sideTitle">Tennistrainer Planung</div>
-            {!isTrainer && (
-              <div className="sideSubtitle">
-                Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde.
-              </div>
-            )}
           </div>
 
           <span className="pill sideRolePill">
@@ -6485,12 +6413,6 @@ Tennisschule A bis Z`;
             <div className="header">
               <div className="hTitle">
                 <h1>Tennistrainer Planung</h1>
-                {!isTrainer && (
-                  <p>
-                    Mehrere Trainer, wiederkehrende Termine, Tarife pro Stunde,
-                    pro Benutzer gespeichert.
-                  </p>
-                )}
               </div>
             </div>
 
@@ -7492,11 +7414,6 @@ Tennisschule A bis Z`;
                 </div>
 
                 <div style={{ height: 12 }} />
-                {!isTrainer && (
-                  <div className="muted">
-                    Hinweis: Klick: Bearbeiten, Doppelklick: Abschließen. Mehrfachauswahl: Strg+Klick (PC) oder lange gedrückt halten (Handy).
-                  </div>
-                )}
               </div>
             )}
 
@@ -10981,9 +10898,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                     {/* Probetraining Tab */}
                     {formulareTab === "probetraining" && (
                       <>
-                        <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
-                          Bestehende Probetraining-Anfragen. Neue Anmeldungen laufen über <code>/anmeldung-wedding</code> und <code>/anmeldung-britz</code>.
-                        </p>
 
                         {loadingProbetrainingAnfragen ? (
                           <p className="muted">Laden...</p>
@@ -11734,9 +11648,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
             {tab === "verwaltung" && !isTrainer && verwaltungTab === "newsletter" && (
               <div className="card">
                 <h2>Newsletter versenden</h2>
-                    <p className="muted" style={{ marginBottom: 16 }}>
-                      Senden Sie E-Mails an Ihre Spieler. Wählen Sie optional ein Label um nur bestimmte Spieler anzuschreiben.
-                    </p>
 
                     {newsletterSuccess && (
                       <div style={{
@@ -12411,11 +12322,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       </span>
                     </div>
 
-                    <div style={{ height: 10 }} />
-                    <div className="muted">
-                      Hinweis: Der Status bezahlt gilt immer für einen Spieler
-                      im ausgewählten Monat.
-                    </div>
 
                     <div style={{ height: 14 }} />
                     <div className="card cardInset">
@@ -13690,14 +13596,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       </>
                     )}
 
-                    <div style={{ height: 10 }} />
-                    {!isTrainer && (
-                      <div className="muted">
-                        Hinweis: Das Trainerhonorar wird pro Training
-                        abgerechnet. Der Filter oben bezieht sich hier auf den
-                        Honorarstatus.
-                      </div>
-                    )}
 
                     {!isTrainer && trainers.length > 1 && (
                       <>
@@ -14001,14 +13899,8 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
               <div className="card">
                 <h2>Weiteres</h2>
 
-                {/* Sub-Tabs für Notizen und Vertretung */}
+                {/* Sub-Tabs */}
                 <div className="tabs" style={{ marginBottom: 20 }}>
-                  <button
-                    className={`tabBtn ${weiteresTabs === "notizen" ? "tabBtnActive" : ""}`}
-                    onClick={() => setWeiteresTabs("notizen")}
-                  >
-                    Notizen
-                  </button>
                   <button
                     className={`tabBtn ${weiteresTabs === "vertretung" ? "tabBtnActive" : ""}`}
                     onClick={() => setWeiteresTabs("vertretung")}
@@ -14028,140 +13920,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                     Sascha-Rechner
                   </button>
                 </div>
-
-                {/* Notizen Tab */}
-                {weiteresTabs === "notizen" && (
-                  <>
-                    <p className="muted" style={{ marginBottom: 16 }}>
-                      Hier kannst du allgemeine Notizen speichern, z.B. Urlaubstage von Trainern, wichtige Termine oder sonstige Informationen.
-                    </p>
-
-                    <ul className="list">
-                      {notizen.map((n) => {
-                        const erstelltDate = new Date(n.erstelltAm);
-                        const aktualisiertDate = new Date(n.aktualisiertAm);
-                        const erstelltFormatted = `${pad2(erstelltDate.getDate())}.${pad2(erstelltDate.getMonth() + 1)}.${erstelltDate.getFullYear()}`;
-                        const aktualisiertFormatted = `${pad2(aktualisiertDate.getDate())}.${pad2(aktualisiertDate.getMonth() + 1)}.${aktualisiertDate.getFullYear()}`;
-
-                        return (
-                          <li key={n.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                              <div>
-                                <strong>{n.titel}</strong>
-                                <div className="muted" style={{ fontSize: 11 }}>
-                                  Erstellt: {erstelltFormatted}
-                                  {n.erstelltAm !== n.aktualisiertAm && ` · Bearbeitet: ${aktualisiertFormatted}`}
-                                </div>
-                              </div>
-                              <div className="smallActions">
-                                <button
-                                  className="btn micro btnGhost"
-                                  onClick={() => startEditNotiz(n)}
-                                >
-                                  Bearbeiten
-                                </button>
-                                <button
-                                  className="btn micro btnWarn"
-                                  onClick={() => deleteNotiz(n.id)}
-                                >
-                                  Löschen
-                                </button>
-                              </div>
-                            </div>
-                            {n.inhalt && (
-                              <div style={{
-                                whiteSpace: "pre-wrap",
-                                background: "var(--bg-inset)",
-                                padding: 12,
-                                borderRadius: "var(--radius-md)",
-                                fontSize: 14,
-                                lineHeight: 1.5
-                              }}>
-                                {n.inhalt}
-                              </div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-
-                    {notizen.length === 0 && !showNotizForm && (
-                      <div className="muted" style={{ textAlign: "center", padding: 20 }}>
-                        Noch keine Notizen vorhanden.
-                      </div>
-                    )}
-
-                    {!showNotizForm && !editingNotizId && (
-                      <div style={{ marginTop: 16 }}>
-                        <button
-                          className="btn"
-                          onClick={() => setShowNotizForm(true)}
-                        >
-                          Neue Notiz hinzufügen
-                        </button>
-                      </div>
-                    )}
-
-                    {(showNotizForm || editingNotizId) && (
-                      <div className="card cardInset" style={{ marginTop: 16 }}>
-                        <h3>{editingNotizId ? "Notiz bearbeiten" : "Neue Notiz hinzufügen"}</h3>
-                        <div className="field">
-                          <label>Titel</label>
-                          <input
-                            value={notizTitel}
-                            onChange={(e) => setNotizTitel(e.target.value)}
-                            placeholder="z.B. Urlaubstage Trainer Max"
-                          />
-                        </div>
-                        <div className="field" style={{ marginTop: 12 }}>
-                          <label>Inhalt</label>
-                          <textarea
-                            value={notizInhalt}
-                            onChange={(e) => setNotizInhalt(e.target.value)}
-                            placeholder="Details hier eingeben..."
-                            rows={6}
-                            style={{
-                              width: "100%",
-                              font: "inherit",
-                              fontSize: 15,
-                              padding: "10px 14px",
-                              borderRadius: "var(--radius-md)",
-                              border: "1px solid var(--border)",
-                              background: "var(--bg-card)",
-                              resize: "vertical",
-                              minHeight: 120
-                            }}
-                          />
-                        </div>
-                        <div className="row" style={{ marginTop: 12 }}>
-                          <button
-                            className="btn"
-                            onClick={() => {
-                              if (editingNotizId) {
-                                saveNotiz();
-                              } else {
-                                addNotiz();
-                              }
-                            }}
-                          >
-                            {editingNotizId ? "Notiz speichern" : "Notiz hinzufügen"}
-                          </button>
-                          <button
-                            className="btn btnGhost"
-                            onClick={() => {
-                              setEditingNotizId(null);
-                              setNotizTitel("");
-                              setNotizInhalt("");
-                              setShowNotizForm(false);
-                            }}
-                          >
-                            Abbrechen
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
 
                 {/* Vertretung Tab */}
                 {weiteresTabs === "vertretung" && (
