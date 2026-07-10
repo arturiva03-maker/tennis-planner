@@ -7468,6 +7468,7 @@ Tennisschule A bis Z`;
                         ? "Training bearbeiten"
                         : "Training anlegen"}
                     </h2>
+                    <div className="formSectionTitle">Termin</div>
                     <div className="row">
                       <div className="field">
                         <label>Datum</label>
@@ -7507,6 +7508,7 @@ Tennisschule A bis Z`;
                         />
                       </div>
                     </div>
+                    <div className="formSectionTitle">Zuordnung &amp; Art</div>
                     <div className="row">
                       <div className="field">
                         <label>Trainer</label>
@@ -7595,6 +7597,7 @@ Tennisschule A bis Z`;
                       </label>
                     </div>
 
+                    <div className="formSectionTitle">Abrechnung</div>
                     <div className="row">
                       <div className="field">
                         <label>Tarif (optional)</label>
