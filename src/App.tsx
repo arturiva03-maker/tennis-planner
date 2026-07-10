@@ -1343,16 +1343,6 @@ export default function App() {
     let labelFiltered: Spieler[];
     if (newsletterLabelFilter === "keine") {
       labelFiltered = [];
-    } else if (newsletterLabelFilter === "aktive_wedding" || newsletterLabelFilter === "aktive_britz") {
-      const anlage = newsletterLabelFilter === "aktive_wedding" ? "Wedding" : "Britz";
-      const today = new Date().toISOString().slice(0, 10);
-      const aktiveSpielerIds = new Set<string>();
-      trainings.forEach(t => {
-        if (t.datum >= today && t.status !== "abgesagt" && (!t.anlage || t.anlage === anlage)) {
-          t.spielerIds.forEach(id => aktiveSpielerIds.add(id));
-        }
-      });
-      labelFiltered = spieler.filter(s => s.kontaktEmail && aktiveSpielerIds.has(s.id));
     } else {
       labelFiltered = spieler.filter(s =>
         s.kontaktEmail &&
@@ -1378,7 +1368,7 @@ export default function App() {
 
     // Archivierte Spieler nie anschreiben
     return Array.from(recipientMap.values()).filter(s => !s.archiviert);
-  }, [spieler, trainings, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
+  }, [spieler, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
 
   // Undo nach 60 Sekunden automatisch entfernen
   useEffect(() => {
@@ -1628,11 +1618,6 @@ export default function App() {
   const [verwaltungSpielerSuche, setVerwaltungSpielerSuche] = useState("");
   const [spielerError, setSpielerError] = useState<string | null>(null);
 
-  // States für PDF-Export Vorschau
-  const [showPdfExportModal, setShowPdfExportModal] = useState(false);
-  const [pdfExportLabelFilter, setPdfExportLabelFilter] = useState<string>("alle");
-  const [pdfExportExcluded, setPdfExportExcluded] = useState<Set<string>>(new Set());
-
   // States für Kontaktbuch-CSV-Import
   type KontaktbuchRow = {
     name: string;
@@ -1659,10 +1644,6 @@ export default function App() {
   // Tenniscamp-SEPA-Export (Teilnehmer + individuelle Beträge)
   const [campSepaModal, setCampSepaModal] = useState<{ titel: string; rows: CampSepaRow[] } | null>(null);
   const [showBankImportModal, setShowBankImportModal] = useState(false);
-
-  // States für Wochenplan PDF-Export
-  const [showWeekPdfModal, setShowWeekPdfModal] = useState(false);
-
 
   // State für Spieler-Label-Filter in Verwaltung
   const [verwaltungLabelFilter, setVerwaltungLabelFilter] = useState<string>("alle");
@@ -6740,13 +6721,6 @@ Tennisschule A bis Z`;
                         Neues Training
                       </button>
                     )}
-
-                    <button
-                      className="btn btnGhost"
-                      onClick={() => setShowWeekPdfModal(true)}
-                    >
-                      Wochenplan PDF
-                    </button>
                   </div>
                 </div>
 
@@ -8771,57 +8745,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             }}
                           >
                             Neuen Spieler hinzufügen
-                          </button>
-                          <button
-                            className="btn btnGhost"
-                            onClick={async () => {
-                              const XLSX = await import('xlsx');
-
-                              // Filter Spieler basierend auf aktuellem Label-Filter (ohne archivierte)
-                              const filteredSpieler = spieler.filter(s => {
-                                if (s.archiviert) return false;
-                                if (verwaltungLabelFilter === "alle") return true;
-                                if (verwaltungLabelFilter === "ohne") return !s.labels || s.labels.length === 0;
-                                return s.labels?.includes(verwaltungLabelFilter);
-                              });
-
-                              const data = filteredSpieler.map((s, idx) => ({
-                                'Nr.': idx + 1,
-                                'Vorname': s.vorname,
-                                'Nachname': s.nachname || '',
-                                'E-Mail': s.kontaktEmail || '',
-                                'Telefon': s.kontaktTelefon || '',
-                                'Labels': s.labels?.join(', ') || ''
-                              }));
-
-                              const ws = XLSX.utils.json_to_sheet(data);
-                              const wb = XLSX.utils.book_new();
-                              XLSX.utils.book_append_sheet(wb, ws, 'Spieler');
-
-                              // Spaltenbreiten anpassen
-                              ws['!cols'] = [
-                                { wch: 5 },   // Nr.
-                                { wch: 15 },  // Vorname
-                                { wch: 15 },  // Nachname
-                                { wch: 25 },  // E-Mail
-                                { wch: 15 },  // Telefon
-                                { wch: 20 }   // Labels
-                              ];
-
-                              XLSX.writeFile(wb, `Spielerliste_${new Date().toISOString().split('T')[0]}.xlsx`);
-                            }}
-                          >
-                            Excel exportieren
-                          </button>
-                          <button
-                            className="btn btnGhost"
-                            onClick={() => {
-                              setPdfExportLabelFilter("alle");
-                              setPdfExportExcluded(new Set());
-                              setShowPdfExportModal(true);
-                            }}
-                          >
-                            PDF exportieren
                           </button>
                           <label
                             className="btn btnGhost"
@@ -12031,8 +11954,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         >
                           <option value="alle">Alle Spieler mit E-Mail</option>
                           <option value="keine">Keine (nur ausgewählte Spieler)</option>
-                          <option value="aktive_wedding">Aktive Spieler – Wedding</option>
-                          <option value="aktive_britz">Aktive Spieler – Britz</option>
                           {allLabels.map((label) => (
                             <option key={label} value={label}>{label}</option>
                           ))}
@@ -16971,166 +16892,6 @@ Tennisschule A bis Z`)}
         </div>
       )}
 
-      {/* Wochenplan PDF Export Modal */}
-      {showWeekPdfModal && (() => {
-        const dayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-
-        const dowISO = (dateISO: string) => {
-          const d = new Date(dateISO + "T12:00:00");
-          return (d.getDay() + 6) % 7;
-        };
-
-        const today = todayISO();
-        const seenSerieIds = new Set<string>();
-        const recurringTrainings = trainings
-          .filter(t => {
-            if (!t.serieId) return false;
-            if (t.datum < today) return false;
-            if (kalenderAnlageFilter !== "alle" && (t.anlage ?? "Wedding") !== kalenderAnlageFilter) return false;
-            if (kalenderTrainerFilter.length > 0 && !kalenderTrainerFilter.includes(t.trainerId || "")) return false;
-            return true;
-          })
-          .sort((a, b) => a.datum.localeCompare(b.datum))
-          .filter(t => {
-            if (seenSerieIds.has(t.serieId!)) return false;
-            seenSerieIds.add(t.serieId!);
-            return true;
-          });
-
-        const anlagen = (["Wedding", "Britz"] as const).filter(a =>
-          recurringTrainings.some(t => (t.anlage ?? "Wedding") === a)
-        );
-
-        const byDayForAnlage = (anlage: string) =>
-          Array.from({ length: 7 }, (_, i) =>
-            recurringTrainings
-              .filter(t => (t.anlage ?? "Wedding") === anlage && dowISO(t.datum) === i)
-              .sort((a, b) => a.uhrzeitVon.localeCompare(b.uhrzeitVon))
-          );
-
-        const formatDateShort = () => {
-          const d = new Date();
-          return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
-        };
-
-        const renderPreviewGrid = (anlage: string) => {
-          const byDay = byDayForAnlage(anlage);
-          return (
-            <div style={{ border: "1px solid #ddd", borderRadius: 8, overflow: "auto", marginBottom: 8 }}>
-              <div style={{ display: "flex", minWidth: 560 }}>
-                {byDay.map((dayTrainings, dayIdx) => (
-                  <div key={dayIdx} style={{ flex: 1, borderRight: dayIdx < 6 ? "1px solid #e5e7eb" : "none", minWidth: 0 }}>
-                    <div style={{ background: "#1e3a5f", color: "white", padding: "6px 8px", fontWeight: "bold", fontSize: 12, textAlign: "center" }}>
-                      {dayNames[dayIdx]}
-                    </div>
-                    <div style={{ padding: 4, display: "flex", flexDirection: "column", gap: 4, minHeight: 48 }}>
-                      {dayTrainings.length === 0 ? (
-                        <div style={{ color: "#bbb", fontSize: 11, fontStyle: "italic", padding: "4px 2px" }}>–</div>
-                      ) : dayTrainings.map(t => {
-                        const trainer = trainerById.get(t.trainerId || "");
-                        const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
-                        return (
-                          <div key={t.id} style={{ background: "rgba(59,130,246,0.10)", borderLeft: "3px solid #3b82f6", borderRadius: 4, padding: "4px 6px", fontSize: 11 }}>
-                            <div style={{ fontWeight: 600 }}>{t.uhrzeitVon}–{t.uhrzeitBis}</div>
-                            <div style={{ color: "#374151" }}>{trainer?.name || "–"}</div>
-                            <div style={{ color: "#6b7280" }}>{spielerNames || "–"}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        };
-
-        const buildPdfPage = (anlage: string, isLast: boolean) => {
-          const byDay = byDayForAnlage(anlage);
-          const dayCols = byDay.map((dayTrainings, dayIdx) => {
-            const cards = dayTrainings.length === 0
-              ? `<div style="color:#bbb;font-size:11px;font-style:italic;padding:4px 2px;">–</div>`
-              : dayTrainings.map(t => {
-                  const trainer = trainerById.get(t.trainerId || "");
-                  const spielerNames = t.spielerIds.map(id => spielerById.get(id)).filter(Boolean).map(s => getFullName(s!)).join(", ");
-                  return `<div style="background:rgba(59,130,246,0.10);border-left:3px solid #3b82f6;border-radius:4px;padding:4px 6px;margin-bottom:4px;font-size:11px;page-break-inside:avoid;break-inside:avoid;">
-                    <div style="font-weight:600;">${escapeHtml(t.uhrzeitVon)}–${escapeHtml(t.uhrzeitBis)}</div>
-                    <div style="color:#374151;">${escapeHtml(trainer?.name || "–")}</div>
-                    <div style="color:#6b7280;">${escapeHtml(spielerNames || "–")}</div>
-                  </div>`;
-                }).join("");
-            return `<td style="vertical-align:top;border-right:1px solid #e5e7eb;width:14.28%;padding:0;page-break-inside:avoid;break-inside:avoid;">
-              <div style="background:#1e3a5f;color:white;text-align:center;padding:6px 4px;font-size:12px;font-weight:bold;">${dayNames[dayIdx]}</div>
-              <div style="padding:4px;">${cards}</div>
-            </td>`;
-          }).join("");
-          return `<div style="page-break-inside:avoid;break-inside:avoid;${!isLast ? "page-break-after:always;break-after:page;" : ""}padding:16px;font-family:Arial,sans-serif;">
-            <h1 style="margin:0 0 4px 0;font-size:18px;color:#111;">Wochenplan Tennis – ${anlage}</h1>
-            <p style="margin:0 0 14px 0;color:#666;font-size:13px;">Wiederkehrende Trainings &middot; Stand ${formatDateShort()}</p>
-            <table style="width:100%;border-collapse:collapse;border:1px solid #e5e7eb;table-layout:fixed;page-break-inside:avoid;break-inside:avoid;">
-              <tbody><tr style="page-break-inside:avoid;break-inside:avoid;">${dayCols}</tr></tbody>
-            </table>
-          </div>`;
-        };
-
-        return (
-          <div className="modalOverlay" onClick={() => setShowWeekPdfModal(false)}>
-            <div
-              className="modalCard"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: 800, maxHeight: "90vh", overflow: "auto" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ margin: 0 }}>Wochenplan als PDF exportieren</h2>
-                <button onClick={() => setShowWeekPdfModal(false)} style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666" }}>×</button>
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <span className="pill">{recurringTrainings.length} wiederkehrende Trainings</span>
-                {anlagen.length > 1 && <span className="pill" style={{ marginLeft: 8 }}>2 Seiten ({anlagen.join(" + ")})</span>}
-              </div>
-
-              {anlagen.map(anlage => (
-                <div key={anlage} style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 14 }}>{anlage}</div>
-                  {renderPreviewGrid(anlage)}
-                </div>
-              ))}
-
-              <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
-                <button className="btn btnGhost" onClick={() => setShowWeekPdfModal(false)}>Abbrechen</button>
-                <button
-                  className="btn"
-                  onClick={async () => {
-                    const tableHTML = `<div>${anlagen.map((a, i) => buildPdfPage(a, i === anlagen.length - 1)).join("")}</div>`;
-
-                    const html2pdf = (await import('html2pdf.js')).default;
-                    const container = document.createElement('div');
-                    container.innerHTML = tableHTML;
-                    document.body.appendChild(container);
-
-                    await html2pdf()
-                      .set({
-                        margin: 10,
-                        filename: `Wochenplan_${todayISO()}.pdf`,
-                        html2canvas: { scale: 2, useCORS: true },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-                      } as any)
-                      .from(container)
-                      .save();
-
-                    document.body.removeChild(container);
-                    setShowWeekPdfModal(false);
-                  }}
-                >
-                  PDF erstellen
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
       {/* Spieler-Übernahme Bestätigungs-Dialog */}
       {showAdoptConfirmDialog && (() => {
         const selectedReqs = registrationRequests.filter(r => selectedRequestIds.has(r.id));
@@ -17217,215 +16978,6 @@ Tennisschule A bis Z`)}
                   onClick={adoptMultiplePlayersFromRequests}
                 >
                   {selectedReqs.length} Spieler übernehmen
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* PDF-Export Modal mit Vorschau */}
-      {showPdfExportModal && (() => {
-        const filteredSpieler = (() => {
-          let baseFiltered: Spieler[];
-          if (pdfExportLabelFilter === "aktive_wedding" || pdfExportLabelFilter === "aktive_britz") {
-            const anlage = pdfExportLabelFilter === "aktive_wedding" ? "Wedding" : "Britz";
-            const today = new Date().toISOString().slice(0, 10);
-            const aktiveSpielerIds = new Set<string>();
-            trainings.forEach(t => {
-              if (t.datum >= today && t.status !== "abgesagt" && (!t.anlage || t.anlage === anlage)) {
-                t.spielerIds.forEach(id => aktiveSpielerIds.add(id));
-              }
-            });
-            baseFiltered = spieler.filter(s => aktiveSpielerIds.has(s.id));
-          } else {
-            baseFiltered = spieler.filter((s) => {
-              if (pdfExportLabelFilter === "ohne") {
-                return !s.labels || s.labels.length === 0;
-              } else if (pdfExportLabelFilter !== "alle") {
-                return s.labels?.includes(pdfExportLabelFilter);
-              }
-              return true;
-            });
-          }
-          return baseFiltered.filter((s) => !s.archiviert);
-        })()
-          .filter((s) => !pdfExportExcluded.has(s.id))
-          .sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
-
-        return (
-          <div className="modalOverlay" onClick={() => setShowPdfExportModal(false)}>
-            <div
-              className="modalCard"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: 700, maxHeight: "90vh", overflow: "auto" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ margin: 0 }}>PDF exportieren - Vorschau</h2>
-                <button
-                  onClick={() => setShowPdfExportModal(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 24,
-                    cursor: "pointer",
-                    color: "#666",
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="row" style={{ marginBottom: 16, gap: 12, alignItems: "flex-end" }}>
-                <div className="field" style={{ flex: 1 }}>
-                  <label>Nach Label filtern</label>
-                  <select
-                    value={pdfExportLabelFilter}
-                    onChange={(e) => setPdfExportLabelFilter(e.target.value)}
-                  >
-                    <option value="alle">Alle Spieler</option>
-                    <option value="ohne">Ohne Label</option>
-                    <option value="aktive_wedding">Aktive Spieler – Wedding</option>
-                    <option value="aktive_britz">Aktive Spieler – Britz</option>
-                    {allLabels.map((label) => (
-                      <option key={label} value={label}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <span className="pill">
-                  {filteredSpieler.length} Spieler im PDF
-                </span>
-              </div>
-
-              <div style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                maxHeight: 400,
-                overflow: "auto",
-                marginBottom: 16
-              }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ background: "#f5f5f5", position: "sticky", top: 0 }}>
-                      <th style={{ padding: "8px 12px", textAlign: "left", width: 40 }}>#</th>
-                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Vorname</th>
-                      <th style={{ padding: "8px 12px", textAlign: "left" }}>Nachname</th>
-                      <th style={{ padding: "8px 12px", textAlign: "left" }}>E-Mail</th>
-                      <th style={{ padding: "8px 12px", textAlign: "center", width: 80 }}>Entfernen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSpieler.map((s, idx) => (
-                      <tr key={s.id} style={{ borderTop: "1px solid #eee" }}>
-                        <td style={{ padding: "8px 12px" }}>{idx + 1}</td>
-                        <td style={{ padding: "8px 12px" }}>{s.vorname}</td>
-                        <td style={{ padding: "8px 12px" }}>{s.nachname || ""}</td>
-                        <td style={{ padding: "8px 12px", fontSize: 13, color: "#555" }}>{s.kontaktEmail || ""}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                          <button
-                            className="btn btnGhost"
-                            style={{ padding: "4px 8px", fontSize: 12 }}
-                            onClick={() => setPdfExportExcluded(prev => { const next = new Set(prev); next.add(s.id); return next; })}
-                          >
-                            ×
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredSpieler.length === 0 && (
-                  <div style={{ padding: 20, textAlign: "center", color: "#666" }}>
-                    Keine Spieler für den Export ausgewählt.
-                  </div>
-                )}
-              </div>
-
-              {pdfExportExcluded.size > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <button
-                    className="btn btnGhost"
-                    style={{ fontSize: 12 }}
-                    onClick={() => setPdfExportExcluded(new Set())}
-                  >
-                    Alle {pdfExportExcluded.size} entfernten Spieler wiederherstellen
-                  </button>
-                </div>
-              )}
-
-              <div className="modalActions">
-                <button
-                  className="btn btnGhost"
-                  onClick={() => setShowPdfExportModal(false)}
-                >
-                  Abbrechen
-                </button>
-                <button
-                  className="btn"
-                  disabled={filteredSpieler.length === 0}
-                  onClick={async () => {
-                    const tableHTML = `
-                      <html>
-                      <head>
-                        <style>
-                          body { font-family: Arial, sans-serif; padding: 20px; }
-                          h1 { font-size: 18px; margin-bottom: 20px; }
-                          table { width: 100%; border-collapse: collapse; }
-                          th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
-                          th { background-color: #f5f5f5; font-weight: bold; }
-                          tr:nth-child(even) { background-color: #fafafa; }
-                          .footer { margin-top: 20px; font-size: 11px; color: #666; }
-                        </style>
-                      </head>
-                      <body>
-                        <h1>Spielerliste (${filteredSpieler.length} Spieler)${pdfExportLabelFilter !== "alle" ? ` - ${pdfExportLabelFilter === "ohne" ? "Ohne Label" : pdfExportLabelFilter === "aktive_wedding" ? "Aktive Spieler – Wedding" : pdfExportLabelFilter === "aktive_britz" ? "Aktive Spieler – Britz" : pdfExportLabelFilter}` : ""}</h1>
-                        <table>
-                          <thead>
-                            <tr>
-                              <th style="width: 40px;">#</th>
-                              <th>Vorname</th>
-                              <th>Nachname</th>
-                              <th>E-Mail</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${filteredSpieler.map((s, idx) => `
-                              <tr>
-                                <td>${idx + 1}</td>
-                                <td>${escapeHtml(s.vorname)}</td>
-                                <td>${escapeHtml(s.nachname) || ""}</td>
-                                <td>${escapeHtml(s.kontaktEmail) || ""}</td>
-                              </tr>
-                            `).join("")}
-                          </tbody>
-                        </table>
-                        <div class="footer">
-                          Erstellt am ${new Date().toLocaleDateString("de-DE")}
-                        </div>
-                      </body>
-                      </html>
-                    `;
-
-                    const html2pdf = (await import('html2pdf.js')).default;
-                    const container = document.createElement('div');
-                    container.innerHTML = tableHTML;
-                    document.body.appendChild(container);
-
-                    await html2pdf()
-                      .set({
-                        margin: 10,
-                        filename: `Spielerliste_${new Date().toISOString().split('T')[0]}.pdf`,
-                        html2canvas: { scale: 2 },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                      })
-                      .from(container)
-                      .save();
-
-                    document.body.removeChild(container);
-                    setShowPdfExportModal(false);
-                  }}
-                >
-                  PDF erstellen
                 </button>
               </div>
             </div>
