@@ -2327,11 +2327,22 @@ export default function App() {
 
   // Alle verfügbaren Labels aus Spielern sammeln
   const allLabels = useMemo(() => {
+    // Feste Wunsch-Reihenfolge der Labels (statt alphabetisch); unbekannte/neue
+    // Labels landen alphabetisch dahinter.
+    const reihenfolge = ["Wedding", "Wedding Erwachsene", "Wedding Jugend", "Britz"];
+    const rang = (l: string) => {
+      const i = reihenfolge.indexOf(l);
+      return i === -1 ? reihenfolge.length : i;
+    };
     const labelSet = new Set<string>();
     spieler.forEach((s) => {
       s.labels?.forEach((label) => labelSet.add(label));
     });
-    return Array.from(labelSet).sort();
+    return Array.from(labelSet).sort((a, b) => {
+      const ra = rang(a);
+      const rb = rang(b);
+      return ra !== rb ? ra - rb : a.localeCompare(b, "de");
+    });
   }, [spieler]);
 
   const tarifById = useMemo(
