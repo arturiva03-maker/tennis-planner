@@ -97,7 +97,7 @@ type Tarif = {
 type TrainingStatus = "geplant" | "durchgefuehrt" | "abgesagt";
 
 type AbrechnungTab = "spieler" | "trainer";
-type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter" | "einstellungen";
+type VerwaltungTab = "spieler" | "trainer" | "tarife" | "newsletter";
 type FormulareTab = "anmeldung" | "sepa" | "tenniscamp" | "probetraining" | "kennlerntennis";
 
 type Verfuegbarkeit = {
@@ -8514,14 +8514,6 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                     onClick={() => setVerwaltungTab("newsletter")}
                   >
                     Newsletter
-                  </button>
-                  <button
-                    className={`tabBtn ${
-                      verwaltungTab === "einstellungen" ? "tabBtnActive" : ""
-                    }`}
-                    onClick={() => setVerwaltungTab("einstellungen")}
-                  >
-                    Einstellungen
                   </button>
                 </div>
 
