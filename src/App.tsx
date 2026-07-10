@@ -7301,7 +7301,7 @@ Tennisschule A bis Z`;
                                       : ""
                                   }\nStatus: ${statusLabel(
                                     t.status
-                                  )}${t.isPrivat ? "\nPrivat (keine Abrechnung)" : ""}${t.isTenniscamp ? "\nTenniscamp – keine Spieler-Abrechnung, Trainer normal vergütet" : ""}`}
+                                  )}${t.isPrivat ? "\nPrivat (keine Abrechnung)" : ""}${t.isTenniscamp && !isTrainer ? "\nTenniscamp – keine Spieler-Abrechnung, Trainer normal vergütet" : ""}`}
                                 >
                                   <div
                                     style={{
