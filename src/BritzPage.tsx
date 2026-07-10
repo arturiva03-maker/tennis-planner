@@ -87,6 +87,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
   const [bookingNameMandat, setBookingNameMandat] = useState<boolean | null>(null);
   const [bookingEmail, setBookingEmail] = useState("");
   const [bookingTelefon, setBookingTelefon] = useState("");
+  const [bookingHinweis, setBookingHinweis] = useState("");
   // Eingebettetes SEPA-Mandat (nur falls für den Bucher noch keines hinterlegt ist)
   const [bookingIban, setBookingIban] = useState("");
   const [bookingStrasse, setBookingStrasse] = useState("");
@@ -243,6 +244,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
     setBookingNameMandat(null);
     setBookingEmail("");
     setBookingTelefon("");
+    setBookingHinweis("");
     setBookingIban("");
     setBookingStrasse("");
     setBookingPlz("");
@@ -339,6 +341,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
         p_name: name,
         p_email: email,
         p_telefon: telefon || null,
+        p_hinweis: bookingHinweis.trim() || null,
       });
 
       if (error || !buchenResult?.ok) {
@@ -2391,6 +2394,11 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <span style={{ color: colors.text }}>TC Blau-Weiß Britz</span>
                   </div>
+                  {bookingHinweis.trim() && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
+                      <span style={{ color: colors.text }}>{bookingHinweis.trim()}</span>
+                    </div>
+                  )}
                   {selectedSlot.customPreisProStunde && (
                     <div style={{
                       marginTop: 12,
@@ -2465,11 +2473,6 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <div style={{ color: colors.textMuted }}>
                     {selectedSlot.uhrzeitVon.slice(0, 5)} – {selectedSlot.uhrzeitBis.slice(0, 5)} Uhr
                   </div>
-                  {selectedSlot.customPreisProStunde && (
-                    <div style={{ marginTop: 8, fontWeight: 700, color: colors.primary, fontSize: 18 }}>
-                      {selectedSlot.customPreisProStunde.toFixed(2).replace(".", ",")} EUR
-                    </div>
-                  )}
                 </div>
 
                 <div style={{
@@ -2508,7 +2511,8 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <MandatNameField
                     value={bookingName}
                     hatMandat={bookingNameMandat}
-                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}                    accountId={WEDDING_ACCOUNT_ID}
+                    onChange={(n, m) => { setBookingName(n); setBookingNameMandat(m); }}
+                    accountId={WEDDING_ACCOUNT_ID}
                     colors={colors}
                     disabled={bookingSubmitting}
                   />
@@ -2521,7 +2525,8 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <input
                     type="email"
                     value={bookingEmail}
-                    onChange={(e) => setBookingEmail(e.target.value)}                    disabled={bookingSubmitting}
+                    onChange={(e) => setBookingEmail(e.target.value)}
+                    disabled={bookingSubmitting}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -2539,7 +2544,8 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                   <input
                     type="tel"
                     value={bookingTelefon}
-                    onChange={(e) => setBookingTelefon(e.target.value)}                    disabled={bookingSubmitting}
+                    onChange={(e) => setBookingTelefon(e.target.value)}
+                    disabled={bookingSubmitting}
                     style={{
                       width: "100%",
                       padding: "10px 12px",
@@ -2548,6 +2554,33 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                       fontSize: 15,
                     }}
                   />
+                </div>
+
+                {/* Hinweis-Feld (z.B. weitere Mitspieler) */}
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ display: "block", fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                    Hinweis (optional)
+                  </label>
+                  <textarea
+                    value={bookingHinweis}
+                    onChange={(e) => setBookingHinweis(e.target.value)}
+                    disabled={bookingSubmitting}
+                    rows={3}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: 2,
+                      fontSize: 15,
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <p style={{ margin: "8px 0 0", fontSize: 12.5, color: colors.textMuted, lineHeight: 1.5 }}>
+                    Wenn Sie weitere Mitspieler mitbringen, passt sich der Preis an: 1 Person 40 €, 2 Personen je 25 €,
+                    3 Personen je 20 €, 4 Personen je 15 € (pro Person).
+                  </p>
                 </div>
 
                 {/* Kein Mandat hinterlegt? SEPA-Lastschriftmandat direkt hier erteilen */}
@@ -2666,7 +2699,7 @@ export default function BritzPage({ sommertrainingOnly = false }: { sommertraini
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {bookingSubmitting ? "Wird gebucht..." : mandatNeeded ? "Mandat erteilen & buchen" : "Jetzt buchen"}
+                  {bookingSubmitting ? "Wird gebucht..." : mandatNeeded ? "Mandat erteilen & buchen" : "Verbindlich buchen"}
                 </button>
 
                 <p style={{ marginTop: 16, fontSize: 12, color: colors.textMuted, textAlign: "center" }}>

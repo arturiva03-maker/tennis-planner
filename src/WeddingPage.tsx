@@ -761,7 +761,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                         <td style="padding: 8px 0; border-bottom: 1px solid ${colors.border};">
                           <table role="presentation" cellspacing="0" cellpadding="0">
                             <tr>
-                              <td style="color: ${colors.primary}; font-size: 15px;">BSC Rehberge, Wedding</td>
+                              <td style="color: ${colors.primary}; font-size: 15px;">BSC Rehberge</td>
                             </tr>
                           </table>
                         </td>
@@ -855,7 +855,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
           body: JSON.stringify({
             to: [email],
             subject: `Buchungsbestätigung – ${datumFormatted}`,
-            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge, Wedding${trainerName ? `\nTrainer: ${trainerName}` : ""}${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
+            body: `Hallo ${name},\n\nIhr Training in den Sommerferien wurde erfolgreich gebucht!\n\nTermin: ${datumFormatted}\nUhrzeit: ${selectedSlot.uhrzeitVon} – ${selectedSlot.uhrzeitBis} Uhr\nOrt: BSC Rehberge${trainerName ? `\nTrainer: ${trainerName}` : ""}${preisText}${hinweis ? `\nHinweis: ${hinweis}` : ""}\n\nWichtige Hinweise:\n- In den Sommerferien findet kein reguläres Training statt – dies ist ein Einzeltermin mit einem unserer Trainer.\n- Das Training ist ausschließlich für Mitglieder buchbar.\n- Die Teilnahme setzt ein erteiltes SEPA-Lastschriftmandat voraus; der Betrag wird per Lastschrift eingezogen.\n- Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich – danach muss das Training bezahlt werden.\n\nSollten Sie den Termin nicht wahrnehmen können, sagen Sie hier ab:\n${window.location.origin}/absage/${selectedSlot.id}\n\nFalls Sie Fragen haben, kontaktieren Sie uns unter tennisabisz@gmail.com.\n\nSportliche Grüße,\nTennisschule A bis Z`,
             html: confirmationHtml,
             fromName: "Tennisschule A bis Z",
           }),
@@ -2852,7 +2852,7 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ color: colors.text }}>BSC Rehberge, Wedding</span>
+                    <span style={{ color: colors.text }}>BSC Rehberge</span>
                   </div>
                   {bookingHinweis.trim() && (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginTop: 8 }}>
