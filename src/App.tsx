@@ -2282,11 +2282,14 @@ export default function App() {
         training.anlage === "Britz" || training.anlage === "Wedding" ? training.anlage : s.anlage;
       const tTarif = training.tarifId || undefined;
       const tPreis = training.customPreisProStunde;
+      // Training-Trainer kann optional sein – dann den vorhandenen Slot-Trainer
+      // behalten (SpontaneStunde.trainerId ist Pflichtfeld, nie undefined setzen).
+      const tTrainer = training.trainerId ?? s.trainerId;
       const diverged =
         s.datum !== training.datum ||
         s.uhrzeitVon.slice(0, 5) !== training.uhrzeitVon.slice(0, 5) ||
         s.uhrzeitBis.slice(0, 5) !== training.uhrzeitBis.slice(0, 5) ||
-        s.trainerId !== training.trainerId ||
+        s.trainerId !== tTrainer ||
         (s.tarifId || undefined) !== tTarif ||
         (s.customPreisProStunde ?? null) !== (tPreis ?? null) ||
         s.anlage !== anlage;
@@ -2301,7 +2304,7 @@ export default function App() {
           datum: training.datum,
           uhrzeit_von: training.uhrzeitVon,
           uhrzeit_bis: training.uhrzeitBis,
-          trainer_id: training.trainerId,
+          trainer_id: tTrainer,
           tarif_id: tTarif || null,
           custom_preis_pro_stunde: tPreis ?? null,
           anlage,
@@ -2321,7 +2324,7 @@ export default function App() {
                     datum: training.datum,
                     uhrzeitVon: training.uhrzeitVon,
                     uhrzeitBis: training.uhrzeitBis,
-                    trainerId: training.trainerId,
+                    trainerId: tTrainer,
                     tarifId: tTarif,
                     customPreisProStunde: tPreis,
                     anlage,
