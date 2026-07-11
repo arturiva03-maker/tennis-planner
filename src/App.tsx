@@ -4008,6 +4008,32 @@ ${txInfo}
             : s
         )
       );
+
+      // Gegenrichtung: Hängt an diesem Slot ein Kalender-Training (verknüpfte
+      // „Spontan · frei"-Variante), ziehen wir das Training mit – sonst würde der
+      // Reconcile-Effekt die gerade gemachte Slot-Änderung beim nächsten Laden
+      // wieder auf die alten Trainingswerte zurücksetzen.
+      const editedSlot = spontaneStunden.find((s) => s.id === editingSpontanId);
+      if (editedSlot?.trainingId) {
+        const linkedTrainingId = editedSlot.trainingId;
+        setTrainings((prev) =>
+          prev.map((t) =>
+            t.id === linkedTrainingId
+              ? {
+                  ...t,
+                  datum: spontanDatum,
+                  uhrzeitVon: spontanVon,
+                  uhrzeitBis: spontanBis,
+                  trainerId: spontanTrainerId,
+                  tarifId: spontanTarifId || undefined,
+                  customPreisProStunde: spontanCustomPreis === "" ? undefined : spontanCustomPreis,
+                  anlage: spontanAnlage,
+                }
+              : t
+          )
+        );
+      }
+
       resetSpontanForm();
       setSpontanFormOpen(false);
     } catch (err) {
