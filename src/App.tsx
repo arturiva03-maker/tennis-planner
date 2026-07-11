@@ -2265,6 +2265,75 @@ export default function App() {
     });
   }, [spontaneStunden, trainings, spieler, authUser, initialSynced]);
 
+  // Heilt bereits divergierte Verknüpfungen: Wurde ein aus einer spontanen Stunde
+  // entstandenes Training früher (vor dem Sync-Fix) im Kalender geändert, steht die
+  // verknüpfte spontane_stunden-Zeile oft noch auf alten Werten (z.B. alter Trainer,
+  // alte Zeit). Der saveTraining-Sync greift nur bei NEUEN Änderungen – dieser
+  // Effekt gleicht jede verknüpfte Zeile beim Laden einmalig an ihr Training an.
+  // Status/Buchung/Veröffentlichung bleiben unangetastet.
+  const spontanFieldSyncRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!authUser?.accountId || authUser.role === "trainer" || !initialSynced) return;
+    spontaneStunden.forEach((s) => {
+      if (!s.trainingId) return;
+      const training = trainings.find((t) => t.id === s.trainingId);
+      if (!training) return;
+      const anlage: "Wedding" | "Britz" =
+        training.anlage === "Britz" || training.anlage === "Wedding" ? training.anlage : s.anlage;
+      const tTarif = training.tarifId || undefined;
+      const tPreis = training.customPreisProStunde;
+      const diverged =
+        s.datum !== training.datum ||
+        s.uhrzeitVon.slice(0, 5) !== training.uhrzeitVon.slice(0, 5) ||
+        s.uhrzeitBis.slice(0, 5) !== training.uhrzeitBis.slice(0, 5) ||
+        s.trainerId !== training.trainerId ||
+        (s.tarifId || undefined) !== tTarif ||
+        (s.customPreisProStunde ?? null) !== (tPreis ?? null) ||
+        s.anlage !== anlage;
+      if (!diverged) return;
+      // Pro Slot nur einmal versuchen (verhindert Endlos-Loop bei Werten, die
+      // sich nach dem Schreiben nicht exakt gleich zurücklesen lassen).
+      if (spontanFieldSyncRef.current.has(s.id)) return;
+      spontanFieldSyncRef.current.add(s.id);
+      supabase
+        .from("spontane_stunden")
+        .update({
+          datum: training.datum,
+          uhrzeit_von: training.uhrzeitVon,
+          uhrzeit_bis: training.uhrzeitBis,
+          trainer_id: training.trainerId,
+          tarif_id: tTarif || null,
+          custom_preis_pro_stunde: tPreis ?? null,
+          anlage,
+        })
+        .eq("id", s.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error("Error reconciling spontane stunde with training:", error);
+            spontanFieldSyncRef.current.delete(s.id);
+            return;
+          }
+          setSpontaneStunden((prev) =>
+            prev.map((x) =>
+              x.id === s.id
+                ? {
+                    ...x,
+                    datum: training.datum,
+                    uhrzeitVon: training.uhrzeitVon,
+                    uhrzeitBis: training.uhrzeitBis,
+                    trainerId: training.trainerId,
+                    tarifId: tTarif,
+                    customPreisProStunde: tPreis,
+                    anlage,
+                  }
+                : x
+            )
+          );
+        });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spontaneStunden, trainings, authUser, initialSynced]);
+
   const trainerById = useMemo(
     () => new Map(trainers.map((t) => [t.id, t])),
     [trainers]
