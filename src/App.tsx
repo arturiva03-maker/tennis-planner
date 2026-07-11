@@ -4192,6 +4192,67 @@ ${txInfo}
     }
   }
 
+  // Wird ein Training, das aus einer spontanen Stunde entstanden ist, im Kalender
+  // bearbeitet (Trainer/Datum/Zeit/Tarif/Preis/Anlage), schreiben wir die Änderung
+  // auf die verknüpfte spontane_stunden-Zeile zurück – sonst zeigt der Spontan-Tab
+  // veraltete Daten (z.B. den alten Trainer). Status/Buchung/Veröffentlichung
+  // bleiben unangetastet.
+  async function syncSpontaneStundeFromTrainingEdit(
+    trainingId: string,
+    fields: {
+      datum: string;
+      uhrzeitVon: string;
+      uhrzeitBis: string;
+      trainerId?: string;
+      tarifId?: string;
+      customPreisProStunde?: number;
+      anlage?: string;
+    }
+  ) {
+    if (!authUser?.accountId) return;
+    const linked = spontaneStunden.find((s) => s.trainingId === trainingId);
+    if (!linked) return;
+    const anlage: "Wedding" | "Britz" =
+      fields.anlage === "Britz" || fields.anlage === "Wedding" ? fields.anlage : linked.anlage;
+    const trainerId = fields.trainerId ?? linked.trainerId;
+    try {
+      const { error } = await supabase
+        .from("spontane_stunden")
+        .update({
+          datum: fields.datum,
+          uhrzeit_von: fields.uhrzeitVon,
+          uhrzeit_bis: fields.uhrzeitBis,
+          trainer_id: trainerId,
+          tarif_id: fields.tarifId || null,
+          custom_preis_pro_stunde: fields.customPreisProStunde ?? null,
+          anlage,
+        })
+        .eq("id", linked.id);
+      if (error) {
+        console.error("Error syncing spontane stunde from training edit:", error);
+        return;
+      }
+      setSpontaneStunden((prev) =>
+        prev.map((s) =>
+          s.id === linked.id
+            ? {
+                ...s,
+                datum: fields.datum,
+                uhrzeitVon: fields.uhrzeitVon,
+                uhrzeitBis: fields.uhrzeitBis,
+                trainerId,
+                tarifId: fields.tarifId || undefined,
+                customPreisProStunde: fields.customPreisProStunde,
+                anlage,
+              }
+            : s
+        )
+      );
+    } catch (err) {
+      console.error("Error syncing spontane stunde from training edit:", err);
+    }
+  }
+
   async function uebernehmenSpontanBuchung(s: SpontaneStunde) {
     if (!s.buchung) return;
 
@@ -5453,6 +5514,18 @@ Tennisschule A bis Z`;
           prev.map((x) => (x.id === selectedTrainingId ? payload : x))
         );
       }
+
+      // Falls dieses Training aus einer spontanen Stunde stammt: verknüpfte
+      // spontane_stunden-Zeile mitziehen, damit der Spontan-Tab konsistent bleibt.
+      syncSpontaneStundeFromTrainingEdit(selectedTrainingId, {
+        datum: payload.datum,
+        uhrzeitVon: payload.uhrzeitVon,
+        uhrzeitBis: payload.uhrzeitBis,
+        trainerId: payload.trainerId,
+        tarifId: payload.tarifId,
+        customPreisProStunde: payload.customPreisProStunde,
+        anlage: payload.anlage,
+      });
 
       // Tenniscamp: Teilnehmer + Camp-Gebühr + Trainer gelten fürs ganze Camp –
       // auf alle Tage der Serie spiegeln (unabhängig vom Serien-Scope).
