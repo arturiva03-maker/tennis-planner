@@ -33,11 +33,10 @@ export default function AbsagePage() {
     async function load() {
       if (!id) { setStatus("notfound"); setLoading(false); return; }
 
-      const { data, error } = await supabase
-        .from("spontane_stunden")
-        .select("*")
-        .eq("id", id)
-        .single();
+      // Ueber RPC statt direktem Tabellenzugriff: spontane_stunden gibt fuer anon
+      // nur noch freie, veroeffentlichte Slots heraus - ein gebuchter Slot waere
+      // hier sonst unsichtbar. Die Slot-UUID aus dem Absage-Link ist das Token.
+      const { data, error } = await supabase.rpc("spontan_slot_info", { slot_id: id });
 
       if (error || !data) {
         setStatus("notfound");
@@ -49,8 +48,8 @@ export default function AbsagePage() {
           von: data.uhrzeit_von?.slice(0, 5) ?? data.uhrzeit_von,
           bis: data.uhrzeit_bis?.slice(0, 5) ?? data.uhrzeit_bis,
           anlage: data.anlage,
-          buchungEmail: data.buchung?.email ?? undefined,
-          buchungName: data.buchung?.name ?? undefined,
+          buchungEmail: data.buchung_email ?? undefined,
+          buchungName: data.buchung_name ?? undefined,
           preis: data.custom_preis_pro_stunde ?? undefined,
         });
         setStatus("confirm");
