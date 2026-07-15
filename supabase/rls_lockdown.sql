@@ -104,7 +104,8 @@ begin
     select policyname, tablename
     from pg_policies
     where schemaname = 'public'
-      and tablename in ('sepa_mandates', 'tenniscamp_anmeldungen', 'spontane_stunden')
+      and tablename in ('sepa_mandates', 'tenniscamp_anmeldungen', 'spontane_stunden',
+                        'account_state', 'registration_requests', 'user_profiles')
   loop
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;
@@ -175,3 +176,74 @@ create policy "Account-Inhaber voller Zugriff" on public.spontane_stunden
   for all to authenticated
   using (account_id = public.current_account_id())
   with check (account_id = public.current_account_id());
+
+
+-- ------------------------------------------------------------
+-- 7) account_state -- der komplette App-Zustand als JSON-Blob.
+--
+--    NACHGEMESSEN 2026-07-15 (nach Teil 1): SELECT lieferte anon zwar 0 Zeilen,
+--    ein UPDATE gegen alle Zeilen lief aber bis in den Typ-Cast (Fehler 22007)
+--    -- d.h. RLS hat die Zeilen NICHT weggefiltert: anon durfte den gesamten
+--    Kalender/Spielerbestand ueberschreiben. Zweite, unabhaengige Luecke,
+--    gleiche Ursache (Policy ohne TO-Klausel).
+--
+--    anon braucht hier gar nichts: account_state wird nur von der eingeloggten
+--    App (App.tsx) und von SECURITY-DEFINER-RPCs angefasst. Letztere laufen als
+--    Owner und umgehen RLS ohnehin.
+--    account_id ist uuid -> ::text-Cast (vgl. Kommentar in spontan_rpc.sql).
+-- ------------------------------------------------------------
+alter table public.account_state enable row level security;
+
+revoke all on public.account_state from anon;
+
+-- App.tsx nutzt .upsert() -> insert UND update noetig, daher "for all".
+create policy "Account-Inhaber voller Zugriff" on public.account_state
+  for all to authenticated
+  using (account_id::text = public.current_account_id())
+  with check (account_id::text = public.current_account_id());
+
+
+-- ------------------------------------------------------------
+-- 8) registration_requests -- Anmeldeanfragen (Name, E-Mail, Telefon).
+--    anon braucht nur INSERT (RegistrationForm.tsx, liest nichts zurueck).
+-- ------------------------------------------------------------
+alter table public.registration_requests enable row level security;
+
+revoke all on public.registration_requests from anon;
+grant insert on public.registration_requests to anon;
+
+create policy "anon darf Anfrage stellen" on public.registration_requests
+  for insert to anon
+  with check (true);
+
+create policy "Account-Inhaber voller Zugriff" on public.registration_requests
+  for all to authenticated
+  using (account_id::text = public.current_account_id())
+  with check (account_id::text = public.current_account_id());
+
+
+-- ------------------------------------------------------------
+-- 9) user_profiles -- Rollenzuordnung. anon braucht nichts.
+--    App.tsx liest ausschliesslich das EIGENE Profil (.eq("user_id", authUser.id)),
+--    daher kein Vollzugriff fuer authenticated. Kein UPDATE/DELETE: die Rolle
+--    darf sich niemand selbst setzen (sonst waere role='admin' frei waehlbar).
+--    current_account_id() ist SECURITY DEFINER und liest hier trotzdem.
+-- ------------------------------------------------------------
+alter table public.user_profiles enable row level security;
+
+revoke all on public.user_profiles from anon;
+
+create policy "eigenes Profil lesen" on public.user_profiles
+  for select to authenticated
+  using (user_id = auth.uid());
+
+
+-- ------------------------------------------------------------
+-- 10) Kontrolle: zeigt alle Policies. Erwartung -- in "roles" steht nirgends
+--     mehr "{public}", und keine anon-Regel hat qual = "true" ausser den
+--     INSERT-Policies (dort steht die Bedingung in with_check).
+-- ------------------------------------------------------------
+select tablename, policyname, roles, cmd, qual, with_check
+from pg_policies
+where schemaname = 'public'
+order by tablename, cmd, policyname;
