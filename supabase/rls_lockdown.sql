@@ -316,7 +316,47 @@ create policy "Account-Inhaber darf bearbeiten" on public.agb_content
 
 
 -- ------------------------------------------------------------
--- 13) Kontrolle A: zeigt alle Policies. Erwartung -- in "roles" steht nirgends
+-- 13) Altlasten -- gefunden erst durch Kontrolle B (siehe unten).
+--
+--     conversations / conversation_members standen auf RLS = OFF mit 0 Policies
+--     und vollen anon-Rechten (SELECT/INSERT/UPDATE/DELETE/TRUNCATE). In
+--     pg_policies konnten sie gar nicht auftauchen -- ohne Policy kein Eintrag.
+--     Dass anon dort 0 Zeilen sah, war KEIN Schutz: bei RLS=off sieht anon
+--     alles, die Tabellen sind nur leer. Mit der ersten Chat-Nachricht waere
+--     alles oeffentlich gewesen.
+--
+--     Keine dieser Tabellen wird im Code referenziert (weder conversations,
+--     conversation_members, chat_messages noch account_state_backup). Reste
+--     eines Chat-Experiments. Daher: RLS an, anon-Rechte weg, KEINE Policies --
+--     "RLS aktiv + keine Policy" ist in Postgres default-deny. Bewusst keine
+--     Policy erfunden: die Spalten sind unbekannt (Tabellen leer, kein Code),
+--     eine geratene Bedingung waere schlimmer als gar keine.
+--     Wird der Chat je gebaut, kommen die Policies dann dazu.
+-- ------------------------------------------------------------
+alter table public.conversations        enable row level security;
+alter table public.conversation_members enable row level security;
+
+revoke all on public.conversations        from anon;
+revoke all on public.conversation_members from anon;
+
+-- chat_messages: RLS + Policies waren ok (Bedingung haengt an auth.uid(), das
+-- ist bei anon NULL -> greift nie). Die vollen anon-GRANTs sind trotzdem
+-- ueberfluessig -- zweite Verteidigungslinie nachziehen.
+revoke all on public.chat_messages from anon;
+
+-- user_state: dito, Policies sind an auth.uid() gebunden und damit dicht.
+revoke all on public.user_state from anon;
+
+-- account_state_backup_20260705: vollstaendige Kopie des App-Zustands vom
+-- 2026-07-05. Aktuell dicht (RLS an, 0 Policies = default deny), aber anon hat
+-- weiterhin alle GRANTs -- wer die RLS je abschaltet, legt den ganzen Blob
+-- offen. Rechte entziehen; die Tabelle selbst sollte geloescht werden, sobald
+-- klar ist, dass das Backup nicht mehr gebraucht wird (bewusst NICHT hier).
+revoke all on public.account_state_backup_20260705 from anon;
+
+
+-- ------------------------------------------------------------
+-- 14) Kontrolle A: zeigt alle Policies. Erwartung -- in "roles" steht nirgends
 --     mehr "{public}", und keine anon-Regel hat qual = "true" ausser dem
 --     AGB-SELECT (INSERT-Policies tragen ihre Bedingung in with_check).
 -- ------------------------------------------------------------
@@ -327,7 +367,7 @@ order by tablename, cmd, policyname;
 
 
 -- ------------------------------------------------------------
--- 14) Kontrolle B -- WICHTIGER als A.
+-- 15) Kontrolle B -- WICHTIGER als A.
 --     pg_policies zeigt nur Tabellen, die ueberhaupt Policies HABEN. Eine
 --     Tabelle ganz ohne Policy und mit RLS=off taucht dort NICHT auf und ist
 --     trotzdem (oder gerade deshalb) offen. Genau so waren agb_content,
