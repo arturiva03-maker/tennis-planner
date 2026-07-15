@@ -105,7 +105,8 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename in ('sepa_mandates', 'tenniscamp_anmeldungen', 'spontane_stunden',
-                        'account_state', 'registration_requests', 'user_profiles')
+                        'account_state', 'registration_requests', 'user_profiles',
+                        'probetraining_anfragen', 'kennlerntennis_anfragen', 'agb_content')
   loop
     execute format('drop policy %I on public.%I', p.policyname, p.tablename);
   end loop;
@@ -239,11 +240,112 @@ create policy "eigenes Profil lesen" on public.user_profiles
 
 
 -- ------------------------------------------------------------
--- 10) Kontrolle: zeigt alle Policies. Erwartung -- in "roles" steht nirgends
---     mehr "{public}", und keine anon-Regel hat qual = "true" ausser den
---     INSERT-Policies (dort steht die Bedingung in with_check).
+-- 10) probetraining_anfragen -- Probetraining-Anfragen (Personendaten).
+--
+--     Hatte eine Policy namens "Allow all": {public}, ALL, qual=true,
+--     with_check=true -> voellig offen fuer jeden, inkl. Loeschen.
+--     Aktuell noch leer, deshalb war beim SELECT nichts zu sehen -- das war
+--     Glueck, kein Schutz: mit der ersten Anfrage waere sie offen gewesen.
+--
+--     anon braucht hier NICHTS: kein oeffentliches Formular schreibt hinein
+--     (nur App.tsx liest/aendert/loescht). Die Policy war Kollateralschaden.
+--     Admin liest mit .in("account_id", [accountId, "public"]).
+-- ------------------------------------------------------------
+alter table public.probetraining_anfragen enable row level security;
+
+revoke all on public.probetraining_anfragen from anon;
+
+create policy "Account-Inhaber voller Zugriff" on public.probetraining_anfragen
+  for all to authenticated
+  using (account_id::text = any (array[public.current_account_id(), 'public']))
+  with check (account_id::text = any (array[public.current_account_id(), 'public']));
+
+
+-- ------------------------------------------------------------
+-- 11) kennlerntennis_anfragen -- Name, Alter, E-Mail, Telefon, Spielstaerke.
+--
+--     War fuer anon nicht lesbar (Policies nur {authenticated}) -- aber alle
+--     mit qual=true, d.h. JEDER eingeloggte Nutzer (auch ein Trainer eines
+--     anderen Accounts) konnte die Anfragen ALLER Accounts lesen, aendern und
+--     loeschen. Kein oeffentliches Leck, aber kaputte Mandantentrennung.
+--
+--     anon braucht nur INSERT (KennlerntennisForm.tsx:171, liest nichts zurueck).
+-- ------------------------------------------------------------
+alter table public.kennlerntennis_anfragen enable row level security;
+
+revoke all on public.kennlerntennis_anfragen from anon;
+grant insert on public.kennlerntennis_anfragen to anon;
+
+create policy "anon darf Anfrage stellen" on public.kennlerntennis_anfragen
+  for insert to anon
+  with check (true);
+
+create policy "Account-Inhaber voller Zugriff" on public.kennlerntennis_anfragen
+  for all to authenticated
+  using (account_id::text = public.current_account_id())
+  with check (account_id::text = public.current_account_id());
+
+
+-- ------------------------------------------------------------
+-- 12) agb_content -- AGB-Texte (keine Personendaten).
+--
+--     Policy hiess "AGB nur vom Besitzer bearbeitbar", war aber {public}, ALL,
+--     qual=true -> jeder Besucher konnte die AGB umschreiben oder loeschen.
+--     Nachgemessen: PATCH kam bis in den Typ-Cast durch (22007).
+--
+--     Die Tabelle wird im Code NIRGENDS referenziert (AGB stehen fest in
+--     AGBPage.tsx / AGBPageBritz.tsx) -- vermutlich Altlast. Das SELECT fuer
+--     anon bleibt trotzdem erhalten: schadet nicht (oeffentlicher Text, keine
+--     Personendaten) und bricht nichts, falls doch etwas ausserhalb dieses
+--     Repos liest. Schreiben darf nur noch der Account-Inhaber.
+--     Wenn sicher ist, dass sie tot ist: ersatzlos droppen.
+-- ------------------------------------------------------------
+alter table public.agb_content enable row level security;
+
+revoke all on public.agb_content from anon;
+grant select on public.agb_content to anon;
+
+create policy "AGB oeffentlich lesbar" on public.agb_content
+  for select to anon
+  using (true);
+
+create policy "Account-Inhaber darf bearbeiten" on public.agb_content
+  for all to authenticated
+  using (account_id::text = public.current_account_id())
+  with check (account_id::text = public.current_account_id());
+
+
+-- ------------------------------------------------------------
+-- 13) Kontrolle A: zeigt alle Policies. Erwartung -- in "roles" steht nirgends
+--     mehr "{public}", und keine anon-Regel hat qual = "true" ausser dem
+--     AGB-SELECT (INSERT-Policies tragen ihre Bedingung in with_check).
 -- ------------------------------------------------------------
 select tablename, policyname, roles, cmd, qual, with_check
 from pg_policies
 where schemaname = 'public'
 order by tablename, cmd, policyname;
+
+
+-- ------------------------------------------------------------
+-- 14) Kontrolle B -- WICHTIGER als A.
+--     pg_policies zeigt nur Tabellen, die ueberhaupt Policies HABEN. Eine
+--     Tabelle ganz ohne Policy und mit RLS=off taucht dort NICHT auf und ist
+--     trotzdem (oder gerade deshalb) offen. Genau so waren agb_content,
+--     probetraining_anfragen & Co. bis heute unbemerkt geblieben.
+--
+--     Diese Abfrage listet ALLE Tabellen mit RLS-Status und anon-Rechten.
+--     Alarm bei: rls_an = false UND anon_rechte enthaelt SELECT/UPDATE/DELETE.
+-- ------------------------------------------------------------
+select
+  c.relname                                                              as tabelle,
+  c.relrowsecurity                                                       as rls_an,
+  (select count(*) from pg_policies p
+    where p.schemaname = 'public' and p.tablename = c.relname)           as policies,
+  coalesce(string_agg(distinct g.privilege_type, ', ' order by g.privilege_type), '-') as anon_rechte
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+left join information_schema.role_table_grants g
+  on g.table_schema = 'public' and g.table_name = c.relname and g.grantee = 'anon'
+where n.nspname = 'public' and c.relkind = 'r'
+group by c.relname, c.relrowsecurity
+order by c.relrowsecurity, c.relname;
