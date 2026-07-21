@@ -213,12 +213,13 @@ begin
 
   state := jsonb_set(state, '{spieler}', spieler_arr);
 
-  -- Preis: Staffelpreis pro Person aus der Buchung, sonst slot/40 (Wedding)
+  -- Preis: Staffelpreis pro Person aus der Buchung, sonst custom_preis, sonst
+  -- 40 EUR Standard (Wedding UND Britz - beide Seiten werben mit 40 EUR/1 Person).
   v_preis := nullif(slot.buchung->>'preisProPerson', '')::numeric;
   v_gruppe := v_preis is not null;
   if v_preis is null then
     v_preis := slot.custom_preis_pro_stunde;
-    if v_preis is null and (slot.tarif_id is null or slot.tarif_id = '') and slot.anlage = 'Wedding' then
+    if v_preis is null and (slot.tarif_id is null or slot.tarif_id = '') then
       v_preis := 40;
     end if;
   end if;
