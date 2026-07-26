@@ -12,12 +12,13 @@ type CampOption = {
   dates: string;
   type: "kind" | "erwachsene";
   price: number;
+  closed?: boolean;
 };
 
 const CAMP_OPTIONS: CampOption[] = [
   { id: "woche1-erwachsene", label: "Erwachsenencamp - 1. Ferienwoche", dates: "13.07. - 17.07.2026", type: "erwachsene", price: 140 },
-  { id: "woche6-kind", label: "Kindercamp - Letzte Ferienwoche", dates: "17.08. - 21.08.2026", type: "kind", price: 270 },
-  { id: "woche6-erwachsene", label: "Erwachsenencamp - Letzte Ferienwoche", dates: "17.08. - 21.08.2026", type: "erwachsene", price: 140 },
+  { id: "woche6-kind", label: "Kindercamp - Letzte Ferienwoche", dates: "17.08. - 21.08.2026", type: "kind", price: 270, closed: true },
+  { id: "woche6-erwachsene", label: "Erwachsenencamp - Letzte Ferienwoche", dates: "17.08. - 21.08.2026", type: "erwachsene", price: 140, closed: true },
 ];
 
 type TenniscampData = {
@@ -240,6 +241,11 @@ export default function TenniscampForm() {
 
     if (!formData.campId) {
       setError("Bitte wählen Sie ein Tenniscamp aus.");
+      return;
+    }
+
+    if (selectedCamp?.closed) {
+      setError("Für dieses Camp ist die Anmeldung leider geschlossen.");
       return;
     }
 
@@ -835,12 +841,37 @@ IBAN: ${formData.iban}${formData.bemerkungen.trim() ? `\n\nBemerkungen: ${formDa
               <div className="tc-choices">
                 {CAMP_OPTIONS.map((camp) => {
                   const sel = formData.campId === camp.id;
+                  const closed = !!camp.closed;
                   return (
-                    <label key={camp.id} className={`tc-choice${sel ? " is-selected" : ""}`}>
-                      <input type="radio" name="campId" value={camp.id} checked={sel} onChange={handleChange} />
+                    <label
+                      key={camp.id}
+                      className={`tc-choice${sel ? " is-selected" : ""}${closed ? " is-closed" : ""}`}
+                      style={closed ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
+                    >
+                      <input type="radio" name="campId" value={camp.id} checked={sel} disabled={closed} onChange={handleChange} />
                       <span className="tc-radio" />
                       <span className="tc-choice-body">
-                        <span className="tc-choice-title">{camp.label}</span>
+                        <span className="tc-choice-title">
+                          {camp.label}
+                          {closed && (
+                            <span
+                              style={{
+                                marginLeft: 8,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.03em",
+                                color: "#b91c1c",
+                                background: "#fee2e2",
+                                borderRadius: 4,
+                                padding: "2px 6px",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Anmeldung geschlossen
+                            </span>
+                          )}
+                        </span>
                         <span className="tc-choice-meta">{camp.dates}</span>
                       </span>
                       <span className="tc-choice-price">{camp.price} €</span>
