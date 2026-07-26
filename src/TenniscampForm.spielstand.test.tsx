@@ -1,40 +1,26 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import TenniscampForm from "./TenniscampForm";
 
-function selectCamp(value: string) {
-  const camp = document.querySelector(`input[name="campId"][value="${value}"]`) as HTMLInputElement;
-  expect(camp).not.toBeNull();
-  fireEvent.click(camp);
-}
+// Hinweis: Aktuell sind alle angebotenen Camps (letzte Ferienwoche) gesperrt.
+// Das Erwachsenencamp der 1. Ferienwoche wurde komplett aus dem Formular entfernt.
+// Der Spielstand-Beschreibungs-Flow ist daher über die UI nicht mehr erreichbar,
+// solange kein Camp buchbar ist – die Tests prüfen deshalb den gesperrten Zustand.
 
-function clickMitglied(value: "ja" | "nein") {
-  const radio = document.querySelector(`input[name="mitglied"][value="${value}"]`) as HTMLInputElement;
-  expect(radio).not.toBeNull();
-  fireEvent.click(radio);
-}
-
-test("Spielstand-Beschreibung erscheint bei Kindercamp + Nicht-Mitglied", () => {
+test("Entferntes Camp (1. Ferienwoche) wird nicht mehr angeboten", () => {
   render(<TenniscampForm />);
-
-  expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
-
-  selectCamp("woche6-kind");
-  clickMitglied("nein");
-
-  expect(screen.getByText("Beschreibung des Spielstands")).toBeInTheDocument();
-  expect(document.querySelector('textarea[name="spielstandBeschreibung"]')).not.toBeNull();
-
-  // Wieder auf "Ja" -> Feld verschwindet
-  clickMitglied("ja");
-  expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
+  expect(document.querySelector('input[name="campId"][value="woche1-erwachsene"]')).toBeNull();
 });
 
-test("Spielstand-Beschreibung erscheint auch bei Erwachsenencamp + Nicht-Mitglied", () => {
+test("Camps der letzten Ferienwoche sind gesperrt (Radio deaktiviert + Hinweis)", () => {
   render(<TenniscampForm />);
 
-  selectCamp("woche1-erwachsene");
-  expect(screen.queryByText("Beschreibung des Spielstands")).toBeNull();
+  const kind = document.querySelector('input[name="campId"][value="woche6-kind"]') as HTMLInputElement;
+  const erwachsene = document.querySelector('input[name="campId"][value="woche6-erwachsene"]') as HTMLInputElement;
 
-  clickMitglied("nein");
-  expect(screen.getByText("Beschreibung des Spielstands")).toBeInTheDocument();
+  expect(kind).not.toBeNull();
+  expect(erwachsene).not.toBeNull();
+  expect(kind.disabled).toBe(true);
+  expect(erwachsene.disabled).toBe(true);
+
+  expect(screen.getAllByText("Anmeldung geschlossen").length).toBeGreaterThanOrEqual(2);
 });
