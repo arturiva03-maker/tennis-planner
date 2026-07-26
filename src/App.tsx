@@ -1495,6 +1495,7 @@ export default function App() {
   const [tenniscampAnmeldungen, setTenniscampAnmeldungen] = useState<TenniscampAnmeldung[]>([]);
   const [loadingTenniscampAnmeldungen, setLoadingTenniscampAnmeldungen] = useState(false);
   const [expandedTenniscampId, setExpandedTenniscampId] = useState<string | null>(null);
+  const [selectedTenniscampIds, setSelectedTenniscampIds] = useState<Set<string>>(new Set());
   const [tenniscampStatusFilter, setTenniscampStatusFilter] = useState<"alle" | "offen" | "storniert">("offen");
   const [tenniscampNameSuche, setTenniscampNameSuche] = useState("");
   const [tenniscampTypFilter, setTenniscampTypFilter] = useState<"alle" | "kind" | "erwachsene">("alle");
@@ -10954,6 +10955,60 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         ) : filteredTenniscampAnmeldungen.length === 0 ? (
                           <p className="muted">Keine Tenniscamp-Anmeldungen für diesen Filter.</p>
                         ) : (
+                          <>
+                          {/* Aktionsleiste: Mehrfachauswahl -> Newsletter */}
+                          {(() => {
+                            const auswaehlbar = filteredTenniscampAnmeldungen.filter(a => a.email);
+                            const allSelected = auswaehlbar.length > 0 && auswaehlbar.every(a => selectedTenniscampIds.has(a.id));
+                            return (
+                              <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "8px 12px", background: "var(--bg-inset)", borderRadius: 8 }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => {
+                                      if (allSelected) {
+                                        setSelectedTenniscampIds(new Set());
+                                      } else {
+                                        setSelectedTenniscampIds(new Set(auswaehlbar.map(a => a.id)));
+                                      }
+                                    }}
+                                  />
+                                  <span style={{ fontSize: 13 }}>Alle auswählen</span>
+                                </label>
+                                {selectedTenniscampIds.size > 0 && (
+                                  <>
+                                    <span className="muted" style={{ fontSize: 13 }}>
+                                      {selectedTenniscampIds.size} ausgewählt
+                                    </span>
+                                    <button
+                                      className="btn micro"
+                                      style={{ background: "var(--primary)", color: "#fff" }}
+                                      onClick={() => {
+                                        const selected = tenniscampAnmeldungen.filter(a => selectedTenniscampIds.has(a.id) && a.email);
+                                        const newExtras = selected
+                                          .filter(a => !newsletterExtraEmails.some(em => em.email === a.email))
+                                          .map(a => ({ email: a.email, name: `${a.teilnehmer_vorname} ${a.teilnehmer_nachname}` }));
+                                        setNewsletterExtraEmails(prev => [...prev, ...newExtras]);
+                                        setNewsletterLabelFilter("keine");
+                                        setSelectedTenniscampIds(new Set());
+                                        setTab("verwaltung");
+                                        setVerwaltungTab("newsletter");
+                                      }}
+                                    >
+                                      Newsletter senden
+                                    </button>
+                                    <button
+                                      className="btn micro btnGhost"
+                                      onClick={() => setSelectedTenniscampIds(new Set())}
+                                    >
+                                      Auswahl aufheben
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                           <ul className="list">
                             {filteredTenniscampAnmeldungen.map((anmeldung) => (
                               <li key={anmeldung.id} className="listItem" style={{ flexDirection: "column", alignItems: "stretch" }}>
@@ -10962,6 +11017,21 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                   onClick={() => setExpandedTenniscampId(expandedTenniscampId === anmeldung.id ? null : anmeldung.id)}
                                 >
                                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTenniscampIds.has(anmeldung.id)}
+                                      disabled={!anmeldung.email}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={() => {
+                                        setSelectedTenniscampIds(prev => {
+                                          const next = new Set(prev);
+                                          if (next.has(anmeldung.id)) next.delete(anmeldung.id);
+                                          else next.add(anmeldung.id);
+                                          return next;
+                                        });
+                                      }}
+                                      style={{ cursor: anmeldung.email ? "pointer" : "not-allowed" }}
+                                    />
                                     <span style={{ fontWeight: 500 }}>
                                       {anmeldung.teilnehmer_vorname} {anmeldung.teilnehmer_nachname}
                                     </span>
@@ -11113,6 +11183,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                               </li>
                             ))}
                           </ul>
+                          </>
                         )}
                       </>
                     )}
