@@ -11714,7 +11714,12 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             </button>
                           </p>
                           <p className="muted" style={{ fontSize: 13 }}>
-                            Termin: <strong>31.5. um 16 Uhr</strong>
+                            Termin: <strong>31.5. um 16 Uhr</strong> &ndash;{" "}
+                            <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+                              Anmeldung geschlossen
+                            </span>{" "}
+                            (Formular zeigt nur noch einen Hinweis; zum Wiederöffnen
+                            ANMELDUNG_GESCHLOSSEN in KennlerntennisForm.tsx auf false setzen)
                           </p>
                         </div>
 

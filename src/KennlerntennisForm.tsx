@@ -18,6 +18,11 @@ type FormData = {
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
+// Anmeldung geschlossen (Termin 31.5. ist vorbei).
+// Zum Wiederoeffnen: auf false setzen und TERMIN unten aktualisieren.
+const ANMELDUNG_GESCHLOSSEN: boolean = true;
+const TERMIN = "31.5. um 16 Uhr";
+
 export default function KennlerntennisForm() {
   const [searchParams] = useSearchParams();
   const accountId = searchParams.get("a") || DEFAULT_ACCOUNT_ID;
@@ -87,6 +92,11 @@ export default function KennlerntennisForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (ANMELDUNG_GESCHLOSSEN) {
+      setError("Die Anmeldung zum Kennlerntennis ist leider geschlossen.");
+      return;
+    }
 
     if (!validate()) {
       return;
@@ -208,6 +218,40 @@ Interesse weiterführendes Training: ${interesseText}`;
     }
   }
 
+  if (ANMELDUNG_GESCHLOSSEN) {
+    return (
+      <div className="registrationPage weddingTheme">
+        <div className="card registrationCard" style={{ maxWidth: 600 }}>
+          <h1 style={{ marginBottom: 8 }}>Kennlerntennis</h1>
+          <div style={{
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#b91c1c",
+            padding: "14px 18px",
+            borderRadius: 10,
+            marginBottom: 20,
+            textAlign: "center",
+            fontWeight: 700,
+            fontSize: 15,
+            textTransform: "uppercase",
+            letterSpacing: "0.03em",
+          }}>
+            Anmeldung geschlossen
+          </div>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Für das Kennlerntennis können derzeit keine Anfragen mehr entgegengenommen werden.
+          </p>
+          <p className="muted">
+            Bei Interesse an einem Training schreiben Sie uns gerne an{" "}
+            <a href="mailto:tennisabisz@gmail.com">tennisabisz@gmail.com</a> – wir melden uns,
+            sobald es einen neuen Termin gibt.
+          </p>
+        </div>
+        <LegalFooter />
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="registrationPage weddingTheme">
@@ -215,7 +259,7 @@ Interesse weiterführendes Training: ${interesseText}`;
           <div className="successIcon">&#10003;</div>
           <h1>Anfrage erfolgreich gesendet!</h1>
           <p className="muted">
-            Vielen Dank für Ihre Kennlerntennis-Anfrage. Termin: <strong>31.5. um 16 Uhr</strong>.
+            Vielen Dank für Ihre Kennlerntennis-Anfrage. Termin: <strong>{TERMIN}</strong>.
           </p>
         </div>
       </div>
@@ -237,7 +281,7 @@ Interesse weiterführendes Training: ${interesseText}`;
           fontSize: 17,
           boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
         }}>
-          Termin: 31.5. um 16 Uhr
+          Termin: {TERMIN}
         </div>
         <p className="muted" style={{ marginBottom: 24 }}>
           Füllen Sie das Formular aus, um sich unverbindlich zum Kennlerntennis anzumelden.
