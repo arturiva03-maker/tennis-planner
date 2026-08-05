@@ -10,6 +10,7 @@ type FormData = {
   alter: string;
   email: string;
   telefon: string;
+  termin: string;
   spielstand: string;
   spielstaerkeBeschreibung: string;
   istVereinsmitglied: string;
@@ -18,10 +19,24 @@ type FormData = {
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
 
-// Anmeldung geschlossen (Termin 31.5. ist vorbei).
-// Zum Wiederoeffnen: auf false setzen und TERMIN unten aktualisieren.
-const ANMELDUNG_GESCHLOSSEN: boolean = true;
-const TERMIN = "31.5. um 16 Uhr";
+// Anmeldung offen. Zum Schliessen (z.B. wenn beide Termine vorbei sind):
+// auf true setzen - dann zeigt die Seite nur noch einen Hinweis.
+const ANMELDUNG_GESCHLOSSEN: boolean = false;
+
+// Termine des Kennenlerntennis. Neue Termine nur hier eintragen - Formular,
+// Erfolgsseite und beide Bestaetigungsmails ziehen alles aus dieser Liste.
+const TERMINE = [
+  { value: "30.08.2026", label: "Sonntag, 30.08.2026 um 16 Uhr" },
+  { value: "20.09.2026", label: "Sonntag, 20.09.2026 um 16 Uhr" },
+];
+const TERMIN_BEIDE = "beide";
+const TERMINE_KURZ = "30.08. und 20.09.2026, jeweils 16 Uhr";
+const ORT = "TC Blau-Weiß Britz 1950 e.V., Buschkrugallee 159-175, 12359 Berlin";
+
+function terminText(value: string): string {
+  if (value === TERMIN_BEIDE) return TERMINE.map((t) => t.label).join(" und ");
+  return TERMINE.find((t) => t.value === value)?.label || value;
+}
 
 export default function KennlerntennisForm() {
   const [searchParams] = useSearchParams();
@@ -37,6 +52,7 @@ export default function KennlerntennisForm() {
     alter: "",
     email: "",
     telefon: "",
+    termin: "",
     spielstand: "",
     spielstaerkeBeschreibung: "",
     istVereinsmitglied: "",
@@ -74,6 +90,10 @@ export default function KennlerntennisForm() {
       setError("Bitte geben Sie eine Telefonnummer ein.");
       return false;
     }
+    if (!formData.termin) {
+      setError("Bitte wählen Sie einen Termin aus.");
+      return false;
+    }
     if (!formData.spielstand) {
       setError("Bitte wählen Sie Ihren Spielstand aus.");
       return false;
@@ -94,7 +114,7 @@ export default function KennlerntennisForm() {
     setError(null);
 
     if (ANMELDUNG_GESCHLOSSEN) {
-      setError("Die Anmeldung zum Kennlerntennis ist leider geschlossen.");
+      setError("Die Anmeldung zum Kennenlerntennis ist leider geschlossen.");
       return;
     }
 
@@ -110,6 +130,11 @@ export default function KennlerntennisForm() {
       "Turnierspieler";
     const mitgliedText = formData.istVereinsmitglied === "ja" ? "Ja" : "Nein";
     const interesseText = formData.interesseWeiterfuehrend === "ja" ? "Ja" : "Nein";
+    const terminGewaehlt = terminText(formData.termin);
+
+    // Freitext-Eingaben landen in HTML-Mails - vor dem Einsetzen entschaerfen.
+    const esc = (v: string) =>
+      v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -130,17 +155,25 @@ export default function KennlerntennisForm() {
 <body>
   <div class="container">
     <div class="header">
-      <h1 style="margin: 0; font-size: 24px;">Neue Kennlerntennis-Anfrage</h1>
+      <h1 style="margin: 0; font-size: 24px;">Neue Kennenlerntennis-Anfrage</h1>
     </div>
     <div class="content">
       <div class="section">
+        <div class="section-title">Termin</div>
+        <table>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Gewählter Termin</td><td style="padding: 8px 0; font-weight: 600;">${esc(terminGewaehlt)}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Ort</td><td style="padding: 8px 0; font-weight: 500;">${ORT}</td></tr>
+        </table>
+      </div>
+
+      <div class="section">
         <div class="section-title">Persönliche Daten</div>
         <table>
-          <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Vorname</td><td style="padding: 8px 0; font-weight: 500;">${formData.vorname}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Nachname</td><td style="padding: 8px 0; font-weight: 500;">${formData.nachname}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${formData.alter} Jahre</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${formData.email}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${formData.telefon}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Vorname</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.vorname)}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Nachname</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.nachname)}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Alter</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.alter)} Jahre</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">E-Mail</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.email)}</td></tr>
+          <tr><td style="padding: 8px 0; color: #6b7280;">Telefon</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.telefon)}</td></tr>
         </table>
       </div>
 
@@ -148,7 +181,7 @@ export default function KennlerntennisForm() {
         <div class="section-title">Tenniserfahrung</div>
         <table>
           <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Spielstand</td><td style="padding: 8px 0; font-weight: 500;">${spielstandText}</td></tr>
-          ${formData.spielstaerkeBeschreibung ? `<tr><td style="padding: 8px 0; color: #6b7280;">Beschreibung</td><td style="padding: 8px 0; font-weight: 500;">${formData.spielstaerkeBeschreibung}</td></tr>` : ""}
+          ${formData.spielstaerkeBeschreibung ? `<tr><td style="padding: 8px 0; color: #6b7280;">Beschreibung</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.spielstaerkeBeschreibung)}</td></tr>` : ""}
           <tr><td style="padding: 8px 0; color: #6b7280;">Vereinsmitglied</td><td style="padding: 8px 0; font-weight: 500;">${mitgliedText}</td></tr>
           <tr><td style="padding: 8px 0; color: #6b7280;">Interesse weiterführendes Training</td><td style="padding: 8px 0; font-weight: 500;">${interesseText}</td></tr>
         </table>
@@ -162,7 +195,10 @@ export default function KennlerntennisForm() {
 </body>
 </html>`;
 
-    const textVersion = `Neue Kennlerntennis-Anfrage
+    const textVersion = `Neue Kennenlerntennis-Anfrage
+
+Gewählter Termin: ${terminGewaehlt}
+Ort: ${ORT}
 
 Persönliche Daten:
 Vorname: ${formData.vorname}
@@ -176,33 +212,177 @@ Spielstand: ${spielstandText}${formData.spielstaerkeBeschreibung ? `\nBeschreibu
 Vereinsmitglied: ${mitgliedText}
 Interesse weiterführendes Training: ${interesseText}`;
 
+    // Bestaetigung an die Teilnehmerin / den Teilnehmer
+    const bestaetigungHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Segoe UI', Arial, sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f4;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 32px 40px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Anmeldung Kennenlerntennis</h1>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 36px 40px 16px;">
+              <div style="width: 64px; height: 64px; background: #1d4ed8; border-radius: 50%; display: inline-block; line-height: 64px; text-align: center;">
+                <span style="color: #ffffff; font-size: 32px;">&#10003;</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 24px; text-align: center;">
+              <h2 style="margin: 0 0 8px; color: #333333; font-size: 22px; font-weight: 600;">Hallo ${esc(formData.vorname)},</h2>
+              <p style="margin: 0; color: #666666; font-size: 16px; line-height: 1.5;">
+                vielen Dank für Ihre Anmeldung zum Kennenlerntennis. Wir haben Ihre Anfrage erhalten und freuen uns auf Sie.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fafafa; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 16px; color: #1d4ed8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Ihre Anmeldung</p>
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                          <span style="color: #666666; font-size: 13px;">Termin:</span><br>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${esc(terminGewaehlt)}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                          <span style="color: #666666; font-size: 13px;">Ort:</span><br>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${ORT}</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0;">
+                          <span style="color: #666666; font-size: 13px;">Teilnehmer:</span><br>
+                          <span style="color: #333333; font-size: 15px; font-weight: 600;">${esc(formData.vorname)} ${esc(formData.nachname)}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 32px;">
+              <div style="background-color: #f5f5f5; border-radius: 8px; border: 1px solid #e5e5e5; padding: 16px;">
+                <p style="margin: 0 0 8px; color: #525252; font-size: 14px; font-weight: 600;">Gut zu wissen</p>
+                <p style="margin: 0; color: #525252; font-size: 13px; line-height: 1.5;">
+                  Die Teilnahme ist kostenlos und unverbindlich. Bitte kommen Sie in Sportkleidung;
+                  Schläger können bei Bedarf gestellt werden. Falls Sie doch nicht können, geben Sie
+                  uns bitte kurz Bescheid.
+                </p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 40px 32px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #666666; font-size: 14px;">Bei Fragen erreichen Sie uns unter:</p>
+              <a href="mailto:tennisabisz@gmail.com" style="color: #1d4ed8; font-weight: 600; text-decoration: none;">tennisabisz@gmail.com</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #fafafa; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 4px; color: #333333; font-size: 14px; font-weight: 600;">Sportliche Grüße</p>
+              <p style="margin: 0; color: #171717; font-size: 15px; font-weight: 700;">Tennisschule A bis Z</p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 24px 0 0; color: #999999; font-size: 12px; text-align: center;">
+          &copy; ${new Date().getFullYear()} Tennisschule A bis Z. Alle Rechte vorbehalten.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const bestaetigungText = `Anmeldung Kennenlerntennis
+
+Hallo ${formData.vorname},
+
+vielen Dank für Ihre Anmeldung zum Kennenlerntennis. Wir haben Ihre Anfrage erhalten und freuen uns auf Sie.
+
+Termin: ${terminGewaehlt}
+Ort: ${ORT}
+Teilnehmer: ${formData.vorname} ${formData.nachname}
+
+Die Teilnahme ist kostenlos und unverbindlich. Bitte kommen Sie in Sportkleidung; Schläger können bei Bedarf gestellt werden. Falls Sie doch nicht können, geben Sie uns bitte kurz Bescheid.
+
+Bei Fragen erreichen Sie uns unter: tennisabisz@gmail.com
+
+Sportliche Grüße,
+Tennisschule A bis Z`;
+
     try {
-      const { error: dbError } = await supabase
+      const anfrage = {
+        account_id: accountId,
+        vorname: formData.vorname,
+        nachname: formData.nachname,
+        alter: parseInt(formData.alter, 10),
+        email: formData.email,
+        telefon: formData.telefon,
+        spielstand: formData.spielstand,
+        spielstaerke_beschreibung: formData.spielstaerkeBeschreibung || null,
+        ist_vereinsmitglied: formData.istVereinsmitglied === "ja",
+        interesse_weiterfuehrend: formData.interesseWeiterfuehrend === "ja",
+        status: "offen",
+      };
+
+      let { error: dbError } = await supabase
         .from("kennlerntennis_anfragen")
-        .insert({
-          account_id: accountId,
-          vorname: formData.vorname,
-          nachname: formData.nachname,
-          alter: parseInt(formData.alter, 10),
-          email: formData.email,
-          telefon: formData.telefon,
-          spielstand: formData.spielstand,
-          spielstaerke_beschreibung: formData.spielstaerkeBeschreibung || null,
-          ist_vereinsmitglied: formData.istVereinsmitglied === "ja",
-          interesse_weiterfuehrend: formData.interesseWeiterfuehrend === "ja",
-          status: "offen",
-        });
+        .insert({ ...anfrage, termin: terminGewaehlt });
+
+      // Falls supabase_kennlerntennis_termin.sql noch nicht eingespielt ist, kennt
+      // PostgREST die Spalte termin nicht - dann lieber ohne Termin speichern als gar nicht.
+      if (dbError && /termin/i.test(`${dbError.message} ${dbError.details ?? ""}`)) {
+        console.warn("Spalte 'termin' fehlt - Anfrage wird ohne Termin gespeichert.", dbError);
+        ({ error: dbError } = await supabase
+          .from("kennlerntennis_anfragen")
+          .insert(anfrage));
+      }
 
       if (dbError) {
         console.error("Database error:", dbError);
       }
 
+      // Bestaetigung an Teilnehmer
+      try {
+        await fetch("/api/send-newsletter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: [formData.email],
+            subject: "Ihre Anmeldung zum Kennenlerntennis",
+            body: bestaetigungText,
+            html: bestaetigungHtml,
+            fromName: "Tennisschule A bis Z",
+          }),
+        });
+      } catch (mailErr) {
+        console.error("Bestätigungsmail-Fehler:", mailErr);
+      }
+
+      // Benachrichtigung an Admin
       await fetch("/api/send-newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: ["tennisabisz@gmail.com"],
-          subject: `Neue Kennlerntennis-Anfrage: ${formData.vorname} ${formData.nachname}`,
+          subject: `Neue Kennenlerntennis-Anfrage: ${formData.vorname} ${formData.nachname} (${terminGewaehlt})`,
           body: textVersion,
           html: emailHtml,
           fromName: "Tennisschule A bis Z",
@@ -222,7 +402,7 @@ Interesse weiterführendes Training: ${interesseText}`;
     return (
       <div className="registrationPage weddingTheme">
         <div className="card registrationCard" style={{ maxWidth: 600 }}>
-          <h1 style={{ marginBottom: 8 }}>Kennlerntennis</h1>
+          <h1 style={{ marginBottom: 8 }}>Kennenlerntennis</h1>
           <div style={{
             background: "#fef2f2",
             border: "1px solid #fecaca",
@@ -239,7 +419,7 @@ Interesse weiterführendes Training: ${interesseText}`;
             Anmeldung geschlossen
           </div>
           <p className="muted" style={{ marginBottom: 8 }}>
-            Für das Kennlerntennis können derzeit keine Anfragen mehr entgegengenommen werden.
+            Für das Kennenlerntennis können derzeit keine Anfragen mehr entgegengenommen werden.
           </p>
           <p className="muted">
             Bei Interesse an einem Training schreiben Sie uns gerne an{" "}
@@ -257,9 +437,14 @@ Interesse weiterführendes Training: ${interesseText}`;
       <div className="registrationPage weddingTheme">
         <div className="card registrationCard">
           <div className="successIcon">&#10003;</div>
-          <h1>Anfrage erfolgreich gesendet!</h1>
+          <h1>Anmeldung erfolgreich gesendet!</h1>
           <p className="muted">
-            Vielen Dank für Ihre Kennlerntennis-Anfrage. Termin: <strong>{TERMIN}</strong>.
+            Vielen Dank für Ihre Anmeldung zum Kennenlerntennis.<br />
+            Termin: <strong>{terminText(formData.termin)}</strong><br />
+            Ort: {ORT}
+          </p>
+          <p className="muted" style={{ marginTop: 12 }}>
+            Eine Bestätigung haben wir an <strong>{formData.email}</strong> geschickt.
           </p>
         </div>
       </div>
@@ -269,7 +454,7 @@ Interesse weiterführendes Training: ${interesseText}`;
   return (
     <div className="registrationPage weddingTheme">
       <div className="card registrationCard" style={{ maxWidth: 600 }}>
-        <h1 style={{ marginBottom: 8 }}>Kennlerntennis</h1>
+        <h1 style={{ marginBottom: 8 }}>Kennenlerntennis</h1>
         <div style={{
           background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
           color: "#fff",
@@ -281,10 +466,14 @@ Interesse weiterführendes Training: ${interesseText}`;
           fontSize: 17,
           boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
         }}>
-          Termin: {TERMIN}
+          Termine: {TERMINE_KURZ}
+          <div style={{ fontSize: 13, fontWeight: 500, marginTop: 6, opacity: 0.9 }}>
+            {ORT}
+          </div>
         </div>
         <p className="muted" style={{ marginBottom: 24 }}>
-          Füllen Sie das Formular aus, um sich unverbindlich zum Kennlerntennis anzumelden.
+          Füllen Sie das Formular aus, um sich unverbindlich und kostenlos zum
+          Kennenlerntennis anzumelden.
         </p>
 
         {error && <div className="errorBox">{error}</div>}
@@ -356,6 +545,41 @@ Interesse weiterführendes Training: ${interesseText}`;
                 onChange={handleChange}
                 placeholder="Ihre Telefonnummer"
               />
+            </div>
+
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>
+                An welchem Termin möchten Sie teilnehmen? <span style={{ color: "var(--danger)" }}>*</span>
+              </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                {TERMINE.map((t) => (
+                  <label
+                    key={t.value}
+                    style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+                  >
+                    <input
+                      type="radio"
+                      name="termin"
+                      value={t.value}
+                      checked={formData.termin === t.value}
+                      onChange={handleChange}
+                      style={{ width: "auto" }}
+                    />
+                    {t.label}
+                  </label>
+                ))}
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="termin"
+                    value={TERMIN_BEIDE}
+                    checked={formData.termin === TERMIN_BEIDE}
+                    onChange={handleChange}
+                    style={{ width: "auto" }}
+                  />
+                  Beide Termine
+                </label>
+              </div>
             </div>
 
             <div className="field" style={{ gridColumn: "1 / -1" }}>
@@ -467,7 +691,7 @@ Interesse weiterführendes Training: ${interesseText}`;
                 fontWeight: 600,
               }}
             >
-              {loading ? "Wird gesendet..." : "Anfrage absenden"}
+              {loading ? "Wird gesendet..." : "Anmeldung absenden"}
             </button>
           </div>
         </form>

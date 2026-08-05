@@ -43,6 +43,9 @@ root.render(
         <Route path="/tenniscamp" element={<TenniscampForm />} />
         <Route path="/tenniscamp-info" element={<TenniscampInfoPage />} />
         <Route path="/kennlerntennis" element={<KennlerntennisForm />} />
+        {/* Korrekt geschriebene URL - der alte Pfad /kennlerntennis bleibt gueltig,
+            damit bereits verschickte Links weiter funktionieren. */}
+        <Route path="/kennenlerntennis" element={<KennlerntennisForm />} />
         <Route path="/absage/:id" element={<AbsagePage />} />
       </Routes>
     </BrowserRouter>

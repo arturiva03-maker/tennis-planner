@@ -249,6 +249,7 @@ type KennlerntennisAnfrage = {
   telefon: string;
   spielstand: string;
   spielstaerke_beschreibung?: string | null;
+  termin?: string | null;
   ist_vereinsmitglied: boolean;
   interesse_weiterfuehrend: boolean;
   status: string;
@@ -9797,7 +9798,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         className={`tabBtn ${formulareTab === "kennlerntennis" ? "tabBtnActive" : ""}`}
                         onClick={() => setFormulareTab("kennlerntennis")}
                       >
-                        Kennlerntennis
+                        Kennenlerntennis
                         {kennlerntennisAnfragen.filter(a => a.status === "offen" && !a.archiviert).length > 0 && (
                           <span style={{
                             marginLeft: 6,
@@ -11692,21 +11693,21 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       <>
                         <div style={{ marginBottom: 16 }}>
                           <p className="muted" style={{ marginBottom: 12 }}>
-                            <strong>Kennlerntennis-Formular:</strong>{" "}
+                            <strong>Kennenlerntennis-Formular:</strong>{" "}
                             <code style={{
                               background: "var(--bg-inset)",
                               padding: "4px 8px",
                               borderRadius: 4,
                               fontSize: 13,
                             }}>
-                              {window.location.origin}/kennlerntennis
+                              {window.location.origin}/kennenlerntennis
                             </code>
                             <button
                               className="btn micro btnGhost"
                               style={{ marginLeft: 8 }}
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/kennlerntennis`
+                                  `${window.location.origin}/kennenlerntennis`
                                 );
                               }}
                             >
@@ -11714,12 +11715,17 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             </button>
                           </p>
                           <p className="muted" style={{ fontSize: 13 }}>
-                            Termin: <strong>31.5. um 16 Uhr</strong> &ndash;{" "}
-                            <span style={{ color: "var(--danger)", fontWeight: 600 }}>
-                              Anmeldung geschlossen
-                            </span>{" "}
-                            (Formular zeigt nur noch einen Hinweis; zum Wiederöffnen
-                            ANMELDUNG_GESCHLOSSEN in KennlerntennisForm.tsx auf false setzen)
+                            Termine: <strong>30.08.2026 und 20.09.2026, jeweils 16 Uhr</strong>{" "}
+                            (TC Blau-Weiß Britz) &ndash;{" "}
+                            <span style={{ color: "var(--success)", fontWeight: 600 }}>
+                              Anmeldung offen
+                            </span>
+                          </p>
+                          <p className="muted" style={{ fontSize: 12 }}>
+                            Anmelder bekommen automatisch eine Bestätigungsmail, eine Kopie geht an
+                            tennisabisz@gmail.com. Termine ändern oder Anmeldung schließen:
+                            TERMINE bzw. ANMELDUNG_GESCHLOSSEN in KennlerntennisForm.tsx.
+                            Der alte Link /kennlerntennis funktioniert weiterhin.
                           </p>
                         </div>
 
@@ -11772,7 +11778,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                   </style>
                                 </head>
                                 <body>
-                                  <h1>Kennlerntennis-Anfragen (${exportList.length})</h1>
+                                  <h1>Kennenlerntennis-Anfragen (${exportList.length})</h1>
                                   <div class="sub">Status-Filter: ${statusLabel}</div>
                                   <table>
                                     <thead>
@@ -11780,6 +11786,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                         <th style="width: 30px;">#</th>
                                         <th>Name</th>
                                         <th style="width: 40px;">Alter</th>
+                                        <th style="width: 110px;">Termin</th>
                                         <th>Spielstand</th>
                                         <th>E-Mail</th>
                                         <th>Telefon</th>
@@ -11800,6 +11807,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                             <td>${idx + 1}</td>
                                             <td>${escapeHtml(a.vorname)} ${escapeHtml(a.nachname)}</td>
                                             <td>${escapeHtml(a.alter)}</td>
+                                            <td>${a.termin ? escapeHtml(a.termin) : "&ndash;"}</td>
                                             <td>${spielstandText}${a.spielstaerke_beschreibung ? `<br><span style="color:#888;font-size:9px;">${escapeHtml(a.spielstaerke_beschreibung)}</span>` : ""}</td>
                                             <td style="word-break: break-all;">${escapeHtml(a.email)}</td>
                                             <td>${escapeHtml(a.telefon)}</td>
@@ -11827,7 +11835,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                               await html2pdf()
                                 .set({
                                   margin: 10,
-                                  filename: `Kennlerntennis_${new Date().toISOString().split('T')[0]}.pdf`,
+                                  filename: `Kennenlerntennis_${new Date().toISOString().split('T')[0]}.pdf`,
                                   html2canvas: { scale: 2 },
                                   jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
                                 })
@@ -11844,7 +11852,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         {loadingKennlerntennisAnfragen ? (
                           <p className="muted">Laden...</p>
                         ) : kennlerntennisAnfragen.length === 0 ? (
-                          <p className="muted">Keine Kennlerntennis-Anfragen vorhanden.</p>
+                          <p className="muted">Keine Kennenlerntennis-Anfragen vorhanden.</p>
                         ) : (
                           <ul className="list">
                             {kennlerntennisAnfragen
@@ -11881,7 +11889,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                           )}
                                         </div>
                                         <div className="muted" style={{ fontSize: 12 }}>
-                                          {spielstandText} · {anfrage.alter} Jahre · {new Date(anfrage.created_at).toLocaleDateString("de-DE")}
+                                          {anfrage.termin ? `${anfrage.termin} · ` : ""}{spielstandText} · {anfrage.alter} Jahre · {new Date(anfrage.created_at).toLocaleDateString("de-DE")}
                                         </div>
                                       </div>
                                       <span style={{ fontSize: 18, color: "var(--text-muted)", transition: "transform 0.2s", transform: expandedKennlerntennisId === anfrage.id ? "rotate(90deg)" : "rotate(0deg)" }}>
@@ -11892,6 +11900,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     {expandedKennlerntennisId === anfrage.id && (
                                       <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
                                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, fontSize: 14 }}>
+                                          <div style={{ gridColumn: "1 / -1" }}>
+                                            <strong>Termin:</strong> {anfrage.termin || "– (vor Einführung der Terminauswahl)"}
+                                          </div>
                                           <div><strong>Vorname:</strong> {anfrage.vorname}</div>
                                           <div><strong>Nachname:</strong> {anfrage.nachname}</div>
                                           <div><strong>Alter:</strong> {anfrage.alter}</div>
@@ -11929,7 +11940,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                                     ? prev
                                                     : [...prev, { email: anfrage.email, name: `${anfrage.vorname} ${anfrage.nachname}` }]
                                                 );
-                                                setNewsletterSubject("Ihre Kennlerntennis-Anfrage");
+                                                setNewsletterSubject("Ihre Kennenlerntennis-Anfrage");
                                                 setNewsletterLabelFilter("keine");
                                                 setTab("verwaltung");
                                                 setVerwaltungTab("newsletter");
