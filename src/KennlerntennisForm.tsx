@@ -421,7 +421,8 @@ Tennisschule A bis Z`;
             sobald es einen neuen Termin gibt.
           </p>
         </div>
-        <LegalFooter />
+        {/* Kennenlerntennis findet beim TC Britz statt - daher die Britzer AGB. */}
+        <LegalFooter anlage="Britz" />
       </div>
     );
   }
@@ -660,7 +661,8 @@ Tennisschule A bis Z`;
           </div>
         </form>
       </div>
-      <LegalFooter />
+      {/* Kennenlerntennis findet beim TC Britz statt - daher die Britzer AGB. */}
+      <LegalFooter anlage="Britz" />
     </div>
   );
 }
