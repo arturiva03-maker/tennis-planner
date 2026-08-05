@@ -860,6 +860,28 @@ export default function RegistrationForm({ anlage, redirectUrl, onNext }: Regist
           Punkt gekennzeichnet. Die Angaben dienen der Einteilung in Trainingsgruppen.
         </p>
 
+        {anlage === "Wedding" && (
+          <div className="notice">
+            <div className="label">Hinweis · Standort Wedding</div>
+            <div className="body">
+              <p>
+                Die Tennisschule A bis Z ist ab der Wintersaison 2026/27 (ab Mitte Oktober 2026)
+                am Standort BSC Rehberge nicht mehr aktiv. Die Sommersaison 2026 führen wir wie
+                geplant zu Ende.
+              </p>
+              <p>
+                Für Training und Mitgliedschaft ab der Wintersaison wenden Sie sich bitte direkt an
+                die Tennisabteilung des BSC Rehberge 1945 e.V.:{" "}
+                <a href="https://bscrehberge-tennis.de" target="_blank" rel="noopener noreferrer">
+                  bscrehberge-tennis.de
+                </a>{" "}
+                &middot;{" "}
+                <a href="mailto:info@bscrehberge-tennis.de">info@bscrehberge-tennis.de</a>
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="notice">
           <div className="label">Hinweis · Mitgliedschaft</div>
           <div className="body">

@@ -1367,10 +1367,119 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                 Unser Team
               </a>
             </div>
+
+            {/* Kurzhinweis zum Standort-Ende, damit er schon ohne Scrollen sichtbar ist */}
+            <a
+              href="#standort-hinweis"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 28,
+                padding: "12px 18px",
+                borderRadius: 8,
+                background: "rgba(0,0,0,0.35)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "rgba(255,255,255,0.95)",
+                fontSize: 14,
+                fontWeight: 500,
+                lineHeight: 1.5,
+                textDecoration: "none",
+              }}
+            >
+              Ab Wintersaison 2026/27 kein Training in Wedding &ndash; bitte direkt an den Verein wenden
+              <span aria-hidden="true">&rarr;</span>
+            </a>
           </div>
         </motion.div>
 
       </header>
+
+      {/* Standort-Hinweis: ab Wintersaison 2026/27 kein Training der Tennisschule
+          in Wedding mehr. Bewusst direkt unter dem Hero und ohne ScrollReveal,
+          damit der Hinweis sofort sichtbar ist. */}
+      <section
+        id="standort-hinweis"
+        style={{
+          background: colors.accentBg,
+          borderTop: `4px solid ${colors.accent}`,
+          borderBottom: `1px solid ${colors.border}`,
+          padding: "48px 24px",
+        }}
+      >
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <p style={{
+            fontSize: 11,
+            color: colors.accent,
+            textTransform: "uppercase",
+            letterSpacing: "4px",
+            marginBottom: 14,
+            fontWeight: 600,
+          }}>
+            Wichtiger Hinweis
+          </p>
+          <h2 style={{
+            fontSize: "clamp(22px, 4vw, 32px)",
+            fontFamily: "'Fraunces', serif",
+            fontWeight: 700,
+            color: colors.text,
+            letterSpacing: "-0.5px",
+            lineHeight: 1.25,
+            marginBottom: 16,
+          }}>
+            Ab der Wintersaison 2026/27 kein Training der Tennisschule A bis Z in Wedding
+          </h2>
+          <p style={{ fontSize: 16, color: colors.textMuted, lineHeight: 1.7, marginBottom: 12 }}>
+            Die Sommersaison 2026 führen wir wie geplant zu Ende. Ab der Wintersaison 2026/27
+            (ab Mitte Oktober 2026) sind wir am Standort BSC Rehberge nicht mehr aktiv.
+          </p>
+          <p style={{ fontSize: 16, color: colors.text, lineHeight: 1.7, marginBottom: 24, fontWeight: 500 }}>
+            Für Tennistraining, Kurse und Mitgliedschaft in Berlin-Wedding wenden Sie sich bitte
+            direkt an die Tennisabteilung des BSC Rehberge 1945 e.V.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <a
+              href="https://bscrehberge-tennis.de"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: colors.primary,
+                color: colors.white,
+                padding: "14px 26px",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 15,
+                textDecoration: "none",
+              }}
+            >
+              Zur Website des Vereins
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+            <a
+              href="mailto:info@bscrehberge-tennis.de"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "transparent",
+                color: colors.primary,
+                padding: "14px 26px",
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 15,
+                textDecoration: "none",
+                border: `1.5px solid ${colors.primary}`,
+              }}
+            >
+              info@bscrehberge-tennis.de
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Social Proof Strip — diagonal cut top */}
       <div style={{
@@ -2577,6 +2686,41 @@ export default function WeddingPage({ autoScrollSommertraining = false }: { auto
                 Antwort meist innerhalb 24h
               </p>
             </div>
+          </div>
+
+          {/* Ab Wintersaison 2026/27 laeuft alles ueber den Verein - hier noch einmal
+              im Kontaktbereich, weil viele direkt hierher springen. */}
+          <div style={{
+            marginTop: 24,
+            background: colors.white,
+            borderRadius: 12,
+            border: `1px solid ${colors.border}`,
+            borderLeft: `4px solid ${colors.accent}`,
+            padding: 28,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+          }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 8, fontFamily: "'Fraunces', serif" }}>
+              Ab Wintersaison 2026/27: Ihr Ansprechpartner ist der Verein
+            </h3>
+            <p style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.7, marginBottom: 12 }}>
+              Die Tennisschule A bis Z ist ab Mitte Oktober 2026 am Standort Wedding nicht mehr aktiv.
+              Für Training und Mitgliedschaft wenden Sie sich bitte an die Tennisabteilung des
+              BSC Rehberge 1945 e.V.
+            </p>
+            <a
+              href="https://bscrehberge-tennis.de"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 15, fontWeight: 700, color: colors.primary, textDecoration: "none", marginRight: 20 }}
+            >
+              bscrehberge-tennis.de
+            </a>
+            <a
+              href="mailto:info@bscrehberge-tennis.de"
+              style={{ fontSize: 15, fontWeight: 700, color: colors.primary, textDecoration: "none" }}
+            >
+              info@bscrehberge-tennis.de
+            </a>
           </div>
         </div>
       </section>
