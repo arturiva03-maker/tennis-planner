@@ -13,7 +13,7 @@ export default function AGBPageBritz() {
         <p className="intro">
           Trainingsbedingungen für den Trainingsbetrieb am Standort Britz (TC Blau-Weiß Britz).
           <br />
-          <span className="mono" style={{ fontSize: "0.78rem", color: "var(--muted)" }}>Stand: Juni 2026</span>
+          <span className="mono" style={{ fontSize: "0.78rem", color: "var(--muted)" }}>Stand: August 2026</span>
         </p>
 
         {/* § 1 */}
@@ -24,7 +24,9 @@ export default function AGBPageBritz() {
         <div className="prose">
           <p>
             (1) Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Trainings-, Probetrainings- und Campverträge,
-            die über die Webformulare des Anbieters – im Wege des Fernabsatzes – zwischen dem Anbieter und dem Kunden geschlossen werden.
+            die über die Webformulare des Anbieters – im Wege des Fernabsatzes – zwischen dem Anbieter und dem Kunden geschlossen werden. Für kostenlose,
+            unverbindliche Schnupperangebote (z. B. Kennenlerntennis) gelten sie entsprechend, soweit sie ihrer Natur nach anwendbar sind (insbesondere
+            §§ 8, 9, 11 und 12).
           </p>
           <p>
             (2) Anbieter und Vertragspartner ist die <strong>Tennisschule Zlatan Palazov und Artur Ivanenko GbR</strong>,
@@ -71,7 +73,8 @@ export default function AGBPageBritz() {
             <strong> jedoch keinen bestimmten Lern- oder Spielerfolg</strong>.
           </p>
           <p>
-            (2) Angeboten werden Gruppentraining (in der Regel 3–5 Personen), Einzeltraining, Probetraining sowie Tenniscamps mit festen Terminen. Die Einteilung
+            (2) Angeboten werden Gruppentraining (in der Regel 3–5 Personen), Einzeltraining, Probetraining, kostenlose Kennenlerntennis-Termine sowie
+            Tenniscamps mit festen Terminen. Die Einteilung
             in alters- und spielstärkengerechte Gruppen erfolgt durch das Trainerteam; die Standardgruppe besteht aus 4 Personen, eine 5er-Gruppe bildet die Ausnahme.
           </p>
           <p>
@@ -134,6 +137,15 @@ export default function AGBPageBritz() {
           </tbody>
         </table>
         <div className="prose">
+          <p>
+            Außerhalb der genannten Zeiten sowie bei Gruppen ab 4 Personen bleibt es beim regulären monatlichen Gruppenbeitrag.
+          </p>
+          <p>
+            <strong>Stundenweise gebuchtes Training</strong> (z. B. Sommertraining in den Berliner Sommerferien, § 3 Abs. 3) wird nicht monatlich, sondern pro
+            gebuchter Stunde abgerechnet. Es gelten folgende Beträge pro Person und Stunde: 1 Person 40 EUR, 2 Personen je 25 EUR, 3 Personen je 20 EUR,
+            4 Personen je 15 EUR. Maßgeblich ist im Übrigen der bei der Buchung ausgewiesene Preis; der Betrag wird per SEPA-Lastschrift eingezogen.
+            Eine kostenfreie Absage ist bis 48 Stunden vor dem Termin möglich; danach wird das Honorar fällig (§ 7 Abs. 2 Satz 2 gilt entsprechend).
+          </p>
           <p>
             Bei unter-saisonalem Beitritt wird die Gebühr anteilig berechnet. Der monatliche Trainingsbeitrag ist zum Monatsende fällig, Campbeiträge zwei Wochen
             vor Campbeginn.
@@ -219,6 +231,11 @@ export default function AGBPageBritz() {
             von 50 % der ausgefallenen Einheit. Bei höherer Gewalt entfallen die wechselseitigen Leistungspflichten für die betroffene Zeit; bereits gezahlte Beträge
             für ausgefallene Leistungen werden anteilig erstattet.
           </p>
+          <p>
+            (5) <strong>Tenniscamps:</strong> Wird die für ein Camp erforderliche Mindestteilnehmerzahl nicht erreicht, können wir das Camp absagen.
+            In diesem Fall bieten wir nach Wahl des Kunden die Teilnahme in einer anderen Camp-Woche an oder erstatten eine bereits gezahlte Campgebühr
+            vollständig zurück. Weitergehende Ansprüche bestehen nicht.
+          </p>
         </div>
 
         {/* § 8 */}
@@ -257,7 +274,7 @@ export default function AGBPageBritz() {
         </div>
         <div className="prose">
           <p>
-            Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich (Ausnahmen: Probetraining, Tenniscamps, Wintertraining). Die
+            Training in Tennisvereinen ist grundsätzlich nur für Mitglieder möglich (Ausnahmen: Probetraining, Kennenlerntennis, Tenniscamps, Wintertraining). Die
             Vereinsmitgliedschaft ist ein eigenständiges Vertragsverhältnis zwischen dem Kunden und dem Verein und nicht Gegenstand des Trainingsvertrags mit uns.
             Gebühren und Konditionen können sich ändern; maßgeblich sind allein die aktuellen Angaben des Vereins unter{" "}
             <a href="https://tc-britz.de/" target="_blank" rel="noopener noreferrer" className="link-inline">tc-britz.de</a>.
