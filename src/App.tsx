@@ -251,7 +251,8 @@ type KennlerntennisAnfrage = {
   spielstaerke_beschreibung?: string | null;
   termin?: string | null;
   ist_vereinsmitglied: boolean;
-  interesse_weiterfuehrend: boolean;
+  // Wird seit 08/2026 nicht mehr abgefragt - bei neuen Anfragen null.
+  interesse_weiterfuehrend?: boolean | null;
   status: string;
   created_at: string;
   archiviert?: boolean | null;
@@ -11812,7 +11813,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                             <td style="word-break: break-all;">${escapeHtml(a.email)}</td>
                                             <td>${escapeHtml(a.telefon)}</td>
                                             <td>${a.ist_vereinsmitglied ? "Ja" : "Nein"}</td>
-                                            <td>${a.interesse_weiterfuehrend ? "Ja" : "Nein"}</td>
+                                            <td>${a.interesse_weiterfuehrend == null ? "&ndash;" : (a.interesse_weiterfuehrend ? "Ja" : "Nein")}</td>
                                             <td>${a.status === "erledigt" ? "Erledigt" : "Offen"}</td>
                                             <td>${new Date(a.created_at).toLocaleDateString("de-DE")}</td>
                                           </tr>
@@ -11910,7 +11911,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                           <div><strong>E-Mail:</strong> <a href={`mailto:${anfrage.email}`}>{anfrage.email}</a></div>
                                           <div><strong>Telefon:</strong> <a href={`tel:${anfrage.telefon}`}>{anfrage.telefon}</a></div>
                                           <div><strong>Vereinsmitglied:</strong> {anfrage.ist_vereinsmitglied ? "Ja" : "Nein"}</div>
-                                          <div><strong>Interesse weiterführendes Training:</strong> {anfrage.interesse_weiterfuehrend ? "Ja" : "Nein"}</div>
+                                          {anfrage.interesse_weiterfuehrend != null && (
+                                            <div><strong>Interesse weiterführendes Training:</strong> {anfrage.interesse_weiterfuehrend ? "Ja" : "Nein"}</div>
+                                          )}
                                         </div>
                                         {anfrage.spielstaerke_beschreibung && (
                                           <div style={{ marginTop: 12, fontSize: 14 }}>

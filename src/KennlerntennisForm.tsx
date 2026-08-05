@@ -14,7 +14,6 @@ type FormData = {
   spielstand: string;
   spielstaerkeBeschreibung: string;
   istVereinsmitglied: string;
-  interesseWeiterfuehrend: string;
 };
 
 const DEFAULT_ACCOUNT_ID = "9168a8e1-d237-4316-90fe-f0e7dfb665b9";
@@ -56,7 +55,6 @@ export default function KennlerntennisForm() {
     spielstand: "",
     spielstaerkeBeschreibung: "",
     istVereinsmitglied: "",
-    interesseWeiterfuehrend: "",
   });
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -102,10 +100,6 @@ export default function KennlerntennisForm() {
       setError("Bitte geben Sie an, ob Sie bereits Vereinsmitglied sind.");
       return false;
     }
-    if (!formData.interesseWeiterfuehrend) {
-      setError("Bitte geben Sie an, ob Sie an weiterführendem Training interessiert sind.");
-      return false;
-    }
     return true;
   }
 
@@ -129,7 +123,6 @@ export default function KennlerntennisForm() {
       formData.spielstand === "fortgeschritten" ? "Fortgeschritten" :
       "Turnierspieler";
     const mitgliedText = formData.istVereinsmitglied === "ja" ? "Ja" : "Nein";
-    const interesseText = formData.interesseWeiterfuehrend === "ja" ? "Ja" : "Nein";
     const terminGewaehlt = terminText(formData.termin);
 
     // Freitext-Eingaben landen in HTML-Mails - vor dem Einsetzen entschaerfen.
@@ -183,7 +176,6 @@ export default function KennlerntennisForm() {
           <tr><td style="padding: 8px 0; color: #6b7280; width: 180px;">Spielstand</td><td style="padding: 8px 0; font-weight: 500;">${spielstandText}</td></tr>
           ${formData.spielstaerkeBeschreibung ? `<tr><td style="padding: 8px 0; color: #6b7280;">Beschreibung</td><td style="padding: 8px 0; font-weight: 500;">${esc(formData.spielstaerkeBeschreibung)}</td></tr>` : ""}
           <tr><td style="padding: 8px 0; color: #6b7280;">Vereinsmitglied</td><td style="padding: 8px 0; font-weight: 500;">${mitgliedText}</td></tr>
-          <tr><td style="padding: 8px 0; color: #6b7280;">Interesse weiterführendes Training</td><td style="padding: 8px 0; font-weight: 500;">${interesseText}</td></tr>
         </table>
       </div>
     </div>
@@ -209,8 +201,7 @@ Telefon: ${formData.telefon}
 
 Tenniserfahrung:
 Spielstand: ${spielstandText}${formData.spielstaerkeBeschreibung ? `\nBeschreibung: ${formData.spielstaerkeBeschreibung}` : ""}
-Vereinsmitglied: ${mitgliedText}
-Interesse weiterführendes Training: ${interesseText}`;
+Vereinsmitglied: ${mitgliedText}`;
 
     // Bestaetigung an die Teilnehmerin / den Teilnehmer
     const bestaetigungHtml = `
@@ -338,21 +329,24 @@ Tennisschule A bis Z`;
         spielstand: formData.spielstand,
         spielstaerke_beschreibung: formData.spielstaerkeBeschreibung || null,
         ist_vereinsmitglied: formData.istVereinsmitglied === "ja",
-        interesse_weiterfuehrend: formData.interesseWeiterfuehrend === "ja",
+        // Wird im Formular nicht mehr abgefragt; null statt eines erfundenen Ja/Nein.
+        interesse_weiterfuehrend: null,
+        termin: terminGewaehlt,
         status: "offen",
       };
 
       let { error: dbError } = await supabase
         .from("kennlerntennis_anfragen")
-        .insert({ ...anfrage, termin: terminGewaehlt });
+        .insert(anfrage);
 
-      // Falls supabase_kennlerntennis_termin.sql noch nicht eingespielt ist, kennt
-      // PostgREST die Spalte termin nicht - dann lieber ohne Termin speichern als gar nicht.
-      if (dbError && /termin/i.test(`${dbError.message} ${dbError.details ?? ""}`)) {
-        console.warn("Spalte 'termin' fehlt - Anfrage wird ohne Termin gespeichert.", dbError);
+      // Solange interesse_weiterfuehrend noch NOT NULL ist (SQL in
+      // supabase_kennlerntennis_interesse_optional.sql), lieber false speichern
+      // als die Anmeldung zu verlieren.
+      if (dbError?.code === "23502") {
+        console.warn("interesse_weiterfuehrend ist noch NOT NULL - speichere false.", dbError);
         ({ error: dbError } = await supabase
           .from("kennlerntennis_anfragen")
-          .insert(anfrage));
+          .insert({ ...anfrage, interesse_weiterfuehrend: false }));
       }
 
       if (dbError) {
@@ -632,36 +626,6 @@ Tennisschule A bis Z`;
                     name="istVereinsmitglied"
                     value="nein"
                     checked={formData.istVereinsmitglied === "nein"}
-                    onChange={handleChange}
-                    style={{ width: "auto" }}
-                  />
-                  Nein
-                </label>
-              </div>
-            </div>
-
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>
-                Ich bin an weiterführendem Training in der Tennisschule A bis Z interessiert <span style={{ color: "var(--danger)" }}>*</span>
-              </label>
-              <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input
-                    type="radio"
-                    name="interesseWeiterfuehrend"
-                    value="ja"
-                    checked={formData.interesseWeiterfuehrend === "ja"}
-                    onChange={handleChange}
-                    style={{ width: "auto" }}
-                  />
-                  Ja
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input
-                    type="radio"
-                    name="interesseWeiterfuehrend"
-                    value="nein"
-                    checked={formData.interesseWeiterfuehrend === "nein"}
                     onChange={handleChange}
                     style={{ width: "auto" }}
                   />
