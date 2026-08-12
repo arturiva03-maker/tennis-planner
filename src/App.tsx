@@ -4969,7 +4969,7 @@ ${txInfo}
     // Verknüpfte spontane Stunden wieder freigeben
     releaseLinkedSpontaneStunden(idsToDelete);
 
-    clearAdjustmentsForDeletedTrainings(affectedTrainings);
+    revertCancelRefundsForDeletedTrainings(affectedTrainings);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
 
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
@@ -4977,16 +4977,64 @@ ${txInfo}
     }
   }
 
-  function clearAdjustmentsForDeletedTrainings(deletedTrainings: Training[]) {
+  // Beim Löschen eines Trainings darf NUR die Erstattung zurückgenommen werden,
+  // die dieses Training selbst verursacht hat -- also die cancelFee einer Absage
+  // bei monatlichem Tarif. Früher wurde stattdessen der komplette Monats-Key des
+  // Spielers gelöscht: damit fielen auch die Erstattungen anderer Absagen und
+  // manuelle Korrekturen desselben Monats weg (die "Erstattung Absage"-Zeile blieb
+  // sichtbar, das Geld war aber wieder auf der Rechnung -> "Weiterer Aufschlag").
+  function revertCancelRefundsForDeletedTrainings(deletedTrainings: Training[]) {
     setMonthlyAdjustments((prev) => {
       const next = { ...prev };
+      let changed = false;
       deletedTrainings.forEach((t) => {
-        const month = t.datum.substring(0, 7);
+        if (t.status !== "abgesagt") return;
+        const refund = t.cancelFee ?? 0;
+        if (refund <= 0) return;
+        // Nur monatliche Tarife schreiben überhaupt in monthlyAdjustments;
+        // bei proTraining/proSpieler ist cancelFee der Restbetrag am Training.
+        const cfg = getPreisConfig(t, tarifById);
+        if (cfg?.abrechnung !== "monatlich") return;
+        const monat = t.datum.substring(0, 7);
         t.spielerIds.forEach((pid) => {
-          delete next[`${month}__${pid}`];
+          const key = `${monat}__${pid}`;
+          // Kein Key = nichts zurückzunehmen. Sonst würde aus einer bereits
+          // entfernten Erstattung ein Aufschlag entstehen.
+          if (!(key in next)) return;
+          const value = round2((next[key] ?? 0) + refund);
+          if (value === 0) delete next[key];
+          else next[key] = value;
+          changed = true;
         });
       });
-      return next;
+      return changed ? next : prev;
+    });
+  }
+
+  // Löschen entfernt bei monatlichem Tarif den vollen Termin-Anteil aus der
+  // Basissumme (der Termin taucht in der Abo-Zeile gar nicht mehr auf). Erstattet
+  // werden soll aber nur `refundPerPlayer` -- der einbehaltene Rest wird deshalb
+  // wieder aufgeschlagen. "Ohne Anpassung" (refundPerPlayer = 0) lässt die
+  // Abrechnung damit unverändert.
+  function applyRetentionForDeletedTrainings(trainingsList: Training[], refundPerPlayer: number) {
+    setMonthlyAdjustments((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      trainingsList.forEach((t) => {
+        const cfg = getPreisConfig(t, tarifById);
+        if (cfg?.abrechnung !== "monatlich") return;
+        const retention = round2(Math.max(0, calcPerTrainingPrice(t) - refundPerPlayer));
+        if (retention === 0) return;
+        const monat = t.datum.substring(0, 7);
+        t.spielerIds.forEach((pid) => {
+          const key = `${monat}__${pid}`;
+          const value = round2((next[key] ?? 0) + retention);
+          if (value === 0) delete next[key];
+          else next[key] = value;
+          changed = true;
+        });
+      });
+      return changed ? next : prev;
     });
   }
 
@@ -4997,7 +5045,7 @@ ${txInfo}
     // Verknüpfte spontane Stunden wieder freigeben
     releaseLinkedSpontaneStunden(idsToDelete);
 
-    clearAdjustmentsForDeletedTrainings(trainingsList);
+    revertCancelRefundsForDeletedTrainings(trainingsList);
     setTrainings((prev) => prev.filter((t) => !idsToDelete.has(t.id)));
     if (selectedTrainingId && idsToDelete.has(selectedTrainingId)) {
       resetTrainingForm();
@@ -5037,35 +5085,27 @@ ${txInfo}
     setCancelAdjustmentAmount(half > 0 ? String(half) : "0");
   }
 
+  // Anpassung PRO TRAINING und Spieler buchen. Jede Absage schreibt ihre eigene
+  // cancelFee ans Training und erzeugt in der Abrechnung eine eigene
+  // "Erstattung Absage"-Zeile -- die Summe der Anpassungen muss dazu passen.
+  // (Früher wurde pro Monat nur einmal gebucht: bei zwei Absagen im selben Monat
+  // erstattete die App nur eine davon.)
   function applyAdjustmentsForTrainings(trainingsList: Training[], amountPerPlayer: number) {
-    const newAdjustments = { ...monthlyAdjustments };
-
-    // Gruppiere Trainings nach Monat
-    const trainingsByMonth = new Map<string, Training[]>();
-    trainingsList.forEach((training) => {
-      if (!training.datum || training.datum.length < 7) return;
-      const monat = training.datum.substring(0, 7);
-      if (!/^\d{4}-\d{2}$/.test(monat)) return;
-      const list = trainingsByMonth.get(monat) || [];
-      list.push(training);
-      trainingsByMonth.set(monat, list);
-    });
-
-    // Pro Monat: Anpassung pro Spieler anwenden
-    trainingsByMonth.forEach((monthTrainings, monat) => {
-      const uniqueSpielerIds = new Set<string>();
-      monthTrainings.forEach((training) => {
-        training.spielerIds.forEach((spielerId) => uniqueSpielerIds.add(spielerId));
+    setMonthlyAdjustments((prev) => {
+      const next = { ...prev };
+      trainingsList.forEach((training) => {
+        if (!training.datum || training.datum.length < 7) return;
+        const monat = training.datum.substring(0, 7);
+        if (!/^\d{4}-\d{2}$/.test(monat)) return;
+        training.spielerIds.forEach((spielerId) => {
+          const key = `${monat}__${spielerId}`;
+          const value = round2((next[key] ?? 0) + amountPerPlayer);
+          if (value === 0) delete next[key];
+          else next[key] = value;
+        });
       });
-
-      uniqueSpielerIds.forEach((spielerId) => {
-        const key = `${monat}__${spielerId}`;
-        const currentValue = newAdjustments[key] ?? 0;
-        newAdjustments[key] = round2(currentValue + amountPerPlayer);
-      });
+      return next;
     });
-
-    setMonthlyAdjustments(newAdjustments);
   }
 
   function handleCancelDialogConfirm(withAdjustment: boolean) {
@@ -5077,8 +5117,10 @@ ${txInfo}
     const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
     const isMonatlich = cfg?.abrechnung === "monatlich";
 
-    if (withAdjustment && abzug > 0 && isMonatlich) {
-      // Monatlicher Tarif: direkt -abzug anwenden (Slot-Count bleibt durch cancelFee erhalten)
+    if (action !== 'delete' && withAdjustment && abzug > 0 && isMonatlich) {
+      // Absage, monatlicher Tarif: direkt -abzug anwenden. Der Termin bleibt in
+      // der Abo-Zeile stehen (Slot-Count bleibt durch cancelFee erhalten), die
+      // Erstattung muss also explizit gebucht werden.
       applyAdjustmentsForTrainings(affectedTrainings, -abzug);
     }
 
@@ -5096,7 +5138,13 @@ ${txInfo}
     }
 
     if (action === 'delete') {
+      // Reihenfolge wichtig: executeDeleteTrainings nimmt zuerst eine evtl. schon
+      // gebuchte Absage-Erstattung dieses Trainings zurück, danach wird der
+      // einbehaltene Rest aufgeschlagen (siehe applyRetentionForDeletedTrainings).
       executeDeleteTrainings(affectedTrainings);
+      if (isMonatlich) {
+        applyRetentionForDeletedTrainings(affectedTrainings, withAdjustment ? abzug : 0);
+      }
     } else if (fromSaveTraining) {
       // Wenn vom Training-Tab aufgerufen, saveTraining mit skipCancelCheck aufrufen
       setCancelTrainingDialog(null);
@@ -5223,6 +5271,9 @@ Tennisschule A bis Z`;
         (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
       );
       if (nichtBetroffen.length > 0) {
+        revertCancelRefundsForDeletedTrainings(
+          trainings.filter((t) => nichtBetroffen.includes(t.id))
+        );
         setTrainings((prev) =>
           prev.filter((t) => !nichtBetroffen.includes(t.id))
         );
@@ -5234,6 +5285,9 @@ Tennisschule A bis Z`;
       return;
     }
 
+    revertCancelRefundsForDeletedTrainings(
+      trainings.filter((t) => selectedTrainingIds.includes(t.id))
+    );
     setTrainings((prev) =>
       prev.filter((t) => !selectedTrainingIds.includes(t.id))
     );
@@ -5465,14 +5519,19 @@ Tennisschule A bis Z`;
             refundPerPlayer,
             onConfirm: (reverseAdjustment) => {
               if (reverseAdjustment) {
-                // Erstattung dieses Trainings rückgängig machen (+cancelFee pro Spieler)
-                const newAdjustments = { ...monthlyAdjustments };
-                existing.spielerIds.forEach((spielerId) => {
-                  const key = `${monat}__${spielerId}`;
-                  const currentValue = newAdjustments[key] ?? 0;
-                  newAdjustments[key] = round2(currentValue + refundPerPlayer);
+                // Erstattung dieses Trainings rückgängig machen (+cancelFee pro Spieler).
+                // Funktionales Update: der Dialog kann länger offen stehen, ein
+                // Snapshot aus dem Render-Closure wäre womöglich veraltet.
+                setMonthlyAdjustments((prev) => {
+                  const next = { ...prev };
+                  existing.spielerIds.forEach((spielerId) => {
+                    const key = `${monat}__${spielerId}`;
+                    const value = round2((next[key] ?? 0) + refundPerPlayer);
+                    if (value === 0) delete next[key];
+                    else next[key] = value;
+                  });
+                  return next;
                 });
-                setMonthlyAdjustments(newAdjustments);
               }
               // Training auf geplant setzen
               saveTraining(true);
