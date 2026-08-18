@@ -4957,9 +4957,9 @@ ${txInfo}
       affectedTrainings = [existing];
     }
 
-    // Bei Gruppentraining (mehr als 1 Spieler) mit monatlichem Tarif: Dialog öffnen
-    const cfg = getPreisConfig(existing, tarifById);
-    if (existing.spielerIds.length > 1 && cfg?.abrechnung === "monatlich") {
+    // Erstattung erfragen, sobald ein betroffenes Gruppentraining Geld bewegt --
+    // unabhängig von der Abrechnungsart (siehe needsRefundDialogOnDelete).
+    if (affectedTrainings.some(needsRefundDialogOnDelete)) {
       openCancelDialog(affectedTrainings, 'delete');
       return;
     }
@@ -5011,19 +5011,18 @@ ${txInfo}
     });
   }
 
-  // Löschen entfernt bei monatlichem Tarif den vollen Termin-Anteil aus der
-  // Basissumme (der Termin taucht in der Abo-Zeile gar nicht mehr auf). Erstattet
-  // werden soll aber nur `refundPerPlayer` -- der einbehaltene Rest wird deshalb
-  // wieder aufgeschlagen. "Ohne Anpassung" (refundPerPlayer = 0) lässt die
-  // Abrechnung damit unverändert.
+  // Löschen entfernt den Termin komplett aus der Abrechnung. Erstattet werden soll
+  // aber nur `refundPerPlayer` -- der einbehaltene Rest wird deshalb wieder
+  // aufgeschlagen. "Ohne Erstattung" (refundPerPlayer = 0) lässt die Abrechnung
+  // damit unverändert. Basis ist immer der Betrag, der für diesen Termin
+  // tatsächlich berechnet wird (billedAmountPerPlayer) -- bei einem geplanten
+  // Einzelpreis-Termin ist das 0, dort entsteht also auch kein Aufschlag.
   function applyRetentionForDeletedTrainings(trainingsList: Training[], refundPerPlayer: number) {
     setMonthlyAdjustments((prev) => {
       const next = { ...prev };
       let changed = false;
       trainingsList.forEach((t) => {
-        const cfg = getPreisConfig(t, tarifById);
-        if (cfg?.abrechnung !== "monatlich") return;
-        const retention = round2(Math.max(0, calcPerTrainingPrice(t) - refundPerPlayer));
+        const retention = round2(Math.max(0, billedAmountPerPlayer(t) - refundPerPlayer));
         if (retention === 0) return;
         const monat = t.datum.substring(0, 7);
         t.spielerIds.forEach((pid) => {
@@ -5052,18 +5051,50 @@ ${txInfo}
     }
   }
 
-  function executeCancelTrainings(trainingsList: Training[], cancelFeePerPlayer?: number) {
-    const idsToCancel = new Set(trainingsList.map((t) => t.id));
+  // cancelFee-Bedeutung je Tarif:
+  //  - monatlich: gespeicherter Erstattungsbetrag (der Termin bleibt über die
+  //    cancelFee in der Abo-Zeile stehen, die Erstattung läuft über
+  //    monthlyAdjustments)
+  //  - proTraining/proSpieler: Restbetrag, den der Spieler für die abgesagte
+  //    Einheit zahlt
+  // Ohne Erstattung (refundPerPlayer = 0) bleibt cancelFee leer -- dann wird der
+  // Termin gar nicht berechnet.
+  function cancelFeeForTraining(t: Training, refundPerPlayer: number): number | undefined {
+    if (refundPerPlayer <= 0) return undefined;
+    const cfg = getPreisConfig(t, tarifById);
+    if (cfg?.abrechnung === "monatlich") return refundPerPlayer;
+    const rest = round2(Math.max(0, fullPricePerPlayer(t) - refundPerPlayer));
+    return rest > 0 ? rest : undefined;
+  }
+
+  function executeCancelTrainings(trainingsList: Training[], refundPerPlayer?: number) {
+    // cancelFee pro Training bestimmen: in einer Mehrfachauswahl können Termine
+    // mit unterschiedlichen Tarifen stecken.
+    const feeById = new Map<string, number | undefined>();
+    trainingsList.forEach((t) => {
+      feeById.set(t.id, refundPerPlayer !== undefined ? cancelFeeForTraining(t, refundPerPlayer) : undefined);
+    });
     setTrainings((prev) =>
       prev.map((t) => {
-        if (!idsToCancel.has(t.id)) return t;
+        if (!feeById.has(t.id)) return t;
+        const fee = feeById.get(t.id);
         return {
           ...t,
           status: "abgesagt" as TrainingStatus,
-          ...(cancelFeePerPlayer !== undefined && cancelFeePerPlayer > 0 ? { cancelFee: cancelFeePerPlayer } : {}),
+          ...(fee !== undefined && fee > 0 ? { cancelFee: fee } : {}),
         };
       })
     );
+  }
+
+  // Absage mehrerer Trainings: für Gruppentrainings mit Preis wird die Erstattung
+  // erfragt (gleiche Regel wie bei der Einzel-Absage im Training-Tab), alle
+  // übrigen werden direkt abgesagt.
+  function cancelTrainingsWithRefundQuestion(trainingsList: Training[]) {
+    const mitFrage = trainingsList.filter(needsRefundDialogOnCancel);
+    const ohneFrage = trainingsList.filter((t) => !needsRefundDialogOnCancel(t));
+    if (ohneFrage.length > 0) executeCancelTrainings(ohneFrage);
+    if (mitFrage.length > 0) openCancelDialog(mitFrage, 'cancel');
   }
 
   function calcPerTrainingPrice(t: Training): number {
@@ -5077,12 +5108,68 @@ ${txInfo}
     return round2(priceFuerSpieler(t));
   }
 
+  // Voller Preis pro Spieler für einen Termin -- ohne eine evtl. schon gebuchte
+  // Absagegebühr, damit die Prozent-Buttons im Dialog den echten Wert zeigen
+  // (priceFuerSpieler liefert bei "abgesagt" sonst die alte cancelFee zurück).
+  function fullPricePerPlayer(t: Training): number {
+    if (t.isPrivat || t.isTenniscamp) return 0;
+    const cfg = getPreisConfig(t, tarifById);
+    if (!cfg) return 0;
+    if (cfg.abrechnung === "monatlich") return calcPerTrainingPrice(t);
+    return round2(priceFuerSpieler({ ...t, status: "geplant", cancelFee: undefined }));
+  }
+
+  // Betrag, der einem Spieler für DIESEN Termin aktuell berechnet wird:
+  //  - monatlich: der Anteil an der Monatspauschale. Er zählt auch für geplante
+  //    Termine, weil die Pauschale unabhängig vom Status geschuldet ist.
+  //  - proTraining/proSpieler: nur was wirklich auf der Rechnung landet, also ein
+  //    durchgeführtes Training oder die Absagegebühr einer Absage. Ein geplanter
+  //    Termin kostet nichts -> Löschen hat dort keine Geldwirkung.
+  function billedAmountPerPlayer(t: Training): number {
+    if (t.isPrivat || t.isTenniscamp) return 0;
+    const cfg = getPreisConfig(t, tarifById);
+    if (!cfg) return 0;
+    if (cfg.abrechnung === "monatlich") return calcPerTrainingPrice(t);
+    if (t.status === "durchgefuehrt") return fullPricePerPlayer(t);
+    if (t.status === "abgesagt") return round2(t.cancelFee ?? 0);
+    return 0;
+  }
+
+  // Einheitliche Regel für die Erstattungsfrage: ab 2 Spielern und nur, wenn für
+  // den Termin Geld fließt -- bei jeder Abrechnungsart. Einzeltrainings (1
+  // Spieler) werden bewusst ohne Rückfrage gelöscht/abgesagt.
+  function needsRefundDialogOnDelete(t: Training): boolean {
+    return t.spielerIds.length > 1 && billedAmountPerPlayer(t) > 0;
+  }
+
+  // Beim Absagen zählt der volle Terminpreis: auch bei einem noch geplanten
+  // Termin ist zu entscheiden, ob eine Absagegebühr berechnet wird. Bereits
+  // abgesagte Termine bleiben außen vor -- sonst würde eine zweite Absage die
+  // schon gebuchte Erstattung ein zweites Mal abziehen.
+  function needsRefundDialogOnCancel(t: Training): boolean {
+    return t.status !== "abgesagt" && t.spielerIds.length > 1 && fullPricePerPlayer(t) > 0;
+  }
+
   function openCancelDialog(affectedTrainings: Training[], action: 'cancel' | 'delete', fromSaveTraining?: boolean) {
-    const first = affectedTrainings[0];
-    const fullPrice = first ? calcPerTrainingPrice(first) : 0;
-    const half = round2(fullPrice / 2);
-    setCancelTrainingDialog({ trainings: affectedTrainings, action, fromSaveTraining, fullPricePerTraining: fullPrice });
-    setCancelAdjustmentAmount(half > 0 ? String(half) : "0");
+    // Referenzbetrag = der höchste Betrag, um den es bei den betroffenen Terminen
+    // geht (in einer Serie können einzelne Termine 0 sein, z.B. noch nicht
+    // berechnete Einzelpreis-Termine).
+    const reference = round2(
+      affectedTrainings.reduce(
+        (max, t) => Math.max(max, action === 'delete' ? billedAmountPerPlayer(t) : fullPricePerPlayer(t)),
+        0
+      )
+    );
+    setCancelTrainingDialog({ trainings: affectedTrainings, action, fromSaveTraining, fullPricePerTraining: reference });
+    // Löschen: der Termin fällt komplett weg -> Vorschlag "voll erstatten".
+    // Absage: der Termin bleibt bestehen -> Vorschlag "halbe Stunde erstatten".
+    const vorschlag = action === 'delete' ? reference : round2(reference / 2);
+    setCancelAdjustmentAmount(vorschlag > 0 ? String(vorschlag) : "0");
+  }
+
+  function closeCancelDialog() {
+    setCancelTrainingDialog(null);
+    setCancelAdjustmentAmount("0");
   }
 
   // Anpassung PRO TRAINING und Spieler buchen. Jede Absage schreibt ihre eigene
@@ -5111,52 +5198,40 @@ ${txInfo}
   function handleCancelDialogConfirm(withAdjustment: boolean) {
     if (!cancelTrainingDialog) return;
 
-    const { trainings: affectedTrainings, action, fromSaveTraining, fullPricePerTraining } = cancelTrainingDialog;
-
-    const abzug = parseFloat(cancelAdjustmentAmount) || 0;
-    const cfg = affectedTrainings[0] ? getPreisConfig(affectedTrainings[0], tarifById) : null;
-    const isMonatlich = cfg?.abrechnung === "monatlich";
-
-    if (action !== 'delete' && withAdjustment && abzug > 0 && isMonatlich) {
-      // Absage, monatlicher Tarif: direkt -abzug anwenden. Der Termin bleibt in
-      // der Abo-Zeile stehen (Slot-Count bleibt durch cancelFee erhalten), die
-      // Erstattung muss also explizit gebucht werden.
-      applyAdjustmentsForTrainings(affectedTrainings, -abzug);
-    }
-
-    // cancelFee-Bedeutung je Tarif:
-    //  - monatlich: gespeicherter Erstattungsbetrag (entspricht dem Abzug)
-    //  - proTraining/proSpieler: Restbetrag, den der Spieler für die abgesagte Einheit zahlt
-    let cancelFee: number | undefined;
-    if (withAdjustment && abzug > 0) {
-      if (isMonatlich) {
-        cancelFee = abzug;
-      } else {
-        const restbetrag = round2(Math.max(0, (fullPricePerTraining ?? 0) - abzug));
-        cancelFee = restbetrag > 0 ? restbetrag : undefined;
-      }
-    }
+    const { trainings: affectedTrainings, action, fromSaveTraining } = cancelTrainingDialog;
+    const erstattung = withAdjustment ? (parseFloat(cancelAdjustmentAmount) || 0) : 0;
 
     if (action === 'delete') {
       // Reihenfolge wichtig: executeDeleteTrainings nimmt zuerst eine evtl. schon
       // gebuchte Absage-Erstattung dieses Trainings zurück, danach wird der
       // einbehaltene Rest aufgeschlagen (siehe applyRetentionForDeletedTrainings).
       executeDeleteTrainings(affectedTrainings);
-      if (isMonatlich) {
-        applyRetentionForDeletedTrainings(affectedTrainings, withAdjustment ? abzug : 0);
-      }
-    } else if (fromSaveTraining) {
-      // Wenn vom Training-Tab aufgerufen, saveTraining mit skipCancelCheck aufrufen
-      setCancelTrainingDialog(null);
-      setCancelAdjustmentAmount("15");
-      saveTraining(true, cancelFee);
+      applyRetentionForDeletedTrainings(affectedTrainings, erstattung);
+      closeCancelDialog();
       return;
-    } else {
-      executeCancelTrainings(affectedTrainings, cancelFee);
     }
 
-    setCancelTrainingDialog(null);
-    setCancelAdjustmentAmount("15");
+    // Absage bei monatlichem Tarif: Erstattung explizit buchen. Der Termin bleibt
+    // über die cancelFee in der Abo-Zeile stehen, deshalb muss das Geld über
+    // monthlyAdjustments zurück. Bei proTraining/proSpieler steckt die Erstattung
+    // dagegen im Restbetrag am Training selbst (cancelFeeForTraining).
+    if (erstattung > 0) {
+      const monatliche = affectedTrainings.filter(
+        (t) => getPreisConfig(t, tarifById)?.abrechnung === "monatlich"
+      );
+      if (monatliche.length > 0) applyAdjustmentsForTrainings(monatliche, -erstattung);
+    }
+
+    if (fromSaveTraining) {
+      // Wenn vom Training-Tab aufgerufen, saveTraining mit skipCancelCheck aufrufen
+      const first = affectedTrainings[0];
+      closeCancelDialog();
+      saveTraining(true, first ? cancelFeeForTraining(first, erstattung) : undefined);
+      return;
+    }
+
+    executeCancelTrainings(affectedTrainings, erstattung);
+    closeCancelDialog();
   }
 
   function toggleTrainingSelection(id: string) {
@@ -5208,15 +5283,15 @@ Tennisschule A bis Z`;
         setCancelNotifyDialog({
           trainings: trainingsToCancel,
           onConfirm: () => {
-            executeCancelTrainings(trainingsToCancel);
+            cancelTrainingsWithRefundQuestion(trainingsToCancel);
           }
         });
         clearTrainingSelection();
         return;
       }
 
-      // Keine Spieler mit E-Mail - direkt absagen
-      executeCancelTrainings(trainingsToCancel);
+      // Keine Spieler mit E-Mail - direkt absagen (Erstattungsfrage bleibt)
+      cancelTrainingsWithRefundQuestion(trainingsToCancel);
       clearTrainingSelection();
       return;
     }
@@ -5257,43 +5332,14 @@ Tennisschule A bis Z`;
     if (isTrainer) return;
     if (selectedTrainingIds.length === 0) return;
 
-    // Prüfen ob Gruppentrainings mit monatlichem Tarif dabei sind
-    const gruppenTrainingsMonatlich = trainings.filter((t) => {
-      if (!selectedTrainingIds.includes(t.id)) return false;
-      if (t.spielerIds.length <= 1) return false;
-      const cfg = getPreisConfig(t, tarifById);
-      return cfg?.abrechnung === "monatlich";
-    });
-    if (gruppenTrainingsMonatlich.length > 0) {
-      openCancelDialog(gruppenTrainingsMonatlich, 'delete');
-      // Nicht betroffene Trainings direkt löschen
-      const nichtBetroffen = selectedTrainingIds.filter(
-        (id) => !gruppenTrainingsMonatlich.some((t) => t.id === id)
-      );
-      if (nichtBetroffen.length > 0) {
-        revertCancelRefundsForDeletedTrainings(
-          trainings.filter((t) => nichtBetroffen.includes(t.id))
-        );
-        setTrainings((prev) =>
-          prev.filter((t) => !nichtBetroffen.includes(t.id))
-        );
-        setSelectedTrainingId((prev) =>
-          prev && nichtBetroffen.includes(prev) ? null : prev
-        );
-      }
-      clearTrainingSelection();
-      return;
-    }
+    const selected = trainings.filter((t) => selectedTrainingIds.includes(t.id));
+    // Für Gruppentrainings mit Geldwirkung die Erstattung erfragen, alle übrigen
+    // direkt löschen -- gleiche Regel wie beim Löschen eines einzelnen Trainings.
+    const mitFrage = selected.filter(needsRefundDialogOnDelete);
+    const ohneFrage = selected.filter((t) => !needsRefundDialogOnDelete(t));
 
-    revertCancelRefundsForDeletedTrainings(
-      trainings.filter((t) => selectedTrainingIds.includes(t.id))
-    );
-    setTrainings((prev) =>
-      prev.filter((t) => !selectedTrainingIds.includes(t.id))
-    );
-    setSelectedTrainingId((prev) =>
-      prev && selectedTrainingIds.includes(prev) ? null : prev
-    );
+    if (ohneFrage.length > 0) executeDeleteTrainings(ohneFrage);
+    if (mitFrage.length > 0) openCancelDialog(mitFrage, 'delete');
     clearTrainingSelection();
   }
 
@@ -5585,11 +5631,11 @@ Tennisschule A bis Z`;
           setCancelNotifyDialog({
             trainings: [trainingForDialog],
             onConfirm: () => {
-              // Nach Bestätigung: Bei Gruppentraining (>1 Spieler) Abrechnungs-Dialog öffnen
-              if (tSpielerIds.length > 1) {
+              // Nach Bestätigung: Bei Gruppentraining mit Preis Abrechnungs-Dialog öffnen
+              if (needsRefundDialogOnCancel(trainingForDialog)) {
                 openCancelDialog([trainingForDialog], 'cancel', true);
               } else {
-                // Einzeltraining: direkt absagen
+                // Einzeltraining / ohne Preis: direkt absagen
                 saveTraining(true);
               }
             }
@@ -5597,8 +5643,8 @@ Tennisschule A bis Z`;
           return;
         }
 
-        // Keine Spieler mit E-Mail - Bei Gruppentraining (>1 Spieler) Abrechnungs-Dialog öffnen
-        if (tSpielerIds.length > 1) {
+        // Keine Spieler mit E-Mail - Bei Gruppentraining mit Preis Abrechnungs-Dialog öffnen
+        if (needsRefundDialogOnCancel(trainingForDialog)) {
           openCancelDialog([trainingForDialog], 'cancel', true);
           return;
         }
@@ -15680,12 +15726,15 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
               <div className="modalPill">
                 {cancelTrainingDialog.action === 'delete' ? 'Gruppentraining löschen' : 'Gruppentraining absagen'}
               </div>
-              <h3>Abrechnung anpassen?</h3>
+              <h3>{cancelTrainingDialog.action === 'delete' ? 'Erstattung buchen?' : 'Abrechnung anpassen?'}</h3>
               <p className="muted">
                 {cancelTrainingDialog.trainings.length === 1
                   ? `Dieses Training hat ${cancelTrainingDialog.trainings[0].spielerIds.length} Spieler.`
                   : `${cancelTrainingDialog.trainings.length} Gruppentrainings betroffen.`}
-                {" "}Möchtest du die Abrechnung für alle Spieler anpassen (z.B. wegen Regenausfall)?
+                {" "}
+                {cancelTrainingDialog.action === 'delete'
+                  ? "Wieviel soll den Spielern für diesen Termin erstattet werden?"
+                  : "Möchtest du die Abrechnung für alle Spieler anpassen (z.B. wegen Regenausfall)?"}
               </p>
             </div>
 
@@ -15724,7 +15773,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
               </div>
 
               <div className="field" style={{ marginTop: 16 }}>
-                <label>Abzug pro Spieler (in EUR)</label>
+                <label>Erstattung pro Spieler (in EUR)</label>
                 {cancelTrainingDialog.fullPricePerTraining != null && cancelTrainingDialog.fullPricePerTraining > 0 && (
                   <div style={{ marginBottom: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     <span className="pill" style={{ fontSize: 12 }}>
@@ -15749,7 +15798,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       style={{ fontSize: 11 }}
                       onClick={() => setCancelAdjustmentAmount("0")}
                     >
-                      Kein Abzug
+                      Keine Erstattung
                     </button>
                   </div>
                 )}
@@ -15763,8 +15812,17 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                   style={{ maxWidth: 150 }}
                 />
                 <div className="muted" style={{ marginTop: 4 }}>
-                  Wieviel soll dem Spieler erstattet werden? 100 % = volle Stunde erstatten (Spieler zahlt nichts), 50 % = halbe Stunde erstatten, 0 = kein Abzug (Spieler zahlt vollen Betrag).
+                  100 % = voll erstatten (Spieler zahlt für diesen Termin nichts), 50 % = halbe Stunde erstatten, 0 = keine Erstattung (Spieler zahlt den vollen Betrag).
                 </div>
+                {(cancelTrainingDialog.fullPricePerTraining ?? 0) > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 13 }}>
+                    Bleibt berechnet:{" "}
+                    <strong>
+                      {euro(round2(Math.max(0, (cancelTrainingDialog.fullPricePerTraining ?? 0) - (parseFloat(cancelAdjustmentAmount) || 0))))}
+                    </strong>{" "}
+                    pro Spieler
+                  </div>
+                )}
               </div>
             </div>
 
@@ -15774,21 +15832,20 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                 onClick={() => handleCancelDialogConfirm(true)}
                 style={{ width: "100%" }}
               >
-                Mit Abzug (−{euro(parseFloat(cancelAdjustmentAmount) || 0)} pro Spieler)
+                Erstattung buchen (−{euro(parseFloat(cancelAdjustmentAmount) || 0)} pro Spieler)
               </button>
               <button
                 className="btn btnGhost"
                 onClick={() => handleCancelDialogConfirm(false)}
                 style={{ width: "100%" }}
               >
-                Ohne Anpassung fortfahren
+                {cancelTrainingDialog.action === 'delete'
+                  ? `Ohne Erstattung löschen (${euro(cancelTrainingDialog.fullPricePerTraining ?? 0)} bleiben berechnet)`
+                  : "Ohne Berechnung absagen (Termin wird nicht berechnet)"}
               </button>
               <button
                 className="btn btnGhost"
-                onClick={() => {
-                  setCancelTrainingDialog(null);
-                  setCancelAdjustmentAmount("15");
-                }}
+                onClick={closeCancelDialog}
                 style={{ width: "100%" }}
               >
                 Abbrechen
