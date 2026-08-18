@@ -4957,8 +4957,8 @@ ${txInfo}
       affectedTrainings = [existing];
     }
 
-    // Erstattung erfragen, sobald ein betroffenes Gruppentraining Geld bewegt --
-    // unabhängig von der Abrechnungsart (siehe needsRefundDialogOnDelete).
+    // Erstattung erfragen, sobald ein betroffenes Gruppentraining einen Preis hat
+    // -- unabhängig von Abrechnungsart und Status (siehe needsRefundDialogOnDelete).
     if (affectedTrainings.some(needsRefundDialogOnDelete)) {
       openCancelDialog(affectedTrainings, 'delete');
       return;
@@ -5013,16 +5013,15 @@ ${txInfo}
 
   // Löschen entfernt den Termin komplett aus der Abrechnung. Erstattet werden soll
   // aber nur `refundPerPlayer` -- der einbehaltene Rest wird deshalb wieder
-  // aufgeschlagen. "Ohne Erstattung" (refundPerPlayer = 0) lässt die Abrechnung
-  // damit unverändert. Basis ist immer der Betrag, der für diesen Termin
-  // tatsächlich berechnet wird (billedAmountPerPlayer) -- bei einem geplanten
-  // Einzelpreis-Termin ist das 0, dort entsteht also auch kein Aufschlag.
+  // aufgeschlagen (refundBasePerPlayer minus Erstattung). "Ohne Erstattung"
+  // (refundPerPlayer = 0) berechnet den Termin damit voll weiter, volle Erstattung
+  // lässt nichts stehen.
   function applyRetentionForDeletedTrainings(trainingsList: Training[], refundPerPlayer: number) {
     setMonthlyAdjustments((prev) => {
       const next = { ...prev };
       let changed = false;
       trainingsList.forEach((t) => {
-        const retention = round2(Math.max(0, billedAmountPerPlayer(t) - refundPerPlayer));
+        const retention = round2(Math.max(0, refundBasePerPlayer(t) - refundPerPlayer));
         if (retention === 0) return;
         const monat = t.datum.substring(0, 7);
         t.spielerIds.forEach((pid) => {
@@ -5119,27 +5118,27 @@ ${txInfo}
     return round2(priceFuerSpieler({ ...t, status: "geplant", cancelFee: undefined }));
   }
 
-  // Betrag, der einem Spieler für DIESEN Termin aktuell berechnet wird:
-  //  - monatlich: der Anteil an der Monatspauschale. Er zählt auch für geplante
-  //    Termine, weil die Pauschale unabhängig vom Status geschuldet ist.
-  //  - proTraining/proSpieler: nur was wirklich auf der Rechnung landet, also ein
-  //    durchgeführtes Training oder die Absagegebühr einer Absage. Ein geplanter
-  //    Termin kostet nichts -> Löschen hat dort keine Geldwirkung.
-  function billedAmountPerPlayer(t: Training): number {
+  // Basisbetrag für Erstattung und Einbehalt beim Löschen -- der Betrag, um den
+  // es für diesen Termin pro Spieler geht:
+  //  - monatlich: der Anteil an der Monatspauschale (auch bei geplanten
+  //    Terminen, die Pauschale ist unabhängig vom Status geschuldet)
+  //  - abgesagt: die gebuchte Absagegebühr bzw. Erstattung -- mehr steht für den
+  //    Termin nicht auf der Rechnung
+  //  - geplant/durchgeführt: der volle Terminpreis
+  function refundBasePerPlayer(t: Training): number {
     if (t.isPrivat || t.isTenniscamp) return 0;
     const cfg = getPreisConfig(t, tarifById);
     if (!cfg) return 0;
     if (cfg.abrechnung === "monatlich") return calcPerTrainingPrice(t);
-    if (t.status === "durchgefuehrt") return fullPricePerPlayer(t);
     if (t.status === "abgesagt") return round2(t.cancelFee ?? 0);
-    return 0;
+    return fullPricePerPlayer(t);
   }
 
-  // Einheitliche Regel für die Erstattungsfrage: ab 2 Spielern und nur, wenn für
-  // den Termin Geld fließt -- bei jeder Abrechnungsart. Einzeltrainings (1
-  // Spieler) werden bewusst ohne Rückfrage gelöscht/abgesagt.
+  // Einheitliche Regel für die Erstattungsfrage: ab 2 Spielern und sobald der
+  // Termin einen Preis hat -- bei jeder Abrechnungsart und in jedem Status.
+  // Einzeltrainings (1 Spieler) werden bewusst ohne Rückfrage gelöscht/abgesagt.
   function needsRefundDialogOnDelete(t: Training): boolean {
-    return t.spielerIds.length > 1 && billedAmountPerPlayer(t) > 0;
+    return t.spielerIds.length > 1 && refundBasePerPlayer(t) > 0;
   }
 
   // Beim Absagen zählt der volle Terminpreis: auch bei einem noch geplanten
@@ -5156,7 +5155,7 @@ ${txInfo}
     // berechnete Einzelpreis-Termine).
     const reference = round2(
       affectedTrainings.reduce(
-        (max, t) => Math.max(max, action === 'delete' ? billedAmountPerPlayer(t) : fullPricePerPlayer(t)),
+        (max, t) => Math.max(max, action === 'delete' ? refundBasePerPlayer(t) : fullPricePerPlayer(t)),
         0
       )
     );
