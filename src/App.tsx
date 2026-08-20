@@ -5600,7 +5600,13 @@ Tennisschule A bis Z`;
           uhrzeitBis: tBis,
           tarifId: hasTarif ? tTarifId : undefined,
           spielerIds: tSpielerIds,
-          status: tStatus,
+          // Bewusst der BISHERIGE Status (hier immer != "abgesagt", siehe Bedingung
+          // oben) und nicht tStatus: needsRefundDialogOnCancel schließt bereits
+          // abgesagte Termine aus, damit eine zweite Absage die Erstattung nicht
+          // doppelt bucht. Mit tStatus ("abgesagt") hätte sich die Erstattungsfrage
+          // hier immer selbst blockiert. Gespeichert wird ohnehin über saveTraining,
+          // dieses Objekt dient nur den Dialogen.
+          status: existing.status,
           notiz: tNotiz.trim() || undefined,
           customPreisProStunde: customPreis,
           customAbrechnung: !hasTarif ? tCustomAbrechnung : undefined,
