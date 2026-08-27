@@ -1831,6 +1831,9 @@ select:focus:not(:focus-visible) {
   min-height: 100vh;
   background: linear-gradient(135deg, #e8f0fe 0%, #f5f8ff 50%, #fff 100%);
   display: flex;
+  /* Spalte, damit der LegalFooter unter der Card landet und sie nicht
+     als Flex-Nachbar auf schmalen Displays zusammenquetscht. */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
