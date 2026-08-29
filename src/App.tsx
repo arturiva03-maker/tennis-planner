@@ -1228,6 +1228,7 @@ export default function App() {
   // Freie Eingabe: E-Mail-Adresse, die zu keinem Spieler gehoert.
   const [newsletterManualEmail, setNewsletterManualEmail] = useState("");
   const [newsletterManualName, setNewsletterManualName] = useState("");
+  const [newsletterManualInfo, setNewsletterManualInfo] = useState<string | null>(null);
   const [newsletterAbsender, setNewsletterAbsender] = useState<"Artur" | "Zlatan">("Artur");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
@@ -1375,33 +1376,90 @@ export default function App() {
     return Array.from(recipientMap.values()).filter(s => !s.archiviert);
   }, [spieler, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
 
-  // Newsletter: frei eingetippte E-Mail-Adresse als Empfaenger uebernehmen.
-  // Fuer Leute, die (noch) nicht als Spieler in der Verwaltung stehen.
+  // Newsletter: frei eingetippte E-Mail-Adressen als Empfaenger uebernehmen.
+  // Fuer Leute, die (noch) nicht als Spieler in der Verwaltung stehen. Erlaubt eine
+  // einzelne Adresse oder eine ganze Liste - getrennt durch Komma, Semikolon,
+  // Zeilenumbruch oder Leerzeichen, auch im Format "Name <adresse@example.com>".
   function addNewsletterManualEmail() {
-    const email = newsletterManualEmail.trim();
-    if (!email) return;
+    const eingabe = newsletterManualEmail.trim();
+    setNewsletterManualInfo(null);
+    if (!eingabe) return;
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setNewsletterError(`"${email}" ist keine gültige E-Mail-Adresse.`);
-      return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Eingabe in einzelne Eintraege zerlegen. "Name <mail>" bleibt dabei zusammen,
+    // deshalb wird erst an Komma/Semikolon/Zeilenumbruch getrennt und nur der Rest
+    // notfalls noch an Leerzeichen.
+    const kandidaten: { email: string; name: string }[] = [];
+    eingabe.split(/[,;\r\n]+/).forEach(teil => {
+      const eintrag = teil.trim();
+      if (!eintrag) return;
+
+      const mitName = eintrag.match(/^(.*?)\s*<\s*([^<>\s]+)\s*>$/);
+      if (mitName) {
+        kandidaten.push({
+          email: mitName[2].trim(),
+          name: mitName[1].replace(/^["']|["']$/g, "").trim(),
+        });
+      } else if (/\s/.test(eintrag)) {
+        eintrag.split(/\s+/).forEach(e => kandidaten.push({ email: e, name: "" }));
+      } else {
+        kandidaten.push({ email: eintrag, name: "" });
+      }
+    });
+
+    // Alles, was schon Empfaenger ist - inklusive der Zweitadressen von Spielern.
+    const vorhanden = new Set<string>();
+    newsletterExtraEmails.forEach(e => vorhanden.add(e.email.toLowerCase()));
+    getNewsletterRecipients().forEach(s => {
+      [s.kontaktEmail, ...(s.zusaetzlicheEmails || [])]
+        .filter(Boolean)
+        .forEach(e => vorhanden.add((e as string).toLowerCase()));
+    });
+
+    const neue: { email: string; name: string }[] = [];
+    const ungueltig: string[] = [];
+    const doppelt: string[] = [];
+
+    kandidaten.forEach(k => {
+      if (!emailRegex.test(k.email)) {
+        ungueltig.push(k.email);
+        return;
+      }
+      const key = k.email.toLowerCase();
+      if (vorhanden.has(key)) {
+        doppelt.push(k.email);
+        return;
+      }
+      vorhanden.add(key);
+      neue.push(k);
+    });
+
+    // Das Namensfeld passt nur zu einer einzelnen Adresse - bei einer Liste waere
+    // nicht klar, zu wem der Name gehoert.
+    const manuellerName = newsletterManualName.trim();
+    if (manuellerName && neue.length === 1 && !neue[0].name) {
+      neue[0].name = manuellerName;
     }
 
-    const schonEmpfaenger =
-      newsletterExtraEmails.some(e => e.email.toLowerCase() === email.toLowerCase()) ||
-      getNewsletterRecipients().some(s =>
-        [s.kontaktEmail, ...(s.zusaetzlicheEmails || [])]
-          .filter(Boolean)
-          .some(e => e!.toLowerCase() === email.toLowerCase())
+    if (neue.length === 0) {
+      setNewsletterError(
+        ungueltig.length > 0
+          ? `Keine Adresse übernommen. Ungültig: ${ungueltig.join(", ")}`
+          : "Alle eingegebenen Adressen stehen bereits in der Empfängerliste."
       );
-    if (schonEmpfaenger) {
-      setNewsletterError(`${email} steht bereits in der Empfängerliste.`);
       return;
     }
 
     setNewsletterError(null);
-    setNewsletterExtraEmails(prev => [...prev, { email, name: newsletterManualName.trim() }]);
+    setNewsletterExtraEmails(prev => [...prev, ...neue]);
     setNewsletterManualEmail("");
     setNewsletterManualName("");
+
+    const hinweis = [`${neue.length} ${neue.length === 1 ? "Adresse" : "Adressen"} hinzugefügt`];
+    if (doppelt.length > 0) hinweis.push(`${doppelt.length} bereits vorhanden`);
+    if (ungueltig.length > 0) hinweis.push(`ungültig übersprungen: ${ungueltig.join(", ")}`);
+    setNewsletterManualInfo(hinweis.join(" · "));
   }
 
   // Undo nach 60 Sekunden automatisch entfernen
@@ -12243,10 +12301,10 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
 
                     {/* Freie E-Mail-Adresse: Empfaenger, die kein Spieler in der Verwaltung sind */}
                     <div className="field" style={{ marginBottom: 16 }}>
-                      <label>E-Mail-Adresse direkt eingeben</label>
+                      <label>E-Mail-Adressen direkt eingeben</label>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <input
-                          type="email"
+                          type="text"
                           value={newsletterManualEmail}
                           onChange={(e) => setNewsletterManualEmail(e.target.value)}
                           onKeyDown={(e) => {
@@ -12255,7 +12313,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                               addNewsletterManualEmail();
                             }
                           }}
-                          placeholder="name@beispiel.de"
+                          placeholder="name@beispiel.de, zweite@beispiel.de, ..."
                           style={{ flex: "2 1 220px", minWidth: 0 }}
                         />
                         <input
@@ -12281,9 +12339,17 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                         </button>
                       </div>
                       <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                        Für Empfänger, die nicht als Spieler angelegt sind. Ohne Namen bleibt der
+                        Für Empfänger, die nicht als Spieler angelegt sind. Mehrere Adressen auf
+                        einmal einfügen geht &ndash; getrennt durch Komma, Semikolon, Leerzeichen
+                        oder Zeilenumbruch, auch im Format <code>{"Name <mail@beispiel.de>"}</code>.
+                        Das Namensfeld gilt nur für eine einzelne Adresse; ohne Namen bleibt der
                         Platzhalter <code>{"{NAME}"}</code> im Text leer.
                       </p>
+                      {newsletterManualInfo && (
+                        <p style={{ fontSize: 12, marginTop: 4, color: "var(--success)", fontWeight: 600 }}>
+                          {newsletterManualInfo}
+                        </p>
+                      )}
                     </div>
 
                     {/* Ausgewählte Spieler anzeigen */}
@@ -12704,6 +12770,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             setNewsletterSelectedPlayers([]);
                             setNewsletterExcludedPlayers([]);
                             setNewsletterExtraEmails([]);
+                            setNewsletterManualInfo(null);
                           } catch (err) {
                             setNewsletterError(err instanceof Error ? err.message : "Unbekannter Fehler");
                           } finally {
