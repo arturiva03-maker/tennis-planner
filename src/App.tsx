@@ -1225,6 +1225,9 @@ export default function App() {
   const [newsletterPlayerSearch, setNewsletterPlayerSearch] = useState("");
   const [newsletterExcludedPlayers, setNewsletterExcludedPlayers] = useState<string[]>([]);
   const [newsletterExtraEmails, setNewsletterExtraEmails] = useState<{email: string, name: string}[]>([]);
+  // Freie Eingabe: E-Mail-Adresse, die zu keinem Spieler gehoert.
+  const [newsletterManualEmail, setNewsletterManualEmail] = useState("");
+  const [newsletterManualName, setNewsletterManualName] = useState("");
   const [newsletterAbsender, setNewsletterAbsender] = useState<"Artur" | "Zlatan">("Artur");
 
   const [trainers, setTrainers] = useState<Trainer[]>(initial.state.trainers);
@@ -1371,6 +1374,35 @@ export default function App() {
     // Archivierte Spieler nie anschreiben
     return Array.from(recipientMap.values()).filter(s => !s.archiviert);
   }, [spieler, newsletterLabelFilter, newsletterSelectedPlayers, newsletterExcludedPlayers]);
+
+  // Newsletter: frei eingetippte E-Mail-Adresse als Empfaenger uebernehmen.
+  // Fuer Leute, die (noch) nicht als Spieler in der Verwaltung stehen.
+  function addNewsletterManualEmail() {
+    const email = newsletterManualEmail.trim();
+    if (!email) return;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNewsletterError(`"${email}" ist keine gültige E-Mail-Adresse.`);
+      return;
+    }
+
+    const schonEmpfaenger =
+      newsletterExtraEmails.some(e => e.email.toLowerCase() === email.toLowerCase()) ||
+      getNewsletterRecipients().some(s =>
+        [s.kontaktEmail, ...(s.zusaetzlicheEmails || [])]
+          .filter(Boolean)
+          .some(e => e!.toLowerCase() === email.toLowerCase())
+      );
+    if (schonEmpfaenger) {
+      setNewsletterError(`${email} steht bereits in der Empfängerliste.`);
+      return;
+    }
+
+    setNewsletterError(null);
+    setNewsletterExtraEmails(prev => [...prev, { email, name: newsletterManualName.trim() }]);
+    setNewsletterManualEmail("");
+    setNewsletterManualName("");
+  }
 
   // Undo nach 60 Sekunden automatisch entfernen
   useEffect(() => {
@@ -12209,6 +12241,51 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       </div>
                     </div>
 
+                    {/* Freie E-Mail-Adresse: Empfaenger, die kein Spieler in der Verwaltung sind */}
+                    <div className="field" style={{ marginBottom: 16 }}>
+                      <label>E-Mail-Adresse direkt eingeben</label>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <input
+                          type="email"
+                          value={newsletterManualEmail}
+                          onChange={(e) => setNewsletterManualEmail(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addNewsletterManualEmail();
+                            }
+                          }}
+                          placeholder="name@beispiel.de"
+                          style={{ flex: "2 1 220px", minWidth: 0 }}
+                        />
+                        <input
+                          type="text"
+                          value={newsletterManualName}
+                          onChange={(e) => setNewsletterManualName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addNewsletterManualEmail();
+                            }
+                          }}
+                          placeholder="Name (optional)"
+                          style={{ flex: "1 1 140px", minWidth: 0 }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btnGhost"
+                          disabled={!newsletterManualEmail.trim()}
+                          onClick={addNewsletterManualEmail}
+                        >
+                          Hinzufügen
+                        </button>
+                      </div>
+                      <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                        Für Empfänger, die nicht als Spieler angelegt sind. Ohne Namen bleibt der
+                        Platzhalter <code>{"{NAME}"}</code> im Text leer.
+                      </p>
+                    </div>
+
                     {/* Ausgewählte Spieler anzeigen */}
                     {newsletterSelectedPlayers.length > 0 && (
                       <div style={{ marginBottom: 16 }}>
@@ -12384,7 +12461,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                       }}>
                         {(() => {
                           const recipients = getNewsletterRecipients();
-                          if (recipients.length === 0) {
+                          if (recipients.length === 0 && newsletterExtraEmails.length === 0) {
                             return (
                               <div style={{
                                 padding: 24,
@@ -12403,7 +12480,9 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             return nameA.localeCompare(nameB);
                           });
 
-                          return sortedRecipients.map((recipient, idx) => (
+                          return (
+                            <>
+                          {sortedRecipients.map((recipient, idx) => (
                             <div
                               key={recipient.id}
                               style={{
@@ -12411,7 +12490,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 justifyContent: "space-between",
                                 alignItems: "center",
                                 padding: "12px 16px",
-                                borderBottom: idx < sortedRecipients.length - 1
+                                borderBottom: (idx < sortedRecipients.length - 1 || newsletterExtraEmails.length > 0)
                                   ? "1px solid var(--border-light)"
                                   : "none"
                               }}
@@ -12451,7 +12530,57 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 ×
                               </button>
                             </div>
-                          ));
+                          ))}
+                          {/* Frei eingetragene Adressen stehen in keiner Spielerliste - hier mit anzeigen */}
+                          {newsletterExtraEmails.map((item, idx) => (
+                            <div
+                              key={`extra-${item.email}`}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "12px 16px",
+                                borderBottom: idx < newsletterExtraEmails.length - 1
+                                  ? "1px solid var(--border-light)"
+                                  : "none"
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                                  {item.name || item.email}
+                                </div>
+                                <div style={{
+                                  fontSize: 13,
+                                  color: "var(--text-muted)",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap"
+                                }}>
+                                  {item.email}
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setNewsletterExtraEmails(prev => prev.filter((_, i) => i !== idx))}
+                                style={{
+                                  marginLeft: 12,
+                                  padding: "4px 8px",
+                                  background: "transparent",
+                                  border: "1px solid var(--border-light)",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                  fontSize: 18,
+                                  lineHeight: 1,
+                                  color: "var(--text-muted)"
+                                }}
+                                title="Empfänger entfernen"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                            </>
+                          );
                         })()}
                       </div>
                     </div>
