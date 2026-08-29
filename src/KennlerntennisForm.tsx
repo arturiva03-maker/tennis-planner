@@ -24,12 +24,14 @@ const ANMELDUNG_GESCHLOSSEN: boolean = false;
 
 // Termine des Kennenlerntennis. Neue Termine nur hier eintragen - Formular,
 // Erfolgsseite und beide Bestaetigungsmails ziehen alles aus dieser Liste.
+// Einzelnen Termin schliessen: einfach aus der Liste entfernen.
+// Geschlossen: 30.08.2026 ("Sonntag, 30.08.2026 um 16 Uhr").
 const TERMINE = [
-  { value: "30.08.2026", label: "Sonntag, 30.08.2026 um 16 Uhr" },
   { value: "20.09.2026", label: "Sonntag, 20.09.2026 um 16 Uhr" },
 ];
 const TERMIN_BEIDE = "beide";
-const TERMINE_KURZ = "30.08. und 20.09.2026, jeweils 16 Uhr";
+// Kurzfassung fuer die Kopfzeile - wird aus TERMINE gebildet, damit sie nicht veraltet.
+const TERMINE_KURZ = TERMINE.map((t) => t.label.replace("Sonntag, ", "")).join(" und ");
 const ORT = "TC Blau-Weiß Britz 1950 e.V., Buschkrugallee 159-175, 12359 Berlin";
 
 function terminText(value: string): string {
@@ -90,6 +92,15 @@ export default function KennlerntennisForm() {
     }
     if (!formData.termin) {
       setError("Bitte wählen Sie einen Termin aus.");
+      return false;
+    }
+    // Faengt alte, noch offene Tabs ab, in denen ein inzwischen geschlossener
+    // Termin ausgewaehlt war.
+    const terminOffen =
+      (formData.termin === TERMIN_BEIDE && TERMINE.length > 1) ||
+      TERMINE.some((t) => t.value === formData.termin);
+    if (!terminOffen) {
+      setError("Für den gewählten Termin ist die Anmeldung geschlossen. Bitte laden Sie die Seite neu.");
       return false;
     }
     if (!formData.spielstand) {
@@ -461,7 +472,7 @@ Tennisschule A bis Z`;
           fontSize: 17,
           boxShadow: "0 4px 12px rgba(59, 130, 246, 0.25)",
         }}>
-          Termine: {TERMINE_KURZ}
+          {TERMINE.length > 1 ? "Termine" : "Termin"}: {TERMINE_KURZ}
           <div style={{ fontSize: 13, fontWeight: 500, marginTop: 6, opacity: 0.9 }}>
             {ORT}
           </div>
@@ -563,17 +574,20 @@ Tennisschule A bis Z`;
                     {t.label}
                   </label>
                 ))}
-                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                  <input
-                    type="radio"
-                    name="termin"
-                    value={TERMIN_BEIDE}
-                    checked={formData.termin === TERMIN_BEIDE}
-                    onChange={handleChange}
-                    style={{ width: "auto" }}
-                  />
-                  Beide Termine
-                </label>
+                {/* "Beide Termine" ergibt nur Sinn, solange mehr als ein Termin offen ist. */}
+                {TERMINE.length > 1 && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="radio"
+                      name="termin"
+                      value={TERMIN_BEIDE}
+                      checked={formData.termin === TERMIN_BEIDE}
+                      onChange={handleChange}
+                      style={{ width: "auto" }}
+                    />
+                    Beide Termine
+                  </label>
+                )}
               </div>
             </div>
 

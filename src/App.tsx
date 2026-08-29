@@ -11826,7 +11826,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                             </button>
                           </p>
                           <p className="muted" style={{ fontSize: 13 }}>
-                            Termine: <strong>30.08.2026 und 20.09.2026, jeweils 16 Uhr</strong>{" "}
+                            Termin: <strong>20.09.2026 um 16 Uhr</strong> (30.08.2026 geschlossen){" "}
                             (TC Blau-Weiß Britz) &ndash;{" "}
                             <span style={{ color: "var(--success)", fontWeight: 600 }}>
                               Anmeldung offen
