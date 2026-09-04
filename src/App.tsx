@@ -588,6 +588,15 @@ function summeStunden(list: Training[]) {
   return round2(list.reduce((acc, t) => acc + trainingStundenAnzahl(t), 0));
 }
 
+// Zeitspanne fuer Listen: bei verkuerzter Stunde die tatsaechliche Dauer mit anzeigen.
+function zeitspanneAnzeige(t: Training) {
+  const planned = durationMin(t.uhrzeitVon, t.uhrzeitBis);
+  const zeit = `${t.uhrzeitVon} - ${t.uhrzeitBis}`;
+  return t.actualMinutes && t.actualMinutes > 0 && t.actualMinutes < planned
+    ? `${zeit} (${t.actualMinutes} Min)`
+    : zeit;
+}
+
 function getFullName(s: Spieler) {
   return s.nachname ? `${s.vorname} ${s.nachname}` : s.vorname;
 }
@@ -2563,14 +2572,6 @@ export default function App() {
         ? trainers[0]?.name ?? "Alle Trainer"
         : "Alle Trainer"
       : trainerById.get(abrechnungTrainerFilter)?.name ?? "Trainer";
-
-  const istSaschaTrainer = (trainerId: string) =>
-    (trainerById.get(trainerId)?.name ?? "").trim().toLowerCase() === "sascha";
-
-  // Stunden-Anzeige in der Übersicht: Doppelstunden zählen doppelt –
-  // außer bei Sascha, der weiterhin nach Trainings (nicht Stunden) gezählt wird.
-  const stundenAnzeige = (list: Training[], trainerId: string) =>
-    istSaschaTrainer(trainerId) ? list.length : summeStunden(list);
 
   const kalenderTrainerFilterLabel =
     kalenderTrainerFilter.length === 0
@@ -13577,7 +13578,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       return (
                                         <tr key={t.id} style={isAbgesagt ? { color: "var(--text-muted)" } : undefined}>
                                           <td>{wochentag}, {t.datum.split("-").reverse().join(".")}</td>
-                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>{zeitspanneAnzeige(t)}</td>
                                           <td>
                                             {trainerName}
                                             {vertretung && (
@@ -13809,7 +13810,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{stundenAnzeige(adminNichtBarTrainings, abrechnungTrainerFilter)}</td>
+                                <td>{summeStunden(adminNichtBarTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setAdminTrainerPaymentView(adminTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -13819,7 +13820,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{stundenAnzeige(adminBarTrainings, abrechnungTrainerFilter)}</td>
+                                <td>{summeStunden(adminBarTrainings)}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -13860,7 +13861,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       return (
                                         <tr key={t.id}>
                                           <td>{germanDate}</td>
-                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>{zeitspanneAnzeige(t)}</td>
                                           <td>{spielerNamen}</td>
                                         </tr>
                                       );
@@ -14150,7 +14151,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Nicht bar</td>
-                                <td>{stundenAnzeige(nichtBarTrainings, ownTrainerId)}</td>
+                                <td>{summeStunden(nichtBarTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "bar" ? "none" : "bar")}
@@ -14160,7 +14161,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Bar</td>
-                                <td>{stundenAnzeige(barTrainings, ownTrainerId)}</td>
+                                <td>{summeStunden(barTrainings)}</td>
                               </tr>
                               <tr
                                 onClick={() => setSelectedTrainerPaymentView(selectedTrainerPaymentView === "privat" ? "none" : "privat")}
@@ -14170,7 +14171,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                 }}
                               >
                                 <td>Privat</td>
-                                <td>{stundenAnzeige(privatTrainings, ownTrainerId)}</td>
+                                <td>{summeStunden(privatTrainings)}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -14222,7 +14223,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                       return (
                                         <tr key={t.id}>
                                           <td>{germanDate}</td>
-                                          <td>{t.uhrzeitVon} - {t.uhrzeitBis}</td>
+                                          <td>{zeitspanneAnzeige(t)}</td>
                                           <td>{spielerNamen}</td>
                                         </tr>
                                       );
