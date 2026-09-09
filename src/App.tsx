@@ -308,7 +308,9 @@ type SpontaneStunde = {
 };
 
 type PaymentsMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
-type TrainerPaymentsMap = Record<string, boolean>; // key: trainingId
+// key: trainingId -- beim Tenniscamp mit mehreren Trainern `${trainingId}__${trainerId}`,
+// weil sich dort mehrere Trainer denselben Termin teilen (siehe trainerPaymentKey)
+type TrainerPaymentsMap = Record<string, boolean>;
 type TrainerMonthSettledMap = Record<string, boolean>; // key: `${monat}__${trainerId}`
 type MonthlyAdjustments = Record<string, number>; // key: `${monat}__${spielerId}`, value: Anpassungsbetrag in EUR
 type WirdAbgebuchtMap = Record<string, boolean>; // key: `${monat}__${spielerId}`
@@ -2561,6 +2563,62 @@ export default function App() {
     const tid = vertretung?.vertretungTrainerId || t.trainerId || defaultTrainerId;
     return tid === trainerId;
   }, [vertretungen, defaultTrainerId]);
+
+  const istCampMitMehrerenTrainern = useCallback(
+    (t: Training) => !!(t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1),
+    []
+  );
+
+  // Beim Tenniscamp teilen sich mehrere Trainer denselben Termin. Der Bezahlt-Haken
+  // hing bisher nur am Training -- "Als abgerechnet markieren" bei EINEM Camp-Trainer
+  // hat das Camp damit auch bei allen anderen als bezahlt gezaehlt und es aus deren
+  // "Honorar offen" verschwinden lassen. Beim Camp wird der Haken deshalb pro Trainer
+  // gespeichert.
+  const trainerPaymentKey = useCallback(
+    (t: Training, trainerId: string) =>
+      istCampMitMehrerenTrainern(t) ? `${t.id}__${trainerId}` : t.id,
+    [istCampMitMehrerenTrainern]
+  );
+
+  const honorarBezahltFuer = useCallback(
+    (t: Training, trainerId: string): boolean => {
+      if (t.barBezahlt) return true;
+      if (!istCampMitMehrerenTrainern(t)) return !!trainerPayments[t.id];
+      const proTrainer = trainerPayments[`${t.id}__${trainerId}`];
+      if (typeof proTrainer === "boolean") return proTrainer;
+      // Altbestand: ein globaler Haken am Camp-Termin stammt aus der Abrechnung
+      // irgendeines Camp-Trainers. Er gilt nur fuer die Trainer, deren Monat auch
+      // wirklich als abgerechnet markiert ist.
+      if (trainerPayments[t.id]) {
+        return !!trainerMonthSettled[
+          trainerMonthSettledKey(t.datum.substring(0, 7), trainerId)
+        ];
+      }
+      return false;
+    },
+    [istCampMitMehrerenTrainern, trainerPayments, trainerMonthSettled]
+  );
+
+  // Bezahlt-Status fuer die Filter der Trainer-Abrechnung: mit Trainerfilter aus
+  // dessen Sicht, ohne Filter gilt ein Camp erst als bezahlt, wenn es das fuer
+  // alle beteiligten Trainer ist.
+  const honorarBezahltImFilter = useCallback(
+    (t: Training): boolean => {
+      if (abrechnungTrainerFilter !== "alle") {
+        return honorarBezahltFuer(t, abrechnungTrainerFilter);
+      }
+      if (istCampMitMehrerenTrainern(t)) {
+        return t.trainerIds!.every((id) => honorarBezahltFuer(t, id));
+      }
+      return honorarBezahltFuer(t, t.trainerId || defaultTrainerId);
+    },
+    [
+      abrechnungTrainerFilter,
+      honorarBezahltFuer,
+      istCampMitMehrerenTrainern,
+      defaultTrainerId,
+    ]
+  );
 
   const selectedTrainerName =
     trainerById.get(tTrainerId)?.name ??
@@ -6034,13 +6092,9 @@ Tennisschule A bis Z`;
     if (abrechnungTab === "trainer") {
       filtered = filtered.filter((t) => t.status !== "abgesagt");
       if (abrechnungFilter === "bezahlt") {
-        filtered = filtered.filter(
-          (t) => t.barBezahlt || !!trainerPayments[t.id]
-        );
+        filtered = filtered.filter((t) => honorarBezahltImFilter(t));
       } else if (abrechnungFilter === "offen") {
-        filtered = filtered.filter(
-          (t) => !(t.barBezahlt || !!trainerPayments[t.id])
-        );
+        filtered = filtered.filter((t) => !honorarBezahltImFilter(t));
       } else if (abrechnungFilter === "bar") {
         filtered = filtered.filter((t) => t.barBezahlt);
       }
@@ -6070,7 +6124,7 @@ Tennisschule A bis Z`;
     trainingsInMonth,
     abrechnungFilter,
     abrechnungTab,
-    trainerPayments,
+    honorarBezahltImFilter,
     abrechnungSpielerSuche,
     spielerById,
   ]);
@@ -6324,7 +6378,6 @@ Tennisschule A bis Z`;
       // Tenniscamp mit mehreren Trainern: jeder Trainer bekommt seinen eigenen
       // Stundenlohn für die Camp-Stunden. Keine Spieler-Abrechnung (sum bleibt 0).
       if (t.isTenniscamp && t.trainerIds && t.trainerIds.length > 1) {
-        const campPaid = t.barBezahlt || !!trainerPayments[t.id];
         // Bei aktivem Trainerfilter nur den gefilterten Trainer gutschreiben,
         // sonst tauchen die anderen Camp-Trainer als Teil-Zeilen auf.
         const campTrainerIdsToPay = abrechnungTrainerFilter === "alle"
@@ -6343,7 +6396,8 @@ Tennisschule A bis Z`;
             };
           campEntry.trainings += 1;
           campEntry.honorar = round2(campEntry.honorar + campHonorar);
-          if (campPaid) {
+          // Bezahlt-Haken gilt pro Camp-Trainer, nicht fuer den ganzen Termin.
+          if (honorarBezahltFuer(t, campTid)) {
             campEntry.honorarBezahlt = round2(campEntry.honorarBezahlt + campHonorar);
           } else {
             campEntry.honorarOffen = round2(campEntry.honorarOffen + campHonorar);
@@ -6393,7 +6447,7 @@ Tennisschule A bis Z`;
       entry.trainings += 1;
       entry.honorar = round2(entry.honorar + honorar);
 
-      const paid = t.barBezahlt || !!trainerPayments[t.id];
+      const paid = honorarBezahltFuer(t, tid);
       if (paid) {
         entry.honorarBezahlt = round2(entry.honorarBezahlt + honorar);
       } else {
@@ -6449,7 +6503,7 @@ Tennisschule A bis Z`;
     trainerHonorarFuerTraining,
     trainingPreisGesamt,
     vertretungen,
-    trainerPayments,
+    honorarBezahltFuer,
     trainerZuschlaege,
     abrechnungMonat,
     abrechnungTrainerFilter,
@@ -13906,7 +13960,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     setTrainerPayments((prev) => {
                                       const next = { ...prev };
                                       trainerTrainings.forEach((t) => {
-                                        delete next[t.id];
+                                        delete next[trainerPaymentKey(t, abrechnungTrainerFilter)];
                                       });
                                       return next;
                                     });
@@ -13935,7 +13989,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
                                     setTrainerPayments((prev) => {
                                       const next = { ...prev };
                                       trainerTrainings.forEach((t) => {
-                                        next[t.id] = true;
+                                        next[trainerPaymentKey(t, abrechnungTrainerFilter)] = true;
                                       });
                                       return next;
                                     });
@@ -14353,8 +14407,7 @@ Wir wünschen dir eine schöne, erholsame Ferienzeit und freuen uns darauf, dich
 
                           const honorarNum = trainerHonorarGesamtFuerTraining(t);
                           const honorarBadge = euro(honorarNum);
-                          const trainerPaid =
-                            t.barBezahlt || !!trainerPayments[t.id];
+                          const trainerPaid = honorarBezahltImFilter(t);
                           const showTrainerInfo =
                             isTrainer || abrechnungTab === "trainer";
                           const differenz = round2(priceNum - honorarNum);
