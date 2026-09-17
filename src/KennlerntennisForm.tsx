@@ -77,6 +77,10 @@ export default function KennlerntennisForm() {
       setError("Bitte geben Sie Ihr Alter ein.");
       return false;
     }
+    if (parseInt(formData.alter, 10) < 18) {
+      setError("Das Kennenlerntennis ist nur für Erwachsene ab 18 Jahren. Ein Training für Kinder und Jugendliche bieten wir derzeit nicht an.");
+      return false;
+    }
     if (!formData.email.trim()) {
       setError("Bitte geben Sie eine E-Mail-Adresse ein.");
       return false;
@@ -476,10 +480,14 @@ Tennisschule A bis Z`;
           <div style={{ fontSize: 13, fontWeight: 500, marginTop: 6, opacity: 0.9 }}>
             {ORT}
           </div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+            Nur für Erwachsene ab 18 Jahren
+          </div>
         </div>
         <p className="muted" style={{ marginBottom: 24 }}>
           Füllen Sie das Formular aus, um sich unverbindlich und kostenlos zum
-          Kennenlerntennis anzumelden.
+          Kennenlerntennis anzumelden. Das Angebot richtet sich ausschließlich an
+          Erwachsene; ein Training für Kinder und Jugendliche bieten wir derzeit nicht an.
         </p>
 
         {error && <div className="errorBox">{error}</div>}
@@ -521,7 +529,7 @@ Tennisschule A bis Z`;
                 name="alter"
                 value={formData.alter}
                 onChange={handleChange}
-                placeholder="Ihr Alter"
+                placeholder="Ihr Alter (ab 18)"
                 min="1"
                 max="120"
               />
